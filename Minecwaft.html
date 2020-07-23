@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<!-- @Minecraft version Alpha 0.3
-** If it doesn't load, tell me your browser and try with Chrome/Chromium or Edge. Firefox works too but is much slower than Chrome
+<!-- @Minecraft version Alpha 0.4
+** If it doesn't load, google "how to enable WebGL on <name of your browser>" (note internet explorer probably won't work no matter what)
 
-Minecraft has been in development for 11 years by an entire team of professionals. Expecting this to even get close is unreasonable. That said, I'll still be working on it for awhile.
+To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 129), then save it as a spin-off.
+Old saves may break in future updates, so if you're attached to your build, don't update without double checking that it works first.
 
 	Controls:
 	
@@ -121,9 +122,16 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	</style>
 	<body>
 	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
+	<input type="textbox" id="savebox" hidden="true" style="position: absolute; top: 100px; left: 100px; z-index: 1;">
 	<script>
-let canvas = document.getElementById("overlay");
-let ctx = canvas.getContext("2d");
+		// Code edits will erase the world.
+		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
+		var loadString = "";
+	</script>
+	<script>
+var canvas = document.getElementById("overlay");
+var ctx = canvas.getContext("2d");
+var savebox = document.getElementById("savebox");
 ctx.canvas.width  = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
 
@@ -147,9 +155,9 @@ function delag(f) {
 	return Object.constructor('return (function(__env__) {return ' + str + ';});')()(this);
 }
 
-let MathGlob = Math;
+var MathGlob = Math;
 
-let init = delag(function() {
+var init = delag(function() {
 	let Math = MathGlob;
 	let setPixel, getPixels;
 	let textures = {
@@ -690,7 +698,7 @@ let init = delag(function() {
 	//globals
 	//{
 	let fov = 70; // Field of view in degrees
-	let version = "Alpha 0.3";
+	let version = "Alpha 0.4";
 	let reach = 5; // Max distance player can place or break blocks
 
 	let blockIds = {};
@@ -760,6 +768,7 @@ let init = delag(function() {
 		p.lastBreak = Date.now();
 		updateHUD = true;
 		gl.clearColor(84 / 255, 138 / 255, 184 / 255, 1.0);
+		savebox.hidden = true;
 	}
 
 	let gl;
@@ -2083,6 +2092,22 @@ var boxVerts = newFloat32Array([
 				}
 			}
 		}
+
+		let chunkX = this.x >> 4;
+		let chunkZ = this.z >> 4;
+		let load = null;
+		
+		for (let i = 0; i < world.loadFrom.length; i++) {
+			load = world.loadFrom[i];
+			if (load.x === chunkX && load.z === chunkZ) {
+				let y = load.y * 16;
+				for (let j in load.blocks) {
+					world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j]);
+				}
+				world.loadFrom.splice(i--, 1);
+			}
+		}
+
 		this.populated = true;
 	};
 	Chunk.prototype.genMesh = function() {
@@ -2271,6 +2296,7 @@ var boxVerts = newFloat32Array([
 		}
 	};
 	let tick = function() {
+		let tickStart = win.performance.now();
 		let maxChunkX = (p.x >> 4) + renderDistance;
 		let maxChunkZ = (p.z >> 4) + renderDistance;
 		let chunk = maxChunkX + "," + maxChunkZ;
@@ -2290,51 +2316,56 @@ var boxVerts = newFloat32Array([
 			changeWorldBlock(0);
 		}
 
-		let doneWork = false;
-		if (this.meshQueue.length) {
-			//If the player interacts with blocks, update all chunk meshes. Otherwise never update more than 1 per frame
-			let len = this.meshQueue.length - 1;
-			do {
-				let chunk = this.meshQueue[len];
-				if (chunk.lazy) {
-					continue;
-				}
-				chunk.genMesh();
-				this.meshQueue.splice(len, 1);
-				doneWork = true;
-
-			} while(len--);
-			if (this.meshQueue.length && !doneWork) {
-				this.meshQueue.pop().genMesh();
-			}
-			doneWork = true;
-		}
-
-		if (this.chunkGenQueue.length && !doneWork) {
-			do {
-				let chunk = this.chunkGenQueue[0];
-				if (!chunk.generated) {
-					this.genChunk(chunk);
-				} else if (!chunk.populated) {
-					chunk.populate();
-				} else if (!chunk.optimized) {
-					chunk.optimize(this);
-				} else if (!chunk.buffer) {
-					chunk.genMesh();
-				} else {
-					this.chunkGenQueue.shift();
-					if(this.chunkGenQueue.length) {
+		do {
+			let doneWork = false;
+			if (this.meshQueue.length) {
+				//If the player interacts with blocks, update all chunk meshes. Otherwise never update more than 1 per frame
+				let len = this.meshQueue.length - 1;
+				do {
+					let chunk = this.meshQueue[len];
+					if (chunk.lazy) {
 						continue;
 					}
+					chunk.genMesh();
+					this.meshQueue.splice(len, 1);
+					doneWork = true;
+
+				} while(len--);
+				if (this.meshQueue.length && !doneWork) {
+					this.meshQueue.pop().genMesh();
 				}
+				doneWork = true;
+			}
+
+			if (this.chunkGenQueue.length && !doneWork) {
+				do {
+					let chunk = this.chunkGenQueue[0];
+					if (!chunk.generated) {
+						this.genChunk(chunk);
+					} else if (!chunk.populated) {
+						chunk.populate();
+					} else if (!chunk.optimized) {
+						chunk.optimize(this);
+					} else if (!chunk.buffer) {
+						chunk.genMesh();
+					} else {
+						this.chunkGenQueue.shift();
+						if(this.chunkGenQueue.length) {
+							continue;
+						}
+					}
+					break;
+				} while(this.chunkGenQueue.length);
+				doneWork = !!this.chunkGenQueue.length;
+			}
+			if (this.optimizeQueue.length && !doneWork) {
+				this.optimizeQueue.shift().optimize(this);
+				doneWork = true;
+			}
+			if (!doneWork) {
 				break;
-			} while(this.chunkGenQueue.length);
-			doneWork = !!this.chunkGenQueue.length;
-		}
-		if (this.optimizeQueue.length && !doneWork) {
-			this.optimizeQueue.shift().optimize(this);
-			doneWork = true;
-		}
+			}
+		} while(win.performance.now() - tickStart < 5);
 	};
 	let render = function() {
 		initModelView(p.x, p.y, p.z, p.rx, p.ry);
@@ -2428,7 +2459,10 @@ var boxVerts = newFloat32Array([
 			}
 		}
 
-		let str = worldSeed.toString(36) + ";" + edited.length.toString(36) + ";";
+		let str = worldSeed.toString(36) + ";"
+			+ (p.x | 0).toString(36) + "," + (p.y | 0).toString(36) + "," + (p.z | 0).toString(36) + ","
+			+ (p.rx * 100 | 0).toString(36) + "," + (p.ry * 100 | 0).toString(36) + ";"
+			+ edited.length.toString(36) + ";";
 		for (let i = 0; i < edited.length; i++) {
 			let sc = edited[i][0];
 			str += (sc.x / 16).toString(36) + ",";
@@ -2454,6 +2488,14 @@ var boxVerts = newFloat32Array([
 	function loadSave(str) {
 		let data = str.split(";");
 		worldSeed = parseInt(data.shift(), 36);
+		seedHash(worldSeed);
+		noiseSeed(worldSeed);
+		let playerData = data.shift().split(",");
+		p.x = parseInt(playerData[0], 36);
+		p.y = parseInt(playerData[1], 36);
+		p.z = parseInt(playerData[2], 36);
+		p.rx = parseInt(playerData[3], 36) / 100;
+		p.ry = parseInt(playerData[4], 36) / 100;
 		let editCount = parseInt(data.shift(), 36);
 
 		this.loadFrom = [];
@@ -2476,7 +2518,6 @@ var boxVerts = newFloat32Array([
 				let block = parseInt(blocks[j], 36);
 				let index = block >> 8;
 				let id = block & 0xff;
-				console.log(i, block, index, id)
 				this.loadFrom[i].blocks[index] = id;
 			}
 		}
@@ -2717,6 +2758,7 @@ var boxVerts = newFloat32Array([
 	};
 
 	var initEverything;
+	//Buttons
 	{
 		addButton(width / 2 - 150, height / 2 - 45, 300, 50, "Play", function() {
 			play();
@@ -2730,7 +2772,15 @@ var boxVerts = newFloat32Array([
 		addButton(width / 2 - 150, 195, 300, 50, "Options", function() {
 			screen = "pause options";
 		}, "pause");
-		addButton(width / 2 - 150, 265, 300, 50, "Exit to Main Menu", function() {
+		addButton(width / 2 - 150, 265, 300, 50, "Toggle Save Code", function() {
+			if (savebox.hidden) {
+				savebox.hidden = false;
+				savebox.value = world.getSaveString();
+			} else {
+				savebox.hidden = true;
+			}
+		}, "pause");
+		addButton(width / 2 - 150, 335, 300, 50, "Exit to Main Menu", function() {
 			screen = "main menu";
 		}, "pause");
 		addButton(width / 2 - 150, 195, 300, 50, "Back", function() {
@@ -2739,7 +2789,7 @@ var boxVerts = newFloat32Array([
 		addButton(width / 2 - 150, 195, 300, 50, "Back", function() {
 			screen = "pause";
 		}, "pause options");
-	} //Buttons
+	}
 
 	function initTextures() {
 		let textureSize = 256;
@@ -2914,7 +2964,7 @@ var boxVerts = newFloat32Array([
 		//I don't know why, but this is barely transparent, so the gray bleeds through
 		gl.clearColor(0.5, 0.5, 0.5, 0.0);
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-		ctx.fillStyle = "rgb(30, 30, 30)";
+		ctx.fillStyle = "rgb(127, 127, 127)";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		FOV(90);
 
@@ -3021,8 +3071,8 @@ var boxVerts = newFloat32Array([
 		mouseX = e.x;
 		mouseY = e.y;
 	}
-	doc.onmousemove = trackMouse;
-	doc.onpointerlockchange = function() {
+	document.onmousemove = trackMouse;
+	document.onpointerlockchange = function() {
 		if (doc.pointerLockElement === canvas) {
 			doc.onmousemove = mmoved;
 		} else {
@@ -3113,7 +3163,7 @@ var boxVerts = newFloat32Array([
 				break;
 		}
 	};
-	doc.onkeydown = function(e) {
+	document.onkeydown = function(e) {
 		if (e.repeat) {
 			return;
 		}
@@ -3185,7 +3235,7 @@ var boxVerts = newFloat32Array([
 		}
 
 	};
-	doc.onkeyup = function(e) {
+	document.onkeyup = function(e) {
 		let k = e.key.toLowerCase();
 		Key[k] = false;
 		if(k === "escape" && (screen.includes("pause") || screen === "inventory") && Date.now() > unpauseDelay) {
@@ -3209,7 +3259,7 @@ var boxVerts = newFloat32Array([
 	function initEverything() {
 		console.log("Initializing world.");
 
-		worldSeed = random(2000000000) | 0;
+		worldSeed = Math.random() * 2000000000 | 0;
 
 		seedHash(worldSeed);
 		noiseSeed(worldSeed);
@@ -3247,8 +3297,13 @@ var boxVerts = newFloat32Array([
 		for (let i = 0; i < 4; i++) {
 			p.frustum[i] = new Plane();
 		}
-		world = win.world || World();
+		world = World();
 		win.world = world;
+		if (loadString) {
+			world.loadSave(loadString);
+		}
+		win.player = p;
+		win.p2 = p2;
 
 		if (!win.gl) {
 			let canv = document.createElement('canvas');
@@ -3265,7 +3320,7 @@ var boxVerts = newFloat32Array([
 			//		 break;
 			//	 }
 			// }
-			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false });
+			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false });
 			let ext = gl.getExtension('OES_element_index_uint');
 			if (!ext) {
 				alert("Please use a supported browser, or update your current browser.")
@@ -3401,18 +3456,23 @@ var boxVerts = newFloat32Array([
 			controls();
 			runGravity();
 			resolveContactsAndUpdatePosition();
-			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-			hotbar();
-			defineWorld(); // Draw world (among other things)
-			//ctx.drawImage(gl.canvas, 0, 0);
-
+			
 			if (updateHUD) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+				gl.clearColor(0.0, 0.0, 0.0, 0.0);
+				gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+				hotbar();
 				hud();
+				ctx.drawImage(gl.canvas, 0, 0);
 				updateHUD = false;
 				freezeFrame = false;
+
+				gl.clearColor(84 / 255, 138 / 255, 184 / 255, 1.0);
 			}
+			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+			defineWorld(); // Load, draw, and update the world
+			gl.flush();
+			gl.finish();
 		} else if (screen === "inventory") {
 			drawInv();
 		} else if(screen.includes("pause")) {
@@ -3469,7 +3529,7 @@ var boxVerts = newFloat32Array([
 		analytics.frames++;
 		analytics.totalFrameTime += win.performance.now() - frameStart;
 		analytics.worstFrameTime = Math.max(win.performance.now() - frameStart, analytics.worstFrameTime);
-		window.parent.raf = window.requestAnimationFrame(gameLoop);
+		win.raf = requestAnimationFrame(gameLoop);
 	}
 	return gameLoop;
 })();
@@ -3478,8 +3538,6 @@ if (window.parent.raf) {
 	console.log("Canceled", window.parent.raf)
 }
 init();
-
-
 
 
 	</script>
