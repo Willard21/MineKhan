@@ -70,14 +70,12 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * Change hotbar to 3D
  * Add Inventory
  * Lots of blocks added
- * Remove save feature (will re-add soon)
 
 
 	To-Do:
  * Add superflat world gen option
  * Add leaf decay and grass spread
  * Add new block models (stairs/slabs/doors)
- * Add save feature
  * Add hand/held item animation
  * Add block breaking particles
  * Add lighting and block lighting
@@ -2059,36 +2057,37 @@ var boxVerts = newFloat32Array([
 				// Redstone: 29.1
 				// Diamond: 3.7
 				// Lapis: 4.1
+				let hide = !loadString;
 				ground -= 4;
 
 				if (random() < 3.7 / 256) {
 					let y = random() * 16 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre, hide);
 				}
 
 				if (random() < 111.5 / 256) {
 					let y = random() * ground | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre, hide);
 				}
 
 				if (random() < 185.5 / 256) {
 					let y = random() * ground | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre, hide);
 				}
 
 				if (random() < 10.4 / 256) {
 					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre, hide);
 				}
 
 				if (random() < 29.1 / 256) {
 					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre, hide);
 				}
 
 				if (random() < 4.1 / 256) {
 					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre, true);
+					this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre, hide);
 				}
 			}
 		}
@@ -2177,6 +2176,7 @@ var boxVerts = newFloat32Array([
 		if (chunk.generated) {
 			return false;
 		}
+		let hide = !loadString;
 		let smoothness = generator.smooth;
 		let hilliness = generator.height;
 		let gen = 0;
@@ -2189,9 +2189,9 @@ var boxVerts = newFloat32Array([
 				chunk.setBlock(i, gen - 2, k, blockIds.dirt);
 				chunk.setBlock(i, gen - 3, k, blockIds.dirt);
 				for (let j = 1; j < gen - 3; j++) {
-					chunk.setBlock(i, j, k, blockIds.stone, true);
+					chunk.setBlock(i, j, k, blockIds.stone, hide);
 				}
-				chunk.setBlock(i, 0, k, blockIds.bedrock, true);
+				chunk.setBlock(i, 0, k, blockIds.bedrock, hide);
 			}
 		}
 		chunk.generated = true;
@@ -2460,7 +2460,7 @@ var boxVerts = newFloat32Array([
 		}
 
 		let str = worldSeed.toString(36) + ";"
-			+ (p.x | 0).toString(36) + "," + (p.y | 0).toString(36) + "," + (p.z | 0).toString(36) + ","
+			+ Math.round(p.x).toString(36) + "," + Math.round(p.y).toString(36) + "," + Math.round(p.z).toString(36) + ","
 			+ (p.rx * 100 | 0).toString(36) + "," + (p.ry * 100 | 0).toString(36) + ";"
 			+ edited.length.toString(36) + ";";
 		for (let i = 0; i < edited.length; i++) {
@@ -2512,7 +2512,7 @@ var boxVerts = newFloat32Array([
 			})
 		}
 
-		for (let i = 0; i < editCount; i++) {
+		for (let i = 0; data.length > 0; i++) {
 			let blocks = data.shift().split(",");
 			for (let j = 0; j < blocks.length; j++) {
 				let block = parseInt(blocks[j], 36);
