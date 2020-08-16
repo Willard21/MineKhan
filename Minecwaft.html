@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<!-- @Minecraft version Alpha 0.4
+<!-- @Minecraft version Alpha 0.5
 ** If it doesn't load, google "how to enable WebGL on <name of your browser>" (note internet explorer probably won't work no matter what)
 
-To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 129), then save it as a spin-off.
+To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 127), then save it as a spin-off.
 Old saves may break in future updates, so if you're attached to your build, don't update without double checking that it works first.
 
 	Controls:
@@ -415,6 +415,7 @@ var init = delag(function() {
 		{ name: "blackConcrete" },
 	];
 
+	//Set defaults on blockData
 	(function() {
 		for (let i = 1; i < blockData.length; i++) {
 			let data = blockData[i];
@@ -499,7 +500,8 @@ var init = delag(function() {
 	let currentRandom = null;
 	function Marsaglia(i1, i2) {
 	// from http://www.math.uni-bielefeld.de/~sillke/ALGORITHMS/random/marsaglia-c
-		let z=i1 || 362436069, w= i2 || 521288629;
+		let z = (i1 | 0) || 362436069, w = i2 || hash(521288629, z) * 2147483647 | 0;
+
 		let nextInt = function() {
 			z=36969*(z&65535)+(z>>>16) & 0xFFFFFFFF;
 			w=18000*(w&65535)+(w>>>16) & 0xFFFFFFFF;
@@ -567,7 +569,7 @@ var init = delag(function() {
 		}
 
 		this.noise3d = function(x, y, z) {
-			let X = Math.floor(x)&255, Y = Math.floor(y)&255, Z = Math.floor(z)&255;
+			let X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
 			x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
 			let fx = (3-2*x)*x*x, fy = (3-2*y)*y*y, fz = (3-2*z)*z*z;
 			let p0 = perm[X]+Y, p00 = perm[p0] + Z, p01 = perm[p0 + 1] + Z,
@@ -598,16 +600,12 @@ var init = delag(function() {
 	}
 	let noiseSeed = function(seed) {
 		noiseProfile.seed = seed;
-		noiseProfile.generator = undefined;
+		noiseProfile.generator = new PerlinNoise(noiseProfile.seed);
 	};
 	let noise = function(x, y, z) {
-		if(noiseProfile.generator === undefined) {
-		// caching
-			noiseProfile.generator = new PerlinNoise(noiseProfile.seed);
-		}
 		let generator = noiseProfile.generator;
 		let effect = 1, k = 1, sum = 0;
-		for(let i=0; i<noiseProfile.octaves; ++i) {
+		for(let i = 0; i < noiseProfile.octaves; ++i) {
 			effect *= noiseProfile.fallout;
 			switch (arguments.length) {
 				case 1:
@@ -696,7 +694,7 @@ var init = delag(function() {
 	//globals
 	//{
 	let fov = 70; // Field of view in degrees
-	let version = "Alpha 0.4";
+	let version = "Alpha 0.5";
 	let reach = 5; // Max distance player can place or break blocks
 
 	let blockIds = {};
@@ -713,6 +711,9 @@ var init = delag(function() {
 	let generator = {
 		height: 80,
 		smooth: 0.01,
+		extra: 30,
+		caveSmooth: 0.01,
+		caveSize: 0.02
 	};
 	let maxHeight = 255;
 	let blockOutlines = false;
@@ -1551,6 +1552,37 @@ var boxVerts = newFloat32Array([
 		}
 	};
 
+	let sphere;
+	(function() {
+		let blocks = [];
+		let radius = 3;
+		let radsq = radius * radius;
+		for (let i = -radius; i < radius; i++) {
+			for (let j = -radius; j < radius; j++) {
+				for (let k = -radius; k < radius; k++) {
+					if (i*i + j*j + k*k < radsq) {
+						blocks.push(i, j, k);
+					}
+				}
+			}
+		}
+		sphere = new Int8Array(blocks);
+	})();
+	generator.caveSize = 0.005;
+	function isCave(x, y, z) {
+		let smooth = 0.015;
+		let cave1 = Math.abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < generator.caveSize;
+		let cave2 = Math.abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < generator.caveSize;
+		return (cave1 && cave2);
+	}
+	function carveSphere(x, y, z) {
+		if (y > 3) {
+			for (let i = 0; i < sphere.length; i += 3) {
+				world.setBlock(x + sphere[i], y + sphere[i + 1], z + sphere[i + 2], blockIds.air, true);
+			}
+		}
+	}
+
 	let renderedChunks = 0;
 	function getBlock(x, y, z, blocks) {
 		return blocks[((x >> 4) + 1) * 9 + ((y >> 4) + 1) * 3 + (z >> 4) + 1][((x & 15) << 8) + ((y & 15) << 4) + (z & 15)] & 0xff;
@@ -1696,6 +1728,7 @@ var boxVerts = newFloat32Array([
 		this.hasVisibleBlocks = false;
 		this.chunk = chunk;
 		this.edited = false;
+		this.caves = false;
 	}
 	Section.prototype.getBlock = function(x, y, z) {
 		let s = this.size;
@@ -1889,6 +1922,19 @@ var boxVerts = newFloat32Array([
 		}
 		return index;
 	};
+	Section.prototype.carveCaves = function() {
+		let wx = this.x + 16, wz = this.z + 16, wy = this.y + 16;
+		for (let x = this.x; x < wx; x++) {
+			for (let y = this.y; y < wy; y++) {
+				for (let z = this.z; z < wz; z++) {
+					if (isCave(x, y, z)) {
+						carveSphere(x, y, z);
+					}
+				}
+			}
+		}
+		this.caves = true;
+	}
 	//}
 	function newSection(x, y, z, size, chunk) {
 		let section = Object.create(Section.prototype);
@@ -1911,6 +1957,7 @@ var boxVerts = newFloat32Array([
 		this.populated = false; //Trees
 		this.lazy = false;
 		this.edited = false;
+		this.caves = false;
 	}
 	Chunk.prototype.getBlock = function(x, y, z) {
 		let s = y >> 4;
@@ -1956,12 +2003,17 @@ var boxVerts = newFloat32Array([
 		}
 	};
 	Chunk.prototype.updateBlock = function(x, y, z, world, lazy) {
-		this.lazy = lazy;
-		if (this.sections.length > y >> 4) {
-			this.sections[y >> 4].updateBlock(x, y & 15, z, world);
+		if (this.buffer) {
+			this.lazy = lazy;
+			if (this.sections.length > y >> 4) {
+				this.sections[y >> 4].updateBlock(x, y & 15, z, world);
+			}
 		}
 	};
 	Chunk.prototype.deleteBlock = function(x, y, z, user) {
+		if (!this.sections[y >> 4]) {
+			return;
+		}
 		if (user && !this.sections[y >> 4].edited) {
 			this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice();
 			this.sections[y >> 4].edited = true;
@@ -1971,15 +2023,27 @@ var boxVerts = newFloat32Array([
 		this.minY = y < this.minY ? y : this.minY;
 		this.maxY = y > this.maxY ? y : this.maxY;
 	};
+	Chunk.prototype.carveCaves = function() {
+		for (let i = 0; i < this.sections.length; i++) {
+			if (!this.sections[i].caves) {
+				this.sections[i].carveCaves();
+				if (i + 1 < this.sections.length) {
+					return;
+				}
+			}
+		}
+		this.caves = true;
+	};
 	Chunk.prototype.populate = function() {
 		randomSeed(hash(this.x, this.z) * 210000000);
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false;
+
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
 				wx = this.x + i;
 				wz = this.z + k;
-				ground = Math.round(noise(wx * generator.smooth, wz * generator.smooth) * generator.height);
-				if (random() < 0.01) {
+				ground = Math.round(noise(wx * generator.smooth, wz * generator.smooth) * generator.height) + generator.extra;
+				if (random() < 0.01 && world.getBlock(wx, ground, wz)) {
 
 					top = ground + Math.floor(4.5 + random(2.5));
 					rand = Math.floor(random(4096));
@@ -2057,37 +2121,54 @@ var boxVerts = newFloat32Array([
 				// Redstone: 29.1
 				// Diamond: 3.7
 				// Lapis: 4.1
-				let hide = !loadString;
 				ground -= 4;
 
 				if (random() < 3.7 / 256) {
 					let y = random() * 16 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre, hide);
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre);
+					}
 				}
 
 				if (random() < 111.5 / 256) {
-					let y = random() * ground | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre, hide);
+					let y = random() * 64 | 0 + 1;
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre);
+					}
 				}
 
 				if (random() < 185.5 / 256) {
 					let y = random() * ground | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre, hide);
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre);
+					}
 				}
 
 				if (random() < 10.4 / 256) {
 					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre, hide);
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre);
+					}
 				}
 
 				if (random() < 29.1 / 256) {
-					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre, hide);
+					let y = random() * 16 | 0 + 1;
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre);
+					}
 				}
 
 				if (random() < 4.1 / 256) {
 					let y = random() * 32 | 0 + 1;
-					this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre, hide);
+					y = y < ground ? y : ground;
+					if (this.getBlock(i, y, k)) {
+						this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre);
+					}
 				}
 			}
 		}
@@ -2134,7 +2215,7 @@ var boxVerts = newFloat32Array([
 	//}
 	function newChunk(x, z) {
 		let chunk = Object.create(Chunk.prototype);
-		Chunk.apply(chunk, [ x, z ]);
+		Chunk.call(chunk, x, z);
 		return chunk;
 	}
 
@@ -2182,16 +2263,16 @@ var boxVerts = newFloat32Array([
 		let gen = 0;
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				gen = Math.round(noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness);
+				gen = Math.round(noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra;
 
 				chunk.setBlock(i, gen, k, blockIds.grass);
 				chunk.setBlock(i, gen - 1, k, blockIds.dirt);
 				chunk.setBlock(i, gen - 2, k, blockIds.dirt);
 				chunk.setBlock(i, gen - 3, k, blockIds.dirt);
 				for (let j = 1; j < gen - 3; j++) {
-					chunk.setBlock(i, j, k, blockIds.stone, hide);
+					chunk.setBlock(i, j, k, blockIds.stone);
 				}
-				chunk.setBlock(i, 0, k, blockIds.bedrock, hide);
+				chunk.setBlock(i, 0, k, blockIds.bedrock);
 			}
 		}
 		chunk.generated = true;
@@ -2224,8 +2305,9 @@ var boxVerts = newFloat32Array([
 		return ret;
 	};
 	let updateBlock = function(x, y, z, lazy) {
-		if (this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4] && this.chunks[x >> 4][z >> 4].buffer) {
-			this.chunks[x >> 4][z >> 4].updateBlock(x & 15, y, z & 15, this, lazy);
+		let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4];
+		if (chunk && chunk.buffer) {
+			chunk.updateBlock(x & 15, y, z & 15, this, lazy);
 		}
 	};
 	let getWorldBlock = function(x, y, z) {
@@ -2250,30 +2332,41 @@ var boxVerts = newFloat32Array([
 		}
 		let chunk = this.chunks[x >> 4][z >> 4];
 
+		let xm = x & 15;
+		let zm = z & 15;
 		if (blockID) {
-			chunk.setBlock(x & 15, y, z & 15, blockID, false, !lazy);
+			chunk.setBlock(xm, y, zm, blockID, false, !lazy);
 		} else {
-			chunk.deleteBlock(x & 15, y, z & 15, !lazy);
+			chunk.deleteBlock(xm, y, zm, !lazy);
 		}
 
-		//Update the 6 adjacent blocks and 1 changed block
-		this.updateBlock(x - 1, y, z, lazy);
-		this.updateBlock(x + 1, y, z, lazy);
-		this.updateBlock(x, y - 1, z, lazy);
-		this.updateBlock(x, y + 1, z, lazy);
-		this.updateBlock(x, y, z - 1, lazy);
-		this.updateBlock(x, y, z + 1, lazy);
-		this.updateBlock(x, y, z, lazy);
 
-		//Update the 8 corners so shadows in adjacent chunks update correctly
-		this.updateBlock(x - 1, y - 1, z - 1, lazy);
-		this.updateBlock(x + 1, y - 1, z - 1, lazy);
-		this.updateBlock(x - 1, y - 1, z + 1, lazy);
-		this.updateBlock(x + 1, y - 1, z + 1, lazy);
-		this.updateBlock(x - 1, y + 1, z - 1, lazy);
-		this.updateBlock(x + 1, y + 1, z - 1, lazy);
-		this.updateBlock(x - 1, y + 1, z + 1, lazy);
-		this.updateBlock(x + 1, y + 1, z + 1, lazy);
+
+		//Update the 6 adjacent blocks and 1 changed block
+		if (xm && xm !== 15 && zm && zm !== 15) {
+			chunk.updateBlock(xm - 1, y, zm, this, lazy);
+			chunk.updateBlock(xm + 1, y, zm, this, lazy);
+			chunk.updateBlock(xm, y - 1, zm, this, lazy);
+			chunk.updateBlock(xm, y + 1, zm, this, lazy);
+			chunk.updateBlock(xm, y, zm - 1, this, lazy);
+			chunk.updateBlock(xm, y, zm + 1, this, lazy);
+		}
+		else {
+			this.updateBlock(x - 1, y, z, lazy);
+			this.updateBlock(x + 1, y, z, lazy);
+			this.updateBlock(x, y - 1, z, lazy);
+			this.updateBlock(x, y + 1, z, lazy);
+			this.updateBlock(x, y, z - 1, lazy);
+			this.updateBlock(x, y, z + 1, lazy);
+		}
+		
+		chunk.updateBlock(xm, y, zm, this, lazy);
+
+		//Update the corner chunks so shadows in adjacent chunks update correctly
+		if (xm | zm === 0) { this.updateBlock(x - 1, y, z - 1, lazy); }
+		if (xm === 15 && zm === 0) { this.updateBlock(x + 1, y, z - 1, lazy); }
+		if (xm === 0 && zm === 15) { this.updateBlock(x - 1, y, z + 1, lazy); }
+		if (xm & zm === 15) { this.updateBlock(x + 1, y, z + 1, lazy); }
 	};
 	let spawnBlock = function(x, y, z, blockID) {
 		//Sets a block anywhere without causing block updates around it. Only to be used in world gen.
@@ -2342,6 +2435,8 @@ var boxVerts = newFloat32Array([
 					let chunk = this.chunkGenQueue[0];
 					if (!chunk.generated) {
 						this.genChunk(chunk);
+					} else if (!chunk.caves) {
+						chunk.carveCaves();
 					} else if (!chunk.populated) {
 						chunk.populate();
 					} else if (!chunk.optimized) {
@@ -3164,7 +3259,7 @@ var boxVerts = newFloat32Array([
 		}
 	};
 	document.onkeydown = function(e) {
-		if (e.repeat) {
+		if (e.repeat || Key[e.key.toLowerCase()]) {
 			return;
 		}
 		let k = e.key.toLowerCase();
@@ -3274,7 +3369,7 @@ var boxVerts = newFloat32Array([
 			sprintSpeed: 1.5,
 			flySpeed: 2.5,
 			x: 8,
-			y: Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2,
+			y: Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra,
 			z: 8,
 			w: 3 / 8,
 			bottomH: 1.62,
