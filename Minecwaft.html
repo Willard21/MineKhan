@@ -907,6 +907,9 @@ var init = delag(function() {
   function scode() {
     //set a save code with a prompt, bit messy
 		var PLOAD = prompt('Enter Save Code:');
+    if (PLOAD === null) {
+        return;
+      }
     localStorage.setItem('savecode', PLOAD);
     world.loadSave(PLOAD);
     play();
