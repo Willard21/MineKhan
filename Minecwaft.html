@@ -904,6 +904,15 @@ var init = delag(function() {
 		savebox.hidden = true;
 	}
 
+  function scode() {
+    //set a save code with a prompt, bit messy
+		var PLOAD = prompt('Enter Save Code:');
+    localStorage.setItem('savecode', PLOAD);
+    world.loadSave(PLOAD);
+    play();
+    delete PLOAD;
+  }
+
 	let gl;
 	function getPointer() {
 		if (canvas.requestPointerLock) {
@@ -3015,6 +3024,9 @@ var boxVerts = newFloat32Array([
 		addButton(width / 2 - 150, height / 2 + 25, 300, 50, "Options", function() {
 			screen = "options menu";
 		}, "main menu");
+		addButton(width / 2 - 150, height / 2 - -90, 300, 50, "Load Save", function() {
+			scode();
+		}, "main menu");
 		addButton(width / 2 - 150, 125, 300, 50, "Resume", function() {
 			play();
 		}, "pause");
@@ -3682,7 +3694,15 @@ var boxVerts = newFloat32Array([
 				textSize(20);
 				ctx.textAlign = 'right';
 				text("Version " + version, width - 10, height - 10);
-			} else if(screen === "options menu") {
+			} /* else if(screen === "load menu") {
+        //set a save code with a prompt, bit messy
+				var PLOAD = prompt('Enter Save Code:');
+        localStorage.setItem('savecode', PLOAD);
+        play();
+        world.loadSave(loadString);
+        localStorage.removeItem('savecode');
+        delete PLOAD;
+			}*/ else if(screen === "options menu") {
 				ctx.beginPath();
 				ctx.strokeStyle = "black";
 				ctx.fillStyle = "rgb(92, 92, 92)";
