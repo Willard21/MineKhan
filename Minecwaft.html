@@ -6,7 +6,7 @@ To save your progress, copy the save code you can get in the pause options, and 
 Old saves may break in future updates, so if you're attached to your build, don't update without double checking that it works first.
 
 	Controls:
-	
+
  * Right-click (or ctrl click for mac users) - place block
  * Left-click - remove block
  * Middle-click - pick block
@@ -33,7 +33,7 @@ Old saves may break in future updates, so if you're attached to your build, don'
 	Notes and accreditation:
 
  * This program originated as a spin-off of ScusCraft, which is a P3D Minecraft program with a 4 block render distance. I started out just optimizing it, but it... got a little bit out of hand.
- * I ended up with a program 3x the size of the original that used all sorts of disallowed functionality for the PJS environment. 
+ * I ended up with a program 3x the size of the original that used all sorts of disallowed functionality for the PJS environment.
  * I ported it to the web environment where all this stuff is allowed to make sure it followed the guidelines. All future updates will be to this version.
  * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
@@ -47,7 +47,7 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * There's nowhere to offload chunks to, so they're kept in memory until you restart. So don't explore too far or memory usage will grow until it crashes unrecoverably.
 
  * Adding new (cube shaped) blocks is super easy, so if there's any you want added, just let me know!
- 
+
 
 	Willard's changes from the original:
 
@@ -113,6 +113,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<meta charset="utf-8">
 		<title>Minecraft</title>
 	</head>
+	<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 	<style>
 		body {
 			overflow: hidden; /* Hide scrollbars */
@@ -813,12 +814,13 @@ var init = delag(function() {
 		}
 	}
 	function textSize(size) {
-		ctx.font = size + 'px Sans-Serif';
+		ctx.font = size + 'px Monospace';
 	}
 	let text = fastText;
 	let strokeWeight = function(num) {
 		ctx.lineWidth = num;
 	}
+	let ARROW = "arrow";
 	let HAND = "pointer";
 	let CROSS = "crosshair";
 	let cursor = function(type) {
@@ -2320,7 +2322,7 @@ var boxVerts = newFloat32Array([
 		let chunkX = this.x >> 4;
 		let chunkZ = this.z >> 4;
 		let load = null;
-		
+
 		for (let i = 0; i < world.loadFrom.length; i++) {
 			load = world.loadFrom[i];
 			if (load.x === chunkX && load.z === chunkZ) {
@@ -2514,7 +2516,7 @@ var boxVerts = newFloat32Array([
 			this.updateBlock(x, y, z - 1, lazy);
 			this.updateBlock(x, y, z + 1, lazy);
 		}
-		
+
 		chunk.updateBlock(xm, y, zm, this, lazy);
 
 		//Update the corner chunks so shadows in adjacent chunks update correctly
@@ -2960,6 +2962,9 @@ var boxVerts = newFloat32Array([
 		disableScroll();
 	})();
 
+	// Mouse sensitivity variable, used for the settings buttons and in the "mmoved" function
+	let mouseS = 300;
+
 	let buttons = [];
 	let button = function(x, y, w, h) {
 		if(mouseX > x && mouseY > y && mouseX < x + w && mouseY < y + h) {
@@ -2984,44 +2989,78 @@ var boxVerts = newFloat32Array([
 			button.callback();
 		}
 	};
+
 	let drawButton = function(button) {
 		if (screen === button.screen) {
 			if (mouseX > button.x && mouseY > button.y && mouseX < button.x + button.w && mouseY < button.y + button.h) {
-				strokeWeight(3);
-				cursor(HAND);
+				strokeWeight(7);
 			} else {
-				strokeWeight(1);
+				strokeWeight(3);
 			}
-			ctx.strokeStyle = "black";
-			ctx.fillStyle = "rgb(92, 92, 92)";
+			ctx.strokeStyle = "rgb(30, 30, 30)";
+			ctx.fillStyle = "rgb(120, 120, 120)";
 			ctx.rect(button.x, button.y, button.w, button.h);
 			ctx.stroke();
 			ctx.fill();
 			ctx.beginPath();
-			ctx.fillStyle = "black";
-			textSize(35);
-			ctx.font = '35px Sans-Serif';
 			ctx.textAlign = 'center';
+			ctx.fillStyle = "rgb(80, 80, 80)";
+			ctx.font = "35.5px VT323";
+			ctx.fillText(button.text, button.x + button.w / 2, button.y + button.h / 1.7 + 8);
+			ctx.fillStyle = "rgb(220, 220, 220)";
+			ctx.font = "35px VT323";
 			ctx.fillText(button.text, button.x + button.w / 2, button.y + button.h / 2 + 10);
 		}
 	};
 
 	var initEverything;
-	//Buttons
+	//General buttons
 	{
-		addButton(width / 2 - 150, height / 2 - 45, 300, 50, "Play", function() {
-			play();
+		addButton(width / 2 - 280, height / 2 - 45, width / 2.5, 50, "Singleplayer", function() {
+			screen = "creation menu";
 		}, "main menu");
-		addButton(width / 2 - 150, height / 2 + 25, 300, 50, "Options", function() {
+		addButton(width / 2 - 150, height / 2 + 100, width / 5, 40, "Create New World", function() {
+			play();
+		}, "creation menu");
+		addButton(width / 2 - 150, height / 2 + 150, width / 5, 40, "Load Saved World", function() {
+			screen = "loadsave menu";
+		}, "creation menu");
+		addButton(width / 2 - 280, height / 2 + 25, width / 2.5, 50, "Load Save", function() {
+			// load and display the saved world from the loadString
+			screen = "comingsoon menu";
+		}, "loadsave menu");
+		addButton(width / 2 - 180, height / 2 - 100, width / 4, 40, "World Type: Normal", function() {
+			this.flat = !this.flat;
+			if (this.flat) {
+				this.text = "World type: Superflat";
+			} else {
+				this.text = "World type: Normal";
+			}
+		}, "creation menu");
+		addButton(width / 2 - 180, height / 2 - 50, width / 4, 40, "Game Mode: Creative", function(){
+			// change gamemode
+			screen = "comingsoon menu";
+		}, "creation menu");
+		addButton(width / 2 - 180, height / 2, width / 4, 40, "Difficulty: Peaceful", function() {
+			// change difficulty
+			screen = "comingsoon menu";
+		}, "creation menu");
+		addButton(width / 2 - 150, height / 2 + 200, width / 5, 40, "Cancel", function() {
+			screen = "main menu";
+		}, "creation menu");
+		addButton(width / 2 - 280, height / 2 + 25, width / 2.5, 50, "Multiplayer", function() {
+			screen = "rickrolled menu"
+		}, "main menu");
+		addButton(width / 2 - 280, height / 2 + 95, width / 2.5, 50, "Options", function() {
 			screen = "options menu";
 		}, "main menu");
-		addButton(width / 2 - 150, 125, 300, 50, "Resume", function() {
+		addButton(width / 2 - 220, 225, width / 3, 50, "Resume", function() {
 			play();
 		}, "pause");
-		addButton(width / 2 - 150, 195, 300, 50, "Options", function() {
+		addButton(width / 2 - 220, 295, width / 3, 50, "Options", function() {
 			screen = "pause options";
 		}, "pause");
-		addButton(width / 2 - 150, 265, 300, 50, "Toggle Save Code", function() {
+		addButton(width / 2 - 220, 365, width / 3, 50, "Save World", function() {
 			if (savebox.hidden) {
 				savebox.hidden = false;
 				savebox.value = world.getSaveString();
@@ -3029,14 +3068,89 @@ var boxVerts = newFloat32Array([
 				savebox.hidden = true;
 			}
 		}, "pause");
-		addButton(width / 2 - 150, 335, 300, 50, "Exit to Main Menu", function() {
+		addButton(width / 2 - 220, 435, width / 3, 50, "Exit to Main Menu", function() {
 			screen = "main menu";
 		}, "pause");
-		addButton(width / 2 - 150, 195, 300, 50, "Back", function() {
+		addButton(width / 2 - 220, 455, width / 3, 50, "Back", function() {
 			screen = "main menu";
 		}, "options menu");
-		addButton(width / 2 - 150, 195, 300, 50, "Back", function() {
+		addButton(width / 2 - 220, 455, width / 3, 50, "Back", function() {
 			screen = "pause";
+		}, "pause options");
+		addButton(width / 2 - 220, 395, width / 3, 50, "Back", function() {
+			screen = "creation menu";
+		}, "comingsoon menu");
+		addButton(width / 2 - 220, 395, width / 3, 50, "¯\\_(ツ)_/¯", function() {
+			screen = "main menu";
+		}, "rickrolled menu");
+
+
+		let settingsState = true;
+
+		// Menu Settings
+		addButton(width / 2 - 220, 155, width / 3, 50, "State: Increase", function() {
+			if(settingsState === true) {
+				settingsState = false;
+			} else if(settingsState === false) {
+				settingsState = true;
+			}
+			if(settingsState === true) {
+				this.text = "State: Increase";
+			} else {
+				this.text = "State: Decrease";
+			}
+		}, "options menu");
+		addButton(width / 2 - 220, 245, width / 3, 50, "Render Distance: " + renderDistance + " chunks", function() {
+			if(settingsState === true) {
+				renderDistance++;
+			} else {
+				renderDistance--;
+			}
+		}, "options menu");
+		addButton(width / 2 - 220, 305, width / 3, 50, "FOV: " + fov, function() {
+			if(settingsState === true) {
+				fov++;
+			} else {
+				fov--;
+			}
+		}, "options menu");
+		addButton(width / 2 - 220, 365, width / 3, 50, "Mouse Sensitivity: " + (mouseS / 3), function() {
+			if(settingsState === true) {
+				mouseS += 30;
+			} else {
+				mouseS -= 30;
+			}
+		}, "options menu");
+
+		// In-Game Settings
+		addButton(width / 2 - 220, 155, width / 3, 50, "State: Increase", function() {
+			settingsState = !settingsState;
+			if(settingsState) {
+				this.text = "State: Increase";
+			} else {
+				this.text = "State: Decrease";
+			}
+		}, "pause options");
+		addButton(width / 2 - 220, 245, width / 3, 50, "Render Distance: " + renderDistance + " chunks", function() {
+			if(settingsState === true) {
+				renderDistance++;
+			} else {
+				renderDistance--;
+			}
+		}, "pause options");
+		addButton(width / 2 - 220, 305, width / 3, 50, "FOV: " + fov, function() {
+			if(settingsState === true) {
+				fov++;
+			} else {
+				fov--;
+			}
+		}, "pause options");
+		addButton(width / 2 - 220, 365, width / 3, 50, "Mouse Sensitivity: " + (mouseS / 3), function() {
+			if(settingsState === true) {
+				mouseS += 50;
+			} else {
+				mouseS -= 50;
+			}
 		}, "pause options");
 	}
 
@@ -3300,8 +3414,8 @@ var boxVerts = newFloat32Array([
 
 	let unpauseDelay = 0;
 	function mmoved(e) {
-		p.rx -= e.movementY / 300;
-		p.ry += e.movementX / 300;
+		p.rx -= e.movementY / mouseS;
+		p.ry += e.movementX / mouseS;
 
 		while(p.ry > Math.PI*2) {
 			p.ry -= Math.PI*2;
@@ -3374,22 +3488,22 @@ var boxVerts = newFloat32Array([
 		} else if (screen === "inventory") {
 			clickInv();
 		} else if(screen === "options menu") {
-			if(button(0, 125, 50, 50)) {
+			if(button(140, 225, 190, 50)) {
 				if(renderDistance > 1) {
 					renderDistance--;
 				}
 			}
-			if(button(width - 50, 125, 50, 50)) {
+			if(button(width - 190, 225, 190, 50)) {
 				renderDistance++;
 			}
 		} else if(screen === "pause options") {
-			if(button(0, 125, 50, 50)) {
+			if(button(140, 225, 190, 50)) {
 				if(renderDistance > 1) {
-					renderDistance --;
+					renderDistance--;
 				}
 			}
-			if(button(width - 50, 125, 50, 50)) {
-				renderDistance ++;
+			if(button(width - 190, 225, 190, 50)) {
+				renderDistance++;
 			}
 		}
 		let currentScreen = screen;
@@ -3661,6 +3775,7 @@ var boxVerts = newFloat32Array([
 		FOV(fov);
 	}
 
+	let debugMenu = false;
 	function gameLoop() {
 		let frameStart = win.performance.now();
 		if (!screen) {
@@ -3669,45 +3784,85 @@ var boxVerts = newFloat32Array([
 		}
 
 		if(screen.includes("menu")) {
-			cursor(CROSS);
+			cursor(ARROW);
 			strokeWeight(1);
 			ctx.clearRect(0, 0, width, height);
-			fill(0, 0, 0);
-			textSize(75);
 			ctx.textAlign = 'center';
-			text("Minecraft", width / 2, 100);
+			ctx.font = "bold 150px VT323";
+			fill(30);
+			text("MINECRAFT", width / 2, 158);
+			fill(40);
+			text("MINECRAFT", width / 2, 155);
+			ctx.font = "bold 151px VT323";
+			fill(50);
+			text("MINECRAFT", width / 2, 152);
+			fill(70);
+			text("MINECRAFT", width / 2, 150);
+			fill(90);
+			ctx.font = "bold 152px VT323";
+			text("MINECRAFT", width / 2, 148);
+			fill(110);
+			text("MINECRAFT", width / 2, 145);
+			ctx.font = "bold 31.5px VT323";
+			fill(30);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 200);
+			fill(40);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 198.5);
+			fill(50);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 197);
+			ctx.font = "bold 31.65px VT323";
+			fill(70);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 195.5);
+			fill(90);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 194);
+			fill(110);
+			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 192.5);
 
 			if(screen === "main menu") {
-				fill(0, 0, 0);
-				textSize(20);
-				ctx.textAlign = 'right';
-				text("Version " + version, width - 10, height - 10);
+				fill(220);
+				ctx.font = "20px VT323";
+				ctx.textAlign = 'left';
+				text("Minecraft " + version, width - (width - 2), height - 2);
+			} else if(screen === "creation menu") {
+				ctx.beginPath();
+				ctx.beginPath();
+			} else if(screen === "loadsave menu") {
+				ctx.beginPath();
+				if(savebox.hidden) {
+					savebox.hidden = false;
+					savebox.value = loadString;
+				} else {
+					savebox.hidden = true;
+				}
+				ctx.beginPath();
 			} else if(screen === "options menu") {
 				ctx.beginPath();
-				ctx.strokeStyle = "black";
-				ctx.fillStyle = "rgb(92, 92, 92)";
-				strokeWeight(2);
-				ctx.rect(width / 2 - 150, 125, 300, 50);
-				ctx.stroke();
-				ctx.fill();
-				fill(0, 0, 0);
-				textSize(30);
-				ctx.textAlign = 'center';
-				text("Render Distance: " + renderDistance, width / 2, 160);
-				strokeWeight(7);
-				stroke(255, 255, 255);
 				ctx.beginPath();
-				line(10, 150, 40, 150);
-				line(width - 10, 150, width - 40, 150);
-				line(width - 25, 135, width - 25, 165);
-				ctx.stroke();
+			} else if(screen === "rickrolled menu") {
+				ctx.beginPath();
+				ctx.fillStyle = "white";
+				ctx.rect(0, 0, width, height);
+				ctx.font = "50px VT323";
+				ctx.textAlign = 'center';
+				fill(0);
+				text("haha get rickrolled lol", width / 2, 300);
+				text("multiplayer is impossible", width / 2, 350);
+				ctx.beginPath();
+			} else if(screen === "comingsoon menu") {
+				ctx.beginPath();
+				ctx.fillStyle = "white";
+				ctx.rect(0, 0, width, height);
+				ctx.font = "100px VT323";
+				ctx.textAlign = 'center';
+				fill(0);
+				text("COMING SOON", width / 2, 325);
 				ctx.beginPath();
 			}
 		} else if(screen === "play") {
 			controls();
 			runGravity();
 			resolveContactsAndUpdatePosition();
-			
+
 			if (updateHUD) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				gl.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -3727,13 +3882,14 @@ var boxVerts = newFloat32Array([
 		} else if (screen === "inventory") {
 			drawInv();
 		} else if(screen.includes("pause")) {
-			cursor(CROSS);
+			cursor(ARROW);
 			strokeWeight(1);
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			ctx.drawImage(gl.canvas, 0, 0);
 
-			// fill(0, 0, 0, 100);
-			// rect(-2, -2, width + 4, height + 4);
+			// ctx.globalAlpha = 0.5;
+			// ctx.rect(-2, -2, width + 2, height + 2);
+			// ctx.globalAlpha = 1;
 
 			textSize(60);
 			fill(0, 0, 0);
@@ -3741,22 +3897,6 @@ var boxVerts = newFloat32Array([
 			text("Paused", width / 2, 60);
 			if(screen === "pause options") {
 				ctx.beginPath();
-				ctx.strokeStyle = "black";
-				ctx.fillStyle = "rgb(92, 92, 92)";
-				strokeWeight(2);
-				ctx.rect(width / 2 - 150, 125, 300, 50);
-				ctx.stroke();
-				ctx.fill();
-				fill(0, 0, 0);
-				textSize(30);
-				text("Render Distance: " + renderDistance, width / 2, 160);
-				strokeWeight(7);
-				stroke(255, 255, 255);
-				ctx.beginPath();
-				line(10, 150, 40, 150);
-				line(width - 10, 150, width - 40, 150);
-				line(width - 25, 135, width - 25, 165);
-				ctx.stroke();
 				ctx.beginPath();
 			}
 		}
