@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<!-- @Minecraft version Alpha 0.5.1
+<!-- @Minecraft version Alpha 0.6
 ** If it doesn't load, google "how to enable WebGL on <name of your browser>" (note internet explorer probably won't work no matter what)
 
-To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 127), then save it as a spin-off.
+To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 103), then save it as a spin-off.
 Old saves may break in future updates, so if you're attached to your build, don't update without double checking that it works first.
 
 	Controls:
@@ -11,15 +11,15 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * Left-click - remove block
  * Middle-click - pick block
  * Q - sprint
- * Delete - Forced restart (wipes the world and changes seeds)
- * T - Reload Textures
- * W - walk forward
- * S - walk backward
- * A - walk left
- * D - walk right
- * E - open inventory
- * B - toggle super Breaker
+ * W - Walk forward
+ * S - Walk backward
+ * A - Walk left
+ * D - Walk right
+ * E - Open inventory
+ * B - Toggle super Breaker
  * Z - Zoom
+ * L - Toggle Spectator mode
+ * Enter - Toggle slab mode
  * X - Quake Pro FOV (Z to return to normal)
  * Arrow Keys - look around
  * P or Esc - pause/unpause
@@ -28,9 +28,14 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * Double jump - toggle flight
  * Shift (flying) - fly down
  * Space (flying) - fly up
- * ;  -  Release the pointer without pausing (for screenshots)
+ * Delete - Forced restart (wipes the world and changes seeds)
+ * T - Reload textures
+ * ; (semicolon) - Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
+ * I, Willard, made this program and have published it at https://www.khanacademy.org/cs/mc/5647155001376768 as an original program (technically a Minecraft ripoff, but original code).
+If it's published elsewhere by anyone other than myself, then it must be done so as a spin-off, or else be flagged for plagiarism. As long as I've written at least 50% of
+the code in this, I'd very much prefer that nobody else copy/paste it anywhere.
 
  * This program originated as a spin-off of ScusCraft, which is a P3D Minecraft program with a 4 block render distance. I started out just optimizing it, but it... got a little bit out of hand.
  * I ended up with a program 3x the size of the original that used all sorts of disallowed functionality for the PJS environment. 
@@ -38,7 +43,8 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
  * While porting the code, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
- * The textures and name are obviously stolen from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association. The real game can be found at https://www.minecraft.net/en-us/
+ * The textures and name are obviously stolen from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
+ * The real Minecraft game can be bought and downloaded at https://www.minecraft.net/en-us/
 
  * If anything doesn't work right, let me know in the comments and I'll try to fix it. Any errors in your Javascript console would be useful.
 
@@ -47,41 +53,11 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * There's nowhere to offload chunks to, so they're kept in memory until you restart. So don't explore too far or memory usage will grow until it crashes unrecoverably.
 
  * Adding new (cube shaped) blocks is super easy, so if there's any you want added, just let me know!
- 
-
-	Willard's changes from the original:
-
- * Store blocks in chunks
- * Render whole chunks at once
- * Don't render block faces that aren't adjacent to air
- * Don't render chunks that aren't in within the viewing frustum
- * Fix collision bug
- * Make physics dynamic based on ellapsed time
- * Rewrite rendering system
- * Replace targeting system with much faster raytracing system
- * Add pointer lock for looking around more easily
- * Add textures to blocks
- * Add block shadows
- * Scroll to change inventory slot (Buggy on Chrome - can't fix)
- * Bigger trees
- * Add flying
- * Add Camera Zoom
- * Add Super Breaker
- * Change hotbar to 3D
- * Add Inventory
- * Lots of blocks added
 
 
 	To-Do:
- * Add superflat world gen option
- * Add leaf decay and grass spread
- * Add new block models (stairs/slabs/doors)
- * Add hand/held item animation
- * Add block breaking particles
- * Add lighting and block lighting
- * Sound effects for falling, breaking, and placing blocks
- * Add sky box
- * Move debug info to option
+ * A lot. Check out the GitHub repo if you'd like to collaborate on this. Must use Discord.
+ * https://github.com/Willard21/MineKhan
 
 
 	How it works:
@@ -111,7 +87,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>Minecraft</title>
+		<title>MineKhan</title>
 	</head>
 	<style>
 		body {
@@ -136,26 +112,16 @@ ctx.canvas.height = window.innerHeight;
 /* Set this text editor to max width by copying this into the JS console:
 document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important');
 */
-
-function delag(f) {
-	delag.stripDetection = delag.stripDetection || function(s) {
-		let outLines = [];
-		let lines = s.split("\n");
-		for (let i = 0; i < lines.length; i++) {
-			if (!lines[i].includes("KAInfiniteLoopProtect")) {
-				outLines.push(lines[i]);
-			}
-		}
-		return outLines.join("\n");
-	};
-	let str = delag.stripDetection(f.toString());
-	/* Copied from Element118 delag() function: */
-	return Object.constructor('return (function(__env__) {return ' + str + ';});')()(this);
-}
+/* 
+	Hides spin-offs from the hot list on Khan Academy.
+	Please don't remove this comment unless you've made a significant code contribution.
+	Most spin-offs are implicitly hidden from the HL by default, but sometimes long save codes break that system on accident.
+	/cs/pro/5733417664643072
+*/
 
 var MathGlob = Math;
 
-var init = delag(function() {
+function init() {
 	let Math = MathGlob;
 	let setPixel, getPixels;
 	let textures = {
@@ -300,6 +266,29 @@ var init = delag(function() {
 		whiteWool: "0g0gn1lxyi2n1lxyiv31ly454v1n22inz1n22jgf1n285q71o66j9b1o66k1r1o6c6bj1paajun1qeekfz1ricyrj1riil1b1smgykf1smmlmn1tqkz5r1tqqm7z1uuozr31uuumtb1vyt0cf1vyynen1x2x0xr1y711j37a56dj89hi26ee63egmmliba639a04acllacmlfailiimmigeajlaadl8blleamlgc8ejj219e94jj62429l817a81aa396ammkjddcelmhbmmifaammihll69jlhgllii49lh8a9a93db549bal12bg8gmmcimmlliimlihllaegd6e68ggaaji689g22agaa12lm41djeimmg3ihmmliea1cilcclmmmeblegjml99fia638lf6almcahl68ll",
 		yellowConcrete: "0g0g41to1w5b1us09of1us5vy71us5wqn2111111122222221232021021213122222211020112110121211022201012212122222312211221122213110202011133121132211112221221211211111112120231210211111201132001211212111211102220222021102211223011100222121202222222132111211111112111112021121120222221222011012122121",
 		yellowWool: "0g0gj1us5vy71usbj0f1vw9wjj1vwfitb1vwfjlr1vwl5vj1vwl6nz1vwqsxr1x0p6gv1x0utj31x10fsv1x10glb1x163nj1y54h6n1y5a48v1y5a51b1y5frb31y5fs3j1y5lf5r45239e44bc0299219biiec7731470158eg78hga7cgcchicb95dg759g47gg95ifb849ed005942ee20104g404540571436iied9989eib7iica55iicbgf34dgbbgfcc15fb4557419722576e007b4bii8ciifgccigcbge79b92924bb55ec345b006b5500fh209e9ciib1cbhifc9708cg88gihh97g9bdie45ac5314fa35gh85bf34eg",
+		bookshelf: "0g0gt03fxnnj04laqdb0a0ot1b0b6j6db0c8r6db0deww730df88ov0egz6rj0gpo9330ht5kov0k20av30nf40zj0pnc1dr0qoh8fz0sy416n0w8kcn30wc5n9b0yicu0v11vb08v11vskcf13z03jz16atkvz17fehvj1as1ce71czhmv31e50qv31g6nvgf1gbtpfj1ks44qnommllhlllmmmmlmoo44477444772534oo799kk999ni9637olkffqk99gpjk631lsqffqk64gnik631soqfdqf6gcngf651ookd9kf3c7igf350mlorrsssroorrroolollmmhmllmmmllhoo77227cb7427724ooqk763gck99cb97olpj063gckq4gc10hsqk063a8fqkgcpjsoqf065a87kqgc10omkfe35ccefkcb03oorrsssroorrrrooo",
+		netherBricks: "0g0g706o77cv08w9lhb0b4bzlr0dcedq70fkb4sf0gof6670iwn6kf0000000000000000556515666555165532340433333405333432133223321333000111000001110015666544155545540543333306433333143333221433243211000001110000014416641644164414330433063304330423143314321333140111011101110111464414666644166433330433344303333322033333330333",
+		redNetherBricks: "0g0g70c7i51b0efew3j0fjiwov0ive1a70nbiubj0svgd1b0v3ir5r0000000000000000556515666555165532340433333405333432133223321333000111000001110015666544155545540543333306433333143333221433243211000001110000014416641644164414330433063304330423143314321333140111011101110111464414666644166433330433344303333322033333330333",
+		netherQuartzOre: "0g0gc0hs27zz0m7vq4f0m81d6n0ncb0u70rsft330u2845b0v4m7sv10p0npb1bug2671e4e1vj1n1fv9b1smb9xb1312426644044643344320246610442164643068a921424676466baa866314246766ba8674662643166895678a8544641466565ba95146866310289856642b9742469b814466ab862467ba624646b952364a950268665602426852108b61623214642649a9164941364667689238976124667423804646442246624630246644",
+		netherrack: "0g0g70hs27zz0m7vq4f0m81d6n0ncb0u70rsft330v4m7sv10p0npb1312425544044543344320245210442154543012432142456545423545531424565424566455254315431566554244541452054554214565531024541154246642454221445541452456540245455112354554025655200242254210254102321454254122154541354556512234565124556423204545442245524530245544",
+		netherWartBlock: "0g0g60of09vj0suze9r0xana4f1539r7j1brbain1g7rcvz0122001222532010222235202110022112111222202202320122201003202242042220021211122103224300222201201022220122252002210210211223102220000221222200222022221132210202012201104100222102201012211021042230122022012022212012022002220222202202220234022205220322022302",
+		quartzBlockBottom: "0g0g31sm5mv31tq9ngf1tqfbb32222221111000222121111000002222111100000012222110000001122221110001111000110000011100000110000011111222200001111222222211111111222211000112222220110012222222211222222222210000022222211000000222222110110112222111100112222221100101122222111101222222222210000",
+		quartzBlockSide: "0g0g61p9z6kf1qe37y71sm5mv31tq9ngf1tqfbb31uujcov5555555555555555543333222224444153322222234444304222223344433330423333222332222153322222332222215333444422223330544444433333333054433222334444405332234444444430544444444432222154444433222222405444332332334440533322334444443042323344444333311100011111110000",
+		quartzBlockTop: "0g0g61p9z6kf1qe37y71sm5mv31tq9ngf1tqfbb31uujcov5555555555555555543333222224444153322222234444304222223344433330423333222332222153322222332222215333444422223330544444433333333054433222334444405332234444444430544444444432222154444433222222405444332332334440533322334444443042323344444333311100011111110000",
+		quartzPillar: "0g0g41qe37y71sm5mv31tqfbb31uujcov0202031312130212020302130313031202131313120313020313130213031313131303120302121313020312031203131302131313020303120313031303130312130303131303120213131302131212131312130202120313021213120302031302120313031303130202130303131303120313031213120212131302121202",
+		quartzPillarTop: "0g0g51p9z6kf1qe37y71sm5mv31tqfbb31uujcov1021223242413020222122211221122002223434434322223123443344443211113412222221431242442344443244222243242222424423423324244142441222442424324234143244242211423322224423334432442421341222222143111123444444443213222234444443222002211222122112221203142423220200",
+		chiseledQuartzBlock: "0g0g61p9z6kf1qe37y71sm5mv31tq9ngf1tqfbb31uujcov0444404333022440043331222204444003322111000444300222223004443331023011101110022103315544432202200110441100220000554444144033344544433204314444440111230011441101054044444432154104400110111004401444454005544440133321100004443002323155440333300444414444132220",
+		chiseledQuartzBlockTop: "0g0g51p9z6kf1qe37y71tq9ngf1tqfbb31uujcov0334314232133420021100022000112002044203204421200204120420412021020113032020003102233304212233200000000421110000323433442223344422222222222222220000001321000001044343142143222104011204214110201302130420313020120234032023403002111003201100400222314222133420",
+		chiseledStoneBricks: "0g0g70oigd8f0qqoef30sz21vj0xf6vpb0yjgikf11vskcf17g711b6666655666566562644424444224444054110000111123205206665566561530640654434442154064064322334315405205430005421630540632000643062052054300053206306215435655420630641644545432053064163232322215406421110000011530556655666655543053343234433232202000000000000000",
+		smoothStone: "0g0g70wb8hdr0yjgikf12zwkxr17gcnb318kgnwf1asop331d0wq9r1011002200220121054556666553445204334454444555501666455566655442255444545666645006555555554343412556664665545550243343443434466116656545555455620555554566656661054544334454454215555666665566622444566454433452165445556555455104456665566544401022112221000121",
+		soulSand: "0g0g60egz94v0ht5n270k181z30oho3jz0sxyiv30xeekfz3130033202100434433135531100234004241451321012411423432542212230032442154212211332234104322433212002314322315332220023322345513032322211233445304302332013540423202342330242132302341043213032020354044321232020431445421112202350345131123302354202432103212415",
+		glowstone: "0g0g80u1fugv0v5phbz10pn01r11uj6db1kqv1tr1x1ncov1y6jzlr1y711j35420045440276423654011240346654024032201131054033034542017510033014766405664136502566552454236751004554020132450531024010352320465230213276501576442654346640335420454220452013000320356304012311354016754036520357660354215764034654201003242013154216521100013",
+		andesite: "0g0g60sywflr0wb8hdr0yjgikf11vsl4v17gcnb31asolxb2114332104423221245323445330122411334410122443224410133445433231235442223333211433323243210013432324542104543333423310154332333433114143343224533143342221154333332321101544332201331254422332333443443233212331543333334533112233301244323223541321322323234432",
+		diorite: "0g0g60xfchz311vskcf19of1fj1gd8su71ktouf31smgykf1222352233524355201322135345543151355101325543235255312553213225351243153532255245355541332335235332455214554102243123234555521232203255443244250155213551234541244310134335513055510144221512352542543554223223212343125454353242115521455321245235554124421255",
+		granite: "0g0ga0l56fi70plgu0v0yhw0sf1424tmn17eb8cf1aqna4f1e3al8f1e3x7un1jnje2n1qczoxr7434244344046445431548244224422341444335249241464143446145532344234232113754334244255342143347242445524442555322424474302155243346344255522344245535242552464245557314243844212555415442024425030323244424324439435524312355344448553215435547245544733324244425",
+		polishedAndesite: "0g0g90oilzi70sz23gf0v7a3270yjgjcv10ru60v11vyakf11w3ugv19okmwv1e4v30f7878888888788785843334442443134084444443376644307416763343446440844442456433334083344333424433318444634666554320833433332123444184562444466776608434433443344540844667633366444081444444664466208466654333134760844433334465334083333664444334406100000000110000",
+		polishedDiorite: "0g0g80qqu0ov0xfi5tr11vy6m71asubcv1f94t1b1jpkttr1o60w731ri7bpb7776677777666774764556657643564166764466577434506565333565454441675334576435457176544567733456607566767655346450744765756564534063556655467534516566544565544761664334655465666075673555775644517557654375466340745654576435744072445566545654512101110001100110",
+		polishedGranite: "0g0g90l56fi70plgu0v0yhw0sf1424tmn17eb8cf1aqna4f1e3al8f1e3x7un1jnje2n8888786866866565843344345444334374744554442446418444243334553342844444453344443262343344443734428345543644444431844444423445544263422344554433636444433443344442734444444464334284473344244442318455444445543341633443264434455264443444334447412111001110111100",
 	};
 
 	let blockData = [
@@ -348,8 +337,8 @@ var init = delag(function() {
 		{ name: "lapisBlock" },
 		{ name: "emeraldBlock" },
 		// { // I swear, if y'all don't stop asking about TNT every 5 minutes!
-		//	 name: "tnt",
-		//	 textures: ["tntBottom", "tntTop", "tntSides"]
+		// 	 name: "tnt",
+		// 	 textures: ["tntBottom", "tntTop", "tntSides"]
 		// },
 		{ name: "oakPlanks" },
 		{
@@ -413,6 +402,37 @@ var init = delag(function() {
 		{ name: "greenConcrete" },
 		{ name: "redConcrete" },
 		{ name: "blackConcrete" },
+		{
+			name: "bookshelf",
+			textures: [ "oakPlanks", "bookshelf" ]
+		},
+		{ name: "netherrack" },
+		{ name: "soulSand" },
+		{ name: "glowstone" },
+		{ name: "netherWartBlock" },
+		{ name: "netherBricks" },
+		{ name: "redNetherBricks" },
+		{ name: "netherQuartzOre" },
+		{
+			name: "quartzBlock",
+			textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"]
+		},
+		{
+			name: "quartzPillar",
+			textures: ["quartzPillarTop", "quartzPillar"]
+		},
+		{
+			name: "chiseledQuartzBlock",
+			textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"]
+		},
+		{ name: "chiseledStoneBricks" },
+		{ name: "smoothStone" },
+		{ name: "andesite" },
+		{ name: "polishedAndesite" },
+		{ name: "diorite" },
+		{ name: "polishedDiorite" },
+		{ name: "granite" },
+		{ name: "polishedGranite" },
 	];
 
 	//Set defaults on blockData
@@ -829,7 +849,7 @@ var init = delag(function() {
 	//globals
 	//{
 	let fov = 70; // Field of view in degrees
-	let version = "Alpha 0.5.1";
+	let version = "Alpha 0.6";
 	let reach = 5; // Max distance player can place or break blocks
 
 	let blockIds = {};
@@ -853,6 +873,9 @@ var init = delag(function() {
 	let blockOutlines = false;
 	let blockFill = true;
 	let updateHUD = true;
+	const SLAB = 1;
+	const CUBE = 0;
+	let blockMode = CUBE;
 	let textureMap;
 	let textureCoords;
 	let texCoordsBuffers;
@@ -1001,31 +1024,87 @@ var init = delag(function() {
 	};
 
 	let programObject3D;
-	/*
-var boxVerts = newFloat32Array([
-	0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,//South
-	0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5,//North
-	0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,//East
-	0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,//Bottom
-   -0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5,//West
-	0.5,  0.5,  0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5 //Top
-]);
- var sideFaceVerts = { //Must use GL_TRIANGLES for these
-	south:  newFloat32Array([0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5]),
-	north:  newFloat32Array([0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5]),
-	east:   newFloat32Array([0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5]),
-	top: newFloat32Array([0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5, -0.5,  0.5, -0.5, -0.5]),
-	west:  newFloat32Array([-0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5]),
-	bottom:	newFloat32Array([0.5,  0.5,  0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5])
-};*/
-	let sideEdgeVerts = [
-		newFloat32Array([ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]), //top
-		newFloat32Array([ -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5, -0.5 ]), //bottom
-		newFloat32Array([ 0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5 ]), //north
-		newFloat32Array([ -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5 ]), //south
-		newFloat32Array([ 0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5 ]), //east
-		newFloat32Array([ -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5 ]),  //west
-	];
+	let baseTextureVertices = [
+		[ 1, 0, 0, 0, 0, 1, 1, 1 ],
+		[ 1, 0, 0, 0, 0, 1, 1, 1 ],
+		[ 1, 0, 0, 0, 0, 1, 1, 1 ],
+		[ 1, 0, 0, 0, 0, 1, 1, 1 ],
+		[ 0, 1, 0, 0, 1, 0, 1, 1 ],
+		[ 0, 1, 0, 0, 1, 0, 1, 1 ]
+	]
+	let shapes = {
+		cube: {
+			verts: [
+				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //top
+				[[ -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5, -0.5 ]], //bottom
+				[[  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5 ]], //north
+				[[ -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5 ]], //south
+				[[  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5 ]], //east
+				[[ -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5 ]]  //west
+			],
+			texVerts: [],
+			buffer: null,
+			size: 6
+		},
+		slab: {
+			verts: [
+				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //top
+				[[ -0.5,  0.0, -0.5, -0.5,  0.0,  0.5,  0.5,  0.0,  0.5,  0.5,  0.0, -0.5 ]], //bottom
+				[[  0.5,  0.0,  0.5, -0.5,  0.0,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5 ]], //north
+				[[ -0.5,  0.0, -0.5,  0.5,  0.0, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5 ]], //south
+				[[  0.5,  0.0, -0.5,  0.5,  0.0,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5 ]], //east
+				[[ -0.5,  0.0,  0.5, -0.5,  0.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5 ]]  //west
+			],
+			texVerts: [],
+			buffer: null,
+			size: 6
+		}
+	};
+	function initShapes() {
+		function mapCoords(verts, index, obj, x, y, z) {
+			let cx = 0;
+			let cy = 0;
+			let n = 0;
+			let texArrayOuter = [];
+			let baseArr = shapes.cube.verts[index][0];
+			const texWidth = 1 / 16;
+			const abs = Math.abs;
+			verts[index].forEach(function(arr) {
+				let texArr = []
+				for (let i = 0, j = 0; i < arr.length;) {
+					if (x) cx = abs(baseTextureVertices[index][j++] - abs(baseArr[i] - arr[i])) * texWidth;
+					i++;
+					if (y) cy = abs(baseTextureVertices[index][j++] - abs(baseArr[i] - arr[i])) * texWidth;
+					i++;
+					if (z) {
+						n = abs(baseTextureVertices[index][j++] - abs(baseArr[i] - arr[i])) * texWidth;
+						if (y) cx = n;
+						else cy = n;
+					}
+					i++
+					texArr.push(cx, cy);
+				}
+				texArrayOuter.push(texArr);
+			})
+			obj.texVerts.push(texArrayOuter);
+		}
+
+		for (let shape in shapes) {
+			let obj = shapes[shape];
+			let verts = obj.verts;
+
+			mapCoords(verts, 0, obj, true, false, true);
+			mapCoords(verts, 1, obj, true, false, true);
+			mapCoords(verts, 2, obj, true, true, false);
+			mapCoords(verts, 3, obj, true, true, false);
+			mapCoords(verts, 4, obj, false, true, true);
+			mapCoords(verts, 5, obj, false, true, true);
+
+			obj.buffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, newFloat32Array(verts.flat(2)), gl.STATIC_DRAW);
+		}
+	}
 	let indexOrder;
 	(function() {
 		let arr = [];
@@ -1034,24 +1113,9 @@ var boxVerts = newFloat32Array([
 		}
 		indexOrder = newUint32Array(arr);
 	})();
-	/*
-	let boxOutlineVerts = newFloat32Array([
-		0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5,
-		-0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,
-		0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5,
-		-0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5,
-		0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
-		-0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5,
-	]);
-	let boxVerts = [
-		[ 0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5, -0.5,  0.5, -0.5, -0.5 ], //top
-		[ 0.5,  0.5,  0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5 ], //bottom
-		[ 0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5 ], //north
-		[ 0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5 ], //south
-		[ 0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5 ], //east
-		[ -0.5, -0.5, -0.5, -0.5, -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5 ], //west
-	];*/
+
 	let hexagonVerts;
+	let slabIconVerts;
 	let blockIcons;
 	(function() {
 		let side = Math.sqrt(3) / 2;
@@ -1060,11 +1124,16 @@ var boxVerts = newFloat32Array([
 			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
 			-side, 0.5, 1, 0, 0, 1, 0, -1, 1, -side, -0.5, 1,
 		]);
+		slabIconVerts = newFloat32Array([
+			0, 0.5, 1, side, 0, 1, 0, -0.5, 1, -side, 0, 1,
+			0, -0.5, 1, side, 0, 1, side, -0.5, 1, 0, -1, 1,
+			-side, 0, 1, 0, -0.5, 1, 0, -1, 1, -side, -0.5, 1,
+		]);
 	})();
 	function genIcons() {
 		blockIcons = [null];
 		let texOrder = [ 1, 2, 3 ];
-		let shadows = [ 1, 0.4, 0.7 ];
+		let shadows = [ 1, 0.7, 0.4 ];
 		let scale = 0.16 / height * inventory.size;
 		for (let i = 1; i < blockData.length; i++) {
 			let data = [];
@@ -1080,7 +1149,21 @@ var boxVerts = newFloat32Array([
 			let buffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 			gl.bufferData(gl.ARRAY_BUFFER, newFloat32Array(data), gl.STATIC_DRAW);
-			blockIcons.push(buffer);
+			blockIcons[i] = buffer;
+
+			data = [];
+			for (let j = 0; j < 12; j++) {
+				data.push(slabIconVerts[j * 3 + 0] * scale);
+				data.push(slabIconVerts[j * 3 + 1] * scale);
+				data.push(0.1666666);
+				data.push(textureCoords[textureMap[block.textures[texOrder[Math.floor(j / 4)]]]][(j * 2 + 0) % 8]);
+				data.push(textureCoords[textureMap[block.textures[texOrder[Math.floor(j / 4)]]]][(j * 2 + 1) % 8]);
+				data.push(shadows[Math.floor(j / 4)]);
+			}
+			buffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, newFloat32Array(data), gl.STATIC_DRAW);
+			blockIcons[i | 128] = buffer;
 		}
 	}
 
@@ -1426,9 +1509,19 @@ var boxVerts = newFloat32Array([
 		}
 	}
 	function lookingAt() {
-	// Checks blocks in front of the player to see which one they're looking at
+		// Checks blocks in front of the player to see which one they're looking at
 		hitBox.pos = null;
 		hitBox.closest = 1e9;
+
+		if (p.spectator) {
+			return;
+		}
+		if (world.getBlock(p2.x, p2.y, p2.z)) {
+			hitBox.pos = [ p2.x, p2.y, p2.z ];
+			hitBox.closest = 0;
+			return;
+		}
+
 		let pd = p.direction;
 
 		// Target block
@@ -1444,7 +1537,7 @@ var boxVerts = newFloat32Array([
 		let maxZ = 0;
 		let faces = getFaces(tx, ty, tz);
 
-		for (let i = 1; i < reach + 1; i++) {
+		for (let i = 0; i < reach + 1; i++) {
 			if (i > reach) {
 				i = reach;
 			}
@@ -1492,8 +1585,17 @@ var boxVerts = newFloat32Array([
 		let id = d + p.w*2;
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id;
 	};
+	let onBox = function(x, y, z, w, h, d) {
+		let iy = y - h/2 - p.topH;
+		let ih = h + p.bottomH + p.topH;
+		let ix = x - w/2 - p.w;
+		let iw = w + p.w*2;
+		let iz = z - d/2 - p.w;
+		let id = d + p.w*2;
+		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id;
+	};
 	let boxCollision = function(x, y, z, w, h, d, vx, vy, vz, dt) {
-		if(inBox(x, y, z, w, h, d)) {
+		if(!p.spectator && inBox(x, y, z, w, h, d)) {
 			if(vx) {
 				p.x -= p.velocity.x * dt;
 				p.velocity.x = 0;
@@ -1553,25 +1655,60 @@ var boxVerts = newFloat32Array([
 		let dt = (win.performance.now() - p.lastUpdate) / 33;
 		dt = dt > 2 ? 2 : dt;
 
+		//console.log(p.onGround || !p.flying && p.y === p.previousY);
+
+		p.previousX = p.x;
+		p.previousY = p.y;
+		p.previousZ = p.z;
+
+		var sneakLock = false, sneakSafe = false;
+		if (p.sneaking) {
+			for (let i = 0; i < contacts.size; i++) {
+				block = cont.array[i];
+				if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					sneakLock = true;
+					break;
+				}
+			}
+		}
+
 		//Check collisions in the X direction
 		player.x += player.velocity.x * dt;
 		for (let i = 0; i < contacts.size; i++) {
 			block = cont.array[i];
 			boxCollision(block[0], block[1], block[2], 1, 1, 1, player.velocity.x, 0, 0, dt);
+			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				sneakSafe = true;
+			}
 		}
 
-		//Check collisions in the Y direction
-		player.y += player.velocity.y * dt;
-		for (let i = 0; i < contacts.size; i++) {
-			block = cont.array[i];
-			boxCollision(block[0], block[1], block[2], 1, 1, 1, 0, player.velocity.y, 0, dt);
+		if (sneakLock && !sneakSafe) {
+			p.x = p.previousX;
+			p.velocity.x = 0;
 		}
+		sneakSafe = false;
 
 		//Check collisions in the Z direction
 		player.z += player.velocity.z * dt;
 		for (let i = 0; i < contacts.size; i++) {
 			block = cont.array[i];
 			boxCollision(block[0], block[1], block[2], 1, 1, 1, 0, 0, player.velocity.z, dt);
+			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				sneakSafe = true;
+			}
+		}
+
+		if (sneakLock && !sneakSafe) {
+			p.z = p.previousZ;
+			p.velocity.z = 0;
+		}
+
+		//Check collisions in the Y direction
+		p.onGround = false;
+		player.y += player.velocity.y * dt;
+		for (let i = 0; i < contacts.size; i++) {
+			block = cont.array[i];
+			boxCollision(block[0], block[1], block[2], 1, 1, 1, 0, player.velocity.y, 0, dt);
 		}
 
 		if (!p.flying) {
@@ -1583,7 +1720,7 @@ var boxVerts = newFloat32Array([
 			p.velocity.z += (p.velocity.z * drag - p.velocity.z) * dt;
 			p.velocity.x += (p.velocity.x * drag - p.velocity.x) * dt;
 			p.velocity.y += (p.velocity.y * 0.8 - p.velocity.y) * dt;
-			if (p.onGround) {
+			if (p.onGround && !p.spectator) {
 				p.flying = false;
 			}
 		}
@@ -1591,6 +1728,10 @@ var boxVerts = newFloat32Array([
 		p.lastUpdate = win.performance.now();
 		contacts.clear();
 		lookingAt();
+		if (hitBox.pos) {
+			let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]);
+			hitBox.shape = (block & 0b10000000) ? "slab" : "cube";
+		}
 	};
 	let runGravity = function() {
 		if (p.flying) {
@@ -1611,25 +1752,26 @@ var boxVerts = newFloat32Array([
 				p.velocity.y = -p.maxYVelocity;
 			}
 		}
-		p.onGround = false;
 	};
 
 	function box2(sides, tex) {
-		let i = 0;
-		for (let side in Block) {
-			if (sides & Block[side]) {
-				vertexAttribPointer("aVertex", programObject3D, "aVertex", 3, sideEdgeBuffers[Sides[side]]);
-				if (blockFill) {
+		if (blockFill) {
+			let i = 0;
+			for (let side in Block) {
+				if (sides & Block[side]) {
+					vertexAttribPointer("aVertex", programObject3D, "aVertex", 3, sideEdgeBuffers[Sides[side]]);
 					vertexAttribPointer("aTexture", programObject3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]]);
 					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
 				}
-
-				if (blockOutlines) {
-					vertexAttribPointer("aTexture", programObject3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox]);
-					gl.drawArrays(gl.LINE_LOOP, 0, 4);
-				}
+				i++;
 			}
-			i++;
+		}
+		if (blockOutlines) {
+			vertexAttribPointer("aVertex", programObject3D, "aVertex", 3, shapes[hitBox.shape].buffer);
+			vertexAttribPointer("aTexture", programObject3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox]);
+			for (let i = 0; i < shapes[hitBox.shape].size; i++) {
+				gl.drawArrays(gl.LINE_LOOP, i * 4, 4);
+			}
 		}
 	}
 	function block2(x, y, z, t) {
@@ -1657,7 +1799,7 @@ var boxVerts = newFloat32Array([
 		if(!hitBox.pos || !holding) {
 			return;
 		}
-		let x = 0, y = 0, z = 0, pos = hitBox.pos;
+		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2];
 		switch(hitBox.face) {
 			case "top":
 				y -= 1;
@@ -1678,11 +1820,11 @@ var boxVerts = newFloat32Array([
 				x += 1;
 				break;
 		}
-		if (!inBox(pos[0] + x, pos[1] + y, pos[2] + z, 1, 1, 1)) {
-			pos[0] += x;
-			pos[1] += y;
-			pos[2] += z;
-			changeWorldBlock(holding);
+		if (!inBox(x, y, z, 1, 1, 1) && !world.getBlock(x, y, z)) {
+			pos[0] = x;
+			pos[1] = y;
+			pos[2] = z;
+			changeWorldBlock(holding | blockMode << 7);
 		}
 	};
 
@@ -1719,12 +1861,15 @@ var boxVerts = newFloat32Array([
 
 	let renderedChunks = 0;
 	function getBlock(x, y, z, blocks) {
+		return blocks[((x >> 4) + 1) * 9 + ((y >> 4) + 1) * 3 + (z >> 4) + 1][((x & 15) << 8) + ((y & 15) << 4) + (z & 15)] & 127;
+	}
+	function getBlock2(x, y, z, blocks) {
 		return blocks[((x >> 4) + 1) * 9 + ((y >> 4) + 1) * 3 + (z >> 4) + 1][((x & 15) << 8) + ((y & 15) << 4) + (z & 15)] & 0xff;
 	}
 	function hideFace(x, y, z, blocks, type, func) {
 		let block = func.call(world, x, y, z, blocks);
-		let data = blockData[block]
-		if (!block || block !== type && data.transparent || data.transparent && data.shadow) {
+		let data = blockData[block & 127]
+		if (!block || block !== type && data.transparent || data.transparent && data.shadow || (block & 128)) {
 			return 1;
 		}
 		return 0;
@@ -1913,12 +2058,12 @@ var boxVerts = newFloat32Array([
 					// x = i + xx;
 					// y = j + yy;
 					// z = k + zz;
-					visible = hideFace(i-1, j, k, localBlocks, blockType, getBlock)
-					| hideFace(i+1, j, k, localBlocks, blockType, getBlock) << 1
-					| hideFace(i, j-1, k, localBlocks, blockType, getBlock) << 2
-					| hideFace(i, j+1, k, localBlocks, blockType, getBlock) << 3
-					| hideFace(i, j, k-1, localBlocks, blockType, getBlock) << 4
-					| hideFace(i, j, k+1, localBlocks, blockType, getBlock) << 5;
+					visible = hideFace(i-1, j, k, localBlocks, blockType, getBlock2)
+					| hideFace(i+1, j, k, localBlocks, blockType, getBlock2) << 1
+					| hideFace(i, j-1, k, localBlocks, blockType, getBlock2) << 2
+					| hideFace(i, j+1, k, localBlocks, blockType, getBlock2) << 3
+					| hideFace(i, j, k-1, localBlocks, blockType, getBlock2) << 4
+					| hideFace(i, j, k+1, localBlocks, blockType, getBlock2) << 5;
 					if (visible) {
 						pos = (i | j << 4 | k << 8) << 16;
 						blockData = 1 << 31 | pos | visible << 8 | blockType;
@@ -1987,23 +2132,18 @@ var boxVerts = newFloat32Array([
 		}
 		let length = this.renderLength;
 		let rData = this.renderData;
-		let x = 0, y = 0, z = 0, loc = 0, data = 0, sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0, verts = null, texVerts = null;
+		let x = 0, y = 0, z = 0, loc = 0, data = 0, sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0, verts = null, texVerts = null, texShapeVerts = null, tx = 0, ty = 0;
 		let wx = this.x, wy = this.y, wz = this.z;
 		let blocks = world.getAdjacentSubchunks(wx, wy, wz);
 
 		let shadows = null;
-		let bData = blockData;
-		let gShadows = getShadows;
-		let sedgeVerts = sideEdgeVerts;
-		let tCoords = textureCoords;
-		let tmap = textureMap;
-		let block = Block;
-		let sideMap = Sides;
-		let blockSides = Object.keys(block);
+		let blockSides = Object.keys(Block);
 		let side = "";
+		let shapeVerts = null;
+		let shapeTexVerts = null;
 		for (let i = 0; i < length; i++) {
 			data = rData[i];
-			tex = bData[data & 0xff].textures;
+			tex = blockData[data & 127].textures;
 			sides = data >> 8 & 0x3f;
 			loc = data >> 16;
 			x = loc & 15;
@@ -2014,40 +2154,51 @@ var boxVerts = newFloat32Array([
 			y2 = y + this.y;
 			z2 = z + this.z;
 
+			if (data & 128) {
+				shapeVerts = shapes.slab.verts;
+				shapeTexVerts = shapes.slab.texVerts;
+			} else {
+				shapeVerts = shapes.cube.verts;
+				shapeTexVerts = shapes.cube.texVerts;
+			}
+
 			let texNum = 0;
 			for (let n = 0; n < 6; n++) {
 				side = blockSides[n];
-				if (sides & block[side]) {
-					shadows = gShadows[side](x, y, z, blocks);
-					verts = sedgeVerts[sideMap[side]];
-					texVerts = tCoords[tmap[tex[texNum]]];
+				if (sides & Block[side]) {
+					shadows = getShadows[side](x, y, z, blocks);
+					verts = shapeVerts[Sides[side]][0];
+					texVerts = textureCoords[textureMap[tex[texNum]]];
+					tx = texVerts[2];
+					ty = texVerts[3];
+					texShapeVerts = shapeTexVerts[n][0];
 
 					barray[index] = verts[0] + x2;
 					barray[index+1] = verts[1] + y2;
 					barray[index+2] = verts[2] + z2;
-					barray[index+3] = texVerts[0];
-					barray[index+4] = texVerts[1];
+					barray[index+3] = tx + texShapeVerts[0];
+					barray[index+4] = ty + texShapeVerts[1];
 					barray[index+5] = shadows[0];
 
 					barray[index+6] = verts[3] + x2;
 					barray[index+7] = verts[4] + y2;
 					barray[index+8] = verts[5] + z2;
-					barray[index+9] = texVerts[2];
-					barray[index+10] = texVerts[3];
+					barray[index+9] = tx + texShapeVerts[2];
+					barray[index+10] = ty + texShapeVerts[3];
 					barray[index+11] = shadows[1];
 
 					barray[index+12] = verts[6] + x2;
 					barray[index+13] = verts[7] + y2;
 					barray[index+14] = verts[8] + z2;
-					barray[index+15] = texVerts[4];
-					barray[index+16] = texVerts[5];
+					barray[index+15] = tx + texShapeVerts[4];
+					barray[index+16] = ty + texShapeVerts[5];
 					barray[index+17] = shadows[2];
 
 					barray[index+18] = verts[9] + x2;
 					barray[index+19] = verts[10] + y2;
 					barray[index+20] = verts[11] + z2;
-					barray[index+21] = texVerts[6];
-					barray[index+22] = texVerts[7];
+					barray[index+21] = tx + texShapeVerts[6];
+					barray[index+22] = ty + texShapeVerts[7];
 					barray[index+23] = shadows[3];
 					index += 24;
 				}
@@ -2070,6 +2221,37 @@ var boxVerts = newFloat32Array([
 		}
 		this.caves = true;
 	}
+	Section.prototype.tick = function() {
+		for (let i = 0; i < 3; i++) {
+			let rnd = Math.random() * this.blocks.length | 0;
+			if ((this.blocks[rnd] & 255) === blockIds.grass) {
+				// Spread grass
+
+				let x = (rnd >> 8) + this.x;
+				let y = (rnd >> 4 & 15) + this.y;
+				let z = (rnd & 15) + this.z;
+				if (!blockData[world.getBlock(x, y + 1, z) & 127].transparent) {
+					world.setBlock(x, y, z, blockIds.air, false);
+					world.setBlock(x, y, z, blockIds.dirt, false);
+					return;
+				}
+
+				let rnd2 = Math.random() * 27 | 0;
+				let x2 = rnd2 % 3 - 1;
+				rnd2 = (rnd2 - x2 - 1) / 3;
+				let y2 = rnd2 % 3 - 1;
+				rnd2 = (rnd2 - y2 - 1) / 3;
+				z += rnd2 - 1;
+				x += x2;
+				y += y2;
+
+				if (world.getBlock(x, y, z) === blockIds.dirt && world.getBlock(x, y + 1, z) === blockIds.air) {
+					world.setBlock(x, y, z, blockIds.air, false);
+					world.setBlock(x, y, z, blockIds.grass, false);
+				}
+			}
+		}
+	};
 	//}
 	function newSection(x, y, z, size, chunk) {
 		let section = Object.create(Section.prototype);
@@ -2095,19 +2277,13 @@ var boxVerts = newFloat32Array([
 		this.populated = false; //Trees
 		this.lazy = false;
 		this.edited = false;
-		this.caves = false;
+		this.caves = true;
 	}
 	Chunk.prototype.getBlock = function(x, y, z) {
 		let s = y >> 4;
 		return this.sections.length > s ? this.sections[s].getBlock(x, y & 15, z) : 0;
 	};
 	Chunk.prototype.setBlock = function(x, y, z, blockID, hidden, user) {
-		if (!hidden) {
-			this.minY = y < this.minY ? y : this.minY;
-			this.maxY = y > this.maxY ? y : this.maxY;
-			// let top = this.tops[z * 16 + x];
-			// this.tops[z * 16 + x] = top < y ? y : top;
-		}
 		if (!this.sections[y >> 4]) {
 			do {
 				this.sections.push(newSection(this.x, this.sections.length * 16, this.z, 16, this));
@@ -2317,21 +2493,6 @@ var boxVerts = newFloat32Array([
 			}
 		}
 
-		let chunkX = this.x >> 4;
-		let chunkZ = this.z >> 4;
-		let load = null;
-		
-		for (let i = 0; i < world.loadFrom.length; i++) {
-			load = world.loadFrom[i];
-			if (load.x === chunkX && load.z === chunkZ) {
-				let y = load.y * 16;
-				for (let j in load.blocks) {
-					world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j]);
-				}
-				world.loadFrom.splice(i--, 1);
-			}
-		}
-
 		this.populated = true;
 	};
 	Chunk.prototype.genMesh = function() {
@@ -2348,14 +2509,46 @@ var boxVerts = newFloat32Array([
 			this.buffer = g.createBuffer();
 		}
 		let data = barray.slice(0, index);
+		let maxY = 0;
+		let minY = 255;
+		let y = 0;
+		for (let i = 1; i < data.length; i += 6) {
+			y = data[i]
+			maxY = Math.max(maxY, y);
+			minY = Math.min(minY, y);
+		}
+		this.maxY = maxY;
+		this.minY = minY;
 		this.faces = data.length / 24;
 		g.bindBuffer(g.ARRAY_BUFFER, this.buffer);
 		g.bufferData(g.ARRAY_BUFFER, data, g.DYNAMIC_DRAW);
 		this.lazy = false;
-		if (arrayDone - start > 3) {
-			//console.log((arrayDone - start).toFixed(1), (win.performance.now() - arrayDone).toFixed(1), this.faces, this.sections.length);
+	};
+	Chunk.prototype.tick = function() {
+		if (this.edited) {
+			for (let i = 0; i < this.sections.length; i++) {
+				if (this.sections[i].edited) {
+					this.sections[i].tick();
+				}
+			}
 		}
 	};
+	Chunk.prototype.load = function() {
+		let chunkX = this.x >> 4;
+		let chunkZ = this.z >> 4;
+		let load = null;
+		
+		for (let i = 0; i < world.loadFrom.length; i++) {
+			load = world.loadFrom[i];
+			if (load.x === chunkX && load.z === chunkZ) {
+				let y = load.y * 16;
+				for (let j in load.blocks) {
+					world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j]);
+				}
+				world.loadFrom.splice(i--, 1);
+			}
+		}
+	}
 	//}
 	function newChunk(x, z) {
 		let chunk = Object.create(Chunk.prototype);
@@ -2383,17 +2576,37 @@ var boxVerts = newFloat32Array([
 		let dy2 = p.z - c2.z - 8;
 		return dx1 * dx1 + dy1 * dy1 - (dx2 * dx2 + dy2 * dy2);
 	}
-	function optimizeLater(x, z) {
-		let chunk = world.chunks[x] ? world.chunks[x][z] : null;
-		if (chunk && chunk.buffer && !world.optimizeQueue.includes(chunk)) {
-			world.optimizeQueue.push(chunk);
+	function fillReqs(x, z) {
+		// Chunks must all be loaded first.
+		var done = true;
+		for (let i = x - 2; i <= x + 2; i++) {
+			for (let j = z - 2; j <= z + 2; j++) {
+				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
+				if (!chunk.generated) {
+					world.generateQueue.push(chunk);
+					done = false;
+				}
+				if (!chunk.populated && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
+					world.populateQueue.push(chunk);
+					done = false;
+				}
+			}
 		}
+		return done;
+	}
+	function maxDist(x, z, x2, z2) {
+		let ax = Math.abs(x2 - x);
+		let az = Math.abs(z2 - z);
+		return Math.max(ax, az);
+	}
+	function renderFilter(chunk) {
+		return maxDist(chunk.x >> 4, chunk.z >> 4, p.cx, p.cz) <= renderDistance;
 	}
 
 	function debug(message) {
 		let ellapsed = performance.now() - debug.start;
 		if (ellapsed > 30) {
-			//console.log(message, ellapsed.toFixed(2));
+			console.log(message, ellapsed.toFixed(2), "milliseconds");
 		}
 	}
 	/** World Class **/
@@ -2428,11 +2641,6 @@ var boxVerts = newFloat32Array([
 		}
 		chunk.generated = true;
 		generatedChunks++;
-
-		optimizeLater(x + 1, z);
-		optimizeLater(x - 1, z);
-		optimizeLater(x, z + 1);
-		optimizeLater(x, z - 1);
 	};
 	let getAdjacentSubchunks = function(x, y, z) {
 		let minChunkX = x - 16 >> 4;
@@ -2564,6 +2772,10 @@ var boxVerts = newFloat32Array([
 			changeWorldBlock(0);
 		}
 
+		for (let i = 0; i < this.sortedChunks.length; i++) {
+			this.sortedChunks[i].tick();
+		}
+
 		do {
 			let doneWork = false;
 			debug.start = performance.now();
@@ -2577,37 +2789,36 @@ var boxVerts = newFloat32Array([
 				debug("Meshes")
 			}
 
-			if (this.chunkGenQueue.length && !doneWork) {
-				do {
-					let chunk = this.chunkGenQueue[0];
-					if (!chunk.generated) {
-						this.genChunk(chunk);
-						debug("Gen chunk")
-					} else if (!chunk.caves) {
-						chunk.carveCaves();
-						debug("Carve caves")
-					} else if (!chunk.populated) {
-						chunk.populate();
-						debug("Populate")
-					} else if (!chunk.optimized) {
-						chunk.optimize(this);
-						debug("Optimize")
-					} else if (!chunk.buffer) {
-						chunk.genMesh();
-						debug("Initial mesh")
-					} else {
-						this.chunkGenQueue.shift();
-						if(this.chunkGenQueue.length) {
-							continue;
-						}
-					}
-					break;
-				} while(this.chunkGenQueue.length);
-				doneWork = !!this.chunkGenQueue.length;
+			if (this.generateQueue.length && !doneWork) {
+				let chunk = this.generateQueue.pop()
+				this.genChunk(chunk);
+				doneWork = true;
 			}
-			if (this.optimizeQueue.length && !doneWork) {
-				this.optimizeQueue.shift().optimize(this);
-				debug("Re optimize")
+			if (this.populateQueue.length && !doneWork) {
+				let chunk = this.populateQueue[this.populateQueue.length - 1]
+				if (!chunk.caves) {
+					chunk.carveCaves();
+					debug("Carve caves")
+				} else if (!chunk.populated) {
+					chunk.populate();
+					this.populateQueue.pop();
+				}
+				doneWork = true;
+			}
+
+			if (this.chunkGenQueue.length && !doneWork) {
+				let chunk = this.chunkGenQueue[0];
+				if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {}
+				else if (!chunk.optimized) {
+					chunk.load();
+					chunk.optimize(this);
+					debug("Optimize")
+				} else if (!chunk.buffer) {
+					chunk.genMesh();
+					debug("Initial mesh")
+				} else {
+					this.chunkGenQueue.shift();
+				}
 				doneWork = true;
 			}
 			if (!doneWork) {
@@ -2657,14 +2868,21 @@ var boxVerts = newFloat32Array([
 		gl.flush();
 	};
 	let loadChunks = function() {
-		let minChunkX = (p.x >> 4) - renderDistance;
-		let maxChunkX = (p.x >> 4) + renderDistance;
-		let minChunkZ = (p.z >> 4) - renderDistance;
-		let maxChunkZ = (p.z >> 4) + renderDistance;
+		renderDistance += 2;
+		let cx = p.x >> 4;
+		let cz = p.z >> 4;
+		p.cx = cx;
+		p.cz = cz;
+		let minChunkX = cx - renderDistance;
+		let maxChunkX = cx + renderDistance;
+		let minChunkZ = cz - renderDistance;
+		let maxChunkZ = cz + renderDistance;
 
 		this.offsetX = -minChunkX;
 		this.offsetZ = -minChunkZ;
 		this.lwidth = renderDistance * 2 + 1;
+		this.chunkGenQueue.length = 0;
+		renderDistance -= 2;
 
 		if (this.loaded.length > this.lwidth * this.lwidth) {
 			this.loaded.length = this.lwidth * this.lwidth;
@@ -2679,17 +2897,19 @@ var boxVerts = newFloat32Array([
 				}
 				if (!this.chunks[x][z]) {
 					chunk = newChunk(x * 16, z * 16);
-					this.chunkGenQueue.push(chunk);
+					if (maxDist(cx, cz, x, z) <= renderDistance) {
+						this.chunkGenQueue.push(chunk);
+					}
 					this.chunks[x][z] = chunk;
 				}
 				chunk = this.chunks[x][z];
-				if (!chunk.generated && !this.chunkGenQueue.includes(chunk)) {
+				if (!chunk.buffer && !this.chunkGenQueue.includes(chunk) && maxDist(cx, cz, x, z) <= renderDistance) {
 					this.chunkGenQueue.push(chunk);
 				}
 				this.loaded[i++] = chunk;
 			}
 		}
-		this.sortedChunks = this.loaded.slice();
+		this.sortedChunks = this.loaded.filter(renderFilter);
 		this.sortedChunks.sort(sortChunks);
 	};
 	function getSaveString() {
@@ -2717,18 +2937,22 @@ var boxVerts = newFloat32Array([
 			str += (sc.y / 16).toString(36) + ",";
 			str += (sc.z / 16).toString(36) + ",";
 		}
-		str = str.substr(0, str.length - 1) + ";"; //Remove trailing comma
+		if (edited.length) str = str.substr(0, str.length - 1); //Remove trailing comma
+		str += ";";
 
 		for (let i = 0; i < edited.length; i++) {
 			let real = edited[i][0];
 			let blocks = real.blocks;
 			let original = edited[i][1];
+			let hasBlocks = false;
 			for (let j = 0; j < original.length; j++) {
 				if ((blocks[j] & 0xff) !== (original[j] & 0xff)) {
 					str += (j << 8 | blocks[j] & 0xff).toString(36) + ",";
+					hasBlocks = true;
 				}
 			}
-			str = str.substr(0, str.length - 1) + ";";
+			if (hasBlocks) str = str.substr(0, str.length - 1); //Remove trailing comma
+			str += ";";
 		}
 		str = str.substr(0, str.length - 1);
 		return str;
@@ -2777,20 +3001,20 @@ var boxVerts = newFloat32Array([
 		let loaded = [];
 		let chunks = [];
 		let queue = [];
-		let lwidth = renderDistance * 2 + 1;
-		let cx = renderDistance - (p.x >> 4);
-		let cz = renderDistance - (p.z >> 4);
-		let i = 0;
-		for (let x = 0; x < lwidth; x++) {
-			chunks[x - cx] = [];
-			for (let z = 0; z < lwidth; z++) {
-				let chunk = newChunk((x - cx) * 16, (z - cz) * 16);
-				loaded[i++] = chunk;
-				chunks[x - cx][z - cz] = chunk;
-				queue.push(chunk);
-			}
-		}
-		queue.sort(sortChunks);
+		let lwidth = 0; //renderDistance * 2 + 1;
+		let cx = 0; //renderDistance - (p.x >> 4);
+		let cz = 0; //renderDistance - (p.z >> 4);
+		// let i = 0;
+		// for (let x = 0; x < lwidth; x++) {
+		// 	chunks[x - cx] = [];
+		// 	for (let z = 0; z < lwidth; z++) {
+		// 		let chunk = newChunk((x - cx) * 16, (z - cz) * 16);
+		// 		loaded[i++] = chunk;
+		// 		chunks[x - cx][z - cz] = chunk;
+		// 		queue.push(chunk);
+		// 	}
+		// }
+		// queue.sort(sortChunks);
 		let sorted = queue.slice();
 		return {
 			chunks: chunks,
@@ -2800,7 +3024,8 @@ var boxVerts = newFloat32Array([
 			offsetZ: cz,
 			lwidth: lwidth,
 			chunkGenQueue: queue,
-			optimizeQueue: [],
+			populateQueue: [],
+			generateQueue: [],
 			meshQueue: [],
 			loadFrom: [],
 			lastChunk: cx + "," + cz,
@@ -2866,7 +3091,7 @@ var boxVerts = newFloat32Array([
 			p.rx -= 0.1 * dt;
 		}
 
-		if (Key.q) {
+		if (Key.q && !p.sneaking) {
 			p.sprinting = true;
 		}
 
@@ -3101,10 +3326,12 @@ var boxVerts = newFloat32Array([
 			}
 
 			//Set the hitbox texture to 1 pixel
-			for (let i = 0; i < 8; i += 2) {
-				textureCoords[textureMap.hitbox][i] = textureCoords[textureMap.hitbox][2] + 0.01;
-				textureCoords[textureMap.hitbox][i + 1] = textureCoords[textureMap.hitbox][1] + 0.01;
+			let arr = newFloat32Array(192)
+			for (let i = 0; i < 192; i += 2) {
+				arr[i] = textureCoords[textureMap.hitbox][2] + 0.01;
+				arr[i + 1] = textureCoords[textureMap.hitbox][1] + 0.01;
 			}
+			textureCoords[textureMap.hitbox] = arr;
 		})();
 
 		tex = gl.createTexture();
@@ -3121,6 +3348,9 @@ var boxVerts = newFloat32Array([
 		genIcons();
 	}
 	function drawIcon(x, y, id) {
+		if (blockMode === SLAB) {
+			id |= 128;
+		}
 		x =  x / (3 * height) - 0.1666 * width / height;
 		y = y / (3 * height) - 0.1666;
 		initModelView(x, y, 0, 0, 0);
@@ -3152,15 +3382,17 @@ var boxVerts = newFloat32Array([
 		let x = width / 2 + 0.5;
 		let y = height / 2 + 0.5;
 
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "white";
-		ctx.beginPath();
-
-		ctx.moveTo(x - 10, y);
-		ctx.lineTo(x + 10, y);
-		ctx.moveTo(x, y - 10);
-		ctx.lineTo(x, y + 10);
-		ctx.stroke();
+		// Crosshair
+		if (!p.spectator) {
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = "white";
+			ctx.beginPath();
+			ctx.moveTo(x - 10, y);
+			ctx.lineTo(x + 10, y);
+			ctx.moveTo(x, y - 10);
+			ctx.lineTo(x, y + 10);
+			ctx.stroke();
+		}
 
 		//Hotbar
 		x = width / 2 - 9 / 2 * s + 0.5 + 25;
@@ -3344,6 +3576,7 @@ var boxVerts = newFloat32Array([
 				break;
 			case 1:
 				Key.middleMouse = true;
+				updateHUD = true;
 				inventory.hotbar[inventory.hotbarSlot] = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]);
 				break;
 			case 2:
@@ -3427,6 +3660,11 @@ var boxVerts = newFloat32Array([
 			initTextures();
 		}
 
+		if (k === "enter") {
+			blockMode ^= 1;
+			updateHUD = true;
+		}
+
 		if (screen === "play") {
 			if(k === "p") {
 				releasePointer();
@@ -3435,9 +3673,10 @@ var boxVerts = newFloat32Array([
 
 			if(k === "b") {
 				p.autoBreak = !p.autoBreak;
+				updateHUD = true;
 			}
 
-			if (k === " ") {
+			if (k === " " && !p.spectator) {
 				if (Date.now() < p.lastJump + 400) {
 					p.flying ^= true;
 				} else {
@@ -3453,6 +3692,20 @@ var boxVerts = newFloat32Array([
 				FOV(110);
 			}
 
+			if (k === "shift" && !p.flying) {
+				p.sneaking = true;
+				p.sprinting = false;
+				p.speed = 0.03;
+				p.bottomH = 1.32;
+			}
+
+			if (k === "l") {
+				p.spectator = !p.spectator;
+				p.flying = true;
+				p.onGround = false;
+				updateHUD = true;
+			}
+
 			if (k === "e") {
 				screen = "inventory";
 				releasePointer();
@@ -3460,12 +3713,7 @@ var boxVerts = newFloat32Array([
 
 			if (k === ";") {
 				releasePointer();
-				// ctx.clearRect(0, 0, canvas.width, canvas.height);
-				// ctx.drawImage(gl.canvas, 0, 0);
-				// hud();
-				// updateHUD = false;
 				freezeFrame = true;
-			// analytics.lastUpdate = Date.now() + 10000;
 			}
 
 			if(Number(k)) {
@@ -3494,11 +3742,19 @@ var boxVerts = newFloat32Array([
 			if (k === "z") {
 				FOV(fov);
 			}
+
+			if (k === "shift" && p.sneaking) {
+				p.sneaking = false;
+				p.speed = 0.075;
+				p.bottomH = 1.62;
+				// p.y += 0.3;
+			}
 		}
 	};
 	canvas.onblur = function() {
 		for (let key in Key) {
 			Key[key] = false;
+
 		}
 	}
 	canvas.oncontextmenu = function(e) {
@@ -3527,6 +3783,9 @@ var boxVerts = newFloat32Array([
 			x: 8,
 			y: Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra,
 			z: 8,
+			previousX: 8,
+			previousY: 70,
+			previousZ: 8,
 			w: 3 / 8,
 			bottomH: 1.62,
 			topH: 0.18,
@@ -3543,6 +3802,8 @@ var boxVerts = newFloat32Array([
 			lastJump: Date.now(),
 			autoBreak: false,
 			flying: false,
+			sneaking: false,
+			spectator: false,
 			frustum: [],
 		};
 		for (let i = 0; i < 4; i++) {
@@ -3553,6 +3814,8 @@ var boxVerts = newFloat32Array([
 		if (loadString) {
 			world.loadSave(loadString);
 		}
+		world.loadChunks();
+		world.chunkGenQueue.sort(sortChunks);
 		win.player = p;
 		win.p2 = p2;
 
@@ -3600,12 +3863,13 @@ var boxVerts = newFloat32Array([
 
 		//Send the block textures to the GPU
 		initTextures();
+		initShapes();
 
 		sideEdgeBuffers = {};
-		for (let side in sideEdgeVerts) {
+		for (let side in shapes.cube.verts) {
 			let edgeBuffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, sideEdgeVerts[side], gl.STATIC_DRAW);
+			gl.bufferData(gl.ARRAY_BUFFER, newFloat32Array(shapes.cube.verts[side][0]), gl.STATIC_DRAW);
 			sideEdgeBuffers[side] = edgeBuffer;
 		}
 		texCoordsBuffers = [];
@@ -3783,7 +4047,8 @@ var boxVerts = newFloat32Array([
 		win.raf = requestAnimationFrame(gameLoop);
 	}
 	return gameLoop;
-})();
+}
+init = init();
 if (window.parent.raf) {
 	window.cancelAnimationFrame(window.parent.raf);
 	console.log("Canceled", window.parent.raf)
