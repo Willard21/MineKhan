@@ -840,7 +840,8 @@ var init = delag(function() {
 	});
 
 	let currentFov, targetFov, fovTime;
-	let renderDistance;
+	let renderDistance = 4;
+	let superflat = false;
 	let generatedChunks;
 	let mouseX, mouseY;
 	let width = window.innerWidth;
@@ -2975,7 +2976,7 @@ var boxVerts = newFloat32Array([
 	};
 	let addButton = function(x, y, w, h, text, callback, screen) {
 		buttons.push({
-			x: x,
+			x: width / 2 - w / 2,
 			y: y,
 			w: w,
 			h: h,
@@ -3030,8 +3031,8 @@ var boxVerts = newFloat32Array([
 			screen = "comingsoon menu";
 		}, "loadsave menu");
 		addButton(width / 2 - 180, height / 2 - 100, width / 4, 40, "World Type: Normal", function() {
-			this.flat = !this.flat;
-			if (this.flat) {
+			superflat = !superflat;
+			if (superflat) {
 				this.text = "World type: Superflat";
 			} else {
 				this.text = "World type: Normal";
@@ -3103,16 +3104,19 @@ var boxVerts = newFloat32Array([
 		addButton(width / 2 - 220, 245, width / 3, 50, "Render Distance: " + renderDistance + " chunks", function() {
 			if(settingsState === true) {
 				renderDistance++;
-			} else {
+			} else if (renderDistance > 1) {
 				renderDistance--;
 			}
+			this.text = "Render Distance: " + renderDistance + " chunks";
 		}, "options menu");
 		addButton(width / 2 - 220, 305, width / 3, 50, "FOV: " + fov, function() {
-			if(settingsState === true) {
-				fov++;
-			} else {
-				fov--;
+			if(settingsState === true && fov < 120) {
+				fov += 5;
+			} else if (fov > 30) {
+				fov -= 5;
 			}
+			FOV(fov);
+			this.text = "FOV: " + fov
 		}, "options menu");
 		addButton(width / 2 - 220, 365, width / 3, 50, "Mouse Sensitivity: " + (mouseS / 3), function() {
 			if(settingsState === true) {
@@ -3120,6 +3124,7 @@ var boxVerts = newFloat32Array([
 			} else {
 				mouseS -= 30;
 			}
+			this.text = "Mouse Sensitivity: " + (mouseS / 3);
 		}, "options menu");
 
 		// In-Game Settings
@@ -3134,23 +3139,27 @@ var boxVerts = newFloat32Array([
 		addButton(width / 2 - 220, 245, width / 3, 50, "Render Distance: " + renderDistance + " chunks", function() {
 			if(settingsState === true) {
 				renderDistance++;
-			} else {
+			} else if (renderDistance > 1) {
 				renderDistance--;
 			}
+			"Render Distance: " + renderDistance + " chunks"
 		}, "pause options");
 		addButton(width / 2 - 220, 305, width / 3, 50, "FOV: " + fov, function() {
-			if(settingsState === true) {
-				fov++;
-			} else {
-				fov--;
+			if(settingsState === true && fov < 120) {
+				fov += 5;
+			} else if (fov > 30) {
+				fov -= 5;
 			}
+			FOV(fov);
+			this.text = "FOV: " + fov
 		}, "pause options");
 		addButton(width / 2 - 220, 365, width / 3, 50, "Mouse Sensitivity: " + (mouseS / 3), function() {
 			if(settingsState === true) {
-				mouseS += 50;
+				mouseS += 30;
 			} else {
-				mouseS -= 50;
+				mouseS -= 30;
 			}
+			this.text = "Mouse Sensitivity: " + (mouseS / 3);
 		}, "pause options");
 	}
 
@@ -3487,25 +3496,8 @@ var boxVerts = newFloat32Array([
 			}
 		} else if (screen === "inventory") {
 			clickInv();
-		} else if(screen === "options menu") {
-			if(button(140, 225, 190, 50)) {
-				if(renderDistance > 1) {
-					renderDistance--;
-				}
-			}
-			if(button(width - 190, 225, 190, 50)) {
-				renderDistance++;
-			}
-		} else if(screen === "pause options") {
-			if(button(140, 225, 190, 50)) {
-				if(renderDistance > 1) {
-					renderDistance--;
-				}
-			}
-			if(button(width - 190, 225, 190, 50)) {
-				renderDistance++;
-			}
 		}
+
 		let currentScreen = screen;
 		for (let i = 0; i < buttons.length; i++) {
 			if (buttons[i].screen === currentScreen) {
@@ -3628,7 +3620,6 @@ var boxVerts = newFloat32Array([
 		caveNoise = openSimplexNoise(worldSeed);
 		noiseSeed(worldSeed);
 
-		renderDistance = 4;
 		generatedChunks = 0;
 
 		screen = "main menu";
@@ -3790,19 +3781,19 @@ var boxVerts = newFloat32Array([
 			ctx.textAlign = 'center';
 			ctx.font = "bold 150px VT323";
 			fill(30);
-			text("MINECRAFT", width / 2, 158);
+			text("MINEKHAN", width / 2, 158);
 			fill(40);
-			text("MINECRAFT", width / 2, 155);
+			text("MINEKHAN", width / 2, 155);
 			ctx.font = "bold 151px VT323";
 			fill(50);
-			text("MINECRAFT", width / 2, 152);
+			text("MINEKHAN", width / 2, 152);
 			fill(70);
-			text("MINECRAFT", width / 2, 150);
+			text("MINEKHAN", width / 2, 150);
 			fill(90);
 			ctx.font = "bold 152px VT323";
-			text("MINECRAFT", width / 2, 148);
+			text("MINEKHAN", width / 2, 148);
 			fill(110);
-			text("MINECRAFT", width / 2, 145);
+			text("MINEKHAN", width / 2, 145);
 			ctx.font = "bold 31.5px VT323";
 			fill(30);
 			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 200);
@@ -3845,8 +3836,7 @@ var boxVerts = newFloat32Array([
 				ctx.font = "50px VT323";
 				ctx.textAlign = 'center';
 				fill(0);
-				text("haha get rickrolled lol", width / 2, 300);
-				text("multiplayer is impossible", width / 2, 350);
+				text("Smh Multiplayer is impossible on KA.", width / 2, 300);
 				ctx.beginPath();
 			} else if(screen === "comingsoon menu") {
 				ctx.beginPath();
