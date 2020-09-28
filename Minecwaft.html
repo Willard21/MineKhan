@@ -98,13 +98,13 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<body>
 	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
 	<textarea id="savebox" hidden="true" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;"></textarea>
-	<p id="savedirections" hidden="true" style="position: absolute; top: 40px; left: 10px; z-index: 1;">
+	<p id="savedirections" hidden="true" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To save your world, copy/paste the saveString<br>
 		from this box into the code on line 112.<br>
 		var loadString = "Your Code Here";<br>
 		Then save the program as a Spin-off.
 	</p>
-	<p id="message" hidden="true" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right;"></p>
+	<p id="message" hidden="true" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
 	<script>
 		var superflat = false;
 		// Code edits will erase the world.
@@ -3191,6 +3191,7 @@ function init() {
 		}
 	};
 	let addButton = function(x, y, w, h, text, callback, screen) {
+		w = Math.max(w, 300);
 		buttons.push({
 			x: width / 2 - w / 2,
 			y: y,
