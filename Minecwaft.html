@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- @Minecraft version Alpha 0.6
+<!-- @Minecraft version Alpha 0.6.1
 ** If it doesn't load, google "how to enable WebGL on <name of your browser>" (note internet explorer probably won't work no matter what)
 
 To save your progress, copy the save code you can get in the pause options, and paste it into "loadString" string just below these comments (around line 112), then save it as a spin-off.
@@ -7,10 +7,11 @@ Old saves may break in future updates, so if you're attached to your build, don'
 
 	Controls:
 
- * Right-click (or ctrl click for mac users) - place block
- * Left-click - remove block
- * Middle-click - pick block
- * Q - sprint
+ * Right-click (or ctrl + left click) - place block
+ * Left-click - Remove block
+ * Middle-click - Pick block
+ * Q - Sprint
+ * Shift - Sneak
  * W - Walk forward
  * S - Walk backward
  * A - Walk left
@@ -20,7 +21,6 @@ Old saves may break in future updates, so if you're attached to your build, don'
  * Z - Zoom
  * L - Toggle Spectator mode
  * Enter - Toggle slab mode
- * X - Quake Pro FOV (Z to return to normal)
  * Arrow Keys - look around
  * P or Esc - pause/unpause
  * 1-9 navigate hotbar
@@ -126,7 +126,7 @@ document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width:
 
 var MathGlob = Math;
 
-function init() {
+function MineKhan() {
 	let Math = MathGlob;
 	let setPixel, getPixels;
 	let textures = {
@@ -855,7 +855,7 @@ function init() {
 	//globals
 	//{
 	let fov = 70; // Field of view in degrees
-	let version = "Alpha 0.6";
+	let version = "Alpha 0.6.1";
 	let reach = 5; // Max distance player can place or break blocks
 
 	let blockIds = {};
@@ -1042,10 +1042,28 @@ function init() {
 		[ 0, 1, 0, 0, 1, 0, 1, 1 ]
 	]
 	let shapes = {
+		/*
+			[
+				[[west, bottom, south, east, bottom, south, east, bottom, north, west, bottom, north]],
+				[[west, top,    south, west, top,    north, east, top,    north, east, top,    south]],
+				[[east, top,    north, west, top,    north, west, bottom, north, east, bottom, north]],
+				[[west, top,    south, east, top,    south, east, bottom, south, west, bottom, south]],
+				[[]],
+				[[]]
+			]
+			[
+				[(-x, -z), (+x, -z), (+x, +z), (-x, +z)], // minX = 0,  minZ = 2,  maxX = 6, maxZ = 8
+				[(-x, -z), (-x, +z), (+x, +z), (+x, -z)], // minX = 0,  minZ = 2,  maxX = 6, maxZ = 8
+				[(+x, +y), (-x, +y), (-x, -y), (+x, -y)], // minX = 6,  minY = 7,  maxX = 0, maxY = 1
+				[(-x, +y), (+x, +y), (+x, -y), (-x, -y)], // minX = 9,  minY = 10, maxX = 3, maxY = 4
+				[(+y, -z), (+y, +z), (-y, +z), (-y, -z)], // minY = 10, minZ = 11, maxY = 4, maxZ = 5
+				[(+y, +z), (+y, -z), (-y, -z), (-y, +z)]  // minY = 7,  minZ = 8,  maxY = 1, maxZ = 2
+			]
+			*/
 		cube: {
 			verts: [
-				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //top
-				[[ -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5, -0.5 ]], //bottom
+				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //bottom
+				[[ -0.5,  0.5, -0.5, -0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5, -0.5 ]], //top
 				[[  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5 ]], //north
 				[[ -0.5,  0.5, -0.5,  0.5,  0.5, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5 ]], //south
 				[[  0.5,  0.5, -0.5,  0.5,  0.5,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5 ]], //east
@@ -1057,8 +1075,8 @@ function init() {
 		},
 		slab: {
 			verts: [
-				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //top
-				[[ -0.5,  0.0, -0.5, -0.5,  0.0,  0.5,  0.5,  0.0,  0.5,  0.5,  0.0, -0.5 ]], //bottom
+				[[ -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  0.5, -0.5,  0.5, -0.5, -0.5,  0.5 ]], //bottom
+				[[ -0.5,  0.0, -0.5, -0.5,  0.0,  0.5,  0.5,  0.0,  0.5,  0.5,  0.0, -0.5 ]], //top
 				[[  0.5,  0.0,  0.5, -0.5,  0.0,  0.5, -0.5, -0.5,  0.5,  0.5, -0.5,  0.5 ]], //north
 				[[ -0.5,  0.0, -0.5,  0.5,  0.0, -0.5,  0.5, -0.5, -0.5, -0.5, -0.5, -0.5 ]], //south
 				[[  0.5,  0.0, -0.5,  0.5,  0.0,  0.5,  0.5, -0.5,  0.5,  0.5, -0.5, -0.5 ]], //east
@@ -1422,98 +1440,104 @@ function init() {
 	};
 	let tex;
 
-	function getFaces(x, y, z) {
-		return p.x < x - 0.5
-	| (p.x > x + 0.5) << 1
-	| (p.y < y - 0.5) << 2
-	| (p.y > y + 0.5) << 3
-	| (p.z < z - 0.5) << 4
-	| (p.z > z + 0.5) << 5;
+	function roundBits(number) {
+		return Math.round(number * 1000000) / 1000000;
 	}
-	function rayTrace(x, y, z, sides) {
-		x -= 0.5;
-		y -= 0.5;
-		z -= 0.5;
-
+	function rayTrace(x, y, z, shape) {
 		let cf, cd = 1e9; //Closest face and distance
 		let m; //Absolute distance to intersection point
 		let ix, iy, iz; //Intersection coords
+		let minX, miny, minz, maxX, maxY, maxZ; //Bounds of face coordinates
+		let east = p.direction.x < 0;
+		let top = p.direction.y < 0;
+		let north = p.direction.z < 0;
+		let verts = shape.verts;
+		let faces = verts[0];
 
 		//Top and bottom faces
-		if (Block.top & sides && p.direction.y) {
-			m = (y - p.y) / p.direction.y;
-			ix = m * p.direction.x + p.x;
-			iz = m * p.direction.z + p.z;
-			if (m > 0 && m < cd && ix >= x && ix <= x + 1 && iz >= z && iz <= z + 1) {
-				cd = m; //Ray crosses top face
-				cf = "top";
+		minX = 0;
+		minZ = 2;
+		maxX = 6;
+		maxZ = 8;
+		if (top) {
+			faces = verts[1]
+		}
+		if (p.direction.y) {
+			for (let face of faces) {
+				m = (y + face[1] - p.y) / p.direction.y;
+				ix = m * p.direction.x + p.x;
+				iz = m * p.direction.z + p.z;
+				if (m > 0 && m < cd && ix >= x + face[minX] && ix <= x + face[maxX] && iz >= z + face[minZ] && iz <= z + face[maxZ]) {
+					cd = m; //Ray crosses bottom face
+					cf = top ? "top" : "bottom";
+				}
 			}
 		}
-		y += 1;
-		if (Block.bottom & sides && p.direction.y) {
-			m = (y - p.y) / p.direction.y;
-			ix = m * p.direction.x + p.x;
-			iz = m * p.direction.z + p.z;
-			if (m > 0 && m < cd && ix >= x && ix <= x + 1 && iz >= z && iz <= z + 1) {
-				cd = m;
-				cf = "bottom";
-			}
-		}
-		y -= 1;
 
 		//West and East faces
-		if (Block.west & sides && p.direction.x) {
-			m = (x - p.x) / p.direction.x;
-			iy = m * p.direction.y + p.y;
-			iz = m * p.direction.z + p.z;
-			if (m > 0 && m < cd && iy >= y && iy <= y + 1 && iz >= z && iz <= z + 1) {
-				cd = m;
-				cf = "west";
+		if (east) {
+			faces = verts[4];
+			minY = 10;
+			minZ = 11;
+			maxY = 4;
+			maxZ = 5;
+		} else {
+			faces = verts[5];
+			minY = 7;
+			minZ = 8;
+			maxY = 1;
+			maxZ = 2;
+		}
+		if (p.direction.x) {
+			for (let face of faces) {
+				m = (x + face[0] - p.x) / p.direction.x;
+				iy = m * p.direction.y + p.y;
+				iz = m * p.direction.z + p.z;
+				if (m > 0 && m < cd && iy >= y + face[minY] && iy <= y + face[maxY] && iz >= z + face[minZ] && iz <= z + face[maxZ]) {
+					cd = m;
+					cf = east ? "east" : "west";
+				}
 			}
 		}
-		x += 1;
-		if (Block.east & sides && p.direction.x) {
-			m = (x - p.x) / p.direction.x;
-			iy = m * p.direction.y + p.y;
-			iz = m * p.direction.z + p.z;
-			if (m > 0 && m < cd && iy >= y && iy <= y + 1 && iz >= z && iz <= z + 1) {
-				cd = m;
-				cf = "east";
-			}
-		}
-		x -= 1;
 
 		//South and North faces
-		if (Block.south & sides && p.direction.z) {
-			m = (z - p.z) / p.direction.z;
-			ix = m * p.direction.x + p.x;
-			iy = m * p.direction.y + p.y;
-			if (m > 0 && m < cd && ix >= x && ix <= x + 1 && iy >= y && iy <= y + 1) {
-				cd = m;
-				cf = "south";
-			}
+		if (north) {
+			faces = verts[2];
+			minX = 6;
+			minY = 7;
+			maxX = 0;
+			maxY = 1;
+		} else {
+			faces = verts[3];
+			minX = 9;
+			minY = 10;
+			maxX = 3;
+			maxY = 4;
 		}
-		z += 1;
-		if (Block.north & sides && p.direction.z) {
-			m = (z - p.z) / p.direction.z;
-			ix = m * p.direction.x + p.x;
-			iy = m * p.direction.y + p.y;
-			if (m > 0 && m < cd && ix >= x && ix <= x + 1 && iy >= y && iy <= y + 1) {
-				cd = m;
-				cf = "north";
+		if (p.direction.z) {
+			for (let face of faces) {
+				m = (z + face[2] - p.z) / p.direction.z;
+				ix = m * p.direction.x + p.x;
+				iy = m * p.direction.y + p.y;
+				if (m > 0 && m < cd && ix >= x + face[minX] && ix <= x + face[maxX] && iy >= y + face[minY] && iy <= y + face[maxY]) {
+					cd = m;
+					cf = north ? "north" : "south";
+				}
 			}
 		}
 		return [ cd, cf ];
 	}
-	function runRayTrace(x, y, z, faces) {
+	function runRayTrace(x, y, z) {
 		let block = world.getBlock(x, y, z);
 		if (block) {
-			let rt = rayTrace(x, y, z, faces);
+			let slab = (block & 0x80) >> 7;
+			let rt = rayTrace(x, y, z, slab ? shapes.slab : shapes.cube);
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0];
 				hitBox.face = rt[1];
 				hitBox.pos = [ x, y, z ];
+				hitBox.shape = slab ? "slab" : "cube";
 			}
 		}
 	}
@@ -1525,9 +1549,11 @@ function init() {
 		if (p.spectator) {
 			return;
 		}
-		if (world.getBlock(p2.x, p2.y, p2.z)) {
+		let blockState = world.getBlock(p2.x, p2.y, p2.z);
+		if (blockState) {
 			hitBox.pos = [ p2.x, p2.y, p2.z ];
 			hitBox.closest = 0;
+			hitBox.shape = (blockState & 0x80) ? "slab" : "cube";
 			return;
 		}
 
@@ -1544,7 +1570,6 @@ function init() {
 		let maxY = 0;
 		let minZ = p2.z;
 		let maxZ = 0;
-		let faces = getFaces(tx, ty, tz);
 
 		for (let i = 0; i < reach + 1; i++) {
 			if (i > reach) {
@@ -1559,23 +1584,23 @@ function init() {
 			if (minX !== maxX) {
 				if (minY !== maxY) {
 					if (minZ !== maxZ) {
-						runRayTrace(maxX, maxY, maxZ, faces);
+						runRayTrace(maxX, maxY, maxZ);
 					}
-					runRayTrace(maxX, maxY, minZ, faces);
+					runRayTrace(maxX, maxY, minZ);
 				}
 				if (minZ !== maxZ) {
-					runRayTrace(maxX, minY, maxZ, faces);
+					runRayTrace(maxX, minY, maxZ);
 				}
-				runRayTrace(maxX, minY, minZ, faces);
+				runRayTrace(maxX, minY, minZ);
 			}
 			if (minY !== maxY) {
 				if (minZ !== maxZ) {
-					runRayTrace(minX, maxY, maxZ, faces);
+					runRayTrace(minX, maxY, maxZ);
 				}
-				runRayTrace(minX, maxY, minZ, faces);
+				runRayTrace(minX, maxY, minZ);
 			}
 			if (minZ !== maxZ) {
-				runRayTrace(minX, minY, maxZ, faces);
+				runRayTrace(minX, minY, maxZ);
 			}
 			if (hitBox.pos) {
 				return; //The ray has collided; it can't possibly find a closer collision now
@@ -1595,43 +1620,115 @@ function init() {
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id;
 	};
 	let onBox = function(x, y, z, w, h, d) {
-		let iy = y - h/2 - p.topH;
-		let ih = h + p.bottomH + p.topH;
-		let ix = x - w/2 - p.w;
-		let iw = w + p.w*2;
-		let iz = z - d/2 - p.w;
-		let id = d + p.w*2;
+		let iy = roundBits(y - h/2 - p.topH);
+		let ih = roundBits(h + p.bottomH + p.topH);
+		let ix = roundBits(x - w/2 - p.w);
+		let iw = roundBits(w + p.w*2);
+		let iz = roundBits(z - d/2 - p.w);
+		let id = roundBits(d + p.w*2);
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id;
 	};
-	let boxCollision = function(x, y, z, w, h, d, vx, vy, vz, dt) {
-		if(!p.spectator && inBox(x, y, z, w, h, d)) {
-			if(vx) {
-				p.x -= p.velocity.x * dt;
-				p.velocity.x = 0;
-			} else if(vz) {
-				p.z -= p.velocity.z * dt;
-				p.velocity.z = 0;
-			} else if(vy > 0) {
-				p.y -= p.velocity.y * dt;
-				p.velocity.y = 0;
-			} else {
-				p.y = y - h/2 - p.topH + (h + p.bottomH + p.topH); // y + h/2 + p.bottomH;
-				p.onGround = true;
-				p.velocity.y = 0;
+	function collided(x, y, z, vx, vy, vz, block) {
+		if(p.spectator) {
+			return false;
+		}
+		let verts = shapes[(block & 0x80) ? "slab" : "cube"].verts;
+		let px = roundBits(p.x - p.w - x);
+		let py = roundBits(p.y - p.bottomH - y);
+		let pz = roundBits(p.z - p.w - z);
+		let pxx = roundBits(p.x + p.w - x);
+		let pyy = roundBits(p.y + p.topH - y);
+		let pzz = roundBits(p.z + p.w - z);
+
+		//Top and bottom faces
+		let minX = 0;
+		let minZ = 2;
+		let maxX = 6;
+		let maxZ = 8;
+		let faces = verts[0];
+		if (!vx && !vz) {
+			if (vy <= 0) {
+				faces = verts[1];
 			}
+			for (let face of faces) {
+				if (face[1] > py && face[1] < pyy && face[minX] < pxx && face[maxX] > px && face[minZ] < pzz && face[maxZ] > pz) {
+					if (vy <= 0) {
+						p.onGround = true;
+						p.y = Math.round((face[1] + y + p.bottomH) * 10000) / 10000;
+						return false;
+					} else {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		//West and East faces
+		let minY = 0;
+		let maxY = 0;
+		if (vx < 0) {
+			faces = verts[4];
+			minY = 10;
+			minZ = 11;
+			maxY = 4;
+			maxZ = 5;
+		} else if (vx > 0) {
+			faces = verts[5];
+			minY = 7;
+			minZ = 8;
+			maxY = 1;
+			maxZ = 2;
+		}
+		if (vx) {
+			for (let face of faces) {
+				if (face[0] > px && face[0] < pxx && face[minY] < pyy && face[maxY] > py && face[minZ] < pzz && face[maxZ] > pz) {
+					if (face[maxY] - py > 0.5) {
+						p.canStep = false;
+					}
+					return true;
+				}
+			}
+			return false;
+		}
+
+		//South and North faces
+		if (vz < 0) {
+			faces = verts[2];
+			minX = 6;
+			minY = 7;
+			maxX = 0;
+			maxY = 1;
+		} else if (vz > 0) {
+			faces = verts[3];
+			minX = 9;
+			minY = 10;
+			maxX = 3;
+			maxY = 4;
+		}
+		if (vz) {
+			for (let face of faces) {
+				if (face[2] > pz && face[2] < pzz && face[minY] < pyy && face[maxY] > py && face[minX] < pxx && face[maxX] > px) {
+					if (face[maxY] - py > 0.5) {
+						p.canStep = false;
+					}
+					return true;
+				}
+			}
+			return false;
 		}
 	};
 	let contacts = {
 		array: [],
 		size: 0,
-		add: function(x, y, z) {
-
+		add: function(x, y, z, block) {
 			if (this.size === this.array.length) {
-				this.array.push([ x, y, z ]);
+				this.array.push([ x, y, z, block ]);
 			} else {
 				this.array[this.size][0] = x;
 				this.array[this.size][1] = y;
 				this.array[this.size][2] = z;
+				this.array[this.size][3] = block;
 			}
 			this.size++;
 		},
@@ -1640,22 +1737,21 @@ function init() {
 		},
 	};
 	let resolveContactsAndUpdatePosition = function() {
-		let minX = p2.x - 1;
-		let maxX = p2.x + 1;
-		let minY = p2.y - 2;
-		let maxY = p2.y + 1;
-		let minZ = p2.z - 1;
-		let maxZ = p2.z + 1;
-		let wrld = world;
-		let cont = contacts;
+		let pminX = p2.x - 1;
+		let pmaxX = p2.x + 1;
+		let pminY = p2.y - 2;
+		let pmaxY = p2.y + 1;
+		let pminZ = p2.z - 1;
+		let pmaxZ = p2.z + 1;
 		let block = null;
-		let player = p;
+		let vel = p.velocity;
 
-		for (let x = minX; x <= maxX; x++) {
-			for (let y = minY; y <= maxY; y++) {
-				for (let z = minZ; z <= maxZ; z++) {
-					if (wrld.getBlock(x, y, z)) {
-						cont.add(x, y, z);
+		for (let x = pminX; x <= pmaxX; x++) {
+			for (let y = pminY; y <= pmaxY; y++) {
+				for (let z = pminZ; z <= pmaxZ; z++) {
+					let block = world.getBlock(x, y, z)
+					if (block) {
+						contacts.add(x, y, z, block);
 					}
 				}
 			}
@@ -1664,16 +1760,30 @@ function init() {
 		let dt = (win.performance.now() - p.lastUpdate) / 33;
 		dt = dt > 2 ? 2 : dt;
 
-		//console.log(p.onGround || !p.flying && p.y === p.previousY);
-
 		p.previousX = p.x;
 		p.previousY = p.y;
 		p.previousZ = p.z;
 
+		//Check collisions in the Y direction
+		p.onGround = false;
+		p.canStep = false;
+		p.y += vel.y * dt;
+		for (let i = 0; i < contacts.size; i++) {
+			block = contacts.array[i];
+			if (collided(block[0], block[1], block[2], 0, vel.y, 0, block[3])) {
+				p.y = p.previousY;
+				vel.y = 0;
+				break;
+			}
+		}
+		if (p.y === p.previousY) {
+			p.canStep = true;
+		}
+
 		var sneakLock = false, sneakSafe = false;
 		if (p.sneaking) {
 			for (let i = 0; i < contacts.size; i++) {
-				block = cont.array[i];
+				block = contacts.array[i];
 				if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
 					sneakLock = true;
 					break;
@@ -1682,10 +1792,18 @@ function init() {
 		}
 
 		//Check collisions in the X direction
-		player.x += player.velocity.x * dt;
+		p.x += vel.x * dt;
 		for (let i = 0; i < contacts.size; i++) {
-			block = cont.array[i];
-			boxCollision(block[0], block[1], block[2], 1, 1, 1, player.velocity.x, 0, 0, dt);
+			block = contacts.array[i];
+			if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
+				if (p.canStep && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+					collided(block[0], block[1], block[2], 0, vel.y, 0, block[3]);
+					break;
+				}
+				p.x = p.previousX;
+				vel.x = 0;
+				break;
+			}
 			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
 				sneakSafe = true;
 			}
@@ -1693,15 +1811,23 @@ function init() {
 
 		if (sneakLock && !sneakSafe) {
 			p.x = p.previousX;
-			p.velocity.x = 0;
+			vel.x = 0;
 		}
 		sneakSafe = false;
 
 		//Check collisions in the Z direction
-		player.z += player.velocity.z * dt;
+		p.z += vel.z * dt;
 		for (let i = 0; i < contacts.size; i++) {
-			block = cont.array[i];
-			boxCollision(block[0], block[1], block[2], 1, 1, 1, 0, 0, player.velocity.z, dt);
+			block = contacts.array[i];
+			if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
+				if (p.canStep && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+					collided(block[0], block[1], block[2], 0, vel.y, 0, block[3]);
+					break;
+				}
+				p.z = p.previousZ;
+				vel.z = 0;
+				break;
+			}
 			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
 				sneakSafe = true;
 			}
@@ -1709,15 +1835,7 @@ function init() {
 
 		if (sneakLock && !sneakSafe) {
 			p.z = p.previousZ;
-			p.velocity.z = 0;
-		}
-
-		//Check collisions in the Y direction
-		p.onGround = false;
-		player.y += player.velocity.y * dt;
-		for (let i = 0; i < contacts.size; i++) {
-			block = cont.array[i];
-			boxCollision(block[0], block[1], block[2], 1, 1, 1, 0, player.velocity.y, 0, dt);
+			vel.z = 0;
 		}
 
 		if (!p.flying) {
@@ -1737,10 +1855,6 @@ function init() {
 		p.lastUpdate = win.performance.now();
 		contacts.clear();
 		lookingAt();
-		if (hitBox.pos) {
-			let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]);
-			hitBox.shape = (block & 0b10000000) ? "slab" : "cube";
-		}
 	};
 	let runGravity = function() {
 		if (p.flying) {
@@ -1811,10 +1925,10 @@ function init() {
 		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2];
 		switch(hitBox.face) {
 			case "top":
-				y -= 1;
+				y += 1;
 				break;
 			case "bottom":
-				y += 1;
+				y -= 1;
 				break;
 			case "south":
 				z -= 1;
@@ -2875,7 +2989,6 @@ function init() {
 			blockOutlines = false;
 			blockFill = true;
 		}
-		gl.flush();
 	};
 	let loadChunks = function() {
 		renderDistance += 2;
@@ -3008,6 +3121,8 @@ function init() {
 	//}
 	function World() {
 		generatedChunks = 0;
+
+		p.y = superflat ? 6 : (Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra);
 
 		//Initialize the world's arrays
 		return {
@@ -3805,10 +3920,6 @@ function init() {
 				FOV(10);
 			}
 
-			if (k === "x") { //Quake Pro lol
-				FOV(110);
-			}
-
 			if (k === "shift" && !p.flying) {
 				p.sneaking = true;
 				p.sprinting = false;
@@ -3962,7 +4073,7 @@ function init() {
 			document.body.append(gl.canvas);
 		}
 
-		if (win.location.origin === "https://www.kasandbox.org" && window.parent.document.referrer.split("?")[0].split("/").pop() !== "5647155001376768") {
+		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 149456)) {
 			// Prevent Ctrl F
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("");
 		}
@@ -4048,39 +4159,43 @@ function init() {
 		}
 
 		if(screen.includes("menu")) {
+			let title = "MINEKHAN";
+			let subtext = "J A V A S C R I P T   E D I T I O N"
 			cursor(ARROW);
 			strokeWeight(1);
 			ctx.clearRect(0, 0, width, height);
 			ctx.textAlign = 'center';
+
 			ctx.font = "bold 150px VT323";
 			fill(30);
-			text("MINEKHAN", width / 2, 158);
+			text(title, width / 2, 158);
 			fill(40);
-			text("MINEKHAN", width / 2, 155);
+			text(title, width / 2, 155);
 			ctx.font = "bold 151px VT323";
 			fill(50);
-			text("MINEKHAN", width / 2, 152);
+			text(title, width / 2, 152);
 			fill(70);
-			text("MINEKHAN", width / 2, 150);
+			text(title, width / 2, 150);
 			fill(90);
 			ctx.font = "bold 152px VT323";
-			text("MINEKHAN", width / 2, 148);
+			text(title, width / 2, 148);
 			fill(110);
-			text("MINEKHAN", width / 2, 145);
+			text(title, width / 2, 145);
+
 			ctx.font = "bold 31.5px VT323";
 			fill(30);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 200);
+			text(subtext, width / 2, 200);
 			fill(40);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 198.5);
+			text(subtext, width / 2, 198.5);
 			fill(50);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 197);
+			text(subtext, width / 2, 197);
 			ctx.font = "bold 31.65px VT323";
 			fill(70);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 195.5);
+			text(subtext, width / 2, 195.5);
 			fill(90);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 194);
+			text(subtext, width / 2, 194);
 			fill(110);
-			text("K H A N   A C A D E M Y   E D I T I O N", width / 2, 192.5);
+			text(subtext, width / 2, 192.5);
 
 			if(screen === "main menu") {
 				fill(220);
@@ -4097,7 +4212,7 @@ function init() {
 				ctx.beginPath();
 				ctx.fillStyle = "white";
 				ctx.rect(0, 0, width, height);
-				ctx.font = "50px VT323";
+				ctx.font = "40px VT323";
 				ctx.textAlign = 'center';
 				fill(0);
 				text("Multiplayer is impossible on KA.", width / 2, 300);
@@ -4130,8 +4245,8 @@ function init() {
 				gl.clearColor(84 / 255, 138 / 255, 184 / 255, 1.0);
 			}
 			defineWorld(); // Load, draw, and update the world
-			gl.flush();
-			gl.finish();
+			// gl.flush();
+			// gl.finish();
 		} else if (screen === "inventory") {
 			drawInv();
 		} else if(screen.includes("pause")) {
@@ -4177,7 +4292,8 @@ function init() {
 	}
 	return gameLoop;
 }
-init = init();
+
+init = MineKhan();
 if (window.parent.raf) {
 	window.cancelAnimationFrame(window.parent.raf);
 	console.log("Canceled", window.parent.raf)
