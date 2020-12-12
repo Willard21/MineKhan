@@ -98,9 +98,9 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		.world-select {
 			width: 99vw;
 			min-width: 300px;
-			height: calc(100vh - 200px);
+			height: calc(100vh - 220px);
 			position: absolute;
-			bottom: 100px;
+			bottom: 120px;
 			overflow-y: auto;
 			background-color: RGBA(0, 0, 0, 0.6);
 			justify-content: center;
@@ -161,11 +161,24 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 			padding: 10px;
 			cursor: default;
 		}
+		#quota {
+			display: block;
+			position: absolute;
+			width: 99vw;
+			margin: 0 auto;
+			bottom: 110px;
+			z-index: 1;
+			background-color: RGBA(0, 0, 0, 0.6);
+			justify-content: center;
+			text-align: center;
+			color: white;
+		}
 	</style>
 	<body>
 	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
 	<input type="text" id="savebox" class="hidden" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;">
 	<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
+	<div id="quota" class="hidden"></div>
 	<div id="onhover" class="hidden"></div>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To save your world, copy/paste the saveString<br>
@@ -263,6 +276,7 @@ window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
 window.message = document.getElementById("message")
 window.worlds = document.getElementById("worlds")
+window.quota = document.getElementById("quota")
 var hoverbox = document.getElementById("onhover")
 ctx.canvas.width  = window.innerWidth
 ctx.canvas.height = window.innerHeight
@@ -1055,7 +1069,7 @@ function MineKhan() {
 	function save() {
 		saveToDB(world.id, {
 			id: world.id,
-			edited: world.edited,
+			edited: Date.now(),
 			name: world.name,
 			version: version,
 			code: world.getSaveString()
@@ -1079,6 +1093,8 @@ function MineKhan() {
 
 	let blockIds = {}
 	blockData.forEach(block => blockIds[block.name] = block.id)
+	win.blockData = blockData
+	win.blockIds = blockIds
 
 	let currentFov
 
@@ -1141,10 +1157,13 @@ function MineKhan() {
 			exit: [window.savebox, window.saveDirections, window.message]
 		},
 		"loadsave menu": {
-			enter: [window.worlds, window.boxCenterTop],
-			exit: [window.worlds, window.boxCenterTop],
+			enter: [window.worlds, window.boxCenterTop, window.quota],
+			exit: [window.worlds, window.boxCenterTop, window.quota],
 			onenter: () => {
 				window.boxCenterTop.placeholder = "Enter Save String (Optional)"
+				navigator.storage.estimate().then(data => {
+					window.quota.innerText = `${data.usage.toLocaleString()} / ${data.quota.toLocaleString()} bytes (${(100 * data.usage / data.quota).toLocaleString(undefined, { maximumSignificantDigits: 2 })}%) of your quota used`
+				})
 			}
 		},
 		"creation menu": {
@@ -1153,11 +1172,30 @@ function MineKhan() {
 			onenter: () => {
 				window.boxCenterTop.placeholder = "Enter World Name"
 				window.boxCenterTop.value = ""
+				window.boxCenterTop.onmousedown = e => {
+					let elem = document.getElementsByClassName("selected")
+					if (elem && elem[0]) {
+						elem[0].classList.remove("selected")
+					}
+					selectedWorld = 0
+					Button.draw()
+				}
+			},
+			onexit: () => {
+				window.boxCenterTop.onmousedown = null
 			}
 		},
 		loading: {
 			onenter: startLoad
 		},
+		editworld: {
+			enter: [window.boxCenterTop],
+			exit: [window.boxCenterTop],
+			onenter: () => {
+				window.boxCenterTop.placeholder = "Enter World Name"
+				window.boxCenterTop.value = ""
+			}
+		}
 	}
 
 	let screen = "main menu"
@@ -1181,6 +1219,9 @@ function MineKhan() {
 
 		if (html[newScene] && html[newScene].onenter) {
 			html[newScene].onenter()
+		}
+		if (html[newScene] && html[newScene].onexit) {
+			html[newScene].onexit()
 		}
 
 		previousScreen = screen
@@ -1464,7 +1505,6 @@ function MineKhan() {
 				pos: pos,
 				tex: tex
 			}
-			
 		}
 		
 		// 90 degree clockwise rotation; returns a new shape object
@@ -4358,13 +4398,13 @@ function MineKhan() {
 		let w2 = Math.min(width / 2 - 10, 450)
 		let x2 = w2 / 2 + 5
 		let mid = width / 2
-		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", nothing, always, "Coming soon")
+		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", r => changeScene("editworld"), () => (selected() || !worlds[selectedWorld].edited))
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", r => {
 			if (worlds[selectedWorld]) {
 				deleteFromDB(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
-				selectedWorld = -1
+				selectedWorld = 0
 			}
 		}, () => (selected() || !worlds[selectedWorld].edited), "Delete the world forever.")
 		Button.add(mid + x4, height - 30, w4, 40, "Export", "loadsave menu", r => {
@@ -4399,6 +4439,19 @@ function MineKhan() {
 			}
 		}, () => !(!selectedWorld && boxCenterTop.value) && !worlds[selectedWorld])
 		Button.add(mid + x2, height - 75, w2, 40, "Create New World", "loadsave menu", r => changeScene("creation menu"))
+
+		Button.add(mid, height / 2, w2, 40, "Save", "editworld", r => {
+			let w = worlds[selectedWorld]
+			w.name = boxCenterTop.value.replace(/;/g, "\u037e")
+			let split = w.code.split(";")
+			split[0] = w.name
+			w.code = split.join(";")
+			saveToDB(w.id, w).then(success => {
+				initWorldsMenu()
+				changeScene("loadsave menu")
+			}).catch(e => console.error(e))
+		})
+		Button.add(mid, height / 2 + 50, w2, 40, "Back", "editworld", r => changeScene(previousScreen))
 
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
@@ -5210,6 +5263,8 @@ function MineKhan() {
 		while (window.worlds.firstChild) {
 			window.worlds.removeChild(window.worlds.firstChild)
 		}
+		selectedWorld = 0
+		window.boxCenterTop.value = ""
 
 		const deselect = () => {
 			let elem = document.getElementsByClassName("selected")
@@ -5279,11 +5334,6 @@ function MineKhan() {
 					addWorld(data.name, data.version, (data.code.length + 60), data.id, data.edited)
 					worlds[data.id] = data
 				}
-			}
-			window.boxCenterTop.onclick = e => {
-				deselect()
-				selectedWorld = ""
-				Button.draw()
 			}
 			window.worlds.onclick = Button.draw
 			window.boxCenterTop.onkeyup = Button.draw
@@ -5466,6 +5516,7 @@ function MineKhan() {
 			fill(255)
 			text("Select World", width / 2, 20)
 		}
+		drawScreens.editworld = dirt
 	})()
 
 	// Give the font time to load and redraw the homescreen
