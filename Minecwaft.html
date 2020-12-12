@@ -1,59 +1,52 @@
 <!DOCTYPE html>
-<!-- @Minecraft version Alpha 0.7.0
+<!-- @MineKhan version Alpha 0.7.0
 
 	NOTE:
 The "Save" button saves your world to your local browser. Nobody else can see it. However, if you're on a public or shared computer, that save may be deleted unexpectly. So it's a good idea to keep a safe copy of your save string somewhere where it won't be deleted.
 
-To share your save with other people, copy your world string into the "loadString" variable on line 181.
+To share your save with other people, copy your world string into the "loadString" variable on line 188.
 
 	Controls:
 
- * Right-click (or ctrl + left click) - place block
- * Left-click - Remove block
- * Middle-click - Pick block
- * Q - Sprint
- * Shift - Sneak
- * W - Walk forward
- * S - Walk backward
- * A - Walk left
- * D - Walk right
- * E - Open inventory
- * B - Toggle super Breaker
- * Z - Zoom
- * L - Toggle Spectator mode
- * Enter - Toggle slab mode
- * Arrow Keys - look around
- * P or Esc - pause/unpause
+ * Right-click (or ctrl + left-click): place block
+ * Left-click: Remove block
+ * Middle-click: Pick block
+ * Q: Sprint
+ * Shift: Sneak
+ * W: Walk forward
+ * S: Walk backward
+ * A: Walk left
+ * D: Walk right
+ * E: Open inventory
+ * B: Toggle super Breaker
+ * Z: Zoom
+ * L: Toggle Spectator mode
+ * Enter: Toggle slab/stair mode
+ * Arrow Keys: look around
+ * P or Esc: pause/unpause
  * 1-9 navigate hotbar
- * Spacebar - jump
- * Double jump - toggle flight
- * Shift (flying) - fly down
- * Space (flying) - fly up
- * Delete - Forced restart (wipes the world and changes seeds)
- * T - Reload textures
- * ; (semicolon) - Release the pointer without pausing (for screenshots)
+ * Spacebar: jump
+ * Double jump: toggle flight
+ * Shift (flying): fly down
+ * Space (flying): fly up
+ * T: Reload textures
+ * ; (semicolon): Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
- * I, Willard, made this program and have published it at https://www.khanacademy.org/cs/mc/5647155001376768 as an original program (technically a Minecraft ripoff, but original code).
-If it's published elsewhere by anyone other than myself, then it must be done so as a spin-off, or else be flagged for plagiarism. As long as I've written at least 50% of
-the code in this, I'd very much prefer that nobody else copy/paste it anywhere.
+ * This program (MineKhan) was made by Willard (me). The original is https://www.khanacademy.org/cs/mc/5647155001376768 (just adding this so that spin-offs have it)
+ * Zushah helped me with some of the menus in the 0.6 update via GitHub. https://www.khanacademy.org/profile/zushah77/
+ * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118/
 
- * This program originated as a spin-off of ScusCraft, which is a P3D Minecraft program with a 4 block render distance. I started out just optimizing it, but it... got a little bit out of hand.
- * I ended up with a program 3x the size of the original that used all sorts of disallowed functionality for the PJS environment.
- * I ported it to the web environment where all this stuff is allowed to make sure it followed the guidelines. All future updates will be to this version.
+ * This program originated as a spin-off of ScusCraft by ScusX.
+ * It's 99% different code at this point, but I still never would have made it this far without his code for reference.
  * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
- * While porting the code, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
- * The textures and name are obviously stolen from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
+ * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
+ * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
  * The real Minecraft game can be bought and downloaded at https://www.minecraft.net/en-us/
 
- * If anything doesn't work right, let me know in the comments and I'll try to fix it. Any errors in your Javascript console would be useful.
 
- * Render distance is measured in 16x16 chunks (same as real Minecraft).
-
- * There's nowhere to offload chunks to, so they're kept in memory until you restart. So don't explore too far or memory usage will grow until it crashes unrecoverably.
-
- * Adding new (cube shaped) blocks is super easy, so if there's any you want added, just let me know!
+ * Chunks are kept in memory until you restart. So don't explore too far or memory usage will grow until it crashes unrecoverably.
 
 
 	To-Do:
@@ -74,7 +67,7 @@ In my case, every vertex has an X, Y, Z, textureX, textureY, and shadowIntensity
 
 A program can only draw 1 VBO per draw call. Since the texture data is attached to the vertex data, you can't switch textures between vertices.
 That means you either have to make seperate draw calls for each texture, or only use 1 texture. I do the latter.
-I make a single 256x256 pixel texture, and store each of the 16x16 block textures in a section of that big texture, and store the coordinates to it.
+I make a single 256x256 pixel texture, and store each of the 16x16 block textures in a section of that big texture, and store the coordinates to it. This is informally called a "texture atlas".
 Then when I'm preparing my VBO, I send the texture coordinates along with the block coordinates so the shader knows how to map the 256x256 pixel texture onto the 16x16 pixel block face.
 
 I do this once for each chunk in the world, and store those VBOs so I can draw them every frame. If a block is edited in a chunk, then that VBO is replaced.
@@ -182,7 +175,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<div id="onhover" class="hidden"></div>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To save your world, copy/paste the saveString<br>
-		from this box into the code on line 181.<br>
+		from this box into the code on line 188.<br>
 		var loadString = "Your Code Here";<br>
 		Then save the program as a Spin-off.
 	</p>
@@ -1164,14 +1157,6 @@ function MineKhan() {
 				navigator.storage.estimate().then(data => {
 					window.quota.innerText = `${data.usage.toLocaleString()} / ${data.quota.toLocaleString()} bytes (${(100 * data.usage / data.quota).toLocaleString(undefined, { maximumSignificantDigits: 2 })}%) of your quota used`
 				})
-			}
-		},
-		"creation menu": {
-			enter: [window.boxCenterTop],
-			exit: [window.boxCenterTop],
-			onenter: () => {
-				window.boxCenterTop.placeholder = "Enter World Name"
-				window.boxCenterTop.value = ""
 				window.boxCenterTop.onmousedown = e => {
 					let elem = document.getElementsByClassName("selected")
 					if (elem && elem[0]) {
@@ -1183,6 +1168,14 @@ function MineKhan() {
 			},
 			onexit: () => {
 				window.boxCenterTop.onmousedown = null
+			}
+		},
+		"creation menu": {
+			enter: [window.boxCenterTop],
+			exit: [window.boxCenterTop],
+			onenter: () => {
+				window.boxCenterTop.placeholder = "Enter World Name"
+				window.boxCenterTop.value = ""
 			}
 		},
 		loading: {
@@ -1220,8 +1213,8 @@ function MineKhan() {
 		if (html[newScene] && html[newScene].onenter) {
 			html[newScene].onenter()
 		}
-		if (html[newScene] && html[newScene].onexit) {
-			html[newScene].onexit()
+		if (html[screen] && html[screen].onexit) {
+			html[screen].onexit()
 		}
 
 		previousScreen = screen
@@ -1433,6 +1426,7 @@ function MineKhan() {
 			rotate: true
 		},
 	}
+	win.shapes = shapes
 
 	function compareArr(arr, out) {
 		let minX = 1000
@@ -1742,7 +1736,7 @@ function MineKhan() {
 		blockIcons = [null]
 		blockIcons.lengths = []
 		let texOrder = [ 1, 2, 3 ]
-		let shadows = [ 1, 0.7, 0.4 ]
+		let shadows = [ 1, 0.4, 0.7 ]
 		let scale = 0.16 / height * inventory.size
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
@@ -1762,10 +1756,10 @@ function MineKhan() {
 			blockIcons.lengths[i] = 6 * 3
 
 			data = []
-			for (let j = 0; j < 12; j++) {
+			for (let j = 11; j >= 0; j--) {
 				let tex = textureCoords[textureMap[block.textures[texOrder[Math.floor(j / 4)]]]]
 
-				data.push(slabIconVerts[j * 3 + 0] * scale)
+				data.push(-slabIconVerts[j * 3 + 0] * scale)
 				data.push(slabIconVerts[j * 3 + 1] * scale)
 				data.push(0.1666666)
 				data.push(tex[(j * 2 + 0) % 8])
@@ -1781,7 +1775,8 @@ function MineKhan() {
 			data = []
 			let v = stairIconVerts
 			for (let j = 23; j >= 0; j--) {
-				let tex = textureCoords[textureMap[block.textures[texOrder[Math.floor(j / 8)]]]]
+				let num = Math.floor(j / 8)
+				let tex = textureCoords[textureMap[block.textures[texOrder[num]]]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scale)
@@ -1789,7 +1784,7 @@ function MineKhan() {
 				data.push(0.1666666)
 				data.push(tx + v[j * 5 + 2] / 16)
 				data.push(ty + v[j * 5 + 3] / 16)
-				data.push(v[j * 5 + 4])
+				data.push(shadows[num])
 			}
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -4610,6 +4605,12 @@ function MineKhan() {
 		}
 	}
 	function hud() {
+		if (p.spectator) {
+			return
+		}
+
+		hotbar()
+
 		let s = inventory.size
 		let x = width / 2 + 0.5
 		let y = height / 2 + 0.5
@@ -4876,12 +4877,7 @@ function MineKhan() {
 			return
 		}
 		let k = e.key.toLowerCase()
-
 		Key[k] = true
-		if (k === "delete") {
-			initEverything()
-			releasePointer()
-		}
 
 		if (k === "t") {
 			initTextures()
@@ -5429,7 +5425,6 @@ function MineKhan() {
 				clear()
 				gl.clearColor(0, 0, 0, 0)
 				gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-				hotbar()
 				hud()
 				ctx.drawImage(gl.canvas, 0, 0)
 				updateHUD = false
