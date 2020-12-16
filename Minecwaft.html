@@ -1103,6 +1103,9 @@ function MineKhan() {
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
 	let height = window.innerHeight
+
+	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
+
 	let generator = {
 		height: 80, // Height of the hills
 		smooth: 0.01, // Smoothness of the terrain
@@ -1233,7 +1236,6 @@ function MineKhan() {
 	let modelView = win.modelView || new Float32Array(16)
 	win.modelView = modelView
 	let glCache
-	let nearH
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
@@ -1524,11 +1526,22 @@ function MineKhan() {
 						c[k + 1] = face[k + 1]
 						c[k + 2] = -face[k]
 					}
+					
+					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
+					if (i === 0) {
+						// Bottom
+						c.push(...c.splice(0, 3))
+						tex[i][j].push(...tex[i][j].splice(0, 2))
+					}
+					if (i === 1) {
+						// Top
+						c.unshift(...c.splice(-3, 3))
+						tex[i][j].unshift(...tex[i][j].splice(-2, 2))
+					}
+
 					let minmax = compareArr(c, [])
 					c.max = minmax.splice(3, 3)
 					c.min = minmax
-
-					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
 				}
 			}
 			let temp = tex[2] // North
@@ -2199,7 +2212,6 @@ function MineKhan() {
 		let near = 1
 		let far = 1000000
 		currentFov = fov
-		nearH = near * tang
 
 		projection[0] = scale / width * height
 		projection[5] = scale
@@ -2501,7 +2513,7 @@ function MineKhan() {
 				maxY = max[1]
 				if (face[0] > px && face[0] < pxx && minY < pyy && maxY > py && minZ < pzz && maxZ > pz) {
 					if (maxY - py > 0.5) {
-						p.canStep = false
+						p.canStepX = false
 					}
 					col = true
 				}
@@ -2526,7 +2538,7 @@ function MineKhan() {
 				maxY = max[1]
 				if (face[2] > pz && face[2] < pzz && minY < pyy && maxY > py && minX < pxx && maxX > px) {
 					if (maxY - py > 0.5) {
-						p.canStep = false
+						p.canStepZ = false
 					}
 					col = true
 				}
@@ -2582,7 +2594,8 @@ function MineKhan() {
 
 		//Check collisions in the Y direction
 		p.onGround = false
-		p.canStep = false
+		p.canStepX = false
+		p.canStepZ = false
 		p.y += vel.y * dt
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
@@ -2592,8 +2605,9 @@ function MineKhan() {
 				break
 			}
 		}
-		if (p.y === p.previousY) {
-			p.canStep = true
+		if (p.y === p.previousY && !p.flying) {
+			p.canStepX = true
+			p.canStepZ = true
 		}
 
 		var sneakLock = false, sneakSafe = false
@@ -2612,7 +2626,7 @@ function MineKhan() {
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
 			if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
-				if (p.canStep && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
 					continue
 				}
 				p.x = p.previousX
@@ -2635,7 +2649,7 @@ function MineKhan() {
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
 			if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
-				if (p.canStep && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
 					continue
 				}
 				p.z = p.previousZ
@@ -2726,7 +2740,7 @@ function MineKhan() {
 		box2(0xff, blockData[t].textures)
 	}
 
-	let changeWorldBlock = function(t) {
+	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
 			let shape = t && blockData[t].shape
@@ -2754,7 +2768,7 @@ function MineKhan() {
 			}
 		}
 	}
-	let newWorldBlock = function() {
+	function newWorldBlock() {
 		if(!hitBox.pos || !holding) {
 			return
 		}
@@ -2789,7 +2803,7 @@ function MineKhan() {
 
 	// Save the coords for a small sphere used to carve out caves
 	let sphere;
-	(function() {
+	{
 		let blocks = []
 		let radius = 3.5
 		let radsq = radius * radius
@@ -2803,7 +2817,7 @@ function MineKhan() {
 			}
 		}
 		sphere = new Int8Array(blocks)
-	})()
+	}
 
 	function isCave(x, y, z) {
 		// Generate a 3D rigid multifractal noise shell.
@@ -2863,120 +2877,128 @@ function MineKhan() {
 	}
 	let getShadows = {
 		shade: [ 1, 0.85, 0.7, 0.6, 0.3 ],
+		ret: [],
+		blocks: [],
 		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
-			let blocks = [
-				blockData[getBlock(x-1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x, y-1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x-1, y-1, z, block)].shadow,
-				blockData[getBlock(x, y-1, z, block)].shadow,
-				blockData[getBlock(x+1, y-1, z, block)].shadow,
-				blockData[getBlock(x-1, y-1, z+1, block)].shadow,
-				blockData[getBlock(x, y-1, z+1, block)].shadow,
-				blockData[getBlock(x+1, y-1, z+1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75,
-				this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75,
-				this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.75,
-				this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.75,
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = blockData[getBlock(x, y-1, z-1, block)].shadow
+			blocks[2] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[3] = blockData[getBlock(x-1, y-1, z, block)].shadow
+			blocks[4] = blockData[getBlock(x, y-1, z, block)].shadow
+			blocks[5] = blockData[getBlock(x+1, y-1, z, block)].shadow
+			blocks[6] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[7] = blockData[getBlock(x, y-1, z+1, block)].shadow
+			blocks[8] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
+
+			ret[0] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75
+			ret[1] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75
+			ret[2] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.75
+			ret[3] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.75
+			return ret
 		},
 		bottom: function(x, y, z, block) { // Actually the top
-			let blocks = [
-				blockData[getBlock(x-1, y+1, z-1, block)].shadow,
-				blockData[getBlock(x, y+1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z-1, block)].shadow,
-				blockData[getBlock(x-1, y+1, z, block)].shadow,
-				blockData[getBlock(x, y+1, z, block)].shadow,
-				blockData[getBlock(x+1, y+1, z, block)].shadow,
-				blockData[getBlock(x-1, y+1, z+1, block)].shadow,
-				blockData[getBlock(x, y+1, z+1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z+1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]],
-				this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]],
-				this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]],
-				this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]],
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[1] = blockData[getBlock(x, y+1, z-1, block)].shadow
+			blocks[2] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
+			blocks[3] = blockData[getBlock(x-1, y+1, z, block)].shadow
+			blocks[4] = blockData[getBlock(x, y+1, z, block)].shadow
+			blocks[5] = blockData[getBlock(x+1, y+1, z, block)].shadow
+			blocks[6] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
+			blocks[7] = blockData[getBlock(x, y+1, z+1, block)].shadow
+			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
+
+			ret[0] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]
+			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]
+			ret[2] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]
+			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]
+			return ret
 		},
 		north: function(x, y, z, block) {
-			let blocks = [
-				blockData[getBlock(x-1, y-1, z+1, block)].shadow,
-				blockData[getBlock(x, y-1, z+1, block)].shadow,
-				blockData[getBlock(x+1, y-1, z+1, block)].shadow,
-				blockData[getBlock(x-1, y, z+1, block)].shadow,
-				blockData[getBlock(x, y, z+1, block)].shadow,
-				blockData[getBlock(x+1, y, z+1, block)].shadow,
-				blockData[getBlock(x-1, y+1, z+1, block)].shadow,
-				blockData[getBlock(x, y+1, z+1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z+1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95,
-				this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95,
-				this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95,
-				this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95,
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[1] = blockData[getBlock(x, y-1, z+1, block)].shadow
+			blocks[2] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
+			blocks[3] = blockData[getBlock(x-1, y, z+1, block)].shadow
+			blocks[4] = blockData[getBlock(x, y, z+1, block)].shadow
+			blocks[5] = blockData[getBlock(x+1, y, z+1, block)].shadow
+			blocks[6] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
+			blocks[7] = blockData[getBlock(x, y+1, z+1, block)].shadow
+			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
+
+			ret[0] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
+			ret[1] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
+			ret[2] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
+			ret[3] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
+			return ret
 		},
 		south: function(x, y, z, block) {
-			let blocks = [
-				blockData[getBlock(x-1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x-1, y, z-1, block)].shadow,
-				blockData[getBlock(x-1, y+1, z-1, block)].shadow,
-				blockData[getBlock(x, y-1, z-1, block)].shadow,
-				blockData[getBlock(x, y, z-1, block)].shadow,
-				blockData[getBlock(x, y+1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y, z-1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z-1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95,
-				this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95,
-				this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95,
-				this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95,
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = blockData[getBlock(x-1, y, z-1, block)].shadow
+			blocks[2] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[3] = blockData[getBlock(x, y-1, z-1, block)].shadow
+			blocks[4] = blockData[getBlock(x, y, z-1, block)].shadow
+			blocks[5] = blockData[getBlock(x, y+1, z-1, block)].shadow
+			blocks[6] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[7] = blockData[getBlock(x+1, y, z-1, block)].shadow
+			blocks[8] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
+
+			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
+			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
+			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
+			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
+			return ret
 		},
 		east: function(x, y, z, block) {
-			let blocks = [
-				blockData[getBlock(x+1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y, z-1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z-1, block)].shadow,
-				blockData[getBlock(x+1, y-1, z, block)].shadow,
-				blockData[getBlock(x+1, y, z, block)].shadow,
-				blockData[getBlock(x+1, y+1, z, block)].shadow,
-				blockData[getBlock(x+1, y-1, z+1, block)].shadow,
-				blockData[getBlock(x+1, y, z+1, block)].shadow,
-				blockData[getBlock(x+1, y+1, z+1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8,
-				this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8,
-				this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.8,
-				this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.8,
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[1] = blockData[getBlock(x+1, y, z-1, block)].shadow
+			blocks[2] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
+			blocks[3] = blockData[getBlock(x+1, y-1, z, block)].shadow
+			blocks[4] = blockData[getBlock(x+1, y, z, block)].shadow
+			blocks[5] = blockData[getBlock(x+1, y+1, z, block)].shadow
+			blocks[6] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
+			blocks[7] = blockData[getBlock(x+1, y, z+1, block)].shadow
+			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
+
+			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8
+			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8
+			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.8
+			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.8
+			return ret
 		},
 		west: function(x, y, z, block) {
-			let blocks = [
-				blockData[getBlock(x-1, y-1, z-1, block)].shadow,
-				blockData[getBlock(x-1, y, z-1, block)].shadow,
-				blockData[getBlock(x-1, y+1, z-1, block)].shadow,
-				blockData[getBlock(x-1, y-1, z, block)].shadow,
-				blockData[getBlock(x-1, y, z, block)].shadow,
-				blockData[getBlock(x-1, y+1, z, block)].shadow,
-				blockData[getBlock(x-1, y-1, z+1, block)].shadow,
-				blockData[getBlock(x-1, y, z+1, block)].shadow,
-				blockData[getBlock(x-1, y+1, z+1, block)].shadow,
-			]
-			return [
-				this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8,
-				this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8,
-				this.shade[blocks[4] + blocks[3] + blocks[1] + blocks[0]]*0.8,
-				this.shade[blocks[6] + blocks[7] + blocks[3] + blocks[4]]*0.8,
-			]
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = blockData[getBlock(x-1, y, z-1, block)].shadow
+			blocks[2] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[3] = blockData[getBlock(x-1, y-1, z, block)].shadow
+			blocks[4] = blockData[getBlock(x-1, y, z, block)].shadow
+			blocks[5] = blockData[getBlock(x-1, y+1, z, block)].shadow
+			blocks[6] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[7] = blockData[getBlock(x-1, y, z+1, block)].shadow
+			blocks[8] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
+
+			ret[0] = this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8
+			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8
+			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[1] + blocks[0]]*0.8
+			ret[3] = this.shade[blocks[6] + blocks[7] + blocks[3] + blocks[4]]*0.8
+			return ret
 		},
+	}
+
+	function interpolateShadows(shadows, x, y) {
+		let sx = (shadows[1] - shadows[0]) * x + shadows[0]
+		let sx2 = (shadows[3] - shadows[2]) * x + shadows[2]
+		return (sx2 - sx) * y + sx
 	}
 
 	class Section {
@@ -3125,6 +3147,7 @@ function MineKhan() {
 			let shapeVerts = null
 			let shapeTexVerts = null
 			let pallete = this.pallete
+			let intShad = interpolateShadows
 			
 			for (let i = 0; i < length; i++) {
 				data = rData[i]
@@ -3149,6 +3172,13 @@ function MineKhan() {
 					if (sides & Block[side]) {
 						shadows = getShadows[side](x, y, z, blocks)
 						let directionalFaces = shapeVerts[Sides[side]]
+						// if (directionalFaces.length > 1) {
+						// 	let average = (shadows[0] + shadows[1] + shadows[2] + shadows[3]) / 4
+						// 	shadows[0] = average
+						// 	shadows[1] = average
+						// 	shadows[2] = average
+						// 	shadows[3] = average
+						// }
 						for (let facei = 0; facei < directionalFaces.length; facei++) {
 							verts = directionalFaces[facei]
 							texVerts = textureCoords[textureMap[tex[texNum]]]
@@ -4065,7 +4095,7 @@ function MineKhan() {
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36);
 					let index = block >> 8;
-					let id = block & 0xff;
+					let id = block & 0x7f | (block & 0x80) << 1;
 					this.loadFrom[i].blocks[index] = id;
 				}
 			}
@@ -4357,8 +4387,20 @@ function MineKhan() {
 
 		// Creation menu buttons
 		Button.add(width / 2, 135, 300, 40, ["World Type: Normal", "World Type: Superflat"], "creation menu", r => superflat = r === "World Type: Superflat")
-		Button.add(width / 2, 185, 300, 40, ["Trees: On", "Trees: Off"], "creation menu", r => trees = r === "Trees: On")
-		Button.add(width / 2, 235, 300, 40, ["Caves: On", "Caves: Off"], "creation menu", r => caves = r === "Caves: On")
+		Button.add(width / 2, 185, 300, 40, ["Trees: On", "Trees: Off"], "creation menu", r => trees = r === "Trees: On", function() {
+			if (superflat) {
+				this.index = 1
+				trees = false
+			}
+			return superflat
+		})
+		Button.add(width / 2, 235, 300, 40, ["Caves: On", "Caves: Off"], "creation menu", r => caves = r === "Caves: On", function() {
+			if (superflat) {
+				this.index = 1
+				caves = false
+			}
+			return superflat
+		})
 		Button.add(width / 2, 285, 300, 40, "Game Mode: Creative", "creation menu", nothing, always, "Coming Soon\n\nPlease stop asking for survival features. I don't want to half-implement anything, and I don't currently have the systems in place to create a full-featured survival mode. It'll come in due time.")
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", r => {
@@ -4398,7 +4440,7 @@ function MineKhan() {
 		let mid = width / 2
 		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", r => changeScene("editworld"), () => (selected() || !worlds[selectedWorld].edited))
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", r => {
-			if (worlds[selectedWorld]) {
+			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}?`)) {
 				deleteFromDB(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
