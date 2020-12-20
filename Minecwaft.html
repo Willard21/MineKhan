@@ -1274,6 +1274,7 @@ function MineKhan() {
 	}
 
 	let gl
+	let glExtensions
 	function getPointer() {
 		if (canvas.requestPointerLock) {
 			canvas.requestPointerLock()
@@ -3284,6 +3285,8 @@ function MineKhan() {
 			this.lazy = false
 			this.edited = false
 			this.loaded = false
+			// vao for this chunk
+			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
 			this.caves = !caves
 		}
 		getBlock(x, y, z) {
@@ -3318,11 +3321,9 @@ function MineKhan() {
 			}
 			if (p.canSee(this.x, this.minY, this.z, this.maxY)) {
 				renderedChunks++
-				gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
-				gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
-				gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
-				gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
+				glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
 				gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
+				glExtensions.vertex_array_object.bindVertexArrayOES(null)
 			}
 		}
 		updateBlock(x, y, z, world, lazy) {
@@ -3523,8 +3524,17 @@ function MineKhan() {
 			this.maxY = maxY
 			this.minY = minY
 			this.faces = data.length / 24
+			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
+			gl.enableVertexAttribArray(glCache.aVertex)
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
+			gl.enableVertexAttribArray(glCache.aTexture)
+			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
+			gl.enableVertexAttribArray(glCache.aShadow)
+			glExtensions.vertex_array_object.bindVertexArrayOES(null)
 			this.lazy = false
 		}
 		tick() {
@@ -5131,6 +5141,12 @@ function MineKhan() {
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 			win.gl = gl
+			glExtensions = []
+			const availableExtensions = gl.getSupportedExtensions()
+			for (let i = 0; i < availableExtensions.length; i++) {
+				const extensionName = availableExtensions[i]
+				glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
+			}
 		} else {
 			gl = win.gl
 		}
