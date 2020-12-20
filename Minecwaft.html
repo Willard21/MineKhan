@@ -3287,7 +3287,6 @@ function MineKhan() {
 			this.loaded = false
 			// vao for this chunk
 			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
-			this.hasChanged = true
 			this.caves = !caves
 		}
 		getBlock(x, y, z) {
@@ -3304,7 +3303,6 @@ function MineKhan() {
 				this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
 				this.sections[y >> 4].edited = true
 				this.edited = true
-				this.hasChanged = true
 			}
 			this.sections[y >> 4].setBlock(x, y & 15, z, blockID, hidden)
 		}
@@ -3323,19 +3321,6 @@ function MineKhan() {
 			}
 			if (p.canSee(this.x, this.minY, this.z, this.maxY)) {
 				renderedChunks++
-				if (this.hasChanged) {
-					glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
-					gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glCache.indexBuffer)
-					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
-					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
-					gl.enableVertexAttribArray(glCache.aVertex)
-					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
-					gl.enableVertexAttribArray(glCache.aTexture)
-					gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
-					gl.enableVertexAttribArray(glCache.aShadow)
-					glExtensions.vertex_array_object.bindVertexArrayOES(null)
-					this.hasChanged = false
-				}
 				glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
 				gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
 				glExtensions.vertex_array_object.bindVertexArrayOES(null)
@@ -3357,7 +3342,6 @@ function MineKhan() {
 				this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
 				this.sections[y >> 4].edited = true
 				this.edited = true
-				this.hasChanged = true
 			}
 			this.sections[y >> 4].deleteBlock(x, y & 15, z)
 			this.minY = y < this.minY ? y : this.minY
@@ -3540,8 +3524,17 @@ function MineKhan() {
 			this.maxY = maxY
 			this.minY = minY
 			this.faces = data.length / 24
+			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
+			gl.enableVertexAttribArray(glCache.aVertex)
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
+			gl.enableVertexAttribArray(glCache.aTexture)
+			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
+			gl.enableVertexAttribArray(glCache.aShadow)
+			glExtensions.vertex_array_object.bindVertexArrayOES(null)
 			this.lazy = false
 		}
 		tick() {
@@ -5207,7 +5200,6 @@ function MineKhan() {
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
-		glCache.indexBuffer = indexBuffer
 
 		//Tell it not to render the insides of blocks
 		gl.enable(gl.CULL_FACE)
