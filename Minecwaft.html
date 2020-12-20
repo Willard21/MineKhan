@@ -1,106 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
-		<meta charset="utf-8">
+		<meta charset="UTF-8">
 		<title>MineKhan</title>
 		<link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 		<link rel="shortcut icon" type="image/ico" href="https://willard21.github.io/MineKhan/favicon.ico">
 		<link rel="stylesheet" type="text/css" href="./main.css">
+		<script type="text/javascript" src="./main.js" defer></script>
 	</head>
 	<body>
-	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
-	<input type="text" id="savebox" class="hidden" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;">
-	<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
-	<div id="quota" class="hidden"></div>
-	<div id="onhover" class="hidden"></div>
-	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
-		To save your world, copy/paste the saveString<br>
-		from this box into the code on line 188.<br>
-		var loadString = "Your Code Here";<br>
-		Then save the program as a Spin-off.
-	</p>
-	<div class="world-select hidden" id="worlds"></div>
-	<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
-	<script>
-		// Code edits will erase the world.
-		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
-		var loadString = "Fountain;52umfj;d,8,7,-w,6s,3;Alpha 0.7.0;2,1f,28,29,2a,8j,9c,e9,gi,18w,1z5,21e,2ts,3ma,4eo,54x,576;0,0,0,tj4,19c1,19c2,19c3,130k,k28,k29,k2a,k2b,k2c,tq8,7lt,7lu,7lv,137o,k9c,h3l,h3m,h3n,k9g,1fk,1fl,1fm,1fn,1fo,1fp,16j4,16j5,16j6,16j7,16j8,e39,x2d,7sw,7sx,7sy,7sz,7t0,kgg,hap,haq,har,kgk,1mo,1mp,1mq,1mr,1ms,1mt,4sw,b4h,b4i,b4j,4t0,10et,b4x,b4y,b4z,b5d,b5e,b5f,b5t,b5u,b5v,knl,hhu,knn,1ts,1tt,1tu,1tv,1tw,1tx,500,501,502,503,504,10lx,50i,50y,51e,hoy,20w,20x,20y,20z,210,211,574,575,576,577,578,10t1,280,281,282,283,284,285,1gsw,1gsx,1gsy,1gsz,1gt0,evp,1dnp;0,0,-1,1fz,e3j,nlb,1n3,qxr,1u7,r4v,21b,rbz,28f,evz,1dnz"
-	</script>
-	<script type="x-shader/vertex" id="blockVertexShader">
-		attribute vec3  aVertex;
-		attribute vec2  aTexture;
-		attribute float aShadow;
-		varying vec2  vTexture;
-		varying float vShadow;
-		varying float vFog;
-		uniform mat4 uView;
-		uniform float uDist;
-		uniform vec3 uPos;
+		<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
+		<input type="text" id="savebox" class="hidden" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;">
+		<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
+		<div id="quota" class="hidden"></div>
+		<div id="onhover" class="hidden"></div>
+		<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
+			To save your world, copy/paste the saveString<br>
+			from this box into the code on line 188.<br>
+			var loadString = "Your Code Here";<br>
+			Then save the program as a Spin-off.
+		</p>
+		<div class="world-select hidden" id="worlds"></div>
+		<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
+		<script>
+			// Code edits will erase the world.
+			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
+			var loadString = "Fountain;52umfj;d,8,7,-w,6s,3;Alpha 0.7.0;2,1f,28,29,2a,8j,9c,e9,gi,18w,1z5,21e,2ts,3ma,4eo,54x,576;0,0,0,tj4,19c1,19c2,19c3,130k,k28,k29,k2a,k2b,k2c,tq8,7lt,7lu,7lv,137o,k9c,h3l,h3m,h3n,k9g,1fk,1fl,1fm,1fn,1fo,1fp,16j4,16j5,16j6,16j7,16j8,e39,x2d,7sw,7sx,7sy,7sz,7t0,kgg,hap,haq,har,kgk,1mo,1mp,1mq,1mr,1ms,1mt,4sw,b4h,b4i,b4j,4t0,10et,b4x,b4y,b4z,b5d,b5e,b5f,b5t,b5u,b5v,knl,hhu,knn,1ts,1tt,1tu,1tv,1tw,1tx,500,501,502,503,504,10lx,50i,50y,51e,hoy,20w,20x,20y,20z,210,211,574,575,576,577,578,10t1,280,281,282,283,284,285,1gsw,1gsx,1gsy,1gsz,1gt0,evp,1dnp;0,0,-1,1fz,e3j,nlb,1n3,qxr,1u7,r4v,21b,rbz,28f,evz,1dnz"
+		</script>
+		<script type="x-shader/vertex" id="blockVertexShader">
+			attribute vec3  aVertex;
+			attribute vec2  aTexture;
+			attribute float aShadow;
+			varying vec2  vTexture;
+			varying float vShadow;
+			varying float vFog;
+			uniform mat4 uView;
+			uniform float uDist;
+			uniform vec3 uPos;
 
-		void main(void) {
-			vTexture = aTexture;
-			vShadow = aShadow > 0.0 ? aShadow : 1.0;
-			gl_Position = uView * vec4( aVertex, 1.0);
+			void main(void) {
+				vTexture = aTexture;
+				vShadow = aShadow > 0.0 ? aShadow : 1.0;
+				gl_Position = uView * vec4( aVertex, 1.0);
 
-			float range = max(uDist / 5.0, 8.0);
-			vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);
-		}
-	</script>
-	<script type="x-shader/fragment" id="blockFragmentShader">
-		#ifdef GL_FRAGMENT_PRECISION_HIGH
-			precision highp float;
-		#else
-			precision mediump float;
-		#endif
+				float range = max(uDist / 5.0, 8.0);
+				vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);
+			}
+		</script>
+		<script type="x-shader/fragment" id="blockFragmentShader">
+			#ifdef GL_FRAGMENT_PRECISION_HIGH
+				precision highp float;
+			#else
+				precision mediump float;
+			#endif
 
-		uniform sampler2D uSampler;
-		varying float vShadow;
-		varying vec2 vTexture;
-		varying float vFog;
+			uniform sampler2D uSampler;
+			varying float vShadow;
+			varying vec2 vTexture;
+			varying float vFog;
 
-		vec4 fog(vec4 color) {
-			color.r += (0.33 - color.r) * vFog;
-			color.g += (0.54 - color.g) * vFog;
-			color.b += (0.72 - color.b) * vFog;
-			return color;
-		}
+			vec4 fog(vec4 color) {
+				color.r += (0.33 - color.r) * vFog;
+				color.g += (0.54 - color.g) * vFog;
+				color.b += (0.72 - color.b) * vFog;
+				return color;
+			}
 
-		void main(void){
-			vec4 color = texture2D(uSampler, vTexture);
-			gl_FragColor = fog(vec4(color.rgb * vShadow, color.a));
-			if (gl_FragColor.a == 0.0) discard;
-		}
-	</script>
-	<script type="x-shader/vertex" id="2dVertexShader">
-		attribute vec2 aVertex;
-		attribute vec2 aTexture;
-		attribute float aShadow;
-		varying vec2 vTexture;
-		varying float vShadow;
+			void main(void){
+				vec4 color = texture2D(uSampler, vTexture);
+				gl_FragColor = fog(vec4(color.rgb * vShadow, color.a));
+				if (gl_FragColor.a == 0.0) discard;
+			}
+		</script>
+		<script type="x-shader/vertex" id="2dVertexShader">
+			attribute vec2 aVertex;
+			attribute vec2 aTexture;
+			attribute float aShadow;
+			varying vec2 vTexture;
+			varying float vShadow;
 
-		void main(void) {
-			vTexture = aTexture;
-			vShadow = aShadow;
-			gl_Position = vec4(aVertex, 0.5, 1.0);
-		}
-	</script>
-	<script type="x-shader/fragment" id="2dFragmentShader">
-		#ifdef GL_FRAGMENT_PRECISION_HIGH
-			precision highp float;
-		#else
-			precision mediump float;
-		#endif
+			void main(void) {
+				vTexture = aTexture;
+				vShadow = aShadow;
+				gl_Position = vec4(aVertex, 0.5, 1.0);
+			}
+		</script>
+		<script type="x-shader/fragment" id="2dFragmentShader">
+			#ifdef GL_FRAGMENT_PRECISION_HIGH
+				precision highp float;
+			#else
+				precision mediump float;
+			#endif
 
-		uniform sampler2D uSampler;
-		varying vec2 vTexture;
-		varying float vShadow;
+			uniform sampler2D uSampler;
+			varying vec2 vTexture;
+			varying float vShadow;
 
-		void main(void) {
-			vec4 color = texture2D(uSampler, vTexture);
-			gl_FragColor = vec4(color.rgb * vShadow, color.a);
-			if (gl_FragColor.a == 0.0) discard;
-		}
-	</script>
-	<script type="text/javascript" src="./main.js"></script>
+			void main(void) {
+				vec4 color = texture2D(uSampler, vTexture);
+				gl_FragColor = vec4(color.rgb * vShadow, color.a);
+				if (gl_FragColor.a == 0.0) discard;
+			}
+		</script>
 	</body>
 </html>
