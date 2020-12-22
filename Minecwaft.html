@@ -227,11 +227,17 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<div id="onhover" class="hidden"></div>
 		<p id="savedirections" class="hidden">
 			To save your world, copy/paste the saveString<br>
-			from this box into the end of the URL,<br>
-			like so: "?load=<code>Your Code Here</code>".
+			from this box into the code on line 189.<br>
+			var loadString = "Your Code Here";<br>
+			Then save the program as a Spin-off.
 		</p>
 		<div id="worlds" class="world-select hidden"></div>
 		<p id="message" class="hidden"></p>
+		<script type="application/javascript">
+			// Code edits will erase the world.
+			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
+			const loadString = "Fountain;52umfj;d,8,7,-w,6s,3;Alpha 0.7.0;2,1f,28,29,2a,8j,9c,e9,gi,18w,1z5,21e,2ts,3ma,4eo,54x,576;0,0,0,tj4,19c1,19c2,19c3,130k,k28,k29,k2a,k2b,k2c,tq8,7lt,7lu,7lv,137o,k9c,h3l,h3m,h3n,k9g,1fk,1fl,1fm,1fn,1fo,1fp,16j4,16j5,16j6,16j7,16j8,e39,x2d,7sw,7sx,7sy,7sz,7t0,kgg,hap,haq,har,kgk,1mo,1mp,1mq,1mr,1ms,1mt,4sw,b4h,b4i,b4j,4t0,10et,b4x,b4y,b4z,b5d,b5e,b5f,b5t,b5u,b5v,knl,hhu,knn,1ts,1tt,1tu,1tv,1tw,1tx,500,501,502,503,504,10lx,50i,50y,51e,hoy,20w,20x,20y,20z,210,211,574,575,576,577,578,10t1,280,281,282,283,284,285,1gsw,1gsx,1gsy,1gsz,1gt0,evp,1dnp;0,0,-1,1fz,e3j,nlb,1n3,qxr,1u7,r4v,21b,rbz,28f,evz,1dnz";
+		</script>
 		<script type="x-shader/vertex" id="blockVertexShader">
 			attribute vec3 aVertex;
 			attribute vec2 aTexture;
@@ -310,16 +316,6 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 			}
 		</script>
 		<script type="application/javascript">
-			const loadString = (() => {
-				const query = new URLSearchParams(location.search);
-
-				const defaultSave = "Fountain;52umfj;d,8,7,-w,6s,3;Alpha 0.7.0;2,1f,28,29,2a,8j,9c,e9,gi,18w,1z5,21e,2ts,3ma,4eo,54x,576;0,0,0,tj4,19c1,19c2,19c3,130k,k28,k29,k2a,k2b,k2c,tq8,7lt,7lu,7lv,137o,k9c,h3l,h3m,h3n,k9g,1fk,1fl,1fm,1fn,1fo,1fp,16j4,16j5,16j6,16j7,16j8,e39,x2d,7sw,7sx,7sy,7sz,7t0,kgg,hap,haq,har,kgk,1mo,1mp,1mq,1mr,1ms,1mt,4sw,b4h,b4i,b4j,4t0,10et,b4x,b4y,b4z,b5d,b5e,b5f,b5t,b5u,b5v,knl,hhu,knn,1ts,1tt,1tu,1tv,1tw,1tx,500,501,502,503,504,10lx,50i,50y,51e,hoy,20w,20x,20y,20z,210,211,574,575,576,577,578,10t1,280,281,282,283,284,285,1gsw,1gsx,1gsy,1gsz,1gt0,evp,1dnp;0,0,-1,1fz,e3j,nlb,1n3,qxr,1u7,r4v,21b,rbz,28f,evz,1dnz";
-
-				return query.has("load")
-					? query.get("load")
-					: defaultSave;
-			})();
-
 			window.canvas = document.getElementById("overlay")
 			window.ctx = canvas.getContext("2d")
 			window.savebox = document.getElementById("savebox")
