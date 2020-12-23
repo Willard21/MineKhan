@@ -290,10 +290,9 @@ function MineKhan() {
 	let setPixel, getPixels;
 	let textures = {
 		grassTop: n => {
-			const { random } = Math;
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
-					const d = random() * 0.25 + 0.65;
+					const d = Math.random() * 0.25 + 0.65;
 
 					const r = 0x54 * d;
 					const g = 0xa0 * d;
@@ -304,54 +303,68 @@ function MineKhan() {
 			}
 		},
 		grassSide: n => {
-			let r = 0, g = 0, b = 0, d = 0;
-			let pix = getPixels("0g0g70ordrzz0u30g730wa4vzz0xnyl8f11lrk7315qj7jz1fh47pb6553365533033636350335403653650063306333633300635163503655353653535605335031350330553500033033366333433663663535336655335055335553353530355333033503300333336635353663650660554353355635155305303053556333333366353323553060365553063030663533555365534355335530")
+			const pix = getPixels("0g0g70ordrzz0u30g730wa4vzz0xnyl8f11lrk7315qj7jz1fh47pb6553365533033636350335403653650063306333633300635163503655353653535605335031350330553500033033366333433663663535336655335055335553353530355333033503300333336635353663650660554353355635155305303053556333333366353323553060365553063030663533555365534355335530");
+
 			for (let i = 0; i < pix.length; i += 4) {
-				setPixel(n, i >> 2 & 15, i >> 6, pix[i], pix[i+1], pix[i+2], pix[i+3])
+				setPixel(n, i >> 2 & 15, i >> 6, pix[i], pix[i + 1], pix[i + 2], pix[i + 3]);
 			}
-			for (let x = 0; x < 16; x++) {
-				let m = Math.random() * 4 + 1
-				for (let y = 0; y < m; y++) {
-					d = Math.random() * 0.25 + 0.65
-					r = 0x54 * d
-					g = 0xa0 * d
-					b = 0x48 * d
-					setPixel(n, x, y, r, g, b)
+
+			const { random } = Math;
+
+			for (let x = 0; x < 16; ++x) {
+				const m = random() * 4 + 1;
+				for (let y = 0; y < m; ++y) {
+					const d = Math.random() * 0.25 + 0.65;
+					const r = 0x54 * d;
+					const g = 0xa0 * d;
+					const b = 0x48 * d;
+					setPixel(n, x, y, r, g, b);
 				}
 			}
 		},
 		leaves: n => {
-			let r = 0, g = 0, b = 0, a = 0
-			for (let x = 0; x < 16; x++) {
-				for (let y = 0; y < 16; y++) {
-					r = 0
-					g = Math.floor(Math.random() * 30 + 100)
-					b = Math.floor(Math.random() * 30)
-					if (Math.random() < 0.35) {
-						a = 0
-					} else {
-						a = 255
-					}
-					setPixel(n, x, y, r, g, b, a)
+			const { floor, random } = Math;
+
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					const r = 0;
+					const g = floor(random() * 30 + 100);
+					const b = floor(random() * 30);
+ 					const a = random() < 0.35
+						? 0x0
+						: 0xff;
+
+					setPixel(n, x, y, r, g, b, a);
 				}
 			}
 		},
 		oakPlanks: n => {
-			let r = 0
-			for (let y = 0; y < 16; y++) {
-				let a = (y & 3) === 3 ? 0.7 : 1
-				for (let x = 0; x < 16; x++) {
-					let mid = x === 8 && (y & 7) > 3 && a === 1 ? 0.85 : 1
-					let rit = x === 15 && (y & 7) < 3 && a === 1 ? 0.85 : 1
-					r = (Math.random() * 0.1 + 0.9) * a * mid * rit
+			for (let y = 0; y < 16; ++y) {
+
+				const a = 3 === y & 3
+					? 0.7
+					: 1.0;
+
+				for (let x = 0; x < 16; ++x) {
+					// these conditions are weird
+					const mid = x === 8 && (y & 7 > 3) && a === 1
+						? 0.85
+						: 1;
+
+					const rit = x === 15 && (y & 7 < 3) && a === 1
+						? 0.85
+						: 1;
+
+					const r = (Math.random() * 0.1 + 0.9) * a * mid * rit;
+
 					setPixel(n, x, y, 190 * r, 154 * r, 96 * r)
 				}
 			}
 		},
-		hitbox: function(n) {
-			for (let x = 0; x < 16; x++) {
-				for (let y = 0; y < 16; y++) {
-					setPixel(n, x, y, 0, 0, 0, 255)
+		hitbox: n => {
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					setPixel(n, x, y, 0, 0, 0, 0xff)
 				}
 			}
 		},
