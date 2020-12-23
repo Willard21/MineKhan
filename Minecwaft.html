@@ -649,16 +649,9 @@ function MineKhan() {
 				}
 			}
 
-			// this may have changed the old logic; TODO: confirm it hasn't
-			data.transparent = "transparent" in data && data.transparent;
-			// defaults to `false`
-
-			data.shadow = "shadow" in data && data.shadow === true;
-			// defaults to `false`
-
-			data.lightLevel = "lightLevel" in data
-				? data.lightLevel
-				: 0;
+			data.transparent = data.transparent || false;
+			data.shadow = data.shadow !== undefined ? data.shadow : true;
+			data.lightLevel = data.lightLevel || 0;
 		}
 	}
 
@@ -790,7 +783,6 @@ function MineKhan() {
 		}
 
 		// copy to avoid taking mod in perm[0]
-
 		perm.copyWithin(0x100, 0x0, 0x100);
 
 		function grad3d(i, x, y, z) {
