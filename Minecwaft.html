@@ -314,7 +314,7 @@ function MineKhan() {
 			for (let x = 0; x < 16; ++x) {
 				const m = random() * 4 + 1;
 				for (let y = 0; y < m; ++y) {
-					const d = Math.random() * 0.25 + 0.65;
+					const d = random() * 0.25 + 0.65;
 					const r = 0x54 * d;
 					const g = 0xa0 * d;
 					const b = 0x48 * d;
@@ -346,7 +346,7 @@ function MineKhan() {
 					: 1.0;
 
 				for (let x = 0; x < 16; ++x) {
-					// these conditions are weird
+					// these conditions are weird; can some comments be added here?
 					const mid = x === 8 && (y & 7 > 3) && a === 1
 						? 0.85
 						: 1;
@@ -357,7 +357,7 @@ function MineKhan() {
 
 					const r = (Math.random() * 0.1 + 0.9) * a * mid * rit;
 
-					setPixel(n, x, y, 190 * r, 154 * r, 96 * r)
+					setPixel(n, x, y, 190 * r, 154 * r, 96 * r);
 				}
 			}
 		},
@@ -470,7 +470,7 @@ function MineKhan() {
 		polishedGranite: "0g0g90l56fi70plgu0v0yhw0sf1424tmn17eb8cf1aqna4f1e3al8f1e3x7un1jnje2n8888786866866565843344345444334374744554442446418444243334553342844444453344443262343344443734428345543644444431844444423445544263422344554433636444433443344442734444444464334284473344244442318455444445543341633443264434455264443444334447412111001110111100",
 	}
 
-	let blockData = [
+	const blockData = [
 		{
 			name: "air",
 			id: 0,
@@ -611,42 +611,54 @@ function MineKhan() {
 		{ name: "polishedDiorite" },
 		{ name: "granite" },
 		{ name: "polishedGranite" },
-		// { // I swear, if y'all don't stop asking about TNT every 5 minutes!
-		// 	 name: "tnt",
-		// 	 textures: ["tntBottom", "tntTop", "tntSides"]
-		// },
-	]
+		// I swear, if y'all don't stop asking about TNT every 5 minutes!
+		/* {
+			name: "tnt",
+			textures: ["tntBottom", "tntTop", "tntSides"]
+		},*/
+	];
+
 	const BLOCK_COUNT = blockData.length;
 
-	//Set defaults on blockData
-	(function() {
-		for (let i = 1; i < BLOCK_COUNT; i++) {
-			let data = blockData[i]
-			data.id = i
+	// Set defaults on blockData
+	{
+		for (let i = 1; i < BLOCK_COUNT; ++i) {
+			const data = blockData[i];
+			data.id = i;
 
-			if (!data.textures) {
-				data.textures = [ data.name, data.name, data.name, data.name, data.name, data.name ]
-			} else if (typeof data.textures === "string") {
-				let texture = data.textures
-				data.textures = [ texture, texture, texture, texture, texture, texture ]
-			} else if (data.textures.length === 3) {
-				data.textures[3] = data.textures[2]
-				data.textures[4] = data.textures[2]
-				data.textures[5] = data.textures[2]
-			} else if (data.textures.length === 2) {
-			// Top and bottom are the first texture, sides are the second.
-				data.textures[2] = data.textures[1]
-				data.textures[3] = data.textures[2]
-				data.textures[4] = data.textures[2]
-				data.textures[5] = data.textures[2]
-				data.textures[1] = data.textures[0]
+			if ( !("textures" in data) ) {
+				data.textures = new Array(6).fill(data.name);
+			} else {
+				if (typeof textures === "string") {
+					data.textures = new Array(6).fill(data.texture);
+				} else {
+					const { textures } = data;
+
+					if (textures.length === 3) {
+						textures[3] = textures[2];
+						textures[4] = textures[2];
+						textures[5] = textures[2];
+					} else if (textures.length === 2) {
+						// Top and bottom are the first texture, sides are the second.
+						textures[2] = textures[1];
+						textures[3] = textures[2];
+						textures[4] = textures[2];
+						textures[5] = textures[2];
+						textures[1] = textures[0];
+					}
+				}
 			}
 
-			data.transparent = data.transparent || false
-			data.shadow = data.shadow !== undefined ? data.shadow : true
-			data.lightLevel = data.lightLevel || 0
+			// this may have changed the old logic; TODO: confirm it hasn't
+			data.transparent = "transparent" in data && data.transparent;
+
+			data.shadow = "shadow" in data && data.shadow;
+
+			data.lightLevel = "lightLevel" in data
+				? data.lightLevel
+				: 0;
 		}
-	})()
+	}
 
 	let win = window.parent
 	let doc = document
