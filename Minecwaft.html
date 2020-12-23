@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- @MineKhan version Alpha 0.7.0
+<!-- @MineKhan version Alpha 0.7.1
 
 	NOTE:
 The "Save" button saves your world to your local browser. Nobody else can see it. However, if you're on a public or shared computer, that save may be deleted unexpectedly. So it's a good idea to keep a safe copy of your save string somewhere where it won't be deleted.
 
-To share your save with other people, copy your world string into the "loadString" variable on line 188.
+To share your save with other people, copy your world string into the "loadString" variable on line 189.
 
 	Controls:
 
@@ -34,8 +34,9 @@ To share your save with other people, copy your world string into the "loadStrin
 
 	Notes and accreditation:
  * This program (MineKhan) was made by Willard (me). The original is https://www.khanacademy.org/cs/mc/5647155001376768 (just adding this so that spin-offs have it)
- * Zushah helped me with some of the menus in the 0.6 update via GitHub. https://www.khanacademy.org/profile/zushah77/
- * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118/
+ * Zushah helped me with some of the menus in the 0.6 update via GitHub. https://www.khanacademy.org/profile/zushah77
+ * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
+ * Danielkshin made the current main menu background. https://www.khanacademy.org/profile/danielkshin
 
  * This program originated as a spin-off of ScusCraft by ScusX.
  * It's 99% different code at this point, but I still never would have made it this far without his code for reference.
@@ -176,7 +177,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<div id="onhover" class="hidden"></div>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To save your world, copy/paste the saveString<br>
-		from this box into the code on line 188.<br>
+		from this box into the code on line 189.<br>
 		var loadString = "Your Code Here";<br>
 		Then save the program as a Spin-off.
 	</p>
@@ -185,23 +186,26 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<script>
 		// Code edits will erase the world.
 		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
-		var loadString = "Fountain;52umfj;d,8,7,-w,6s,3;Alpha 0.7.0;2,1f,28,29,2a,8j,9c,e9,gi,18w,1z5,21e,2ts,3ma,4eo,54x,576;0,0,0,tj4,19c1,19c2,19c3,130k,k28,k29,k2a,k2b,k2c,tq8,7lt,7lu,7lv,137o,k9c,h3l,h3m,h3n,k9g,1fk,1fl,1fm,1fn,1fo,1fp,16j4,16j5,16j6,16j7,16j8,e39,x2d,7sw,7sx,7sy,7sz,7t0,kgg,hap,haq,har,kgk,1mo,1mp,1mq,1mr,1ms,1mt,4sw,b4h,b4i,b4j,4t0,10et,b4x,b4y,b4z,b5d,b5e,b5f,b5t,b5u,b5v,knl,hhu,knn,1ts,1tt,1tu,1tv,1tw,1tx,500,501,502,503,504,10lx,50i,50y,51e,hoy,20w,20x,20y,20z,210,211,574,575,576,577,578,10t1,280,281,282,283,284,285,1gsw,1gsx,1gsy,1gsz,1gt0,evp,1dnp;0,0,-1,1fz,e3j,nlb,1n3,qxr,1u7,r4v,21b,rbz,28f,evz,1dnz"
+		var loadString = ""
 	</script>
 	<script type="x-shader/vertex" id="blockVertexShader">
 		attribute vec3  aVertex;
 		attribute vec2  aTexture;
 		attribute float aShadow;
+		attribute float aSkylight;
+		attribute float aBlocklight;
 		varying vec2  vTexture;
 		varying float vShadow;
 		varying float vFog;
 		uniform mat4 uView;
 		uniform float uDist;
 		uniform vec3 uPos;
+		uniform float uTime;
 
-		void main(void) {
+		void main() {
 			vTexture = aTexture;
-			vShadow = aShadow > 0.0 ? aShadow : 1.0;
-			gl_Position = uView * vec4( aVertex, 1.0);
+			vShadow = aShadow * min(max(aSkylight * uTime, aBlocklight) * 0.9 + 0.1, 1.0);
+			gl_Position = uView * vec4(aVertex, 1.0);
 
 			float range = max(uDist / 5.0, 8.0);
 			vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);
@@ -215,18 +219,19 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		#endif
 
 		uniform sampler2D uSampler;
+		uniform float uTime;
 		varying float vShadow;
 		varying vec2 vTexture;
 		varying float vFog;
 
 		vec4 fog(vec4 color) {
-			color.r += (0.33 - color.r) * vFog;
-			color.g += (0.54 - color.g) * vFog;
-			color.b += (0.72 - color.b) * vFog;
+			color.r += (uTime * 0.33 - color.r) * vFog;
+			color.g += (uTime * 0.54 - color.g) * vFog;
+			color.b += (uTime * 0.72 - color.b) * vFog;
 			return color;
 		}
 
-		void main(void){
+		void main(){
 			vec4 color = texture2D(uSampler, vTexture);
 			gl_FragColor = fog(vec4(color.rgb * vShadow, color.a));
 			if (gl_FragColor.a == 0.0) discard;
@@ -239,7 +244,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		varying vec2 vTexture;
 		varying float vShadow;
 
-		void main(void) {
+		void main() {
 			vTexture = aTexture;
 			vShadow = aShadow;
 			gl_Position = vec4(aVertex, 0.5, 1.0);
@@ -256,13 +261,14 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		varying vec2 vTexture;
 		varying float vShadow;
 
-		void main(void) {
+		void main() {
 			vec4 color = texture2D(uSampler, vTexture);
 			gl_FragColor = vec4(color.rgb * vShadow, color.a);
 			if (gl_FragColor.a == 0.0) discard;
 		}
 	</script>
 	<script type="application/javascript">
+	"use strict";
 window.canvas = document.getElementById("overlay")
 window.ctx = canvas.getContext("2d")
 window.savebox = document.getElementById("savebox")
@@ -562,7 +568,10 @@ function MineKhan() {
 		},
 		{ name: "netherrack" },
 		{ name: "soulSand" },
-		{ name: "glowstone" },
+		{
+			name: "glowstone",
+			lightLevel: 15
+		},
 		{ name: "netherWartBlock" },
 		{ name: "netherBricks" },
 		{ name: "redNetherBricks" },
@@ -620,6 +629,7 @@ function MineKhan() {
 
 			data.transparent = data.transparent || false
 			data.shadow = data.shadow !== undefined ? data.shadow : true
+			data.lightLevel = data.lightLevel || 0
 		}
 	})()
 
@@ -1078,7 +1088,7 @@ function MineKhan() {
 
 	//globals
 	//{
-	let version = "Alpha 0.7.0"
+	let version = "Alpha 0.7.1"
 	let reach = 5 // Max distance player can place or break blocks
 	let sky = [0.33, 0.54, 0.72] // 0 to 1 RGB color scale
 	let superflat = false
@@ -2272,13 +2282,13 @@ function MineKhan() {
 		return `${minutes} minute${minutes > 1 ? "s" : ""} ago`
 	}
 	function roundBits(number) {
-		return Math.round(number * 1000000) / 1000000
+		return ((number * 1000000 + 0.5) | 0) / 1000000
 	}
 	function rayTrace(x, y, z, shape) {
 		let cf, cd = 1e9; //Closest face and distance
 		let m; //Absolute distance to intersection point
 		let ix, iy, iz; //Intersection coords
-		let minX, miny, minz, maxX, maxY, maxZ, min, max; //Bounds of face coordinates
+		let minX, minY, minZ, maxX, maxY, maxZ, min, max; //Bounds of face coordinates
 		let east = p.direction.x < 0
 		let top = p.direction.y < 0
 		let north = p.direction.z < 0
@@ -2995,12 +3005,162 @@ function MineKhan() {
 			return ret
 		},
 	}
+	function average(l, a, b, c, d) {
+		a = l[a]
+		b = l[b]
+		c = l[c]
+		d = l[d]
+		let count = 1
+		let zero = 0
+		let total = a
+		if (b) {
+			total += b
+			count++
+		} else zero++
+		if (c) {
+			total += c
+			count++
+		} else zero++
+		if (d) {
+			total += d
+			count++
+		} else zero++
 
+		let max = Math.max(a, b, c, d)
+		if (max > 2) {
+			return total / (count * 15)
+		}
+		if (max > 1) {
+			return zero ? total / (count * 15 + 15) : total / (count * 15)
+		}
+		return (total) / 60
+	}
+	let getLight = {
+		ret: [],
+		blocks: [],
+		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x-1, y-1, z-1, block)
+			blocks[1] = getBlock(x, y-1, z-1, block)
+			blocks[2] = getBlock(x+1, y-1, z-1, block)
+			blocks[3] = getBlock(x-1, y-1, z, block)
+			blocks[4] = getBlock(x, y-1, z, block)
+			blocks[5] = getBlock(x+1, y-1, z, block)
+			blocks[6] = getBlock(x-1, y-1, z+1, block)
+			blocks[7] = getBlock(x, y-1, z+1, block)
+			blocks[8] = getBlock(x+1, y-1, z+1, block)
+
+			ret[0] = average(blocks, 4, 0, 1, 3)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 5, 7, 8)
+			ret[3] = average(blocks, 4, 3, 6, 7)
+			return ret
+		},
+		bottom: function(x, y, z, block) { // Actually the top
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x-1, y+1, z-1, block)
+			blocks[1] = getBlock(x, y+1, z-1, block)
+			blocks[2] = getBlock(x+1, y+1, z-1, block)
+			blocks[3] = getBlock(x-1, y+1, z, block)
+			blocks[4] = getBlock(x, y+1, z, block)
+			blocks[5] = getBlock(x+1, y+1, z, block)
+			blocks[6] = getBlock(x-1, y+1, z+1, block)
+			blocks[7] = getBlock(x, y+1, z+1, block)
+			blocks[8] = getBlock(x+1, y+1, z+1, block)
+
+			ret[0] = average(blocks, 4, 3, 6, 7)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 1, 2, 5)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		north: function(x, y, z, block) {
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x-1, y-1, z+1, block)
+			blocks[1] = getBlock(x, y-1, z+1, block)
+			blocks[2] = getBlock(x+1, y-1, z+1, block)
+			blocks[3] = getBlock(x-1, y, z+1, block)
+			blocks[4] = getBlock(x, y, z+1, block)
+			blocks[5] = getBlock(x+1, y, z+1, block)
+			blocks[6] = getBlock(x-1, y+1, z+1, block)
+			blocks[7] = getBlock(x, y+1, z+1, block)
+			blocks[8] = getBlock(x+1, y+1, z+1, block)
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 3, 6, 7)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 1, 2, 5)
+			return ret
+		},
+		south: function(x, y, z, block) {
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x-1, y-1, z-1, block)
+			blocks[1] = getBlock(x-1, y, z-1, block)
+			blocks[2] = getBlock(x-1, y+1, z-1, block)
+			blocks[3] = getBlock(x, y-1, z-1, block)
+			blocks[4] = getBlock(x, y, z-1, block)
+			blocks[5] = getBlock(x, y+1, z-1, block)
+			blocks[6] = getBlock(x+1, y-1, z-1, block)
+			blocks[7] = getBlock(x+1, y, z-1, block)
+			blocks[8] = getBlock(x+1, y+1, z-1, block)
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		east: function(x, y, z, block) {
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x+1, y-1, z-1, block)
+			blocks[1] = getBlock(x+1, y, z-1, block)
+			blocks[2] = getBlock(x+1, y+1, z-1, block)
+			blocks[3] = getBlock(x+1, y-1, z, block)
+			blocks[4] = getBlock(x+1, y, z, block)
+			blocks[5] = getBlock(x+1, y+1, z, block)
+			blocks[6] = getBlock(x+1, y-1, z+1, block)
+			blocks[7] = getBlock(x+1, y, z+1, block)
+			blocks[8] = getBlock(x+1, y+1, z+1, block)
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		west: function(x, y, z, block) {
+			let blocks = this.blocks
+			let ret = this.ret
+			blocks[0] = getBlock(x-1, y-1, z-1, block)
+			blocks[1] = getBlock(x-1, y, z-1, block)
+			blocks[2] = getBlock(x-1, y+1, z-1, block)
+			blocks[3] = getBlock(x-1, y-1, z, block)
+			blocks[4] = getBlock(x-1, y, z, block)
+			blocks[5] = getBlock(x-1, y+1, z, block)
+			blocks[6] = getBlock(x-1, y-1, z+1, block)
+			blocks[7] = getBlock(x-1, y, z+1, block)
+			blocks[8] = getBlock(x-1, y+1, z+1, block)
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 3, 6, 7)
+			return ret
+		},
+	}
+
+	/*
 	function interpolateShadows(shadows, x, y) {
 		let sx = (shadows[1] - shadows[0]) * x + shadows[0]
 		let sx2 = (shadows[3] - shadows[2]) * x + shadows[2]
 		return (sx2 - sx) * y + sx
 	}
+	*/
 
 	class Section {
 		constructor(x, y, z, size, chunk) {
@@ -3010,7 +3170,7 @@ function MineKhan() {
 			this.size = size
 			this.arraySize = size * size * size
 			this.blocks = new Int32Array(this.arraySize)
-			this.compressed = new Uint8Array(this.arraySize)
+			this.light = new Uint8Array(this.arraySize)
 			this.renderData = []
 			this.renderLength = 0
 			this.faces = 0
@@ -3137,18 +3297,22 @@ function MineKhan() {
 			}
 			let length = this.renderLength
 			let rData = this.renderData
-			let x = 0, y = 0, z = 0, loc = 0, data = 0, sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0, verts = null, texVerts = null, texShapeVerts = null, tx = 0, ty = 0
+			let x = 0, y = 0, z = 0, loc = 0, data = 0,
+				sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0,
+				verts = null, texVerts = null, texShapeVerts = null,
+				tx = 0, ty = 0, blight = 0, slight = 0
 			let wx = this.x, wy = this.y, wz = this.z
 			let blocks = world.getAdjacentSubchunks(wx, wy, wz)
+			let lightChunks = world.getAdjacentSubchunks(wx, wy, wz, true)
 			let block = null
 
-			let shadows = null
+			let shadows = null, lights = null
 			let blockSides = Object.keys(Block)
 			let side = ""
 			let shapeVerts = null
 			let shapeTexVerts = null
 			let pallete = this.pallete
-			let intShad = interpolateShadows
+			// let intShad = interpolateShadows
 			
 			for (let i = 0; i < length; i++) {
 				data = rData[i]
@@ -3159,6 +3323,8 @@ function MineKhan() {
 				x = loc & 15
 				y = loc >> 4 & 15
 				z = loc >> 8 & 15
+				blight = block.lightLevel / 15
+				slight = this.getLight(x, y, z) / 15
 
 				x2 = x + this.x
 				y2 = y + this.y
@@ -3172,14 +3338,8 @@ function MineKhan() {
 					side = blockSides[n]
 					if (sides & Block[side]) {
 						shadows = getShadows[side](x, y, z, blocks)
+						lights = getLight[side](x, y, z, lightChunks)
 						let directionalFaces = shapeVerts[Sides[side]]
-						// if (directionalFaces.length > 1) {
-						// 	let average = (shadows[0] + shadows[1] + shadows[2] + shadows[3]) / 4
-						// 	shadows[0] = average
-						// 	shadows[1] = average
-						// 	shadows[2] = average
-						// 	shadows[3] = average
-						// }
 						for (let facei = 0; facei < directionalFaces.length; facei++) {
 							verts = directionalFaces[facei]
 							texVerts = textureCoords[textureMap[tex[texNum]]]
@@ -3193,28 +3353,36 @@ function MineKhan() {
 							barray[index+3] = tx + texShapeVerts[0]
 							barray[index+4] = ty + texShapeVerts[1]
 							barray[index+5] = shadows[0]
+							barray[index+6] = lights[0] // skylight
+							barray[index+7] = blight
 
-							barray[index+6] = verts[3] + x2
-							barray[index+7] = verts[4] + y2
-							barray[index+8] = verts[5] + z2
-							barray[index+9] = tx + texShapeVerts[2]
-							barray[index+10] = ty + texShapeVerts[3]
-							barray[index+11] = shadows[1]
+							barray[index+8] = verts[3] + x2
+							barray[index+9] = verts[4] + y2
+							barray[index+10] = verts[5] + z2
+							barray[index+11] = tx + texShapeVerts[2]
+							barray[index+12] = ty + texShapeVerts[3]
+							barray[index+13] = shadows[1]
+							barray[index+14] = lights[1]
+							barray[index+15] = blight
 
-							barray[index+12] = verts[6] + x2
-							barray[index+13] = verts[7] + y2
-							barray[index+14] = verts[8] + z2
-							barray[index+15] = tx + texShapeVerts[4]
-							barray[index+16] = ty + texShapeVerts[5]
-							barray[index+17] = shadows[2]
+							barray[index+16] = verts[6] + x2
+							barray[index+17] = verts[7] + y2
+							barray[index+18] = verts[8] + z2
+							barray[index+19] = tx + texShapeVerts[4]
+							barray[index+20] = ty + texShapeVerts[5]
+							barray[index+21] = shadows[2]
+							barray[index+22] = lights[2]
+							barray[index+23] = blight
 
-							barray[index+18] = verts[9] + x2
-							barray[index+19] = verts[10] + y2
-							barray[index+20] = verts[11] + z2
-							barray[index+21] = tx + texShapeVerts[6]
-							barray[index+22] = ty + texShapeVerts[7]
-							barray[index+23] = shadows[3]
-							index += 24
+							barray[index+24] = verts[9] + x2
+							barray[index+25] = verts[10] + y2
+							barray[index+26] = verts[11] + z2
+							barray[index+27] = tx + texShapeVerts[6]
+							barray[index+28] = ty + texShapeVerts[7]
+							barray[index+29] = shadows[3]
+							barray[index+30] = lights[3]
+							barray[index+31] = blight
+							index += 32
 						}
 					}
 					texNum++
@@ -3265,10 +3433,21 @@ function MineKhan() {
 				}
 			}
 		}
+		getLight(x, y, z, block = 0) {
+			let s = this.size
+			let i = x * s * s + y * s + z
+			return (this.light[i] & 15 << (block * 4)) >> (block * 4)
+		}
+		setLight(x, y, z, level, block = 0) {
+			let s = this.size
+			let i = x * s * s + y * s + z
+			this.light[i] = level << (block * 4) | (this.light[i] & 15 << (!block * 4))
+		}
 	}
 	let emptySection = new Section(0, 0, 0, 16)
 	let fullSection = new Section(0, 0, 0, 16)
 	fullSection.blocks.fill(blockIds.bedrock)
+	emptySection.light.fill(15)
 
 	class Chunk {
 		constructor(x, z) {
@@ -3278,10 +3457,11 @@ function MineKhan() {
 			this.minY = 255
 			this.sections = []
 			this.cleanSections = []
-			this.tops = new Uint8Array(16 * 16); // Store the heighest block at every (x,z) coordinate
+			this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
 			this.optimized = false
 			this.generated = false; // Terrain
-			this.populated = superflat; // Trees and ores
+			this.populated = superflat // Trees and ores
+			this.lit = false
 			this.lazy = false
 			this.edited = false
 			this.loaded = false
@@ -3293,7 +3473,7 @@ function MineKhan() {
 			let s = y >> 4
 			return this.sections.length > s ? this.sections[s].getBlock(x, y & 15, z) : 0
 		}
-		setBlock(x, y, z, blockID, hidden, user) {
+		setBlock(x, y, z, blockID, user) {
 			if (!this.sections[y >> 4]) {
 				do {
 					this.sections.push(new Section(this.x, this.sections.length * 16, this.z, 16, this))
@@ -3304,7 +3484,148 @@ function MineKhan() {
 				this.sections[y >> 4].edited = true
 				this.edited = true
 			}
-			this.sections[y >> 4].setBlock(x, y & 15, z, blockID, hidden)
+			this.sections[y >> 4].setBlock(x, y & 15, z, blockID)
+		}
+		fillLight() {
+			let max = this.sections.length * 16 - 1
+
+			// Set virtical columns of light to level 15
+			for (let x = 0; x < 16; x++) {
+				for (let z = 0; z < 16; z++) {
+					for (let y = max; y >= 0; y--) {
+						if (this.getBlock(x, y, z)) {
+							this.tops[z * 16 + x] = y
+							break
+						}
+						this.setLight(x, y, z, 15)
+					}
+				}
+			}
+
+			// Spread the light to places where the virtical columns stopped earlier, plus chunk borders
+			let spread = []
+			for (let x = 0; x < 16; x++) {
+				for (let z = 0; z < 16; z++) {
+					for (let y = this.tops[z * 16 + x] + 1; y <= max; y++) {
+						if (x === 15 || this.tops[z * 16 + x + 1] > y) {
+							spread.push(x + this.x, y, z + this.z)
+							continue
+						}
+						if (x === 0 || this.tops[z * 16 + x - 1] > y) {
+							spread.push(x + this.x, y, z + this.z)
+							continue
+						}
+						if (z === 15 || this.tops[(z + 1) * 16 + x] > y) {
+							spread.push(x + this.x, y, z + this.z)
+							continue
+						}
+						if (z === 0 || this.tops[(z - 1) * 16 + x] > y) {
+							spread.push(x + this.x, y, z + this.z)
+							continue
+						}
+						break
+					}
+				}
+			}
+			// for (let i = 0; i < spread.length; i += 3) {
+			// 	this.setBlock(spread[i], spread[i+1], spread[i+2], blockIds.redConcrete)
+			// }
+			this.spreadLight(spread, 14)
+			this.lit = true
+		}
+		setLight(x, y, z, level, block) {
+			this.sections[y >> 4].setLight(x, y & 15, z, level, block)
+		}
+		getLight(x, y, z) {
+			if (y >= this.sections.length * 16) return 15
+			return this.sections[y >> 4].getLight(x, y & 15, z)
+		}
+		trySpread(x, y, z, level, spread) {
+			if (world.getLight(x, y, z) < level) {
+				if (blockData[world.getBlock(x, y, z)].transparent) {
+					world.setLight(x, y, z, level)
+					spread.push(x, y, z)
+				}
+			}
+		}
+		spreadLight(blocks, level, update = false) {
+			let spread = []
+			let x = 0, y = 0, z = 0
+			for (let i = 0; i < blocks.length; i += 3) {
+				x = blocks[i]
+				y = blocks[i+1]
+				z = blocks[i+2]
+				this.trySpread(x - 1, y, z, level, spread)
+				this.trySpread(x + 1, y, z, level, spread)
+				this.trySpread(x, y - 1, z, level, spread)
+				this.trySpread(x, y + 1, z, level, spread)
+				this.trySpread(x, y, z - 1, level, spread)
+				this.trySpread(x, y, z + 1, level, spread)
+
+				if (update && (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15)) {
+					let chunk = world.getChunk(x, z)
+					if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+						world.meshQueue.push(chunk)
+					}
+				}
+			}
+			if (level > 1 && spread.length) {
+				this.spreadLight(spread, level - 1, update)
+			}
+		}
+		tryUnSpread(x, y, z, level, spread, respread) {
+			let light = world.getLight(x, y, z)
+			let trans = blockData[world.getBlock(x, y, z)].transparent
+			if (light === level) {
+				if (trans) {
+					world.setLight(x, y, z, 0)
+					spread.push(x, y, z)
+					if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
+						let chunk = world.getChunk(x, z)
+						if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+							world.meshQueue.push(chunk)
+						}
+					}
+				}
+			} else if (trans && light > level) {
+				respread[light].push(x, y, z)
+			}
+		}
+		unSpreadLight(blocks, level, respread) {
+			let spread = []
+			let x = 0, y = 0, z = 0
+			for (let i = 0; i < blocks.length; i += 3) {
+				x = blocks[i]
+				y = blocks[i+1]
+				z = blocks[i+2]
+				this.tryUnSpread(x - 1, y, z, level, spread, respread)
+				this.tryUnSpread(x + 1, y, z, level, spread, respread)
+				this.tryUnSpread(x, y - 1, z, level, spread, respread)
+				this.tryUnSpread(x, y + 1, z, level, spread, respread)
+				this.tryUnSpread(x, y, z - 1, level, spread, respread)
+				this.tryUnSpread(x, y, z + 1, level, spread, respread)
+			}
+			if (level > 1 && spread.length) {
+				this.unSpreadLight(spread, level - 1, respread)
+			}
+		}
+		reSpreadLight(respread) {
+			for (let i = respread.length - 1; i > 1; i--) {
+				let blocks = respread[i]
+				let level = i - 1
+				let spread = respread[level]
+				for (let j = 0; j < blocks.length; j += 3) {
+					let x = blocks[j]
+					let y = blocks[j+1]
+					let z = blocks[j+2]
+					this.trySpread(x - 1, y, z, level, spread)
+					this.trySpread(x + 1, y, z, level, spread)
+					this.trySpread(x, y - 1, z, level, spread)
+					this.trySpread(x, y + 1, z, level, spread)
+					this.trySpread(x, y, z - 1, level, spread)
+					this.trySpread(x, y, z + 1, level, spread)
+				}
+			}
 		}
 		optimize() {
 			for (let i = 0; i < this.sections.length; i++) {
@@ -3360,14 +3681,15 @@ function MineKhan() {
 		}
 		populate() {
 			randomSeed(hash(this.x, this.z) * 210000000)
-			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
+			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false, topsi = 0
 
 			for (let i = 0; i < 16; i++) {
 				for (let k = 0; k < 16; k++) {
 					wx = this.x + i
 					wz = this.z + k
+
 					ground = this.tops[k * 16 + i]
-					if (trees && random() < 0.005 && this.getBlock(i, ground, k)) {
+					if (trees && random() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
 
 						top = ground + Math.floor(4.5 + random(2.5))
 						rand = Math.floor(random(4096))
@@ -3523,17 +3845,21 @@ function MineKhan() {
 			}
 			this.maxY = maxY
 			this.minY = minY
-			this.faces = data.length / 24
+			this.faces = data.length / 32
 			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
-			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
 			gl.enableVertexAttribArray(glCache.aVertex)
-			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
 			gl.enableVertexAttribArray(glCache.aTexture)
-			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
 			gl.enableVertexAttribArray(glCache.aShadow)
+			gl.enableVertexAttribArray(glCache.aSkylight)
+			gl.enableVertexAttribArray(glCache.aBlocklight)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 32, 0)
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 32, 12)
+			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 32, 20)
+			gl.vertexAttribPointer(glCache.aSkylight, 1, gl.FLOAT, false, 32, 24)
+			gl.vertexAttribPointer(glCache.aBlocklight, 1, gl.FLOAT, false, 32, 28)
 			glExtensions.vertex_array_object.bindVertexArrayOES(null)
 			this.lazy = false
 		}
@@ -3603,15 +3929,25 @@ function MineKhan() {
 	function fillReqs(x, z) {
 		// Chunks must all be loaded first.
 		var done = true
-		for (let i = x - 2; i <= x + 2; i++) {
-			for (let j = z - 2; j <= z + 2; j++) {
+		for (let i = x - 3; i <= x + 3; i++) {
+			for (let j = z - 3; j <= z + 3; j++) {
 				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
 				if (!chunk.generated) {
 					world.generateQueue.push(chunk)
 					done = false
 				}
-				if (!chunk.populated && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
+				if (!chunk.populated && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
 					world.populateQueue.push(chunk)
+					done = false
+				}
+				if (world.loadFrom.length && !chunk.loaded && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
+					world.loadQueue.push(chunk)
+					done = false
+				} else if (!world.loadFrom.length && !chunk.loaded) {
+					chunk.loaded = true
+				}
+				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
+					world.lightingQueue.push(chunk)
 					done = false
 				}
 			}
@@ -3635,6 +3971,7 @@ function MineKhan() {
 	}
 
 	let fogDist = 16
+	let frameCount = -3600
 	class World {
 		constructor() {
 			generatedChunks = 0
@@ -3651,6 +3988,8 @@ function MineKhan() {
 			this.chunkGenQueue = []
 			this.populateQueue = []
 			this.generateQueue = []
+			this.lightingQueue = []
+			this.loadQueue = []
 			this.meshQueue = []
 			this.loadFrom = []
 			this.lastChunk = ","
@@ -3685,7 +4024,7 @@ function MineKhan() {
 			}
 			chunk.generated = true
 		}
-		getAdjacentSubchunks(x, y, z) {
+		getAdjacentSubchunks(x, y, z, lights) {
 			let minChunkX = x - 16 >> 4
 			let maxChunkX = x + 16 >> 4
 			let minChunkY = y - 16 >> 4
@@ -3698,12 +4037,12 @@ function MineKhan() {
 				for (let y = minChunkY; y <= maxChunkY; y++) {
 					for (z = minChunkZ; z <= maxChunkZ; z++) {
 						if (y < 0) {
-							ret.push(fullSection.blocks)
+							ret.push(lights ? fullSection.light : fullSection.blocks)
 						} else if (this.chunks[x] && this.chunks[x][z]) {
 							section = this.chunks[x][z].sections[y] || emptySection
-							ret.push(section.blocks)
+							ret.push(lights ? section.light : section.blocks)
 						} else {
-							ret.push(emptySection.blocks)
+							ret.push(lights ? emptySection.light : emptySection.blocks)
 						}
 					}
 				}
@@ -3715,6 +4054,11 @@ function MineKhan() {
 			if (chunk && chunk.buffer) {
 				chunk.updateBlock(x & 15, y, z & 15, this, lazy)
 			}
+		}
+		getChunk(x, z) {
+			let X = (x >> 4) + this.offsetX
+			let Z = (z >> 4) + this.offsetZ
+			return this.loaded[X * this.lwidth + Z]
 		}
 		getWorldBlock(x, y, z) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
@@ -3743,9 +4087,13 @@ function MineKhan() {
 			let xm = x & 15
 			let zm = z & 15
 			if (blockID) {
-				chunk.setBlock(xm, y, zm, blockID, false, !lazy)
+				chunk.setBlock(xm, y, zm, blockID, !lazy)
+				if (!lazy && chunk.buffer && !blockData[blockID].transparent && screen !== "loading") this.updateLight(x, y, z, true)
+				
 			} else {
+				let data = blockData[chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
+				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") this.updateLight(x, y, z, false)
 			}
 
 			if (lazy) {
@@ -3778,6 +4126,73 @@ function MineKhan() {
 			if (xm === 0 && zm === 15) { this.updateBlock(x - 1, y, z + 1, lazy); }
 			if (xm & zm === 15) { this.updateBlock(x + 1, y, z + 1, lazy); }
 		}
+		getLight(x, y, z) {
+			let X = (x >> 4) + this.offsetX
+			let Z = (z >> 4) + this.offsetZ
+			if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
+				return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
+			}
+			return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15)
+		}
+		setLight(x, y, z, level, block) {
+			let X = (x >> 4) + this.offsetX
+			let Z = (z >> 4) + this.offsetZ
+			return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+		}
+		updateLight(x, y, z, place) {
+			let chunk = this.getChunk(x, z)
+			let cx = x & 15
+			let cz = z & 15
+			let center = chunk.getLight(cx, y, cz)
+			//if (center < 2) return
+			let up = this.getLight(x, y+1, z)
+			let down = this.getLight(x, y-1, z)
+			let north = this.getLight(x, y, z+1)
+			let south = this.getLight(x, y, z-1)
+			let east = this.getLight(x+1, y, z)
+			let west = this.getLight(x-1, y, z)
+
+			let spread = []
+			if (!place) { // Block was removed; increase light levels
+				if ((up & 15) === 15) {
+					for (let i = y; i > 0; i--) {
+						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
+							chunk.setLight(cx, i, cz, 15)
+							spread.push(x, i, z)
+						} else {
+							break
+						}
+					}
+					chunk.spreadLight(spread, 14, true)
+				} else {
+					center = Math.max(up, down, north, south, east, west)
+					if (center > 0) center -= 1
+					this.setLight(x, y, z, center)
+					if (center > 1) {
+						spread.push(x, y, z)
+						chunk.spreadLight(spread, center - 1, true)
+					}
+				}
+			} else { // Block was placed; decrease light levels
+				let respread = []
+				if (center === 0) return
+				for (let i = 0; i <= center + 1; i++) respread[i] = []
+				chunk.setLight(cx, y, cz, 0)
+				spread.push(x, y, z)
+				if (center === 15) {
+					for (let i = y-1; i > 0; i--) {
+						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
+							chunk.setLight(cx, i, cz, 0)
+							spread.push(x, i, z)
+						} else {
+							break
+						}
+					}
+				}
+				chunk.unSpreadLight(spread, center - 1, respread)
+				chunk.reSpreadLight(respread)
+			}
+		}
 		spawnBlock(x, y, z, blockID) {
 			//Sets a block anywhere without causing block updates around it. Only to be used in world gen.
 
@@ -3795,7 +4210,7 @@ function MineKhan() {
 				//Only used if spawning a block post-gen
 				this.setBlock(x, y, z, blockID, true)
 			} else if (!chunk.getBlock(x & 15, y, z & 15)) {
-				chunk.setBlock(x & 15, y, z & 15, blockID, false)
+				chunk.setBlock(x & 15, y, z & 15, blockID)
 			}
 		}
 		tick() {
@@ -3853,12 +4268,22 @@ function MineKhan() {
 					doneWork = true
 				}
 
+				if (this.loadQueue.length && !doneWork) {
+					this.loadQueue.pop().load()
+					doneWork = true
+					if (!this.loadQueue.length) {
+						return
+					}
+				}
+				if (this.lightingQueue.length && !doneWork) {
+					this.lightingQueue.pop().fillLight()
+					doneWork = true
+				}
+
 				if (this.chunkGenQueue.length && !doneWork) {
 					let chunk = this.chunkGenQueue[0]
 					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {}
-					else if (!chunk.loaded) {
-						chunk.load()
-					} else if (!chunk.optimized) {
+					else if (!chunk.optimized) {
 						chunk.optimize(this)
 						debug("Optimize")
 					} else if (!chunk.buffer) {
@@ -3877,6 +4302,8 @@ function MineKhan() {
 		}
 		render() {
 			initModelView(p)
+			let skyLight = 1 // Math.min(Math.max(Math.abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
+			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
 			p2.x = Math.round(p.x)
@@ -3898,6 +4325,7 @@ function MineKhan() {
 			}
 			gl.uniform3f(glCache.uPos, p.x, p.y, p.z)
 			gl.uniform1f(glCache.uDist, fogDist)
+			gl.uniform1f(glCache.uTime, skyLight)
 
 			let c = this.sortedChunks
 			for (let chunk of c) {
@@ -3915,7 +4343,7 @@ function MineKhan() {
 			}
 		}
 		loadChunks() {
-			let renderDistance = settings.renderDistance + 2
+			let renderDistance = settings.renderDistance + 3
 			let cx = p.x >> 4
 			let cz = p.z >> 4
 			p.cx = cx
@@ -3929,6 +4357,9 @@ function MineKhan() {
 			this.offsetZ = -minChunkZ
 			this.lwidth = renderDistance * 2 + 1
 			this.chunkGenQueue.length = 0
+			this.lightingQueue.length = 0
+			this.populateQueue.length = 0
+			this.generateQueue.length = 0
 
 			if (this.loaded.length > this.lwidth * this.lwidth) {
 				this.loaded.length = this.lwidth * this.lwidth
@@ -4480,6 +4911,7 @@ function MineKhan() {
 			if (code) {
 				try {
 					world.loadSave(code)
+					world.id = world.id || Date.now()
 				}
 				catch(e) {
 					alert("Unable to load save")
@@ -4645,6 +5077,10 @@ function MineKhan() {
 		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
 		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
 		gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
+		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
 		gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
 	}
 
@@ -4836,13 +5272,15 @@ function MineKhan() {
 		}
 	}
 	function trackMouse(e) {
-		cursor("")
-		mouseX = e.x
-		mouseY = e.y
-		drawScreens[screen]()
-		Button.draw()
-		Slider.draw()
-		Slider.drag()
+		if (screen !== "play") {
+			cursor("")
+			mouseX = e.x
+			mouseY = e.y
+			drawScreens[screen]()
+			Button.draw()
+			Slider.draw()
+			Slider.drag()
+		}
 	}
 	document.onmousemove = trackMouse
 	document.onpointerlockchange = function() {
@@ -5097,6 +5535,8 @@ function MineKhan() {
 		gl.disableVertexAttribArray(glCache.aTexture)
 		gl.disableVertexAttribArray(glCache.aShadow)
 		gl.disableVertexAttribArray(glCache.aVertex)
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.useProgram(program2D)
 		
 		gl.enableVertexAttribArray(glCache.aVertex2)
@@ -5112,6 +5552,8 @@ function MineKhan() {
 		gl.enableVertexAttribArray(glCache.aVertex)
 		gl.enableVertexAttribArray(glCache.aTexture)
 		gl.enableVertexAttribArray(glCache.aShadow)
+		gl.enableVertexAttribArray(glCache.aSkylight)
+		gl.enableVertexAttribArray(glCache.aBlocklight)
 	}
 
 	let maxLoad = 1
@@ -5170,7 +5612,10 @@ function MineKhan() {
 		glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
 		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
+		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
+		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
+		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
 		glCache.aTexture = gl.getAttribLocation(program3D, "aTexture")
 		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
@@ -5221,15 +5666,61 @@ function MineKhan() {
 		const HALF_PI = Math.PI / 2
 		initModelView(null, 0, 0.5, 0, -HALF_PI / 25, -HALF_PI / 3)
 		gl.disableVertexAttribArray(glCache.aShadow)
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.vertexAttrib1f(glCache.aShadow, 1.0)
+		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
+		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
 		
-		let blocks = [[7, 4, 1, 7], [7, 4, 2, 7], [7, 4, 3, 7], [7, 4, 4, 7], [7, 5, 1, 7], [7, 5, 2, 7], [7, 5, 3, 7], [6, 4, 0, 7], [6, 4, 1, 7], [6, 4, 2, 7], [6, 4, 3, 7], [6, 4, 4, 7], [6, 5, 0, 7], [6, 5, 1, 7], [6, 5, 2, 7], [6, 5, 3, 7], [6, 5, 4, 7], [6, 6, 3, 7], [6, 6, 4, 7], [6, 7, 3, 7], [5, 0, -1, 1], [5, 0, 0, 1], [5, 0, 1, 1], [5, 0, 2, 1], [5, 1, 2, 29], [5, 2, 2, 29], [5, 3, 2, 29], [5, 4, 2, 29], [5, 5, 2, 29], [5, 6, 2, 29], [5, 4, 0, 7], [5, 4, 1, 7], [5, 4, 3, 7], [5, 4, 4, 7], [5, 5, 0, 7], [5, 5, 1, 7], [5, 5, 3, 7], [5, 5, 4, 7], [5, 6, 1, 7], [5, 6, 3, 7], [5, 7, 1, 7], [5, 7, 2, 7], [5, 7, 3, 7], [4, -1, -1, 1], [4, -1, 0, 1], [4, -1, 1, 1], [4, -1, 2, 1], [4, 0, 3, 1], [4, 0, 4, 1], [4, 0, 5, 1], [4, 0, 6, 1], [4, 0, 7, 1], [4, 0, 8, 1], [4, 0, 9, 1], [4, 0, 10, 1], [4, 4, 0, 7], [4, 4, 1, 7], [4, 4, 2, 7], [4, 4, 3, 7], [4, 4, 4, 7], [4, 5, 0, 7], [4, 5, 1, 7], [4, 5, 2, 7], [4, 5, 3, 7], [4, 5, 4, 7], [4, 6, 1, 7], [4, 6, 2, 7], [4, 6, 3, 7], [4, 7, 4, 7], [3, -1, -1, 1], [3, -1, 0, 1], [3, -1, 1, 1], [3, -1, 2, 1], [3, -1, 3, 1], [3, -1, 4, 1], [3, 0, 5, 1], [3, 0, 6, 1], [3, 0, 7, 1], [3, 0, 8, 1], [3, 0, 9, 1], [3, 0, 10, 1], [3, 4, 1, 7], [3, 4, 2, 7], [3, 4, 3, 7], [3, 4, 4, 7], [3, 5, 1, 7], [3, 5, 2, 7], [3, 5, 3, 7], [2, -1, -1, 1], [2, -1, 0, 1], [2, -1, 1, 1], [2, -1, 2, 1], [2, -1, 3, 1], [2, -1, 4, 1], [2, -1, 5, 1], [2, -1, 6, 1], [2, -1, 7, 1], [2, 0, 8, 1], [2, 0, 9, 1], [2, 0, 10, 1], [1, -2, -1, 1], [1, -2, 0, 1], [1, -2, 1, 1], [1, -2, 2, 1], [1, -2, 3, 1], [1, -1, 4, 1], [1, -1, 5, 1], [1, -1, 6, 1], [1, -1, 7, 1], [1, -1, 8, 1], [1, -1, 9, 1], [1, -1, 10, 1], [0, -2, -1, 1], [0, -2, 0, 1], [0, -2, 1, 1], [0, -2, 2, 1], [0, -2, 3, 1], [0, -2, 4, 1], [0, -2, 5, 1], [0, -1, 6, 1], [0, -1, 7, 1], [0, -1, 8, 1], [0, -1, 9, 1], [0, -1, 10, 1], [-1, -2, -1, 1], [-1, -2, 0, 1], [-1, -2, 1, 1], [-1, -2, 2, 1], [-1, -2, 3, 1], [-1, -2, 4, 1], [-1, -2, 5, 1], [-1, -2, 6, 1], [-1, -2, 7, 1], [-1, -1, 8, 1], [-1, -1, 9, 1], [-1, -1, 10, 1], [-2, -2, -1, 1], [-2, -2, 0, 1], [-2, -2, 1, 1], [-2, -2, 2, 1], [-2, -2, 3, 1], [-2, -2, 4, 1], [-2, -2, 5, 1], [-2, -2, 6, 1], [-2, -2, 7, 1], [-2, -2, 8, 1], [-2, -2, 9, 1], [-2, -1, 10, 1], [-3, -2, -1, 1], [-3, -2, 0, 1], [-3, -2, 1, 1], [-3, -2, 2, 1], [-3, -2, 3, 1], [-3, -2, 4, 1], [-3, -2, 5, 1], [-3, -2, 6, 1], [-3, -2, 7, 1], [-3, -2, 8, 1], [-3, -2, 9, 1], [-3, -2, 10, 1], [-3, -2, 11, 1], [-3, -2, 12, 1], [-4, -2, -1, 1], [-4, -2, 0, 1], [-4, -2, 1, 1], [-4, -2, 2, 1], [-4, -2, 3, 1], [-4, -2, 4, 1], [-4, -2, 5, 1], [-4, -2, 6, 1], [-4, -2, 7, 1], [-4, -2, 8, 1], [-4, -2, 9, 1], [-4, -2, 10, 1], [-4, -2, 11, 1], [-4, -2, 12, 1], [-5, -2, -1, 1], [-5, -2, 0, 1], [-5, -2, 1, 1], [-5, -2, 2, 1], [-5, -2, 3, 1], [-5, -2, 4, 1], [-5, -2, 5, 1], [-5, -2, 6, 1], [-5, -2, 7, 1], [-5, -2, 8, 1], [-5, -2, 9, 1], [-5, -2, 10, 1], [-5, -2, 11, 1], [-5, -2, 12, 1], [-6, -2, -1, 1], [-6, -2, 0, 1], [-6, -2, 1, 1], [-6, -2, 2, 1], [-6, -2, 3, 1], [-6, -2, 4, 1], [-6, -2, 5, 1], [-6, -2, 6, 1], [-6, -2, 7, 1], [-6, -2, 8, 1], [-6, -2, 9, 1], [-6, -2, 10, 1], [-6, -2, 11, 1], [-7, -2, 3, 1], [-7, -2, 4, 1], [-7, -2, 5, 1], [-7, -2, 6, 1], [-7, -2, 7, 1], [-7, -2, 8, 1], [-7, -2, 9, 1], [-8, -2, 2, 1], [-8, -2, 3, 1], [-8, -2, 4, 1], [-8, -2, 5, 1], [-8, -2, 6, 1], [-8, -2, 7, 1], [-8, -2, 8, 1]]
+		let blocks = [
+[7,4,1,7], [7,4,2,7], [7,4,3,7], [7,4,4,7], [7,5,1,7], [7,5,2,7], 
+[7,5,3,7], [6,4,0,7], [6,4,1,7], [6,4,2,7], [6,4,3,7], [6,4,4,7], 
+[6,5,0,7], [6,5,1,7], [6,5,2,7], [6,5,3,7], [6,5,4,7], [6,6,3,7], 
+[6,6,4,7], [6,7,3,7], [5,0,-1,1], [5,0,0,1], [5,0,1,1], [5,0,2,1], 
+[5,1,2,29], [5,2,2,29], [5,3,2,29], [5,4,2,29], [5,5,2,29], [5,6,2,29], 
+[5,4,0,7], [5,4,1,7], [5,4,3,7], [5,4,4,7], [5,5,0,7], [5,5,1,7], 
+[5,5,3,7], [5,5,4,7], [5,6,1,7], [5,6,3,7], [5,7,1,7], [5,7,2,7], 
+[5,7,3,7], [4,-1,-1,1], [4,-1,0,1], [4,-1,1,1], [4,-1,2,1], [4,0,3,1], 
+[4,0,4,1], [4,0,5,1], [4,0,6,1], [4,0,7,1], [4,0,8,1], [4,0,9,1], 
+[4,0,10,1], [4,4,0,7], [4,4,1,7], [4,4,2,7], [4,4,3,7], [4,4,4,7], 
+[4,5,0,7], [4,5,1,7], [4,5,2,7], [4,5,3,7], [4,5,4,7], [4,6,1,7], 
+[4,6,2,7], [4,6,3,7], [4,7,4,7], [3,-1,-1,1], [3,-1,0,1], [3,-1,1,1], 
+[3,-1,2,1], [3,-1,3,1], [3,-1,4,1], [3,0,5,1], [3,0,6,1], [3,0,7,1], 
+[3,0,8,1], [3,0,9,1], [3,0,10,1], [3,4,1,7], [3,4,2,7], [3,4,3,7], 
+[3,4,4,7], [3,5,1,7], [3,5,2,7], [3,5,3,7], [2,-1,-1,1], [2,-1,0,1], 
+[2,-1,1,1], [2,-1,2,1], [2,-1,3,1], [2,-1,4,1], [2,-1,5,1], [2,-1,6,1], 
+[2,-1,7,1], [2,0,8,1], [2,0,9,1], [2,0,10,1], [1,-2,-1,1], [1,-2,0,1], 
+[1,-2,1,1], [1,-2,2,1], [1,-2,3,1], [1,-1,4,1], [1,-1,5,1], [1,-1,6,1], 
+[1,-1,7,1], [1,-1,8,1], [1,-1,9,1], [1,-1,10,1], [0,-2,-1,1], [0,-2,0,1], 
+[0,-2,1,1], [0,-2,2,1], [0,-2,3,1], [0,-2,4,1], [0,-2,5,1], [0,-1,6,1], 
+[0,-1,7,1], [0,-1,8,1], [0,-1,9,1], [0,-1,10,1], [-1,-2,-1,1], 
+[-1,-2,0,1], [-1,-2,1,1], [-1,-2,2,1], [-1,-2,3,1], [-1,-2,4,1], 
+[-1,-2,5,1], [-1,-2,6,1], [-1,-2,7,1], [-1,-1,8,1], [-1,-1,9,1], 
+[-1,-1,10,1], [-2,-2,-1,1], [-2,-2,0,1], [-2,-2,1,1], [-2,-2,2,1], 
+[-2,-2,3,1], [-2,-2,4,1], [-2,-2,5,1], [-2,-2,6,1], [-2,-2,7,1], 
+[-2,-2,8,1], [-2,-2,9,1], [-2,-1,10,1], [-3,-2,-1,1], [-3,-2,0,1], 
+[-3,-2,1,1], [-3,-2,2,1], [-3,-2,3,1], [-3,-2,4,1], [-3,-2,5,1], 
+[-3,-2,6,1], [-3,-2,7,1], [-3,-2,8,1], [-3,-2,9,1], [-3,-2,10,1], 
+[-3,-2,11,1], [-3,-2,12,1], [-4,-2,-1,1], [-4,-2,0,1], [-4,-2,1,1], 
+[-4,-2,2,1], [-4,-2,3,1], [-4,-2,4,1], [-4,-2,5,1], [-4,-2,6,1], 
+[-4,-2,7,1], [-4,-2,8,1], [-4,-2,9,1], [-4,-2,10,1], [-4,-2,11,1], 
+[-4,-2,12,1], [-5,-2,-1,1], [-5,-2,0,1], [-5,-2,1,1], [-5,-2,2,1], 
+[-5,-2,3,1], [-5,-2,4,1], [-5,-2,5,1], [-5,-2,6,1], [-5,-2,7,1], [-5,-2,8,1], 
+[-5,-2,9,1], [-5,-2,10,1], [-5,-2,11,1], [-5,-2,12,1], [-6,-2,-1,1], 
+[-6,-2,0,1], [-6,-2,1,1], [-6,-2,2,1], [-6,-2,3,1], [-6,-2,4,1], 
+[-6,-2,5,1], [-6,-2,6,1], [-6,-2,7,1], [-6,-2,8,1], [-6,-2,9,1], 
+[-6,-2,10,1], [-6,-2,11,1], [-7,-2,3,1], [-7,-2,4,1], [-7,-2,5,1], 
+[-7,-2,6,1], [-7,-2,7,1], [-7,-2,8,1], [-7,-2,9,1], [-8,-2,2,1], [-8,-2,3,1], 
+[-8,-2,4,1], [-8,-2,5,1], [-8,-2,6,1], [-8,-2,7,1], [-8,-2,8,1]
+		]
 		
 		for (let i = 0; i < blocks.length; i += 1) {
 			block2(blocks[i][0], blocks[i][1], blocks[i][2], blocks[i][3])
 		}
 		
 		gl.enableVertexAttribArray(glCache.aShadow)
+		gl.enableVertexAttribArray(glCache.aSkylight)
+		gl.enableVertexAttribArray(glCache.aBlocklight)
 		let pixels = new Uint8Array(width * height * 4)
 		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 		mainbg = ctx.createImageData(width, height)
@@ -5404,7 +5895,7 @@ function MineKhan() {
 		initPlayer()
 		initWebgl()
 
-		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 149456)) {
+		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 183240)) {
 			// Prevent Ctrl F
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("")
 		}
@@ -5607,7 +6098,7 @@ function MineKhan() {
 	return gameLoop
 }
 
-init = MineKhan()
+var init = MineKhan()
 if (window.parent.raf) {
 	window.cancelAnimationFrame(window.parent.raf)
 	console.log("Canceled", window.parent.raf)
@@ -5618,3 +6109,55 @@ init()
 	</script>
 	</body>
 </html>
+
+<!-- function hcyl(bottom, height, radius, id) {
+    let radsq = radius * radius
+    let innerRadsq = (radius - 1.2) * (radius - 1.2)
+    height += bottom
+    for (let x = -radius; x <= radius; x++) {
+        for (let y = bottom; y < height; y++) {
+            for (let z = -radius; z <= radius; z++) {
+                let d = x * x + z * z
+                if (d < radsq && d >= innerRadsq) {
+                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+                }
+            }
+        }
+    }
+}
+
+function cyl(bottom, height, radius, id) {
+    let radsq = radius * radius
+    height += bottom
+    for (let x = -radius; x <= radius; x++) {
+        for (let y = bottom; y < height; y++) {
+            for (let z = -radius; z <= radius; z++) {
+                let d = x * x + z * z
+                if (d < radsq) {
+                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+                }
+            }
+        }
+    }
+}
+
+function sphereoid(w, h, d, id) {
+    let w2 = w * w
+    let h2 = h * h
+    let d2 = d * d
+    let w3 = (w - 1.5) * (w - 1.5)
+    let h3 = (h - 1.5) * (h - 1.5)
+    let d3 = (d - 1.5) * (d - 1.5)
+
+    for (let y = -h; y < h; y++) {
+        for (let x = -w; x <= w; x++) {
+            for (let z = -d; z <= d; z++) {
+                let n = x * x / w2 + y * y / h2 + z * z / d2
+                let n2 = x * x / w3 + y * y / h3 + z * z / d3
+                if (n < 1 && n2 >= 1) {
+                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+                }
+            }
+        }
+    }
+} -->
