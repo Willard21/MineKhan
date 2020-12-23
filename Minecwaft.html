@@ -341,17 +341,17 @@ function MineKhan() {
 		oakPlanks: n => {
 			for (let y = 0; y < 16; ++y) {
 
-				const a = 3 === y & 3
+				const a = 3 === (y & 3)
 					? 0.7
 					: 1.0;
 
 				for (let x = 0; x < 16; ++x) {
 					// these conditions are weird; can some comments be added here?
-					const mid = x === 8 && (y & 7 > 3) && a === 1
+					const mid = x === 8 && (y & 7) > 3 && a === 1
 						? 0.85
 						: 1;
 
-					const rit = x === 15 && (y & 7 < 3) && a === 1
+					const rit = x === 15 && (y & 7) < 3 && a === 1
 						? 0.85
 						: 1;
 
@@ -621,45 +621,45 @@ function MineKhan() {
 	const BLOCK_COUNT = blockData.length;
 
 	// Set defaults on blockData
-	{
-		for (let i = 1; i < BLOCK_COUNT; ++i) {
-			const data = blockData[i];
-			data.id = i;
+	for (let i = 1; i < BLOCK_COUNT; ++i) {
+		const data = blockData[i];
+		data.id = i;
 
-			if ( !("textures" in data) ) {
-				data.textures = new Array(6).fill(data.name);
-			} else {
-				if (typeof textures === "string") {
-					data.textures = new Array(6).fill(data.texture);
-				} else {
-					const { textures } = data;
+		if ( !("textures" in data) ) {
+			data.textures = new Array(6).fill(data.name);
+		} else if (typeof textures === "string") {
+			data.textures = new Array(6).fill(data.texture);
+		} else {
+			const { textures } = data;
 
-					if (textures.length === 3) {
-						textures[3] = textures[2];
-						textures[4] = textures[2];
-						textures[5] = textures[2];
-					} else if (textures.length === 2) {
-						// Top and bottom are the first texture, sides are the second.
-						textures[2] = textures[1];
-						textures[3] = textures[2];
-						textures[4] = textures[2];
-						textures[5] = textures[2];
-						textures[1] = textures[0];
-					}
-				}
+			if (textures.length === 3) {
+				textures[3] = textures[2];
+				textures[4] = textures[2];
+				textures[5] = textures[2];
+			} else if (textures.length === 2) {
+				// Top and bottom are the first texture, sides are the second.
+				textures[2] = textures[1];
+				textures[3] = textures[2];
+				textures[4] = textures[2];
+				textures[5] = textures[2];
+				textures[1] = textures[0];
 			}
-
-			data.transparent = data.transparent || false;
-			data.shadow = data.shadow !== undefined ? data.shadow : true;
-			data.lightLevel = data.lightLevel || 0;
 		}
+
+		data.transparent = data.transparent || false;
+
+		data.shadow = data.shadow !== undefined
+			? data.shadow
+			: true;
+
+		data.lightLevel = data.lightLevel || 0;
 	}
 
 	const {
 		seedHash,
 		hash
 	} = (() => {
-		// nothing in this scope makes sense without comments
+		// implementation of xxHash
 		let seed = Math.random() * 2100000000 | 0;
 		const PRIME32_2 = 1883677709;
 		const PRIME32_3 = 2034071983;
@@ -732,60 +732,38 @@ function MineKhan() {
 
 	// The noise and random functions are copied from the processing.js source code; these others are polyfills made by me to avoid needing to remove all the pjs draw calls
 
-	// modularize to avoid global variables everywhere
-	let currentRandom = null;
+	const {
+		randomSeed,
+		random
+	} = (() => {
+		let currentRandom = null;
 
-	const randomSeed = seed => {
-		currentRandom = new Marsaglia(seed);
-	};
+		const randomSeed = seed => {
+			currentRandom = new Marsaglia(seed);
+		};
 
-	const random = (min, max) => {
-		if (!max) {
-			if (min) {
-				max = min;
-				min = 0;
-			} else {
-				min = 0;
-				max = 1;
+		const random = (min, max) => {
+			if (!max) {
+				if (min) {
+					max = min;
+					min = 0;
+				} else {
+					min = 0;
+					max = 1;
+				}
 			}
-		}
 
-		return currentRandom.nextDouble() * (max - min) + min;
-	};
+			return currentRandom.nextDouble() * (max - min) + min;
+		};
 
-	const noiseProfile = {
-		generator: undefined,
-		octaves: 4,
-		fallout: 0.5,
-		seed: undefined
-	};
+		return {
+			randomSeed,
+			random
+		};
+	})();
 
-	function PerlinNoise(seed) {
-		const rnd = seed !== undefined
-			? new Marsaglia(seed)
-			: Marsaglia.createRandomized(); // undefined property!
-
-		// http://www.noisemachine.com/talk1/17b.html
-		// http://mrl.nyu.edu/~perlin/noise/
-		// generate permutation
-		const perm = new Uint8Array(0x200);
-
-		for (let i = 0; i < 0x100; ++i) {
-			perm[i] = i;
-		}
-
-		for (let i = 0; i < 0x100; ++i) {
-			// this loop is dead code, but it does make 256 calls to `nextInt`
-			const j = rnd.nextInt() & 0xFF;
-			const t = perm[j];
-			perm[j] = perm[i];
-			perm[i] = t;
-		}
-
-		// copy to avoid taking mod in perm[0]
-		perm.copyWithin(0x100, 0x0, 0x100);
-
-		function grad3d(i, x, y, z) {
+	class PerlinNoise {
+		static grad3d(i, x, y, z) {
 			const h = i & 15; // convert into 12 gradient directions
 
 			const u = h < 8
@@ -801,77 +779,262 @@ function MineKhan() {
 			return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v)
 		}
 
-		function grad2d(i,x,y) {
+		static grad2d(i, x, y) {
 			const v = (i & 1) === 0
 				? x
 				: y;
 
-			return i & 2 === 0
+			return (i & 2) === 0
 				? -v
 				: v;
 		}
 
-		const grad1d = (i, x) =>
-			(i & 1) === 0
+		static grad1d(i, x) {
+			return (i & 1) === 0
 				? -x
 				: x;
-
-		const lerp = (t, a, b) =>
-			a + t * (b - a);
-
-		this.noise3d = function(x, y, z) {
-			let X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255
-			x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z)
-			let fx = (3-2*x)*x*x, fy = (3-2*y)*y*y, fz = (3-2*z)*z*z
-			let p0 = perm[X]+Y, p00 = perm[p0] + Z, p01 = perm[p0 + 1] + Z,
-				p1 = perm[X + 1] + Y, p10 = perm[p1] + Z, p11 = perm[p1 + 1] + Z
-			return lerp(fz,
-				lerp(fy, lerp(fx, grad3d(perm[p00], x, y, z), grad3d(perm[p10], x-1, y, z)),
-					lerp(fx, grad3d(perm[p01], x, y-1, z), grad3d(perm[p11], x-1, y-1,z))),
-				lerp(fy, lerp(fx, grad3d(perm[p00 + 1], x, y, z-1), grad3d(perm[p10 + 1], x-1, y, z-1)),
-					lerp(fx, grad3d(perm[p01 + 1], x, y-1, z-1), grad3d(perm[p11 + 1], x-1, y-1,z-1))))
 		}
 
-		this.noise2d = function(x, y) {
-			let X = Math.floor(x)&255, Y = Math.floor(y)&255
-			x -= Math.floor(x); y -= Math.floor(y)
-			let fx = (3-2*x)*x*x, fy = (3-2*y)*y*y
-			let p0 = perm[X]+Y, p1 = perm[X + 1] + Y
-			return lerp(fy,
-				lerp(fx, grad2d(perm[p0], x, y), grad2d(perm[p1], x-1, y)),
-				lerp(fx, grad2d(perm[p0 + 1], x, y-1), grad2d(perm[p1 + 1], x-1, y-1)))
+		static lerp(t, a, b) {
+			return a + t * (b - a);
 		}
 
-		this.noise1d = function(x) {
-			let X = Math.floor(x)&255
-			x -= Math.floor(x)
-			let fx = (3-2*x)*x*x
-			return lerp(fx, grad1d(perm[X], x), grad1d(perm[X+1], x-1))
+		perm = new Uint8Array(0x200);
+
+		noise3d(x, y, z) {
+			const { floor } = Math;
+
+			const X = floor(x) & 0xff;
+			const Y = floor(y) & 0xff;
+			const Z = floor(z) & 0xff;
+
+			x -= floor(x);
+			y -= floor(y);
+			z -= floor(z);
+
+			const fx = (3 - 2 * x) * x * x;
+			const fy = (3 - 2 * y) * y * y;
+			const fz = (3 - 2 * z) * z * z;
+
+			const { perm } = this;
+
+			const p0 = perm[X] + Y;
+			const p00 = perm[p0] + Z;
+			const p01 = perm[p0 + 1] + Z;
+			const p1 = perm[X + 1] + Y;
+			const p10 = perm[p1] + Z;
+			const p11 = perm[p1 + 1] + Z;
+
+			const { lerp, grad3d } = PerlinNoise;
+
+			return lerp(
+				fz,
+				lerp(
+					fy,
+					lerp(
+						fx,
+						grad3d(
+							perm[p00],
+							x,
+							y,
+							z
+						),
+						grad3d(
+							perm[p10],
+							x - 1,
+							y,
+							z
+						)
+					),
+					lerp(
+						fx,
+						grad3d(
+							perm[p01],
+							x,
+							y - 1,
+							z
+						),
+						grad3d(
+							perm[p11],
+							x - 1,
+							y - 1,
+							z
+						)
+					)
+				),
+				lerp(
+					fy,
+					lerp(
+						fx,
+						grad3d(
+							perm[p00 + 1],
+							x,
+							y,
+							z - 1
+						),
+						grad3d(
+							perm[p10 + 1],
+							x - 1,
+							y,
+							z - 1
+						)
+					),
+					lerp(
+						fx,
+						grad3d(
+							perm[p01 + 1],
+							x,
+							y - 1,
+							z - 1
+						),
+						grad3d(
+							perm[p11 + 1],
+							x - 1,
+							y - 1,
+							z - 1
+						)
+					)
+				)
+			);
 		}
-	}
-	let noiseSeed = function(seed) {
-		noiseProfile.seed = seed
-		noiseProfile.generator = new PerlinNoise(noiseProfile.seed)
-	}
-	let noise = function(x, y, z) {
-		let generator = noiseProfile.generator
-		let effect = 1, k = 1, sum = 0
-		for(let i = 0; i < noiseProfile.octaves; ++i) {
-			effect *= noiseProfile.fallout
-			switch (arguments.length) {
-				case 1:
-					sum += effect * (1 + generator.noise1d(k*x))/2; break
-				case 2:
-					sum += effect * (1 + generator.noise2d(k*x, k*y))/2; break
-				case 3:
-					sum += effect * (1 + generator.noise3d(k*x, k*y, k*z))/2; break
+
+		noise2d(x, y) {
+			const { floor } = Math;
+
+			const X = floor(x) & 0xff;
+			const Y = floor(y) & 0xff;
+
+			x -= floor(x);
+			y -= floor(y);
+
+			const { perm } = this;
+			const fx = (3 - 2 * x) * x * x;
+			const fy = (3 - 2 * y) * y * y;
+			const p0 = perm[X] + Y;
+			const p1 = perm[X + 1] + Y;
+
+			const { lerp, grad2d } = PerlinNoise;
+
+			return lerp(
+				fy,
+				lerp(
+					fx,
+					grad2d(
+						perm[p0],
+						x,
+						y
+					),
+					grad2d(
+						perm[p1],
+						x - 1,
+						y
+					)
+				),
+				lerp(
+					fx,
+					grad2d(
+						perm[p0 + 1],
+						x,
+						y - 1
+					),
+					grad2d(
+						perm[p1 + 1],
+						x - 1,
+						y - 1
+					)
+				)
+			);
+		}
+
+		noise1d(x) {
+			const { floor } = Math;
+
+			const X = floor(x) & 0xff;
+
+			x -= floor(x);
+
+			const fx = (3 - 2 * x) * x * x;
+
+			const { lerp, grad1d } = PerlinNoise;
+
+			return lerp(
+				fx,
+				grad1d(perm[X], x),
+				grad1d(perm[X + 1], x - 1)
+			);
+		}
+
+		constructor(seed) {
+			if (seed === undefined) {
+				throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`");
 			}
-			k *= 2
+
+			const rnd = new Marsaglia(seed);
+
+			// http://www.noisemachine.com/talk1/17b.html
+			// http://mrl.nyu.edu/~perlin/noise/
+			// generate permutation
+			const { perm } = this;
+
+			for (let i = 0; i < 0x100; ++i) {
+				perm[i] = i;
+			}
+
+			for (let i = 0; i < 0x100; ++i) {
+				const j = rnd.nextInt() & 0xFF;
+				const t = perm[j];
+				perm[j] = perm[i];
+				perm[i] = t;
+			}
+
+			// copy to avoid taking mod in perm[0]
+			perm.copyWithin(0x100, 0x0, 0x100);
 		}
-		return sum
 	}
 
-	let caveNoise
+	const noiseProfile = {
+		generator: undefined,
+		octaves: 4,
+		fallout: 0.5,
+		seed: undefined,
+		noiseSeed(seed) {
+			this.seed = seed;
+			this.generator = new PerlinNoise(noiseProfile.seed);
+		},
+		noise(x, y, z) {
+			const { generator, octaves, fallout } = this;
+
+			let effect = 1,
+				k = 1,
+				sum = 0;
+
+			for (let i = 0; i < octaves; ++i) {
+				effect *= fallout;
+
+				const k = 1 << i;
+
+				let temp;
+				switch (arguments.length) {
+					case 1: {
+						temp = generator.noise1d(k * x);
+						break;
+					} case 2: {
+						temp = generator.noise2d(k * x, k * y);
+						break;
+					} case 3: {
+						temp = generator.noise3d(k * x, k * y, k * z);
+						break;
+					}
+				}
+
+				sum += effect * (1 + temp) / 2;
+			}
+
+			return sum;
+		}
+	};
+
+	let caveNoise;
 	// Copied and modified from https://github.com/blindman67/SimplexNoiseJS
 	function openSimplexNoise(clientSeed) {
 		const SQ4 = 2
@@ -4051,7 +4214,7 @@ function MineKhan() {
 		constructor() {
 			generatedChunks = 0
 			fogDist = 16
-			p.y = superflat ? 6 : (Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
+			p.y = superflat ? 6 : (Math.round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
 
 			//Initialize the world's arrays
 			this.chunks = []
@@ -4084,7 +4247,7 @@ function MineKhan() {
 			let gen = 0
 			for (let i = 0; i < 16; i++) {
 				for (let k = 0; k < 16; k++) {
-					gen = superflat ? 4 : Math.round(noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
+					gen = superflat ? 4 : Math.round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
 					chunk.tops[k * 16 + i] = gen
 
 					chunk.setBlock(i, gen, k, blockIds.grass)
@@ -4535,7 +4698,7 @@ function MineKhan() {
 			worldSeed = parseInt(data.shift(), 36)
 			seedHash(worldSeed)
 			caveNoise = openSimplexNoise(worldSeed)
-			noiseSeed(worldSeed)
+			noiseProfile.noiseSeed(worldSeed)
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -4583,7 +4746,7 @@ function MineKhan() {
 			this.name = "Old World " + (Math.random() * 1000 | 0)
 			seedHash(worldSeed);
 			caveNoise = openSimplexNoise(worldSeed);
-			noiseSeed(worldSeed);
+			noiseProfile.noiseSeed(worldSeed);
 			let playerData = data.shift().split(",");
 			p.x = parseInt(playerData[0], 36);
 			p.y = parseInt(playerData[1], 36);
@@ -5847,7 +6010,7 @@ function MineKhan() {
 		p.sprintSpeed = 1.5
 		p.flySpeed = 2.5
 		p.x = 8
-		p.y = superflat ? 6 : (Math.round(noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
+		p.y = superflat ? 6 : (Math.round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
 		p.z = 8
 		p.previousX = 8
 		p.previousY = 70
@@ -5963,7 +6126,7 @@ function MineKhan() {
 		worldSeed = Math.random() * 2000000000 | 0
 		seedHash(worldSeed)
 		caveNoise = openSimplexNoise(worldSeed)
-		noiseSeed(worldSeed)
+		noiseProfile.noiseSeed(worldSeed)
 
 		generatedChunks = 0
 
