@@ -651,8 +651,10 @@ function MineKhan() {
 
 			// this may have changed the old logic; TODO: confirm it hasn't
 			data.transparent = "transparent" in data && data.transparent;
+			// defaults to `false`
 
-			data.shadow = "shadow" in data && data.shadow;
+			data.shadow = "shadow" in data && data.shadow === true;
+			// defaults to `false`
 
 			data.lightLevel = "lightLevel" in data
 				? data.lightLevel
@@ -660,66 +662,90 @@ function MineKhan() {
 		}
 	}
 
-	let win = window.parent
-	let doc = document
-	let console = win.console
-	let world
+	const {
+		seedHash,
+		hash
+	} = (() => {
+		// nothing in this scope makes sense without comments
+		let seed = Math.random() * 2100000000 | 0;
+		const PRIME32_2 = 1883677709;
+		const PRIME32_3 = 2034071983;
+		const PRIME32_4 = 668265263;
+		const PRIME32_5 = 374761393;
 
-	let seedHash
-	let hash = (function() {
-		let seed = Math.random() * 2100000000 | 0
-		let PRIME32_2 = 1883677709
-		let PRIME32_3 = 2034071983
-		let PRIME32_4 = 668265263
-		let PRIME32_5 = 374761393
-
-		seedHash = function(s) {
-			seed = s | 0
+		const seedHash = s => {
+			seed = s | 0;
 		}
 
-		return function(x, y) {
-			let h32 = 0
+		const { imul } = Math;
 
-			h32 = seed + PRIME32_5 | 0
-			h32 += 8
+		const hash = (x, y) => {
+			let h32 = 0;
 
-			h32 += Math.imul(x, PRIME32_3)
-			h32 = Math.imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
-			h32 += Math.imul(y, PRIME32_3)
-			h32 = Math.imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
+			h32 = seed + PRIME32_5 | 0;
+			h32 += 8;
 
-			h32 ^= h32 >> 15
-			h32 *= PRIME32_2
-			h32 ^= h32 >> 13
-			h32 *= PRIME32_3
-			h32 ^= h32 >> 16
+			h32 += imul(x, PRIME32_3);
+			h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4);
+			h32 += imul(y, PRIME32_3);
+			h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4);
 
-			return h32 / 2147483647
+			h32 ^= h32 >> 15;
+			h32 *= PRIME32_2;
+			h32 ^= h32 >> 13;
+			h32 *= PRIME32_3;
+			h32 ^= h32 >> 16;
+
+			return h32 / 2147483647;
+		};
+
+		return {
+			seedHash,
+			hash
+		};
+	})();
+
+	const win = window.parent;
+	const doc = document;
+	const { console } = win;
+	let world;
+	let worldSeed;
+
+	class Marsaglia {
+		// from http://www.math.uni-bielefeld.de/~sillke/ALGORITHMS/random/marsaglia-c
+
+		nextInt() {
+			const { z, w } = this;
+
+			this.z = 36969 * (z & 65535) + (z >>> 16) & 0xFFFFFFFF;
+			this.w = 18000 * (w & 65535) + (w >>> 16) & 0xFFFFFFFF;
+
+			return ((this.z & 0xFFFF) << 16 | this.w & 0xFFFF) & 0xFFFFFFFF;
+		};
+
+		nextDouble() {
+			const i = this.nextInt() / 4294967296;
+
+			const is_less_than_zero = (i < 0) | 0; // cast to 1 or 0
+
+			return is_less_than_zero + i;
 		}
-	})()
-	let worldSeed
 
-	//The noise and random functions are copied from the processing.js source code; these others are polyfills made by me to avoid needing to remove all the pjs draw calls
-	let currentRandom = null
-	function Marsaglia(i1, i2) {
-	// from http://www.math.uni-bielefeld.de/~sillke/ALGORITHMS/random/marsaglia-c
-		let z = (i1 | 0) || 362436069, w = i2 || hash(521288629, z) * 2147483647 | 0
-
-		let nextInt = function() {
-			z=36969*(z&65535)+(z>>>16) & 0xFFFFFFFF
-			w=18000*(w&65535)+(w>>>16) & 0xFFFFFFFF
-			return ((z&0xFFFF)<<16 | w&0xFFFF) & 0xFFFFFFFF
+		constructor(i1, i2) { // better param names
+			this.z = (i1 | 0) || 362436069;
+			this.w = i2 || hash(521288629, this.z) * 2147483647 | 0;
 		}
-
-		this.nextDouble = function() {
-			let i = nextInt() / 4294967296
-			return i < 0 ? 1 + i : i
-		}
-		this.nextInt = nextInt
 	}
-	let randomSeed = function(seed) {
-		currentRandom = (new Marsaglia(seed)).nextDouble
-	}
+
+	// The noise and random functions are copied from the processing.js source code; these others are polyfills made by me to avoid needing to remove all the pjs draw calls
+
+	// modularize to avoid global variables everywhere
+	let currentRandom = null;
+
+	const randomSeed = seed => {
+		currentRandom = new Marsaglia(seed);
+	};
+
 	let random = function(min, max) {
 		if (!max) {
 			if (min) {
@@ -730,7 +756,7 @@ function MineKhan() {
 				max = 1
 			}
 		}
-		return currentRandom() * (max - min) + min
+		return currentRandom.nextDouble() * (max - min) + min
 	}
 	let noiseProfile = { generator: undefined, octaves: 4, fallout: 0.5, seed: undefined }
 	function PerlinNoise(seed) {
