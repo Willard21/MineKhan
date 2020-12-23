@@ -268,7 +268,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		}
 	</script>
 	<script type="application/javascript">
-	"use strict";
+"use strict";
 window.canvas = document.getElementById("overlay")
 window.ctx = canvas.getContext("2d")
 window.savebox = document.getElementById("savebox")
@@ -278,31 +278,33 @@ window.message = document.getElementById("message")
 window.worlds = document.getElementById("worlds")
 window.quota = document.getElementById("quota")
 var hoverbox = document.getElementById("onhover")
-ctx.canvas.width  = window.innerWidth
-ctx.canvas.height = window.innerHeight
+canvas.width  = window.innerWidth
+canvas.height = window.innerHeight
 
 /* Set this text editor to max width by copying this into the JS console:
 document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
 */
-var MathGlob = Math
 function MineKhan() {
-	let Math = MathGlob
-	let setPixel, getPixels
+	const { Math } = window;
+
+	let setPixel, getPixels;
 	let textures = {
-		grassTop: function(n) {
-			let r = 0, g = 0, b = 0, d = 0
-			for (let x = 0; x < 16; x++) {
-				for (let y = 0; y < 16; y++) {
-					d = Math.random() * 0.25 + 0.65
-					r = 0x54 * d
-					g = 0xa0 * d
-					b = 0x48 * d
-					setPixel(n, x, y, r, g, b)
+		grassTop: n => {
+			const { random } = Math;
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					const d = random() * 0.25 + 0.65;
+
+					const r = 0x54 * d;
+					const g = 0xa0 * d;
+					const b = 0x48 * d;
+
+					setPixel(n, x, y, r, g, b);
 				}
 			}
 		},
-		grassSide: function(n) {
-			let r = 0, g = 0, b = 0, d = 0
+		grassSide: n => {
+			let r = 0, g = 0, b = 0, d = 0;
 			let pix = getPixels("0g0g70ordrzz0u30g730wa4vzz0xnyl8f11lrk7315qj7jz1fh47pb6553365533033636350335403653650063306333633300635163503655353653535605335031350330553500033033366333433663663535336655335055335553353530355333033503300333336635353663650660554353355635155305303053556333333366353323553060365553063030663533555365534355335530")
 			for (let i = 0; i < pix.length; i += 4) {
 				setPixel(n, i >> 2 & 15, i >> 6, pix[i], pix[i+1], pix[i+2], pix[i+3])
@@ -318,7 +320,7 @@ function MineKhan() {
 				}
 			}
 		},
-		leaves: function(n) {
+		leaves: n => {
 			let r = 0, g = 0, b = 0, a = 0
 			for (let x = 0; x < 16; x++) {
 				for (let y = 0; y < 16; y++) {
@@ -334,7 +336,7 @@ function MineKhan() {
 				}
 			}
 		},
-		oakPlanks: function(n) {
+		oakPlanks: n => {
 			let r = 0
 			for (let y = 0; y < 16; y++) {
 				let a = (y & 3) === 3 ? 0.7 : 1
