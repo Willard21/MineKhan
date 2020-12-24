@@ -285,10 +285,12 @@ canvas.height = window.innerHeight
 document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
 */
 function MineKhan() {
+	// cache Math object
 	const { Math } = window;
 
 	let setPixel, getPixels;
-	let textures = {
+
+	const textures = {
 		grassTop: n => {
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
@@ -655,12 +657,15 @@ function MineKhan() {
 		data.lightLevel = data.lightLevel || 0;
 	}
 
+	// implementation of xxHash
 	const {
 		seedHash,
 		hash
 	} = (() => {
-		// implementation of xxHash
+		// closure around mutable `seed`; updated via calls to `seedHash`
+
 		let seed = Math.random() * 2100000000 | 0;
+
 		const PRIME32_2 = 1883677709;
 		const PRIME32_3 = 2034071983;
 		const PRIME32_4 = 668265263;
@@ -736,6 +741,8 @@ function MineKhan() {
 		randomSeed,
 		random
 	} = (() => {
+		// closure around mut `currentRandom`
+
 		let currentRandom = null;
 
 		const randomSeed = seed => {
@@ -763,6 +770,9 @@ function MineKhan() {
 	})();
 
 	class PerlinNoise {
+		// http://www.noisemachine.com/talk1/17b.html
+		// http://mrl.nyu.edu/~perlin/noise/
+
 		static grad3d(i, x, y, z) {
 			const h = i & 15; // convert into 12 gradient directions
 
@@ -799,8 +809,12 @@ function MineKhan() {
 			return a + t * (b - a);
 		}
 
+		// end of statics
+
+		// permutation
 		perm = new Uint8Array(0x200);
 
+		// prototype functions:
 		noise3d(x, y, z) {
 			const { floor } = Math;
 
@@ -833,66 +847,26 @@ function MineKhan() {
 					fy,
 					lerp(
 						fx,
-						grad3d(
-							perm[p00],
-							x,
-							y,
-							z
-						),
-						grad3d(
-							perm[p10],
-							x - 1,
-							y,
-							z
-						)
+						grad3d(perm[p00], x, y, z),
+						grad3d(perm[p10], x - 1, y, z)
 					),
 					lerp(
 						fx,
-						grad3d(
-							perm[p01],
-							x,
-							y - 1,
-							z
-						),
-						grad3d(
-							perm[p11],
-							x - 1,
-							y - 1,
-							z
-						)
+						grad3d(perm[p01], x, y - 1, z),
+						grad3d(perm[p11],x - 1, y - 1, z)
 					)
 				),
 				lerp(
 					fy,
 					lerp(
 						fx,
-						grad3d(
-							perm[p00 + 1],
-							x,
-							y,
-							z - 1
-						),
-						grad3d(
-							perm[p10 + 1],
-							x - 1,
-							y,
-							z - 1
-						)
+						grad3d(perm[p00 + 1], x, y, z - 1),
+						grad3d(perm[p10 + 1], x - 1, y, z - 1)
 					),
 					lerp(
 						fx,
-						grad3d(
-							perm[p01 + 1],
-							x,
-							y - 1,
-							z - 1
-						),
-						grad3d(
-							perm[p11 + 1],
-							x - 1,
-							y - 1,
-							z - 1
-						)
+						grad3d(perm[p01 + 1], x, y - 1, z - 1),
+						grad3d(perm[p11 + 1], x - 1, y - 1, z - 1)
 					)
 				)
 			);
@@ -971,11 +945,10 @@ function MineKhan() {
 
 			const rnd = new Marsaglia(seed);
 
-			// http://www.noisemachine.com/talk1/17b.html
-			// http://mrl.nyu.edu/~perlin/noise/
 			// generate permutation
 			const { perm } = this;
 
+			// fill 0x0..0x100
 			for (let i = 0; i < 0x100; ++i) {
 				perm[i] = i;
 			}
@@ -988,6 +961,7 @@ function MineKhan() {
 			}
 
 			// copy to avoid taking mod in perm[0]
+			// copies from first half of array, into the second half
 			perm.copyWithin(0x100, 0x0, 0x100);
 		}
 	}
