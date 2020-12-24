@@ -3005,6 +3005,7 @@ function MineKhan() {
 			return ret
 		},
 	}
+	const { abs } = Math
 	function average(l, a, b, c, d) {
 		a = l[a]
 		b = l[b]
@@ -3013,15 +3014,15 @@ function MineKhan() {
 		let count = 1
 		let zero = 0
 		let total = a
-		if (b) {
+		if (b && abs(a-b) <= 2) {
 			total += b
 			count++
 		} else zero++
-		if (c) {
+		if (c && abs(a-c) <= 2) {
 			total += c
 			count++
 		} else zero++
-		if (d) {
+		if (d && abs(a-d) <= 2) {
 			total += d
 			count++
 		} else zero++
@@ -3036,39 +3037,37 @@ function MineKhan() {
 		return (total) / 60
 	}
 	let getLight = {
-		ret: [],
 		blocks: [],
-		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
+		top: function(x, y, z, block, ret, blockLight = 0) { // Actually the bottom... How did these get flipped?
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x-1, y-1, z-1, block)
-			blocks[1] = getBlock(x, y-1, z-1, block)
-			blocks[2] = getBlock(x+1, y-1, z-1, block)
-			blocks[3] = getBlock(x-1, y-1, z, block)
-			blocks[4] = getBlock(x, y-1, z, block)
-			blocks[5] = getBlock(x+1, y-1, z, block)
-			blocks[6] = getBlock(x-1, y-1, z+1, block)
-			blocks[7] = getBlock(x, y-1, z+1, block)
-			blocks[8] = getBlock(x+1, y-1, z+1, block)
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 0, 1, 3)
 			ret[1] = average(blocks, 4, 1, 2, 5)
 			ret[2] = average(blocks, 4, 5, 7, 8)
 			ret[3] = average(blocks, 4, 3, 6, 7)
+			// debugger
 			return ret
 		},
-		bottom: function(x, y, z, block) { // Actually the top
+		bottom: function(x, y, z, block, ret, blockLight = 0) { // Actually the top
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x-1, y+1, z-1, block)
-			blocks[1] = getBlock(x, y+1, z-1, block)
-			blocks[2] = getBlock(x+1, y+1, z-1, block)
-			blocks[3] = getBlock(x-1, y+1, z, block)
-			blocks[4] = getBlock(x, y+1, z, block)
-			blocks[5] = getBlock(x+1, y+1, z, block)
-			blocks[6] = getBlock(x-1, y+1, z+1, block)
-			blocks[7] = getBlock(x, y+1, z+1, block)
-			blocks[8] = getBlock(x+1, y+1, z+1, block)
+			blocks[0] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 3, 6, 7)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3076,18 +3075,17 @@ function MineKhan() {
 			ret[3] = average(blocks, 4, 0, 1, 3)
 			return ret
 		},
-		north: function(x, y, z, block) {
+		north: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x-1, y-1, z+1, block)
-			blocks[1] = getBlock(x, y-1, z+1, block)
-			blocks[2] = getBlock(x+1, y-1, z+1, block)
-			blocks[3] = getBlock(x-1, y, z+1, block)
-			blocks[4] = getBlock(x, y, z+1, block)
-			blocks[5] = getBlock(x+1, y, z+1, block)
-			blocks[6] = getBlock(x-1, y+1, z+1, block)
-			blocks[7] = getBlock(x, y+1, z+1, block)
-			blocks[8] = getBlock(x+1, y+1, z+1, block)
+			blocks[0] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 5, 7, 8)
 			ret[1] = average(blocks, 4, 3, 6, 7)
@@ -3095,18 +3093,17 @@ function MineKhan() {
 			ret[3] = average(blocks, 4, 1, 2, 5)
 			return ret
 		},
-		south: function(x, y, z, block) {
+		south: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x-1, y-1, z-1, block)
-			blocks[1] = getBlock(x-1, y, z-1, block)
-			blocks[2] = getBlock(x-1, y+1, z-1, block)
-			blocks[3] = getBlock(x, y-1, z-1, block)
-			blocks[4] = getBlock(x, y, z-1, block)
-			blocks[5] = getBlock(x, y+1, z-1, block)
-			blocks[6] = getBlock(x+1, y-1, z-1, block)
-			blocks[7] = getBlock(x+1, y, z-1, block)
-			blocks[8] = getBlock(x+1, y+1, z-1, block)
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x+1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 1, 2, 5)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3114,18 +3111,17 @@ function MineKhan() {
 			ret[3] = average(blocks, 4, 0, 1, 3)
 			return ret
 		},
-		east: function(x, y, z, block) {
+		east: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x+1, y-1, z-1, block)
-			blocks[1] = getBlock(x+1, y, z-1, block)
-			blocks[2] = getBlock(x+1, y+1, z-1, block)
-			blocks[3] = getBlock(x+1, y-1, z, block)
-			blocks[4] = getBlock(x+1, y, z, block)
-			blocks[5] = getBlock(x+1, y+1, z, block)
-			blocks[6] = getBlock(x+1, y-1, z+1, block)
-			blocks[7] = getBlock(x+1, y, z+1, block)
-			blocks[8] = getBlock(x+1, y+1, z+1, block)
+			blocks[0] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x+1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x+1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x+1, y, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x+1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 1, 2, 5)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3133,18 +3129,17 @@ function MineKhan() {
 			ret[3] = average(blocks, 4, 0, 1, 3)
 			return ret
 		},
-		west: function(x, y, z, block) {
+		west: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = getBlock(x-1, y-1, z-1, block)
-			blocks[1] = getBlock(x-1, y, z-1, block)
-			blocks[2] = getBlock(x-1, y+1, z-1, block)
-			blocks[3] = getBlock(x-1, y-1, z, block)
-			blocks[4] = getBlock(x-1, y, z, block)
-			blocks[5] = getBlock(x-1, y+1, z, block)
-			blocks[6] = getBlock(x-1, y-1, z+1, block)
-			blocks[7] = getBlock(x-1, y, z+1, block)
-			blocks[8] = getBlock(x-1, y+1, z+1, block)
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[4] = (getBlock(x-1, y, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[5] = (getBlock(x-1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[7] = (getBlock(x-1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[8] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 5, 7, 8)
 			ret[1] = average(blocks, 4, 1, 2, 5)
@@ -3300,13 +3295,13 @@ function MineKhan() {
 			let x = 0, y = 0, z = 0, loc = 0, data = 0,
 				sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0,
 				verts = null, texVerts = null, texShapeVerts = null,
-				tx = 0, ty = 0, blight = 0, slight = 0
+				tx = 0, ty = 0
 			let wx = this.x, wy = this.y, wz = this.z
 			let blocks = world.getAdjacentSubchunks(wx, wy, wz)
 			let lightChunks = world.getAdjacentSubchunks(wx, wy, wz, true)
 			let block = null
 
-			let shadows = null, lights = null
+			let shadows = null, slights = [0, 0, 0, 0], blights = [0, 0, 0, 0]
 			let blockSides = Object.keys(Block)
 			let side = ""
 			let shapeVerts = null
@@ -3323,8 +3318,6 @@ function MineKhan() {
 				x = loc & 15
 				y = loc >> 4 & 15
 				z = loc >> 8 & 15
-				blight = block.lightLevel / 15
-				slight = this.getLight(x, y, z) / 15
 
 				x2 = x + this.x
 				y2 = y + this.y
@@ -3338,7 +3331,8 @@ function MineKhan() {
 					side = blockSides[n]
 					if (sides & Block[side]) {
 						shadows = getShadows[side](x, y, z, blocks)
-						lights = getLight[side](x, y, z, lightChunks)
+						slights = getLight[side](x, y, z, lightChunks, slights, 0)
+						blights = getLight[side](x, y, z, lightChunks, blights, 1)
 						let directionalFaces = shapeVerts[Sides[side]]
 						for (let facei = 0; facei < directionalFaces.length; facei++) {
 							verts = directionalFaces[facei]
@@ -3353,8 +3347,8 @@ function MineKhan() {
 							barray[index+3] = tx + texShapeVerts[0]
 							barray[index+4] = ty + texShapeVerts[1]
 							barray[index+5] = shadows[0]
-							barray[index+6] = lights[0] // skylight
-							barray[index+7] = blight
+							barray[index+6] = slights[0]
+							barray[index+7] = blights[0]
 
 							barray[index+8] = verts[3] + x2
 							barray[index+9] = verts[4] + y2
@@ -3362,8 +3356,8 @@ function MineKhan() {
 							barray[index+11] = tx + texShapeVerts[2]
 							barray[index+12] = ty + texShapeVerts[3]
 							barray[index+13] = shadows[1]
-							barray[index+14] = lights[1]
-							barray[index+15] = blight
+							barray[index+14] = slights[1]
+							barray[index+15] = blights[1]
 
 							barray[index+16] = verts[6] + x2
 							barray[index+17] = verts[7] + y2
@@ -3371,8 +3365,8 @@ function MineKhan() {
 							barray[index+19] = tx + texShapeVerts[4]
 							barray[index+20] = ty + texShapeVerts[5]
 							barray[index+21] = shadows[2]
-							barray[index+22] = lights[2]
-							barray[index+23] = blight
+							barray[index+22] = slights[2]
+							barray[index+23] = blights[2]
 
 							barray[index+24] = verts[9] + x2
 							barray[index+25] = verts[10] + y2
@@ -3380,8 +3374,8 @@ function MineKhan() {
 							barray[index+27] = tx + texShapeVerts[6]
 							barray[index+28] = ty + texShapeVerts[7]
 							barray[index+29] = shadows[3]
-							barray[index+30] = lights[3]
-							barray[index+31] = blight
+							barray[index+30] = slights[3]
+							barray[index+31] = blights[3]
 							index += 32
 						}
 					}
@@ -3488,16 +3482,25 @@ function MineKhan() {
 		}
 		fillLight() {
 			let max = this.sections.length * 16 - 1
+			let blockSpread = []
 
 			// Set virtical columns of light to level 15
 			for (let x = 0; x < 16; x++) {
 				for (let z = 0; z < 16; z++) {
+					let stop = false
 					for (let y = max; y >= 0; y--) {
-						if (this.getBlock(x, y, z)) {
-							this.tops[z * 16 + x] = y
-							break
+						let data = blockData[this.getBlock(x, y, z)]
+						if (data.lightLevel) {
+							if (!blockSpread[data.lightLevel]) blockSpread[data.lightLevel] = []
+							blockSpread[data.lightLevel].push(x + this.x, y, z + this.z)
+							this.setLight(x, y, z, data.lightLevel, 1)
 						}
-						this.setLight(x, y, z, 15)
+						if (!stop && !data.transparent) {
+							this.tops[z * 16 + x] = y
+							stop = true
+						} else if (!stop) {
+							this.setLight(x, y, z, 15, 0)
+						}
 					}
 				}
 			}
@@ -3527,89 +3530,93 @@ function MineKhan() {
 					}
 				}
 			}
-			// for (let i = 0; i < spread.length; i += 3) {
-			// 	this.setBlock(spread[i], spread[i+1], spread[i+2], blockIds.redConcrete)
-			// }
 			this.spreadLight(spread, 14)
+
+			for (let i = blockSpread.length - 1; i > 0; i--) {
+				let blocks = blockSpread[i]
+				if (blocks && blocks.length) {
+					this.spreadLight(blocks, i - 1, false, 1)
+				}
+			}
+
 			this.lit = true
 		}
-		setLight(x, y, z, level, block) {
-			this.sections[y >> 4].setLight(x, y & 15, z, level, block)
+		setLight(x, y, z, level, blockLight) {
+			this.sections[y >> 4].setLight(x, y & 15, z, level, blockLight)
 		}
-		getLight(x, y, z) {
+		getLight(x, y, z, blockLight = 0) {
 			if (y >= this.sections.length * 16) return 15
-			return this.sections[y >> 4].getLight(x, y & 15, z)
+			return this.sections[y >> 4].getLight(x, y & 15, z, blockLight)
 		}
-		trySpread(x, y, z, level, spread) {
-			if (world.getLight(x, y, z) < level) {
+		trySpread(x, y, z, level, spread, blockLight, update = false) {
+			if (world.getLight(x, y, z, blockLight) < level) {
 				if (blockData[world.getBlock(x, y, z)].transparent) {
-					world.setLight(x, y, z, level)
+					world.setLight(x, y, z, level, blockLight)
 					spread.push(x, y, z)
 				}
 			}
+			if (update && (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15)) {
+				let chunk = world.getChunk(x, z)
+				if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+					world.meshQueue.push(chunk)
+				}
+			}
 		}
-		spreadLight(blocks, level, update = false) {
+		spreadLight(blocks, level, update = false, blockLight = 0) {
 			let spread = []
 			let x = 0, y = 0, z = 0
 			for (let i = 0; i < blocks.length; i += 3) {
 				x = blocks[i]
 				y = blocks[i+1]
 				z = blocks[i+2]
-				this.trySpread(x - 1, y, z, level, spread)
-				this.trySpread(x + 1, y, z, level, spread)
-				this.trySpread(x, y - 1, z, level, spread)
-				this.trySpread(x, y + 1, z, level, spread)
-				this.trySpread(x, y, z - 1, level, spread)
-				this.trySpread(x, y, z + 1, level, spread)
-
-				if (update && (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15)) {
-					let chunk = world.getChunk(x, z)
-					if (chunk.buffer && !world.meshQueue.includes(chunk)) {
-						world.meshQueue.push(chunk)
-					}
-				}
+				this.trySpread(x - 1, y, z, level, spread, blockLight, update)
+				this.trySpread(x + 1, y, z, level, spread, blockLight, update)
+				this.trySpread(x, y - 1, z, level, spread, blockLight, update)
+				this.trySpread(x, y + 1, z, level, spread, blockLight, update)
+				this.trySpread(x, y, z - 1, level, spread, blockLight, update)
+				this.trySpread(x, y, z + 1, level, spread, blockLight, update)
 			}
 			if (level > 1 && spread.length) {
-				this.spreadLight(spread, level - 1, update)
+				this.spreadLight(spread, level - 1, update, blockLight)
 			}
 		}
-		tryUnSpread(x, y, z, level, spread, respread) {
-			let light = world.getLight(x, y, z)
+		tryUnSpread(x, y, z, level, spread, respread, blockLight) {
+			let light = world.getLight(x, y, z, blockLight)
 			let trans = blockData[world.getBlock(x, y, z)].transparent
 			if (light === level) {
 				if (trans) {
-					world.setLight(x, y, z, 0)
+					world.setLight(x, y, z, 0, blockLight)
 					spread.push(x, y, z)
-					if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
-						let chunk = world.getChunk(x, z)
-						if (chunk.buffer && !world.meshQueue.includes(chunk)) {
-							world.meshQueue.push(chunk)
-						}
-					}
 				}
-			} else if (trans && light > level) {
+			} else if (light > level) {
 				respread[light].push(x, y, z)
 			}
+			if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
+				let chunk = world.getChunk(x, z)
+				if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+					world.meshQueue.push(chunk)
+				}
+			}
 		}
-		unSpreadLight(blocks, level, respread) {
+		unSpreadLight(blocks, level, respread, blockLight) {
 			let spread = []
 			let x = 0, y = 0, z = 0
 			for (let i = 0; i < blocks.length; i += 3) {
 				x = blocks[i]
 				y = blocks[i+1]
 				z = blocks[i+2]
-				this.tryUnSpread(x - 1, y, z, level, spread, respread)
-				this.tryUnSpread(x + 1, y, z, level, spread, respread)
-				this.tryUnSpread(x, y - 1, z, level, spread, respread)
-				this.tryUnSpread(x, y + 1, z, level, spread, respread)
-				this.tryUnSpread(x, y, z - 1, level, spread, respread)
-				this.tryUnSpread(x, y, z + 1, level, spread, respread)
+				this.tryUnSpread(x - 1, y, z, level, spread, respread, blockLight)
+				this.tryUnSpread(x + 1, y, z, level, spread, respread, blockLight)
+				this.tryUnSpread(x, y - 1, z, level, spread, respread, blockLight)
+				this.tryUnSpread(x, y + 1, z, level, spread, respread, blockLight)
+				this.tryUnSpread(x, y, z - 1, level, spread, respread, blockLight)
+				this.tryUnSpread(x, y, z + 1, level, spread, respread, blockLight)
 			}
 			if (level > 1 && spread.length) {
-				this.unSpreadLight(spread, level - 1, respread)
+				this.unSpreadLight(spread, level - 1, respread, blockLight)
 			}
 		}
-		reSpreadLight(respread) {
+		reSpreadLight(respread, blockLight) {
 			for (let i = respread.length - 1; i > 1; i--) {
 				let blocks = respread[i]
 				let level = i - 1
@@ -3618,12 +3625,12 @@ function MineKhan() {
 					let x = blocks[j]
 					let y = blocks[j+1]
 					let z = blocks[j+2]
-					this.trySpread(x - 1, y, z, level, spread)
-					this.trySpread(x + 1, y, z, level, spread)
-					this.trySpread(x, y - 1, z, level, spread)
-					this.trySpread(x, y + 1, z, level, spread)
-					this.trySpread(x, y, z - 1, level, spread)
-					this.trySpread(x, y, z + 1, level, spread)
+					this.trySpread(x - 1, y, z, level, spread, blockLight)
+					this.trySpread(x + 1, y, z, level, spread, blockLight)
+					this.trySpread(x, y - 1, z, level, spread, blockLight)
+					this.trySpread(x, y + 1, z, level, spread, blockLight)
+					this.trySpread(x, y, z - 1, level, spread, blockLight)
+					this.trySpread(x, y, z + 1, level, spread, blockLight)
 				}
 			}
 		}
@@ -4088,12 +4095,16 @@ function MineKhan() {
 			let zm = z & 15
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
-				if (!lazy && chunk.buffer && !blockData[blockID].transparent && screen !== "loading") this.updateLight(x, y, z, true)
-				
+				let data = blockData[blockID]
+				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") {
+					this.updateLight(x, y, z, true, data.lightLevel)
+				}
 			} else {
 				let data = blockData[chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
-				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") this.updateLight(x, y, z, false)
+				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") {
+					this.updateLight(x, y, z, false, data.lightLevel)
+				}
 			}
 
 			if (lazy) {
@@ -4126,25 +4137,25 @@ function MineKhan() {
 			if (xm === 0 && zm === 15) { this.updateBlock(x - 1, y, z + 1, lazy); }
 			if (xm & zm === 15) { this.updateBlock(x + 1, y, z + 1, lazy); }
 		}
-		getLight(x, y, z) {
+		getLight(x, y, z, blockLight = 0) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
 			if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
-				return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
+				return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15, blockLight)
 			}
-			return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15)
+			return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15, blockLight)
 		}
 		setLight(x, y, z, level, block) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
 			return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
 		}
-		updateLight(x, y, z, place) {
+		updateLight(x, y, z, place, blockLight = 0) {
 			let chunk = this.getChunk(x, z)
 			let cx = x & 15
 			let cz = z & 15
-			let center = chunk.getLight(cx, y, cz)
-			//if (center < 2) return
+			let center = chunk.getLight(cx, y, cz, 0)
+			let blight = chunk.getLight(cx, y, cz, 1)
 			let up = this.getLight(x, y+1, z)
 			let down = this.getLight(x, y-1, z)
 			let north = this.getLight(x, y, z+1)
@@ -4173,12 +4184,33 @@ function MineKhan() {
 						chunk.spreadLight(spread, center - 1, true)
 					}
 				}
-			} else { // Block was placed; decrease light levels
+
+				// Block light levels
+				if (!blockLight || blockLight < blight) {
+					spread.length = 0
+					up = this.getLight(x, y+1, z, 1)
+					down = this.getLight(x, y-1, z, 1)
+					north = this.getLight(x, y, z+1, 1)
+					south = this.getLight(x, y, z-1, 1)
+					east = this.getLight(x+1, y, z, 1)
+					west = this.getLight(x-1, y, z, 1)
+					blight = Math.max(up, down, north, south, east, west)
+					if (blight > 0) blight -= 1
+					this.setLight(x, y, z, blight, 1)
+					if (blight > 1) {
+						spread.push(x, y, z)
+						chunk.spreadLight(spread, blight - 1, true, 1)
+					}
+				}
+			}
+			else if (place && (center !== 0 || blight !== 0)) { // Block was placed; decrease light levels
 				let respread = []
-				if (center === 0) return
 				for (let i = 0; i <= center + 1; i++) respread[i] = []
-				chunk.setLight(cx, y, cz, 0)
+				chunk.setLight(cx, y, cz, 0, 0)
+				chunk.setLight(cx, y, cz, 0, 1)
 				spread.push(x, y, z)
+
+				// Sky light
 				if (center === 15) {
 					for (let i = y-1; i > 0; i--) {
 						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
@@ -4191,6 +4223,30 @@ function MineKhan() {
 				}
 				chunk.unSpreadLight(spread, center - 1, respread)
 				chunk.reSpreadLight(respread)
+
+				// Block light
+				if (blight) {
+					respread.length = 0
+					for (let i = 0; i <= blight + 1; i++) respread[i] = []
+					spread.length = 0
+					spread.push(x, y, z)
+					chunk.unSpreadLight(spread, blight - 1, respread, 1)
+					chunk.reSpreadLight(respread, 1)
+				}
+			}
+			if (place && blockLight) { // Light block was placed
+				this.setLight(x, y, z, blockLight, 1)
+				spread.length = 0
+				spread.push(x, y, z)
+				chunk.spreadLight(spread, blockLight - 1, true, 1)
+
+			} else if (!place && blockLight) { // Light block was removed
+				this.setLight(x, y, z, 0, 1)
+				spread.push(x, y, z)
+				let respread = []
+				for (let i = 0; i <= blockLight + 1; i++) respread[i] = []
+				chunk.unSpreadLight(spread, blockLight - 1, respread, 1)
+				chunk.reSpreadLight(respread, 1)
 			}
 		}
 		spawnBlock(x, y, z, blockID) {
