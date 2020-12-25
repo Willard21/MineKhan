@@ -5633,79 +5633,102 @@ function MineKhan() {
 		mouseDown = false
 		Slider.release()
 	}
-	canvas.onkeydown = function(e) {
-		let k = e.key.toLowerCase()
-		if (k === " ") {
-			e.preventDefault()
+	canvas.onkeydown = e => {
+		const k = e.key.toLowerCase()
+		switch (k) {
+			default: {
+				// nop
+				break;
+			}
+			case "arrowup":
+			case "arrowright":
+			case "arrowdown":
+			case "arrowleft":
+			case " ": {
+				e.preventDefault();
+			}
 		}
 		if (e.repeat || Key[k]) {
-			return
+			return;
 		}
-		Key[k] = true
+		Key[k] = true;
 
 		if (k === "t") {
 			initTextures()
-		}
-
-		if (k === "enter") {
-			blockMode = blockMode === CUBE ? SLAB : (blockMode === SLAB ? STAIR : CUBE)
-			updateHUD = true
+		} else if (k === "enter") {
+			blockMode = blockMode === CUBE
+				? SLAB
+				: (blockMode === SLAB
+					? STAIR
+					: CUBE
+				);
+			updateHUD = true;
 		}
 
 		if (screen === "play") {
-			if(k === "p") {
-				releasePointer()
-				changeScene("pause")
-			}
+			switch (k) {
+				case 'p': {
+					releasePointer();
+					changeScene("pause");
+					break;
+				}
+				case 'b': {
+					p.autoBreak = !p.autoBreak
+					updateHUD = true
+					break;
+				}
+				case ' ': {
+					if (!p.spectator) {
+						const now = Date.now();
 
-			if(k === "b") {
-				p.autoBreak = !p.autoBreak
-				updateHUD = true
-			}
-
-			if (k === " " && !p.spectator) {
-				if (Date.now() < p.lastJump + 400) {
-					p.flying ^= true
-				} else {
-					p.lastJump = Date.now()
+						if (now < p.lastJump + 400) {
+							p.flying ^= true;
+						} else {
+							p.lastJump = now;
+						}
+					}
+					break;
+				}
+				case 'z': {
+					p.FOV(10, 300)
+					break;
+				}
+				case "shift": {
+					if (!p.flying) {
+						p.sneaking = true;
+						if (p.sprinting) {
+							p.FOV(settings.fov, 100);
+						}
+						p.sprinting = false;
+						p.speed = 0.03;
+						p.bottomH = 1.32;
+					}
+					break;
+				}
+				case 'l': {
+					p.spectator = !p.spectator
+					p.flying = true
+					p.onGround = false
+					updateHUD = true
+					break;
+				}
+				case 'e': {
+					changeScene("inventory")
+					releasePointer()
+					break;
+				}
+				case ';': {
+					releasePointer()
+					freezeFrame = true
+					break;
 				}
 			}
 
-			if (k === "z") {
-				p.FOV(10, 300)
-			}
-
-			if (k === "shift" && !p.flying) {
-				p.sneaking = true
-				if (p.sprinting) {
-					p.FOV(settings.fov, 100)
-				}
-				p.sprinting = false
-				p.speed = 0.03
-				p.bottomH = 1.32
-			}
-
-			if (k === "l") {
-				p.spectator = !p.spectator
-				p.flying = true
-				p.onGround = false
-				updateHUD = true
-			}
-
-			if (k === "e") {
-				changeScene("inventory")
-				releasePointer()
-			}
-
-			if (k === ";") {
-				releasePointer()
-				freezeFrame = true
-			}
-
-			if(Number(k)) {
-				inventory.hotbarSlot = Number(k) - 1
-				holding = inventory.hotbar[inventory.hotbarSlot]
-				updateHUD = true
+			// '0'..'9' ?
+			if (Number(k)) {
+				inventory.hotbarSlot = Number(k) - 1;
+				holding = inventory.hotbar[inventory.hotbarSlot];
+				updateHUD = true;
 			}
 		} else if (screen === "pause") {
 			if(k === "p") {
@@ -5714,24 +5737,22 @@ function MineKhan() {
 		} else if (screen === "inventory") {
 			if (k === "e") {
 				play()
-			}
-			if (k === "enter") {
+			} else if (k === "enter") {
 				drawScreens.inventory()
 			}
 		}
 	}
-	canvas.onkeyup = function(e) {
-		let k = e.key.toLowerCase()
-		Key[k] = false
-		if(k === "escape" && (screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && Date.now() > unpauseDelay) {
-			play()
+
+	canvas.onkeyup = e => {
+		let k = e.key.toLowerCase();
+		Key[k] = false;
+		if (k === "escape" && (previousScreen === "pause" && [ "pause", "inventory", "options" ].includes(screen)) && Date.now() > unpauseDelay) {
+			play();
 		}
 		if (screen === "play") {
 			if (k === "z") {
 				p.FOV(settings.fov, 300)
-			}
-
-			if (k === "shift" && p.sneaking) {
+			} else if (k === "shift" && p.sneaking) {
 				p.sneaking = false
 				p.speed = 0.075
 				p.bottomH = 1.62
