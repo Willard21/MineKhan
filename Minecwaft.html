@@ -224,16 +224,9 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		varying vec2 vTexture;
 		varying float vFog;
 
-		vec4 fog(vec4 color) {
-			color.r += (uTime * 0.33 - color.r) * vFog;
-			color.g += (uTime * 0.54 - color.g) * vFog;
-			color.b += (uTime * 0.72 - color.b) * vFog;
-			return color;
-		}
-
 		void main(){
 			vec4 color = texture2D(uSampler, vTexture);
-			gl_FragColor = fog(vec4(color.rgb * vShadow, color.a));
+			gl_FragColor = vec4(mix(color.rgb * vShadow, vec3(0.33, 0.54, 0.72) * uTime, vFog), color.a);
 			if (gl_FragColor.a == 0.0) discard;
 		}
 	</script>
@@ -1142,11 +1135,13 @@ function MineKhan() {
 		}
 	}
 
-	let PVector = function(x, y, z) {
-		this.x = x
-		this.y = y
-		this.z = z
-		this.set = function(x, y, z) {
+	class PVector {
+		constructor(x, y, z) {
+			this.x = x
+			this.y = y
+			this.z = z
+		}
+		set(x, y, z) {
 			if (y === undefined) {
 				this.x = x.x
 				this.y = x.y
@@ -1157,18 +1152,18 @@ function MineKhan() {
 				this.z = z
 			}
 		}
-		this.normalize = function() {
+		normalize() {
 			let mag = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
 			this.x /= mag
 			this.y /= mag
 			this.z /= mag
 		}
-		this.add = function(v) {
+		add(v) {
 			this.x += v.x
 			this.y += v.y
 			this.z += v.z
 		}
-		this.mult = function(m) {
+		mult(m) {
 			this.x *= m
 			this.y *= m
 			this.z *= m
@@ -4107,6 +4102,169 @@ function MineKhan() {
 				}
 			}
 			this.loaded = true
+		}
+	}
+
+	class Contacts {
+		constructor() {
+			this.array = []
+			this.size = 0
+		}
+		add(x, y, z, block) {
+			if (this.size === this.array.length) {
+				this.array.push([ x, y, z, block ])
+			} else {
+				this.array[this.size][0] = x
+				this.array[this.size][1] = y
+				this.array[this.size][2] = z
+				this.array[this.size][3] = block
+			}
+			this.size++
+		}
+		clear() {
+			this.size = 0
+		}
+	}
+
+	class Entity {
+		static FRICTION = 0.85
+		static GRAVITY = -0.032
+
+		constructor(x, y, z, pitch, yaw, velx, vely, velz, width, height, depth, data, faces, despawns) {
+			this.x = x
+			this.y = y
+			this.z = z
+			this.rotationx = rotationx
+			this.rotationy = rotationy
+			this.rotationz = rotationz
+			this.pitch = pitch
+			this.yaw = yaw
+			this.velx = velx
+			this.vely = vely
+			this.velz = velz
+			this.width = width
+			this.height = height
+			this.depth = depth
+			this.contacts = new Contacts()
+			this.lastUpdate = win.performance.now()
+			this.isFlying = false
+			this.despawns = despawns
+			this.spawn = win.performance.now()
+			this.canDespawn = false
+			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
+			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
+			gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+			gl.enableVertexAttribArray(glCache.aVertex)
+			gl.enableVertexAttribArray(glCache.aTexture)
+			gl.enableVertexAttribArray(glCache.aShadow)
+			gl.enableVertexAttribArray(glCache.aSkylight)
+			gl.enableVertexAttribArray(glCache.aBlocklight)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 32, 0)
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 32, 12)
+			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 32, 20)
+			gl.vertexAttribPointer(glCache.aSkylight, 1, gl.FLOAT, false, 32, 24)
+			gl.vertexAttribPointer(glCache.aBlocklight, 1, gl.FLOAT, false, 32, 28)
+			glExtensions.vertex_array_object.bindVertexArrayOES(null)
+			this.faces = faces
+		}
+		updateVelocity() {
+			this.velx *= this.FRICTION
+			this.vely *= this.FRICTION
+			this.velz *= this.FRICTION
+			let dt = (win.performance.now() - this.lastUpdate) / 33
+			dt = dt > 2 ? 2 : dt
+			this.vely += this.GRAVITY * dt
+			if (this.vely < -this.maxYVelocity) {
+				this.vely = -this.maxYVelocity
+			}
+		}
+		move() {
+			let pminX = this.x - this.width / 2
+			let pmaxX = this.x + this.width / 2
+			let pminY = this.y - this.height / 2
+			let pmaxY = this.y + this.height / 2
+			let pminZ = this.z - this.depth / 2
+			let pmaxZ = this.z + this.depth / 2
+			let block = null
+
+			for (let x = pminX; x <= pmaxX; x++) {
+				for (let y = pminY; y <= pmaxY; y++) {
+					for (let z = pminZ; z <= pmaxZ; z++) {
+						let block = world.getBlock(x, y, z)
+						if (block) {
+							this.contacts.add(x, y, z, block)
+						}
+					}
+				}
+			}
+
+			let dt = (win.performance.now() - this.lastUpdate) / 33
+			dt = dt > 2 ? 2 : dt
+
+			this.previousX = this.x
+			this.previousY = this.y
+			this.previousZ = this.z
+
+			//Check collisions in the Y direction
+
+			this.y += this.vely * dt
+			for (let i = 0; i < this.contacts.size; i++) {
+				block = this.contacts.array[i]
+				if (collided(block[0], block[1], block[2], 0, this.vely, 0, block[3])) {
+					this.y = this.previousY
+					this.vely = 0
+					break
+				}
+			}
+
+			//Check collisions in the X direction
+			this.x += this.velx * dt
+			for (let i = 0; i < this.contacts.size; i++) {
+				block = this.contacts.array[i]
+				if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
+					this.x = this.previousX
+					this.velx = 0
+					break
+				}
+			}
+
+			//Check collisions in the Z direction
+			this.z += this.velz * dt
+			for (let i = 0; i < this.contacts.size; i++) {
+				block = this.contacts.array[i]
+				if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
+					this.z = this.previousZ
+					this.velz = 0
+					break
+				}
+			}
+
+			this.lastUpdate = win.performance.now()
+			contacts.clear()
+		}
+		update() {
+			this.updateVelocity()
+			this.move()
+			if (win.performance.now() - this.spawn > this.despawns) {
+				this.canDespawn = true
+			}
+		}
+		render() {
+			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
+			gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
+			glExtensions.vertex_array_object.bindVertexArrayOES(null)
+		}
+	}
+
+	class Item extends Entity {
+		static WIDTH = 0.25
+		static HEIGHT = 0.25
+		static DEPTH = 0.25
+		static DESPAWN = 5 * 60 * 5000
+		constructor(x, y, z, pitch, yaw, velx, vely, velz, data, faces) {
+			super(x, y, z, pitch, yaw, velx, vely, velz, this.WIDTH, this.HEIGHT, this.DEPTH, data, faces, this.DESPAWN)
 		}
 	}
 
