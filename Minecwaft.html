@@ -3301,7 +3301,7 @@ function MineKhan() {
 			return ret
 		},
 	}
-	const { abs } = Math
+	
 	function average(l, a, b, c, d) {
 		a = l[a]
 		b = l[b]
@@ -3323,11 +3323,11 @@ function MineKhan() {
 			count++
 		} else zero++
 
-		let max = max(a, b, c, d)
-		if (max > 2) {
+		let mx = max(a, b, c, d)
+		if (mx > 2) {
 			return total / (count * 15)
 		}
-		if (max > 1) {
+		if (mx > 1) {
 			return zero ? total / (count * 15 + 15) : total / (count * 15)
 		}
 		return (total) / 60
@@ -5309,7 +5309,7 @@ function MineKhan() {
 			this.x = x
 			this.y = y
 			this.h = h
-			this.w = max(w, 350)
+			this.w = Math.max(w, 350)
 			this.name = settingName
 			this.scenes = Array.isArray(scenes) ? scenes : [scenes]
 			this.label = label
