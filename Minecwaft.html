@@ -1933,14 +1933,26 @@ function MineKhan() {
 			}
 		}
 	}
-	let indexOrder;
-	(function() {
-		let arr = []
-		for (let i = 0; i < 100000; i++) {
-			arr.push(0 + i * 4, 1 + i * 4, 2 + i * 4, 0 + i * 4, 2 + i * 4, 3 + i * 4)
-		}
-		indexOrder = new Uint32Array(arr)
-	})()
+
+	const indexOrder = new Uint32Array(600000);
+
+	for ( let i = 0; i < 100000; ++i ) {
+		const offset = i * 6;
+		const temp = i * 4;
+
+		// write into the next 6 elements
+		indexOrder
+		.subarray(offset, offset + 6)
+		.set([
+			0 + temp,
+			1 + temp,
+			2 + temp,
+			0 + temp,
+			2 + temp,
+			3 + temp
+		]);
+	}
+
 
 	let hexagonVerts
 	let slabIconVerts
