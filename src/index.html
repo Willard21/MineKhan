@@ -94,18 +94,19 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<div id="quota" class="hidden"></div>
 	<div id="onhover" class="hidden"></div>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
-		To save your world, copy/paste the saveString<br>
-		from this box into the code on line 189.<br>
+		To share your world on KA, copy/paste the saveString<br>
+		from this box into the code on line 190.<br>
 		var loadString = "Your Code Here";<br>
 		Then save the program as a Spin-off.
 	</p>
 	<div class="world-select hidden" id="worlds"></div>
-    <p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
-    <script>
+	<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
+	<script>
 		// Code edits will erase the world.
 		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
 		var loadString = ""
 	</script>
+	</body>
 </html>
 
 <!-- function hcyl(bottom, height, radius, id) {
@@ -158,4 +159,34 @@ function sphereoid(w, h, d, id) {
             }
         }
     }
-} -->
+}
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(() => resolve(), ms))
+}
+
+async function asphereoid(w, h, d, id) {
+	let px = p2.x
+	let py = p2.y
+	let pz = p2.z
+    let w2 = w * w
+    let h2 = h * h
+    let d2 = d * d
+    let w3 = (w - 1.5) * (w - 1.5)
+    let h3 = (h - 1.5) * (h - 1.5)
+    let d3 = (d - 1.5) * (d - 1.5)
+
+    for (let y = -h; y < h; y++) {
+        for (let x = -w; x <= w; x++) {
+            for (let z = -d; z <= d; z++) {
+                let n = x * x / w2 + y * y / h2 + z * z / d2
+                let n2 = x * x / w3 + y * y / h3 + z * z / d3
+                if (n < 1 && n2 >= 1) {
+                    world.setBlock(px + x, py + y, pz + z, id)
+					await sleep(10)
+                }
+            }
+        }
+    }
+}
+-->
