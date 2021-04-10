@@ -1,0 +1,30 @@
+{
+  "name": "minekhan",
+  "version": "1.0.0",
+  "description": "Minecraft for Khan Academy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "webpack --watch",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Willard21/MineKhan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Willard21/MineKhan/issues"
+  },
+  "homepage": "https://github.com/Willard21/MineKhan#readme",
+  "devDependencies": {
+    "css-loader": "^5.2.1",
+    "html-webpack-plugin": "~4.5.0",
+    "script-ext-html-webpack-plugin": "~2.1.5",
+    "style-loader": "^2.0.0",
+    "webpack": "~4.44.2",
+    "webpack-cli": "^4.6.0"
+  }
+}
