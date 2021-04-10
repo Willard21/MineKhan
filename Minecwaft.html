@@ -177,8 +177,8 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<div id="quota" class="hidden"></div>
 	<div id="onhover" class="hidden"></div>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
-		To save your world, copy/paste the saveString<br>
-		from this box into the code on line 189.<br>
+		To share your world on KA, copy/paste the saveString<br>
+		from this box into the code on line 190.<br>
 		var loadString = "Your Code Here";<br>
 		Then save the program as a Spin-off.
 	</p>
@@ -201,12 +201,12 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		uniform mat4 uView;
 		uniform float uDist;
 		uniform vec3 uPos;
-		uniform float uTime;
+		uniform float uTime; // Actually the amount of light in the sky (between 0.1 and 1)
 
 		void main() {
 			vTexture = aTexture;
 			// If you are going to change this final lightlevel calculation
-			// you have to change line 4487 as well since it calculates lightlevel of entity based on this
+			// you have to change the Entity.render method as well since it calculates lightLevel of entity based on this
 			vShadow = aShadow * min(max(aSkylight * uTime, aBlocklight) * 0.9 + 0.1, 1.0);
 			gl_Position = uView * vec4(aVertex, 1.0);
 
@@ -310,7 +310,19 @@ document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width:
 function MineKhan() {
 	// cache Math object
 	const { Math, performance, Date } = window;
-	const { cos, sin, round, floor, ceil, min, max, abs } = Math;
+	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math;
+
+	// Shh don't tell anyone I'm override native objects
+	String.prototype.hashCode = function() {
+		var hash = 0, i, chr;
+		if (this.length === 0) return hash;
+		for (i = 0; i < this.length; i++) {
+			chr   = this.charCodeAt(i);
+			hash  = ((hash << 5) - hash) + chr;
+			hash |= 0; // Convert to 32bit integer
+		}
+		return hash;
+	}
 
 	let setPixel, getPixels;
 
@@ -391,6 +403,13 @@ function MineKhan() {
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
 					setPixel(n, x, y, 0, 0, 0, 0xff)
+				}
+			}
+		},
+		nothing: n => {
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					setPixel(n, x, y, 0, 0, 0, 0)
 				}
 			}
 		},
@@ -503,6 +522,7 @@ function MineKhan() {
 			textures: [],
 			transparent: true,
 			shadow: false,
+			solid: false
 		},
 		{
 			name: "grass",
@@ -637,12 +657,14 @@ function MineKhan() {
 		{ name: "polishedDiorite" },
 		{ name: "granite" },
 		{ name: "polishedGranite" },
+		{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false }
 		// I swear, if y'all don't stop asking about TNT every 5 minutes!
 		/* {
 			name: "tnt",
 			textures: ["tntBottom", "tntTop", "tntSides"]
 		},*/
 	];
+	window.blockData = blockData
 
 	const BLOCK_COUNT = blockData.length;
 
@@ -653,8 +675,8 @@ function MineKhan() {
 
 		if ( !("textures" in data) ) {
 			data.textures = new Array(6).fill(data.name);
-		} else if (typeof textures === "string") {
-			data.textures = new Array(6).fill(data.texture);
+		} else if (typeof data.textures === "string") {
+			data.textures = new Array(6).fill(data.textures);
 		} else {
 			const { textures } = data;
 
@@ -679,6 +701,8 @@ function MineKhan() {
 			: true;
 
 		data.lightLevel = data.lightLevel || 0;
+		data.solid = data.solid !== undefined ? data.solid : true
+		data.icon = data.icon || false
 	}
 
 	// implementation of xxHash
@@ -1443,7 +1467,11 @@ function MineKhan() {
 				window.boxCenterTop.placeholder = "Enter World Name"
 				window.boxCenterTop.value = ""
 			}
-		}
+		},
+		"multiplayer menu": {
+			enter: [window.worlds],
+			exit: [window.worlds]
+		},
 	}
 
 	let screen = "main menu"
@@ -2007,6 +2035,9 @@ function MineKhan() {
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
 			let block = blockData[i]
+			if (block.icon) {
+				block = blockData[blockIds[block.icon]]
+			}
 			for (let j = 11; j >= 0; j--) {
 				data.push(-hexagonVerts[j * 3 + 0] * scale)
 				data.push(hexagonVerts[j * 3 + 1] * scale)
@@ -2885,7 +2916,7 @@ function MineKhan() {
 			for (let y = pminY; y <= pmaxY; y++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
-					if (block) {
+					if (blockData[block].solid) {
 						contacts.add(x, y, z, block)
 					}
 				}
@@ -3838,7 +3869,9 @@ function MineKhan() {
 			this.lit = true
 		}
 		setLight(x, y, z, level, blockLight) {
-			this.sections[y >> 4].setLight(x, y & 15, z, level, blockLight)
+			if (y < this.sections.length * 16) {
+				this.sections[y >> 4].setLight(x, y & 15, z, level, blockLight)
+			}
 		}
 		getLight(x, y, z, blockLight = 0) {
 			if (y >= this.sections.length * 16) return 15
@@ -4511,6 +4544,42 @@ function MineKhan() {
 		}
 	}
 
+	class Player extends Entity {
+		constructor(x, y, z, blockID) {
+			const block = blockData[blockID & 255]
+			const tex = block.textures
+			const shape = shapes.cube
+			const shapeVerts = shape.verts
+			const shapeTexVerts = shape.texVerts
+			const size = shape.size
+			let blockSides = Object.keys(Block)
+			let texNum = 0
+			let texture = []
+			let index = 0
+			for (let n = 0; n < 6; n++) {
+				let side = blockSides[n]
+				let directionalFaces = shapeVerts[Sides[side]]
+				for (let facei = 0; facei < directionalFaces.length; facei++) {
+					let texVerts = textureCoords[textureMap[tex[texNum]]]
+					let tx = texVerts[0]
+					let ty = texVerts[1]
+					let texShapeVerts = shapeTexVerts[n][facei]
+					texture[index    ] = tx + texShapeVerts[0]
+					texture[index + 1] = ty + texShapeVerts[1]
+					texture[index + 2] = tx + texShapeVerts[2]
+					texture[index + 3] = ty + texShapeVerts[3]
+					texture[index + 4] = tx + texShapeVerts[4]
+					texture[index + 5] = ty + texShapeVerts[5]
+					texture[index + 6] = tx + texShapeVerts[6]
+					texture[index + 7] = ty + texShapeVerts[7]
+					index += 8
+				}
+				texNum++
+			}
+			super(x, y, z, 0, 0, 0, 0, 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity)
+		}
+	}
+
 	let analytics = {
 		totalTickTime: 0,
 		worstFrameTime: 0,
@@ -4590,6 +4659,121 @@ function MineKhan() {
 		}
 	}
 
+	var multiplayer = null
+	let playerPositions = {}
+	let playerEntities = {}
+	let playerDistances = []
+	async function loggedIn() {
+		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(e => 401)
+		if (!exists || exists === "401") {
+			if (location.href.startsWith("https://willard.fun")) {
+				alert("You're not logged in. Head over to https://willard.fun/login to login or register before connecting to the server.")
+			} else {
+				alert("Multiplayer is currently only available on https://willard.fun/login => https://willard.fun/minekhan")
+			}
+			return false
+		}
+		return true
+	}
+
+	async function initMultiplayer(target) {
+		if (multiplayer) return
+		let logged = await loggedIn()
+		if (!logged) return
+
+		let host = false
+		if (!target) {
+			target = world.id
+			host = true
+		}
+		multiplayer = new WebSocket("wss://willard.fun/ws?target=" + target)
+		multiplayer.onopen = event => {
+			multiplayer.send(JSON.stringify({
+				type: "connect"
+			}))
+			if (host) {
+				multiplayer.send(JSON.stringify({
+					type: "init",
+					name: world.name
+				}))
+			}
+		}
+		multiplayer.onmessage = msg => {
+			let packet = JSON.parse(msg.data)
+			if (packet.type === "setBlock") {
+				let a = packet.data
+				world.setBlock(a[0], a[1], a[2], a[3], false, true)
+			} else if (packet.type === "genChunk") {
+
+			} else if (packet.type === "connect" && host) {
+				multiplayer.send(JSON.stringify({
+					type: "save",
+					data: world.getSaveString()
+				}))
+			} else if (packet.type === "save" && screen === "multiplayer menu") {
+				world = new World()
+				world.loadSave(packet.data)
+				changeScene("loading")
+			} else if (packet.type === "users") {
+				console.log(packet.data)
+			} else if (packet.type === "ban") {
+				console.log(packet.data)
+			} else if (packet.type === "pos") {
+				let pos = packet.data
+				let name = packet.author
+				playerPositions[name] = pos
+				if (!playerEntities[name]) playerEntities[name] = new Player(pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1)
+				let ent = playerEntities[name]
+				ent.x = pos.x
+				ent.y = pos.y
+				ent.z = pos.z
+				packet.data.time = Date.now()
+			} else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
+				try {
+					eval(packet.data)
+				} catch(e) {}
+			}
+		}
+
+		multiplayer.onclose = () => {
+			if (!host) {
+				alert("Connection lost!")
+				changeScene("main menu")
+			}
+			clearInterval(multiplayer.pos)
+			multiplayer = null
+		}
+		multiplayer.onerror = multiplayer.onclose
+
+		window.online = function() {
+			multiplayer.send("fetchUsers")
+		}
+
+		window.ban = function(username) {
+			multiplayer.send(JSON.stringify({
+				type: "ban",
+				data: username || ""
+			}))
+		}
+
+		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
+			type: "pos",
+			data: p2
+		})), 1000)
+
+		window.dists = () => {
+			console.log(playerPositions)
+			console.log(playerDistances)
+		}
+	}
+
+	async function getWorlds() {
+		let logged = await loggedIn()
+		if (!logged) return []
+
+		return await fetch("https://willard.fun/minekhan/worlds").then(res => res.json())
+	}
+
 	let fogDist = 16
 	let frameCount = -3600
 	class World {
@@ -4613,6 +4797,7 @@ function MineKhan() {
 			this.meshQueue = []
 			this.loadFrom = []
 			this.entities = []
+			this.eventQueue = []
 			this.lastChunk = ","
 		}
 		genChunk(chunk) {
@@ -4699,30 +4884,42 @@ function MineKhan() {
 			}
 			return this.loaded[X * this.lwidth + Z].getBlock(x & 15, y, z & 15)
 		}
-		setBlock(x, y, z, blockID, lazy) {
+		setBlock(x, y, z, blockID, lazy, remote) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
+				this.eventQueue.push([x, y, z, blockID])
 				return
 			}
 			let chunk = this.chunks[x >> 4][z >> 4]
+			if (!chunk.buffer && remote) {
+				this.eventQueue.push([x, y, z, blockID])
+				return
+			}
 
 			let xm = x & 15
 			let zm = z & 15
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
 				let data = blockData[blockID]
-				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") {
+				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, true, data.lightLevel)
 				}
 			} else {
 				let data = blockData[chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
-				if (!lazy && chunk.buffer && !data.transparent && screen !== "loading") {
+				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, false, data.lightLevel)
 				}
 			}
 
 			if (lazy) {
 				return
+			}
+
+			if (multiplayer && !remote && screen === "play") {
+				multiplayer.send(JSON.stringify({
+					type: "setBlock",
+					data: [x, y, z, blockID]
+				}))
 			}
 
 			//Update the 6 adjacent blocks and 1 changed block
@@ -4766,6 +4963,7 @@ function MineKhan() {
 		}
 		updateLight(x, y, z, place, blockLight = 0) {
 			let chunk = this.getChunk(x, z)
+			if (!chunk) return
 			let cx = x & 15
 			let cz = z & 15
 			let center = chunk.getLight(cx, y, cz, 0)
@@ -4819,7 +5017,8 @@ function MineKhan() {
 			}
 			else if (place && (center !== 0 || blight !== 0)) { // Block was placed; decrease light levels
 				let respread = []
-				for (let i = 0; i <= center + 1; i++) respread[i] = []
+				// for (let i = 0; i <= center + 1; i++) respread[i] = []
+				for (let i = 0; i <= 15; i++) respread[i] = []
 				chunk.setLight(cx, y, cz, 0, 0)
 				chunk.setLight(cx, y, cz, 0, 1)
 				spread.push(x, y, z)
@@ -4841,7 +5040,8 @@ function MineKhan() {
 				// Block light
 				if (blight) {
 					respread.length = 0
-					for (let i = 0; i <= blight + 1; i++) respread[i] = []
+					// for (let i = 0; i <= blight + 1; i++) respread[i] = []
+					for (let i = 0; i <= 15; i++) respread[i] = []
 					spread.length = 0
 					spread.push(x, y, z)
 					chunk.unSpreadLight(spread, blight - 1, respread, 1)
@@ -4894,14 +5094,11 @@ function MineKhan() {
 				this.chunkGenQueue.sort(sortChunks)
 			}
 
-			if (Key.leftMouse && !Key.control && p.lastBreak < Date.now() - 250 && screen === "play") {
+			if (Key.leftMouse && !Key.control && (p.lastBreak < Date.now() - 250 || p.autoBreak) && screen === "play") {
 				changeWorldBlock(0)
 			}
-			if ((Key.rightMouse || Key.leftMouse && Key.control) && p.lastPlace < Date.now() - 250) {
+			if ((Key.rightMouse || Key.leftMouse && Key.control) && (p.lastPlace < Date.now() - 250 || p.autoBuild)) {
 				newWorldBlock()
-			}
-			if (Key.leftMouse && p.autoBreak && !Key.control) {
-				changeWorldBlock(0)
 			}
 
 			for (let i = 0; i < this.sortedChunks.length; i++) {
@@ -4980,7 +5177,12 @@ function MineKhan() {
 		}
 		render() {
 			initModelView(p)
-			let skyLight = 1 // min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
+			let skyLight
+			if (multiplayer) {
+				skyLight = min(max(abs(Date.now() % 1200000 - 600000) / 60000 - 5, 0.1), 1)
+			} else {
+				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
+			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
@@ -5020,6 +5222,13 @@ function MineKhan() {
 			for (let i = this.entities.length - 1; i >= 0; i--) {
 				const entity = this.entities[i]
 				entity.render()
+			}
+
+			if (multiplayer) {
+				for (let name in playerEntities) {
+					const entity = playerEntities[name]
+					entity.render()
+				}
 			}
 
 			gl.useProgram(program3D)
@@ -5301,9 +5510,6 @@ function MineKhan() {
 		p.setDirection()
 	}
 
-	// Mouse sensitivity variable, used for the settings buttons and in the "mmoved" function
-	let mouseS = 300
-
 	class Slider {
 		constructor(x, y, w, h, scenes, label, min, max, settingName, callback) {
 			this.x = x
@@ -5512,8 +5718,14 @@ function MineKhan() {
 		const always = () => true
 
 		// Main menu buttons
-		Button.add(width / 2, height / 2 - 20, 400, 40, "Singleplayer", "main menu", r => changeScene("loadsave menu"))
-		Button.add(width / 2, height / 2 + 35, 400, 40, "Multiplayer", "main menu", nothing, always, "Multiplayer isn't possible at this time.")
+		Button.add(width / 2, height / 2 - 20, 400, 40, "Singleplayer", "main menu", r => {
+			initWorldsMenu()
+			changeScene("loadsave menu")
+		})
+		Button.add(width / 2, height / 2 + 35, 400, 40, "Multiplayer", "main menu", r => {
+			initMultiplayerMenu()
+			changeScene("multiplayer menu")
+		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", r => changeScene("options"))
 
 		// Creation menu buttons
@@ -5536,7 +5748,7 @@ function MineKhan() {
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", r => {
 			world = new World()
-			world.id = Date.now()
+			world.id = "" + Date.now() + (Math.random() * 1000000 | 0)
 			let name = boxCenterTop.value || "World"
 			let number = ""
 			while(true) {
@@ -5601,7 +5813,7 @@ function MineKhan() {
 			if (code) {
 				try {
 					world.loadSave(code)
-					world.id = world.id || Date.now()
+					world.id = world.id || "" + Date.now() + (Math.random() * 1000000 | 0)
 				}
 				catch(e) {
 					alert("Unable to load save")
@@ -5634,8 +5846,15 @@ function MineKhan() {
 			saveDirections.classList.remove("hidden")
 			savebox.value = world.getSaveString()
 		})
-		Button.add(width / 2, 425, 300, 40, "Exit Without Saving", "pause", r => {
+		Button.add(width / 2, 425, 300, 40, "Open World To Public", "pause", r => {
+			initMultiplayer()
+		}, () => !!multiplayer || !location.href.startsWith("https://willard.fun"))
+		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", r => {
 			savebox.value = world.getSaveString()
+			if (multiplayer) {
+				multiplayer.onclose()
+				multiplayer = null
+			}
 			initWorldsMenu()
 			changeScene("main menu")
 		})
@@ -5647,7 +5866,15 @@ function MineKhan() {
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", r => changeScene(previousScreen))
 
 		// Multiplayer buttons
-		Button.add(width / 2, 395, width / 3, 40, "¯\\_(ツ)_/¯", "multiplayer menu", r => changeScene("main menu"))
+		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", r => changeScene("main menu"))
+		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "multiplayer menu", r => {
+			world = new World()
+			win.world = world
+
+			if (selectedWorld) {
+				initMultiplayer(selectedWorld)
+			}
+		}, () => !selectedWorld)
 
 		// Settings Sliders
 		Slider.add(width/2, 245, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
@@ -5841,6 +6068,27 @@ function MineKhan() {
 
 		if (p.autoBreak) {
 			text("Super breaker enabled", 5, height - 89, 12)
+		}
+		if (p.autoBuild) {
+			text("Hyper builder enabled", 5, height - 101, 12)
+		}
+		if (multiplayer) {
+			playerDistances.length = 0
+			let closest = Infinity
+			let cname = "Yourself"
+			for (let name in playerPositions) {
+				let pos = playerPositions[name]
+				let distance = sqrt((pos.x - p2.x)*(pos.x - p2.x) + (pos.y - p2.y)*(pos.y - p2.y) + (pos.z - p2.z)*(pos.z - p2.z))
+				playerDistances.push({
+					name,
+					distance
+				})
+				if (distance < closest) {
+					closest = distance
+					cname = name
+				}
+			}
+			text(`Closest player: ${cname} (${round(closest)} blocks away)`, 5, height - 113, 12)
 		}
 
 		ctx.textAlign = 'right'
@@ -6082,6 +6330,10 @@ function MineKhan() {
 
 			if(k === "b") {
 				p.autoBreak = !p.autoBreak
+				updateHUD = true
+			}
+			if(k === "h") {
+				p.autoBuild = !p.autoBuild
 				updateHUD = true
 			}
 
@@ -6674,6 +6926,7 @@ function MineKhan() {
 		p.lastPlace = Date.now()
 		p.lastJump = Date.now()
 		p.autoBreak = false
+		p.autoBuild = false
 		p.flying = false
 		p.sneaking = false
 		p.spectator = false
@@ -6765,7 +7018,51 @@ function MineKhan() {
 		trees = true
 		caves = true
 	}
-	
+
+	async function initMultiplayerMenu() {
+		while (window.worlds.firstChild) {
+			window.worlds.removeChild(window.worlds.firstChild)
+		}
+		selectedWorld = 0
+		window.boxCenterTop.value = ""
+
+		const deselect = () => {
+			let elem = document.getElementsByClassName("selected")
+			if (elem && elem[0]) {
+				elem[0].classList.remove("selected")
+			}
+		}
+
+		let servers = await getWorlds()
+
+		function addWorld(name, host, online, id) {
+			let div = doc.createElement("div")
+			div.className = "world"
+			div.onclick = e => {
+				deselect()
+				div.classList.add("selected")
+				selectedWorld = id
+			}
+			let br = "<br>"
+			div.id = id
+			div.innerHTML = "<strong>" + name + "</strong>" + br
+			
+			div.innerHTML += "Hosted by " + host + br
+			div.innerHTML += online + " players online" + br
+			
+			window.worlds.appendChild(div)
+		}
+
+		worlds = {}
+
+		for (let data of servers) {
+			addWorld(data.name, data.host, data.online, data.target)
+			worlds[data.target] = data
+		}
+		window.worlds.onclick = Button.draw
+		window.boxCenterTop.onkeyup = Button.draw
+	}
+
 	function initEverything() {
 		console.log("Initializing world.")
 
@@ -6793,6 +7090,13 @@ function MineKhan() {
 		p.FOV(settings.fov)
 		initWorldsMenu()
 		initButtons()
+
+		// See if a user followed a link here.
+		var urlParams = new URLSearchParams(window.location.search)
+		if (urlParams.has("target")) {
+			changeScene("multiplayer menu")
+			initMultiplayer(urlParams.get("target"))
+		}
 	}
 
 	// Define all the scene draw functions
@@ -6938,6 +7242,13 @@ function MineKhan() {
 			text("Select World", width / 2, 20)
 		}
 		drawScreens.editworld = dirt
+		drawScreens["multiplayer menu"] = () => {
+			dirt()
+			ctx.textAlign = 'center'
+			textSize(20)
+			fill(255)
+			text("Select Server", width / 2, 20)
+		}
 	})()
 
 	// Give the font time to load and redraw the homescreen
@@ -7044,4 +7355,34 @@ function sphereoid(w, h, d, id) {
             }
         }
     }
-} -->
+}
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(() => resolve(), ms))
+}
+
+async function asphereoid(w, h, d, id) {
+	let px = p2.x
+	let py = p2.y
+	let pz = p2.z
+    let w2 = w * w
+    let h2 = h * h
+    let d2 = d * d
+    let w3 = (w - 1.5) * (w - 1.5)
+    let h3 = (h - 1.5) * (h - 1.5)
+    let d3 = (d - 1.5) * (d - 1.5)
+
+    for (let y = -h; y < h; y++) {
+        for (let x = -w; x <= w; x++) {
+            for (let z = -d; z <= d; z++) {
+                let n = x * x / w2 + y * y / h2 + z * z / d2
+                let n2 = x * x / w3 + y * y / h3 + z * z / d3
+                if (n < 1 && n2 >= 1) {
+                    world.setBlock(px + x, py + y, pz + z, id)
+					await sleep(10)
+                }
+            }
+        }
+    }
+}
+-->
