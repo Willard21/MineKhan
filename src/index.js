@@ -578,9 +578,6 @@ function MineKhan() {
 
 		// end of statics
 
-		// permutation
-		perm = new Uint8Array(0x200);
-
 		// prototype functions:
 		noise3d(x, y, z) {
 			const { floor } = Math;
@@ -711,6 +708,9 @@ function MineKhan() {
 			}
 
 			const rnd = new Marsaglia(seed);
+
+			// permutation
+			this.perm = new Uint8Array(0x200);
 
 			// generate permutation
 			const { perm } = this;
