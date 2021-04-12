@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "watch": "webpack --watch",
-    "build": "webpack --config-name=\"production\"",
-    "test": "webpack --config-name=\"test\""
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
