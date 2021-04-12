@@ -4,9 +4,9 @@
   "description": "Minecraft for Khan Academy",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "webpack --watch",
-    "build": "webpack"
+    "build": "webpack --config-name=\"production\"",
+    "test": "webpack --config-name=\"test\""
   },
   "repository": {
     "type": "git",
