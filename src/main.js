@@ -3630,7 +3630,7 @@ function MineKhan() {
 			}
 			if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
 				let chunk = world.getChunk(x, z)
-				if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+				if (chunk && chunk.buffer && !world.meshQueue.includes(chunk)) {
 					world.meshQueue.push(chunk)
 				}
 			}
@@ -4436,6 +4436,9 @@ function MineKhan() {
 				ent.y = pos.y
 				ent.z = pos.z
 				packet.data.time = Date.now()
+			} else if (packet.type === "dc") {
+				delete playerPositions[packet.author]
+				delete playerEntities[packet.author]
 			} else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
 				try {
 					eval(packet.data)
@@ -4447,6 +4450,8 @@ function MineKhan() {
 			if (!host) {
 				alert("Connection lost!")
 				changeScene("main menu")
+			} else {
+				alert("Connection lost!")
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -4467,7 +4472,7 @@ function MineKhan() {
 		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
 			type: "pos",
 			data: p2
-		})), 1000)
+		})), 500)
 
 		window.dists = () => {
 			console.log(playerPositions)
@@ -4667,7 +4672,9 @@ function MineKhan() {
 		setLight(x, y, z, level, block) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+			if (this.loaded[X * this.lwidth + Z]) {
+				return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+			}
 		}
 		updateLight(x, y, z, place, blockLight = 0) {
 			let chunk = this.getChunk(x, z)
@@ -5560,8 +5567,7 @@ function MineKhan() {
 		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", r => {
 			savebox.value = world.getSaveString()
 			if (multiplayer) {
-				multiplayer.onclose()
-				multiplayer = null
+				multiplayer.close()
 			}
 			initWorldsMenu()
 			changeScene("main menu")
