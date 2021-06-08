@@ -14,7 +14,7 @@ window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
 window.message = document.getElementById("message")
-window.worlds = document.getElementById("worlds")
+window.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "window" as its namespace.
 window.quota = document.getElementById("quota")
 var hoverbox = document.getElementById("onhover")
 canvas.width  = window.innerWidth
@@ -25,8 +25,13 @@ document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width:
 */
 function MineKhan() {
 	// cache Math object
-	const { Math, performance, Date } = window;
+	const { Math, performance, Date, document } = window;
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math;
+	const win = window.parent;
+	const { console } = win;
+	const chatOutput = document.getElementById("chat")
+	const chatInput = document.getElementById("chatbar")
+	let now = Date.now()
 
 	// Shh don't tell anyone I'm override native objects
 	String.prototype.hashCode = function() {
@@ -467,9 +472,6 @@ function MineKhan() {
 		};
 	})();
 
-	const win = window.parent;
-	const doc = document;
-	const { console } = win;
 	let world;
 	let worldSeed;
 
@@ -1051,11 +1053,11 @@ function MineKhan() {
 	function save() {
 		saveToDB(world.id, {
 			id: world.id,
-			edited: Date.now(),
+			edited: now,
 			name: world.name,
 			version: version,
 			code: world.getSaveString()
-		}).then(() => world.edited = Date.now()).catch(e => console.error(e))
+		}).then(() => world.edited = now).catch(e => console.error(e))
 	}
 
 	// Expose these functions to the global scope for debugging
@@ -1122,7 +1124,7 @@ function MineKhan() {
 	let textureCoords
 	let texCoordsBuffers
 	let mainbg, dirtbg // Background images
-	let bigArray = win.bigArray || new Float32Array(600000)
+	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
 
 	// Callback functions for all the screens; will define them further down the page
@@ -1136,6 +1138,7 @@ function MineKhan() {
 		"multiplayer menu": () => {},
 		"comingsoon menu": () => {},
 		"loadsave menu": () => {},
+		"chat": () => {}
 	}
 	let html = {
 		pause: {
@@ -1187,6 +1190,14 @@ function MineKhan() {
 		"multiplayer menu": {
 			enter: [window.worlds],
 			exit: [window.worlds]
+		},
+		chat: {
+			enter: [chatInput, chatOutput],
+			exit: [chatInput, chatOutput],
+			onenter: () => {
+				chatInput.focus()
+				releasePointer()
+			}
 		},
 	}
 
@@ -1256,13 +1267,14 @@ function MineKhan() {
 
 	function play() {
 		canvas.onblur()
-		p.lastBreak = Date.now()
+		p.lastBreak = now
 		updateHUD = true
 		use3d()
 		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 		getPointer()
 		fill(255, 255, 255)
 		textSize(10)
+		canvas.focus()
 		changeScene("play")
 	}
 
@@ -1274,8 +1286,8 @@ function MineKhan() {
 		}
 	}
 	function releasePointer() {
-		if (doc.exitPointerLock) {
-			doc.exitPointerLock()
+		if (document.exitPointerLock) {
+			document.exitPointerLock()
 		}
 	}
 
@@ -1696,14 +1708,15 @@ function MineKhan() {
 			}
 		}
 	}
-	let indexOrder;
-	(function() {
-		let arr = []
-		for (let i = 0; i < 100000; i++) {
-			arr.push(0 + i * 4, 1 + i * 4, 2 + i * 4, 0 + i * 4, 2 + i * 4, 3 + i * 4)
-		}
-		indexOrder = new Uint32Array(arr)
-	})()
+	let indexOrder = new Uint32Array(bigArray.length / 6 | 0)
+	for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
+		indexOrder[i]     = j
+		indexOrder[i + 1] = 1 + j
+		indexOrder[i + 2] = 2 + j
+		indexOrder[i + 3] = 0 + j
+		indexOrder[i + 4] = 2 + j
+		indexOrder[i + 5] = 3 + j
+	}
 
 	let hexagonVerts
 	let slabIconVerts
@@ -2025,7 +2038,6 @@ function MineKhan() {
 			if (fov === this.currentFov) return
 
 			if (!fov) {
-				let now = Date.now()
 				fov = this.currentFov + this.step * (now - this.lastStep)
 				this.lastStep = now
 				if (Math.sign(this.targetFov - this.currentFov) !== Math.sign(this.targetFov - fov)) {
@@ -2035,7 +2047,7 @@ function MineKhan() {
 			else if (time) {
 				this.targetFov = fov
 				this.step = (fov - this.currentFov) / time
-				this.lastStep = Date.now()
+				this.lastStep = now
 				return
 			} else {
 				this.targetFov = fov
@@ -2808,9 +2820,9 @@ function MineKhan() {
 
 			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t)
 			if (t) {
-				p.lastPlace = Date.now()
+				p.lastPlace = now
 			} else {
-				p.lastBreak = Date.now()
+				p.lastBreak = now
 			}
 		}
 	}
@@ -4367,10 +4379,60 @@ function MineKhan() {
 		}
 	}
 
+	let alerts = []
+	function chatAlert(msg) {
+		alerts.push({
+			msg: msg.substr(0, 50),
+			born: now
+		})
+		if (alerts.length > 5) alerts.shift()
+		updateHUD = true
+	}
+	function renderChatAlerts() {
+		if (!alerts.length) return
+		textSize(20)
+		let y = height - 150
+		for (let i = alerts.length - 1; i >= 0; i--) {
+			let alert = alerts[i]
+			text(alert.msg, 50, y)
+			y -= 50
+		}
+		while(alerts.length && now - alerts[0].born > 10000) {
+			alerts.shift()
+			updateHUD = true
+		}
+	}
+
+	function chat(msg) {
+		let lockScroll = false
+		if (chatOutput.scrollTop + chatOutput.clientHeight === chatOutput.scrollHeight) {
+			lockScroll = true
+		}
+		let div = document.createElement("div")
+		div.className = "message"
+		div.textContent = msg
+		chatOutput.append(div)
+		chatAlert(msg)
+		if (lockScroll) {
+			chatOutput.scroll(0, 10000000)
+		}
+	}
+
+	function sendChat(msg) {
+		if (multiplayer) {
+			multiplayer.send(JSON.stringify({
+				type: "chat",
+				data: msg
+			}))
+		}
+		chat(`${currentUser.username}: ${msg}`)
+	}
+
 	var multiplayer = null
 	let playerPositions = {}
 	let playerEntities = {}
 	let playerDistances = []
+	let currentUser = {username: "Player"}
 	async function loggedIn() {
 		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(e => 401)
 		if (!exists || exists === "401") {
@@ -4381,6 +4443,7 @@ function MineKhan() {
 			}
 			return false
 		}
+		currentUser = JSON.parse(exists)
 		return true
 	}
 
@@ -4413,11 +4476,14 @@ function MineKhan() {
 				world.setBlock(a[0], a[1], a[2], a[3], false, true)
 			} else if (packet.type === "genChunk") {
 
-			} else if (packet.type === "connect" && host) {
-				multiplayer.send(JSON.stringify({
-					type: "save",
-					data: world.getSaveString()
-				}))
+			} else if (packet.type === "connect") {
+				if (host) {
+					multiplayer.send(JSON.stringify({
+						type: "save",
+						data: world.getSaveString()
+					}))
+				}
+				chat(`${packet.author} has joined.`)
 			} else if (packet.type === "save" && screen === "multiplayer menu") {
 				world = new World()
 				world.loadSave(packet.data)
@@ -4435,14 +4501,17 @@ function MineKhan() {
 				ent.x = pos.x
 				ent.y = pos.y
 				ent.z = pos.z
-				packet.data.time = Date.now()
+				packet.data.time = now
 			} else if (packet.type === "dc") {
+				chat(`${packet.author} has disconnected.`)
 				delete playerPositions[packet.author]
 				delete playerEntities[packet.author]
 			} else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
 				try {
 					eval(packet.data)
 				} catch(e) {}
+			} else if (packet.type === "chat") {
+				chat(`${packet.author}: ${packet.data}`)
 			}
 		}
 
@@ -4809,10 +4878,10 @@ function MineKhan() {
 				this.chunkGenQueue.sort(sortChunks)
 			}
 
-			if (Key.leftMouse && !Key.control && (p.lastBreak < Date.now() - 250 || p.autoBreak) && screen === "play") {
+			if (Key.leftMouse && !Key.control && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
 				changeWorldBlock(0)
 			}
-			if ((Key.rightMouse || Key.leftMouse && Key.control) && (p.lastPlace < Date.now() - 250 || p.autoBuild)) {
+			if ((Key.rightMouse || Key.leftMouse && Key.control) && (p.lastPlace < now - 250 || p.autoBuild)) {
 				newWorldBlock()
 			}
 
@@ -4894,7 +4963,7 @@ function MineKhan() {
 			initModelView(p)
 			let skyLight
 			if (multiplayer) {
-				skyLight = min(max(abs(Date.now() % 1200000 - 600000) / 60000 - 5, 0.1), 1)
+				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 5, 0.1), 1)
 			} else {
 				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
 			}
@@ -5118,7 +5187,7 @@ function MineKhan() {
 		loadOldSave(str) {
 			let data = str.split(";");
 			worldSeed = parseInt(data.shift(), 36);
-			this.id = Date.now()
+			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
 			seedHash(worldSeed);
 			caveNoise = openSimplexNoise(worldSeed);
@@ -5463,7 +5532,7 @@ function MineKhan() {
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", r => {
 			world = new World()
-			world.id = "" + Date.now() + (Math.random() * 1000000 | 0)
+			world.id = "" + now + (Math.random() * 1000000 | 0)
 			let name = boxCenterTop.value || "World"
 			let number = ""
 			while(true) {
@@ -5528,7 +5597,7 @@ function MineKhan() {
 			if (code) {
 				try {
 					world.loadSave(code)
-					world.id = world.id || "" + Date.now() + (Math.random() * 1000000 | 0)
+					world.id = world.id || "" + now + (Math.random() * 1000000 | 0)
 				}
 				catch(e) {
 					alert("Unable to load save")
@@ -5555,7 +5624,7 @@ function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", r => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${timeString(Date.now() - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", r => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -5936,13 +6005,13 @@ function MineKhan() {
 	}
 	document.onmousemove = trackMouse
 	document.onpointerlockchange = function() {
-		if (doc.pointerLockElement === canvas) {
-			doc.onmousemove = mmoved
+		if (document.pointerLockElement === canvas) {
+			document.onmousemove = mmoved
 		} else {
-			doc.onmousemove = trackMouse
+			document.onmousemove = trackMouse
 			if (screen === "play" && !freezeFrame) {
 				changeScene("pause")
-				unpauseDelay = Date.now() + 1000
+				unpauseDelay = now + 1000
 			}
 		}
 		for (let key in Key) {
@@ -5975,9 +6044,9 @@ function MineKhan() {
 				break
 		}
 		if(screen === "play") {
-			if (doc.pointerLockElement !== canvas) {
+			if (document.pointerLockElement !== canvas) {
 				getPointer()
-				p.lastBreak = Date.now()
+				p.lastBreak = now
 			} else {
 				place = false
 				if(e.button === 0) {
@@ -6019,7 +6088,7 @@ function MineKhan() {
 	}
 	canvas.onkeydown = function(e) {
 		let k = e.key.toLowerCase()
-		if (k === " ") {
+		if (k === " " || k === "arrowdown" || k === "arrowup") {
 			e.preventDefault()
 		}
 		if (e.repeat || Key[k]) {
@@ -6028,7 +6097,9 @@ function MineKhan() {
 		Key[k] = true
 
 		if (k === "t") {
-			initTextures()
+			// initTextures()
+			e.preventDefault()
+			changeScene("chat")
 		}
 
 		if (k === "enter") {
@@ -6052,10 +6123,10 @@ function MineKhan() {
 			}
 
 			if (k === " " && !p.spectator) {
-				if (Date.now() < p.lastJump + 400) {
+				if (now < p.lastJump + 400) {
 					p.flying ^= true
 				} else {
-					p.lastJump = Date.now()
+					p.lastJump = now
 				}
 			}
 
@@ -6116,7 +6187,7 @@ function MineKhan() {
 	canvas.onkeyup = function(e) {
 		let k = e.key.toLowerCase()
 		Key[k] = false
-		if(k === "escape" && (screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && Date.now() > unpauseDelay) {
+		if(k === "escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
 			play()
 		}
 		if (screen === "play") {
@@ -6189,6 +6260,25 @@ function MineKhan() {
 			drawScreens[screen]()
 			Button.draw()
 			Slider.draw()
+		}
+	}
+	chatInput.onkeyup = e => {
+		if (e.key === "Enter") {
+			let msg = chatInput.value.trim()
+			if (msg) {
+				e.preventDefault()
+				e.stopPropagation()
+				sendChat(msg)
+				chatInput.value = ""
+			} else {
+				play()
+			}
+		}
+		if (e.key === "Escape") {
+			e.preventDefault()
+			e.stopPropagation()
+			play()
+			chatInput.value = ""
 		}
 	}
 
@@ -6636,9 +6726,9 @@ function MineKhan() {
 		p.maxYVelocity = 1.5
 		p.gravityStength = -0.032
 		p.lastUpdate = performance.now()
-		p.lastBreak = Date.now()
-		p.lastPlace = Date.now()
-		p.lastJump = Date.now()
+		p.lastBreak = now
+		p.lastPlace = now
+		p.lastJump = now
 		p.autoBreak = false
 		p.autoBuild = false
 		p.flying = false
@@ -6663,7 +6753,7 @@ function MineKhan() {
 		}
 
 		function addWorld(name, version, size, id, edited) {
-			let div = doc.createElement("div")
+			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = e => {
 				deselect()
@@ -6695,7 +6785,6 @@ function MineKhan() {
 			try {
 				let tempWorld = new World()
 				tempWorld.loadSave(loadString)
-				let now = Date.now()
 				addWorld(`${tempWorld.name} (Pre-loaded)`, tempWorld.version, loadString.length, now)
 				worlds[now] = {
 					code: loadString,
@@ -6750,7 +6839,7 @@ function MineKhan() {
 		let servers = await getWorlds()
 
 		function addWorld(name, host, online, id) {
-			let div = doc.createElement("div")
+			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = e => {
 				deselect()
@@ -6873,7 +6962,8 @@ function MineKhan() {
 				ctx.drawImage(gl.canvas, 0, 0)
 				updateHUD = false
 				freezeFrame = false
-
+				renderChatAlerts()
+				textSize(10)
 				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 			}
 			defineWorld()
@@ -6974,6 +7064,7 @@ function MineKhan() {
 
 	let debugMenu = false
 	function gameLoop() {
+		now = Date.now()
 		let frameStart = performance.now()
 		if (!gl) {
 			initEverything()
@@ -6981,21 +7072,26 @@ function MineKhan() {
 		}
 
 		if (screen === "play" || screen === "loading") {
-			drawScreens[screen]()
+			try {
+				drawScreens[screen]()
+			}
+			catch(e) {
+				console.error(e)
+			}
 		}
 
-		if (Date.now() - analytics.lastUpdate > 500 && analytics.frames) {
+		if (now - analytics.lastUpdate > 500 && analytics.frames) {
 			analytics.displayedTickTime = (analytics.totalTickTime / analytics.frames).toFixed(1)
 			analytics.displayedRenderTime = (analytics.totalRenderTime / analytics.frames).toFixed(1)
 			analytics.displayedFrameTime = (analytics.totalFrameTime / analytics.frames).toFixed(1)
-			analytics.fps = round(analytics.frames * 1000 / (Date.now() - analytics.lastUpdate))
+			analytics.fps = round(analytics.frames * 1000 / (now - analytics.lastUpdate))
 			analytics.displayedwFrameTime = analytics.worstFrameTime.toFixed(1)
 			analytics.frames = 0
 			analytics.totalRenderTime = 0
 			analytics.totalTickTime = 0
 			analytics.totalFrameTime = 0
 			analytics.worstFrameTime = 0
-			analytics.lastUpdate = Date.now()
+			analytics.lastUpdate = now
 			updateHUD = true
 		}
 
