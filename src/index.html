@@ -84,8 +84,9 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<head>
 		<meta charset="utf-8">
 		<title>MineKhan</title>
-		<link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-        <link rel="shortcut icon" type="image/ico" href="https://willard21.github.io/MineKhan/favicon.ico">
+		<!-- <link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"> -->
+        <link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
         <link rel="stylesheet" href="index.css">
 	</head>
 	<body>
@@ -94,6 +95,8 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
 	<div id="quota" class="hidden"></div>
 	<div id="onhover" class="hidden"></div>
+    <div id="chat" class="hidden"></div>
+    <input id="chatbar" class="hidden">
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To share your world on KA, copy/paste the saveString<br>
 		from this box into the code on line 190.<br>
