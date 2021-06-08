@@ -3851,7 +3851,7 @@ function MineKhan() {
 			}
 			if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
 				let chunk = world.getChunk(x, z)
-				if (chunk.buffer && !world.meshQueue.includes(chunk)) {
+				if (chunk && chunk.buffer && !world.meshQueue.includes(chunk)) {
 					world.meshQueue.push(chunk)
 				}
 			}
@@ -4657,6 +4657,9 @@ function MineKhan() {
 				ent.y = pos.y
 				ent.z = pos.z
 				packet.data.time = Date.now()
+			} else if (packet.type === "dc") {
+				delete playerPositions[packet.author]
+				delete playerEntities[packet.author]
 			} else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
 				try {
 					eval(packet.data)
@@ -4668,6 +4671,8 @@ function MineKhan() {
 			if (!host) {
 				alert("Connection lost!")
 				changeScene("main menu")
+			} else {
+				alert("Connection lost!")
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -4688,7 +4693,7 @@ function MineKhan() {
 		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
 			type: "pos",
 			data: p2
-		})), 1000)
+		})), 500)
 
 		window.dists = () => {
 			console.log(playerPositions)
@@ -4888,7 +4893,9 @@ function MineKhan() {
 		setLight(x, y, z, level, block) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+			if (this.loaded[X * this.lwidth + Z]) {
+				return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+			}
 		}
 		updateLight(x, y, z, place, blockLight = 0) {
 			let chunk = this.getChunk(x, z)
@@ -5781,8 +5788,7 @@ function MineKhan() {
 		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", r => {
 			savebox.value = world.getSaveString()
 			if (multiplayer) {
-				multiplayer.onclose()
-				multiplayer = null
+				multiplayer.close()
 			}
 			initWorldsMenu()
 			changeScene("main menu")
@@ -7229,6 +7235,7 @@ if (window.parent.raf) {
 }
 init()
 
+
 /***/ }),
 /* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
@@ -7695,7 +7702,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.i, "body {\n    overflow: hidden; /* Hide scrollbars */\n}\n.world-select {\n    width: 99vw;\n    min-width: 300px;\n    height: calc(100vh - 220px);\n    position: absolute;\n    bottom: 120px;\n    overflow-y: auto;\n    background-color: RGBA(0, 0, 0, 0.6);\n    justify-content: center;\n    margin: 0 auto;\n}\n.world {\n    width: 250px;\n    height: auto;\n    border: 1px solid black;\n    font-size: 18px;\n    font-family: 'Courier New', Courier, monospace;\n    color: rgb(180, 180, 180);\n    margin: 0 auto;\n    margin-top: 15px;\n    padding: 5px;\n    cursor: pointer;\n}\nstrong {\n    color: white;\n}\n.selected {\n    border: 3px solid white;\n    padding: 3px;\n}\ninput[type=text] {\n    background-color: black;\n    caret-color: white;\n    border: 2px solid gray;\n    color: white;\n    font-size: 24px;\n    padding-left: 12px;\n}\ninput[type=text]:focus {\n    border: 2px solid lightgray;\n}\n#boxcentertop {\n    z-index: 1;\n    width: 80vw;\n    max-width: 400px;\n    height: 50px;\n    position: relative;\n    top: 30px;\n    display: block;\n    margin: 0 auto;\n}\n.hidden {\n    display: none !important;\n}\n#onhover {\n    background-color: rgba(0, 0, 0, 0.9);\n    color: rgb(200, 200, 200);\n    font-family: 'Courier New', Courier, monospace;\n    word-wrap: normal;\n    width: auto;\n    max-width: 400px;\n    position: absolute;\n    z-index: 1;\n    padding: 10px;\n    cursor: default;\n}\n#quota {\n    display: block;\n    position: absolute;\n    width: 99vw;\n    margin: 0 auto;\n    bottom: 110px;\n    z-index: 1;\n    background-color: RGBA(0, 0, 0, 0.6);\n    justify-content: center;\n    text-align: center;\n    color: white;\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n    overflow: hidden; /* Hide scrollbars */\r\n}\r\n.world-select {\r\n    width: 99vw;\r\n    min-width: 300px;\r\n    height: calc(100vh - 220px);\r\n    position: absolute;\r\n    bottom: 120px;\r\n    overflow-y: auto;\r\n    background-color: RGBA(0, 0, 0, 0.6);\r\n    justify-content: center;\r\n    margin: 0 auto;\r\n}\r\n.world {\r\n    width: 250px;\r\n    height: auto;\r\n    border: 1px solid black;\r\n    font-size: 18px;\r\n    font-family: 'Courier New', Courier, monospace;\r\n    color: rgb(180, 180, 180);\r\n    margin: 0 auto;\r\n    margin-top: 15px;\r\n    padding: 5px;\r\n    cursor: pointer;\r\n}\r\nstrong {\r\n    color: white;\r\n}\r\n.selected {\r\n    border: 3px solid white;\r\n    padding: 3px;\r\n}\r\ninput[type=text] {\r\n    background-color: black;\r\n    caret-color: white;\r\n    border: 2px solid gray;\r\n    color: white;\r\n    font-size: 24px;\r\n    padding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n    border: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n    z-index: 1;\r\n    width: 80vw;\r\n    max-width: 400px;\r\n    height: 50px;\r\n    position: relative;\r\n    top: 30px;\r\n    display: block;\r\n    margin: 0 auto;\r\n}\r\n.hidden {\r\n    display: none !important;\r\n}\r\n#onhover {\r\n    background-color: rgba(0, 0, 0, 0.9);\r\n    color: rgb(200, 200, 200);\r\n    font-family: 'Courier New', Courier, monospace;\r\n    word-wrap: normal;\r\n    width: auto;\r\n    max-width: 400px;\r\n    position: absolute;\r\n    z-index: 1;\r\n    padding: 10px;\r\n    cursor: default;\r\n}\r\n#quota {\r\n    display: block;\r\n    position: absolute;\r\n    width: 99vw;\r\n    margin: 0 auto;\r\n    bottom: 110px;\r\n    z-index: 1;\r\n    background-color: RGBA(0, 0, 0, 0.6);\r\n    justify-content: center;\r\n    text-align: center;\r\n    color: white;\r\n}", ""]);
 // Exports
 /* harmony default export */ __webpack_exports__["default"] = (___CSS_LOADER_EXPORT___);
 
