@@ -1,0 +1,81 @@
+body {
+    overflow: hidden; /* Hide scrollbars */
+}
+.world-select {
+    width: 99vw;
+    min-width: 300px;
+    height: calc(100vh - 220px);
+    position: absolute;
+    bottom: 120px;
+    overflow-y: auto;
+    background-color: RGBA(0, 0, 0, 0.6);
+    justify-content: center;
+    margin: 0 auto;
+}
+.world {
+    width: 250px;
+    height: auto;
+    border: 1px solid black;
+    font-size: 18px;
+    font-family: 'Courier New', Courier, monospace;
+    color: rgb(180, 180, 180);
+    margin: 0 auto;
+    margin-top: 15px;
+    padding: 5px;
+    cursor: pointer;
+}
+strong {
+    color: white;
+}
+.selected {
+    border: 3px solid white;
+    padding: 3px;
+}
+input[type=text] {
+    background-color: black;
+    caret-color: white;
+    border: 2px solid gray;
+    color: white;
+    font-size: 24px;
+    padding-left: 12px;
+}
+input[type=text]:focus {
+    border: 2px solid lightgray;
+}
+#boxcentertop {
+    z-index: 1;
+    width: 80vw;
+    max-width: 400px;
+    height: 50px;
+    position: relative;
+    top: 30px;
+    display: block;
+    margin: 0 auto;
+}
+.hidden {
+    display: none !important;
+}
+#onhover {
+    background-color: rgba(0, 0, 0, 0.9);
+    color: rgb(200, 200, 200);
+    font-family: 'Courier New', Courier, monospace;
+    word-wrap: normal;
+    width: auto;
+    max-width: 400px;
+    position: absolute;
+    z-index: 1;
+    padding: 10px;
+    cursor: default;
+}
+#quota {
+    display: block;
+    position: absolute;
+    width: 99vw;
+    margin: 0 auto;
+    bottom: 110px;
+    z-index: 1;
+    background-color: RGBA(0, 0, 0, 0.6);
+    justify-content: center;
+    text-align: center;
+    color: white;
+}
