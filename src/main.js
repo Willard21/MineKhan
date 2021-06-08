@@ -23,7 +23,7 @@ canvas.height = window.innerHeight
 /* Set this text editor to max width by copying this into the JS console:
 document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
 */
-function MineKhan() {
+async function MineKhan() {
 	// cache Math object
 	const { Math, performance, Date, document } = window;
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math;
@@ -1197,6 +1197,7 @@ function MineKhan() {
 			onenter: () => {
 				chatInput.focus()
 				releasePointer()
+				chatOutput.scroll(0, 10000000)
 			}
 		},
 	}
@@ -4405,7 +4406,7 @@ function MineKhan() {
 
 	function chat(msg) {
 		let lockScroll = false
-		if (chatOutput.scrollTop + chatOutput.clientHeight === chatOutput.scrollHeight) {
+		if (chatOutput.scrollTop + chatOutput.clientHeight + 50 > chatOutput.scrollHeight) {
 			lockScroll = true
 		}
 		let div = document.createElement("div")
@@ -7103,9 +7104,11 @@ function MineKhan() {
 	return gameLoop
 }
 
-var init = MineKhan()
-if (window.parent.raf) {
-	window.cancelAnimationFrame(window.parent.raf)
-	console.log("Canceled", window.parent.raf)
+window.onload = async function() {
+	var init = await MineKhan()
+	if (window.parent.raf) {
+		window.cancelAnimationFrame(window.parent.raf)
+		console.log("Canceled", window.parent.raf)
+	}
+	init()
 }
-init()
