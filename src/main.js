@@ -33,7 +33,7 @@ async function MineKhan() {
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
 
-	// Shh don't tell anyone I'm override native objects
+	// Shh don't tell anyone I'm overriding native objects
 	String.prototype.hashCode = function() {
 		var hash = 0, i, chr;
 		if (this.length === 0) return hash;
@@ -1074,13 +1074,12 @@ async function MineKhan() {
 	let superflat = false
 	let trees = true
 	let caves = true
+	let currentFov = 90
 
 	let blockIds = {}
 	blockData.forEach(block => blockIds[block.name] = block.id)
 	win.blockData = blockData
 	win.blockIds = blockIds
-
-	let currentFov
 
 	// Configurable and savable settings
 	let settings = {
@@ -1088,7 +1087,6 @@ async function MineKhan() {
 		fov: 70, // Field of view in degrees
 		mouseSense: 100 // Mouse sensitivity as a percentage of the default
 	}
-	let locked = true
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
@@ -1685,7 +1683,9 @@ async function MineKhan() {
 		for (let i = 0; i < BLOCK_COUNT; i++) {
 			let baseBlock = blockData[i]
 			let slabBlock = Object.create(baseBlock)
+			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
+			stairBlock.transparent = true
 			slabBlock.shape = shapes.slab
 			baseBlock.shape = shapes.cube
 			stairBlock.shape = shapes.stair
@@ -1695,6 +1695,7 @@ async function MineKhan() {
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
 					let block = Object.create(baseBlock)
+					block.transparent = true
 					block.shape = v[j]
 					blockData[i | SLAB | j << 10] = block
 				}
@@ -1703,6 +1704,7 @@ async function MineKhan() {
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
 					let block = Object.create(baseBlock)
+					block.transparent = true
 					block.shape = v[j]
 					blockData[i | STAIR | j << 10] = block
 				}
@@ -6097,12 +6099,6 @@ async function MineKhan() {
 		}
 		Key[k] = true
 
-		if (k === "t") {
-			// initTextures()
-			e.preventDefault()
-			changeScene("chat")
-		}
-
 		if (k === "enter") {
 			blockMode = blockMode === CUBE ? SLAB : (blockMode === SLAB ? STAIR : CUBE)
 			updateHUD = true
@@ -6112,6 +6108,12 @@ async function MineKhan() {
 			if(k === "p") {
 				releasePointer()
 				changeScene("pause")
+			}
+
+			if (k === "t") {
+				// initTextures()
+				e.preventDefault()
+				changeScene("chat")
 			}
 
 			if(k === "b") {
