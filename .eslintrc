@@ -24,7 +24,6 @@
 		"use-isnan": 2,
 		"valid-typeof": 2,
 		"no-unexpected-multiline": 2,
-		"curly": [2, "multi-or-nest"],
 		"eqeqeq": [2, "smart"],
 		"no-unused-expressions": 2,
 		"yoda": [2, "never", {}],
