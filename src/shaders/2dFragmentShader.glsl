@@ -1,4 +1,3 @@
-let fragmentShaderSrc2D = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
     precision highp float;
 #else
@@ -14,6 +13,3 @@ void main() {
     gl_FragColor = vec4(color.rgb * vShadow, color.a);
     if (gl_FragColor.a == 0.0) discard;
 }
-`
-
-export { fragmentShaderSrc2D as default };

@@ -1,4 +1,3 @@
-let vertexShaderSrc3D = `		
 attribute vec3  aVertex;
 attribute vec2  aTexture;
 attribute float aShadow;
@@ -21,6 +20,4 @@ void main() {
 
     float range = max(uDist / 5.0, 8.0);
     vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);
-}`
-
-export { vertexShaderSrc3D as default };
+}
