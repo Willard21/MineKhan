@@ -6,7 +6,6 @@
 		"ecmaFeatures": {}
 	},
 	"rules": {
-		"comma-dangle": [1, "always-multiline"],
 		"no-cond-assign": [2, "always"],
 		"no-constant-condition": 2,
 		"no-dupe-args": 2,
@@ -28,7 +27,7 @@
 		"no-unused-expressions": 2,
 		"yoda": [2, "never", {}],
 		"no-unused-vars": ["error", { "args": "all" }],
-		"brace-style": [2, "1tbs", { "allowSingleLine": false }],
+		"brace-style": [2, "stroustrup", { "allowSingleLine": false }],
 		"camelcase": [2, { "properties": "always" }],
 		"indent": [2, "tab", { "SwitchCase": 1 }],
 		"max-nested-callbacks": [2, 10],
@@ -41,7 +40,7 @@
 		"no-this-before-super": 2,
 		"prefer-spread": 2,
 		"operator-linebreak": ["error", "before"],
-		"array-bracket-spacing": ["error", "always", { "singleValue": false }],
+		"array-bracket-spacing": ["error", "never", { "singleValue": false }],
 		"object-curly-spacing": ["error", "always"]
 	},
 	"overrides": [

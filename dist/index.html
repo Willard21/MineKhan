@@ -115,7 +115,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<script>
 		// Code edits will erase the world.
 		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
-		var loadString = ""
+		window.loadString = ""
     </script>
     
 	<script>/******/ (function(modules) { // webpackBootstrap
@@ -240,21 +240,23 @@ __webpack_require__.r(__webpack_exports__);
 
 
 window.canvas = document.getElementById("overlay")
-window.ctx = canvas.getContext("2d")
+window.ctx = window.canvas.getContext("2d")
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
 window.message = document.getElementById("message")
 window.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "window" as its namespace.
 window.quota = document.getElementById("quota")
-var hoverbox = document.getElementById("onhover")
-canvas.width  = window.innerWidth
-canvas.height = window.innerHeight
+window.hoverbox = document.getElementById("onhover")
+window.canvas.width  = window.innerWidth
+window.canvas.height = window.innerHeight
 
 /* Set this text editor to max width by copying this into the JS console:
 document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
 */
 async function MineKhan() {
+	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString } = window
+
 	// cache Math object
 	const { Math, performance, Date, document } = window;
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math;
@@ -270,7 +272,7 @@ async function MineKhan() {
 		if (this.length === 0) return hash;
 		for (i = 0; i < this.length; i++) {
 			chr   = this.charCodeAt(i);
-			hash  = ((hash << 5) - hash) + chr;
+			hash  = (hash << 5) - hash + chr;
 			hash |= 0; // Convert to 32bit integer
 		}
 		return hash;
@@ -320,7 +322,7 @@ async function MineKhan() {
 					const r = 0;
 					const g = floor(random() * 30 + 100);
 					const b = floor(random() * 30);
- 					const a = random() < 0.35
+					const a = random() < 0.35
 						? 0x0
 						: 0xff;
 
@@ -331,7 +333,7 @@ async function MineKhan() {
 		oakPlanks: n => {
 			for (let y = 0; y < 16; ++y) {
 
-				const a = 3 === (y & 3)
+				const a = (y & 3) === 3
 					? 0.7
 					: 1.0;
 
@@ -478,7 +480,7 @@ async function MineKhan() {
 		},
 		{
 			name: "grass",
-			textures: [ "dirt", "grassTop", "grassSide" ],
+			textures: ["dirt", "grassTop", "grassSide"],
 		},
 		{ name: "dirt" },
 		{ name: "stone" },
@@ -516,32 +518,32 @@ async function MineKhan() {
 		{ name: "oakPlanks" },
 		{
 			name: "oakLog",
-			textures: [ "logTop", "logSide" ],
+			textures: ["logTop", "logSide"],
 		},
 		{ name: "acaciaPlanks" },
 		{
 			name: "acaciaLog",
-			textures: [ "acaciaLogTop", "acaciaLogSide" ],
+			textures: ["acaciaLogTop", "acaciaLogSide"],
 		},
 		{ name: "birchPlanks" },
 		{
 			name: "birchLog",
-			textures: [ "birchLogTop", "birchLogSide" ],
+			textures: ["birchLogTop", "birchLogSide"],
 		},
 		{ name: "darkOakPlanks" },
 		{
 			name: "darkOakLog",
-			textures: [ "darkOakLogTop", "darkOakLogSide" ],
+			textures: ["darkOakLogTop", "darkOakLogSide"],
 		},
 		{ name: "junglePlanks" },
 		{
 			name: "jungleLog",
-			textures: [ "jungleLogTop", "jungleLogSide" ],
+			textures: ["jungleLogTop", "jungleLogSide"],
 		},
 		{ name: "sprucePlanks" },
 		{
 			name: "spruceLog",
-			textures: [ "spruceLogTop", "spruceLogSide" ],
+			textures: ["spruceLogTop", "spruceLogSide"],
 		},
 		{ name: "whiteWool" },
 		{ name: "orangeWool" },
@@ -577,7 +579,7 @@ async function MineKhan() {
 		{ name: "blackConcrete" },
 		{
 			name: "bookshelf",
-			textures: [ "oakPlanks", "bookshelf" ]
+			textures: ["oakPlanks", "bookshelf"]
 		},
 		{ name: "netherrack" },
 		{ name: "soulSand" },
@@ -627,16 +629,19 @@ async function MineKhan() {
 
 		if ( !("textures" in data) ) {
 			data.textures = new Array(6).fill(data.name);
-		} else if (typeof data.textures === "string") {
+		}
+		else if (typeof data.textures === "string") {
 			data.textures = new Array(6).fill(data.textures);
-		} else {
+		}
+		else {
 			const { textures } = data;
 
 			if (textures.length === 3) {
 				textures[3] = textures[2];
 				textures[4] = textures[2];
 				textures[5] = textures[2];
-			} else if (textures.length === 2) {
+			}
+			else if (textures.length === 2) {
 				// Top and bottom are the first texture, sides are the second.
 				textures[2] = textures[1];
 				textures[3] = textures[2];
@@ -721,13 +726,13 @@ async function MineKhan() {
 		nextDouble() {
 			const i = this.nextInt() / 4294967296;
 
-			const is_less_than_zero = (i < 0) | 0; // cast to 1 or 0
+			const isNegative = i < 0 | 0; // cast to 1 or 0
 
-			return is_less_than_zero + i;
+			return isNegative + i;
 		}
 
 		constructor(i1, i2) { // better param names
-			this.z = (i1 | 0) || 362436069;
+			this.z = i1 | 0 || 362436069;
 			this.w = i2 || hash(521288629, this.z) * 2147483647 | 0;
 		}
 	}
@@ -751,7 +756,8 @@ async function MineKhan() {
 				if (min) {
 					max = min;
 					min = 0;
-				} else {
+				}
+				else {
 					min = 0;
 					max = 1;
 				}
@@ -914,24 +920,6 @@ async function MineKhan() {
 			);
 		}
 
-		noise1d(x) {
-			const { floor } = Math;
-
-			const X = floor(x) & 0xff;
-
-			x -= floor(x);
-
-			const fx = (3 - 2 * x) * x * x;
-
-			const { lerp, grad1d } = PerlinNoise;
-
-			return lerp(
-				fx,
-				grad1d(perm[X], x),
-				grad1d(perm[X + 1], x - 1)
-			);
-		}
-
 		constructor(seed) {
 			if (seed === undefined) {
 				throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`");
@@ -976,7 +964,6 @@ async function MineKhan() {
 			const { generator, octaves, fallout } = this;
 
 			let effect = 1,
-				k = 1,
 				sum = 0;
 
 			for (let i = 0; i < octaves; ++i) {
@@ -1008,19 +995,43 @@ async function MineKhan() {
 	let caveNoise;
 	// Copied and modified from https://github.com/blindman67/SimplexNoiseJS
 	function openSimplexNoise(clientSeed) {
-		const SQ4 = 2
-		const toNums = function(s) { return s.split(",").map(function(s) { return new Uint8Array(s.split("").map(function(v) { return Number(v) })) }) }
-		const decode = function(m, r, s) { return new Int8Array(s.split("").map(function(v) { return parseInt(v, r) + m })) }
-		const toNumsB32 = function(s) { return s.split(",").map(function(s) { return parseInt(s, 32) }) }
+		const toNums = function(s) {
+			return s.split(",").map(function(s) {
+				return new Uint8Array(s.split("").map(function(v) {
+					return Number(v)
+				}))
+			})
+		}
+		const decode = function(m, r, s) {
+			return new Int8Array(s.split("").map(function(v) {
+				return parseInt(v, r) + m
+			}))
+		}
+		const toNumsB32 = function(s) {
+			return s.split(",").map(function(s) {
+				return parseInt(s, 32)
+			})
+		}
 		const NORM_3D = 1.0 / 206.0
 		const SQUISH_3D = 1 / 3
 		const STRETCH_3D = -1 / 6
 		var base3D = toNums("0000110010101001,2110210120113111,110010101001211021012011")
 		const gradients3D = decode(-11, 23, "0ff7mf7fmmfffmfffm07f70f77mm7ff0ff7m0f77m77f0mf7fm7ff0077707770m77f07f70")
-		var lookupPairs3D = function() { return new Uint16Array(toNumsB32("0,2,1,1,2,2,5,1,6,0,7,0,10,2,12,2,41,1,45,1,50,5,51,5,g6,0,g7,0,h2,4,h6,4,k5,3,k7,3,l0,5,l1,5,l2,4,l5,3,l6,4,l7,3,l8,d,l9,d,la,c,ld,e,le,c,lf,e,m8,k,ma,i,p9,l,pd,n,q8,k,q9,l,15e,j,15f,m,16a,i,16e,j,19d,n,19f,m,1a8,f,1a9,h,1aa,f,1ad,h,1ae,g,1af,g,1ag,b,1ah,a,1ai,b,1al,a,1am,9,1an,9,1bg,b,1bi,b,1eh,a,1el,a,1fg,8,1fh,8,1qm,9,1qn,9,1ri,7,1rm,7,1ul,6,1un,6,1vg,8,1vh,8,1vi,7,1vl,6,1vm,7,1vn,6")) }
+		var lookupPairs3D = function() {
+			return new Uint16Array(toNumsB32("0,2,1,1,2,2,5,1,6,0,7,0,10,2,12,2,41,1,45,1,50,5,51,5,g6,0,g7,0,h2,4,h6,4,k5,3,k7,3,l0,5,l1,5,l2,4,l5,3,l6,4,l7,3,l8,d,l9,d,la,c,ld,e,le,c,lf,e,m8,k,ma,i,p9,l,pd,n,q8,k,q9,l,15e,j,15f,m,16a,i,16e,j,19d,n,19f,m,1a8,f,1a9,h,1aa,f,1ad,h,1ae,g,1af,g,1ag,b,1ah,a,1ai,b,1al,a,1am,9,1an,9,1bg,b,1bi,b,1eh,a,1el,a,1fg,8,1fh,8,1qm,9,1qn,9,1ri,7,1rm,7,1ul,6,1un,6,1vg,8,1vh,8,1vi,7,1vl,6,1vm,7,1vn,6"))
+		}
 		var p3D = decode(-1, 5, "112011210110211120110121102132212220132122202131222022243214231243124213241324123222113311221213131221123113311112202311112022311112220342223113342223311342223131322023113322023311320223113320223131322203311322203131")
-		const setOf = function(count) { var a = [],i = 0; while (i < count) { a.push(i++) } return a }
-		const doFor = function(count, cb) { var i = 0; while (i < count && cb(i++) !== true) {} }
+		const setOf = function(count) {
+			var a = [], i = 0;
+			while (i < count) {
+				a.push(i++)
+			}
+			return a
+		}
+		const doFor = function(count, cb) {
+			var i = 0;
+			while (i < count && cb(i++) !== true);
+		}
 
 		function shuffleSeed(seed,count){
 			seed = seed * 1664525 + 1013904223 | 0
@@ -1042,7 +1053,7 @@ async function MineKhan() {
 			const multiplier = baseSet[index ++]
 			const c = { next : undefined }
 			while(i < type.dimensions) {
-				const axis = ("xyzw")[i]
+				const axis = "xyzw"[i]
 				c[axis + "sb"] = baseSet[index + i]
 				c["d" + axis] = - baseSet[index + i++] - multiplier * type.squish
 			}
@@ -1053,7 +1064,9 @@ async function MineKhan() {
 			var i
 			const a = lookupArray()
 			const res = new Map()
-			for (i = 0; i < a.length; i += 2) { res.set(a[i], contributions[a[i + 1]]); }
+			for (i = 0; i < a.length; i += 2) {
+				res.set(a[i], contributions[a[i + 1]]);
+			}
 			return res
 		}
 
@@ -1068,15 +1081,23 @@ async function MineKhan() {
 				k = 0
 				do {
 					current = createContribution(type, baseSet, k)
-					if (!previous) { conts[i / baseStep] = current; }
-					else { previous.next = current; }
+					if (!previous) {
+						conts[i / baseStep] = current;
+					}
+					else {
+						previous.next = current;
+					}
 					previous = current
 					k += d + 1
 				} while(k < baseSet.length)
 
 				current.next = createContribution(type, type.pD, i + 1)
-				if (d >= 3) { current.next.next = createContribution(type, type.pD, i + d + 2) }
-				if (d === 4) { current.next.next.next = createContribution(type, type.pD, i + 11) }
+				if (d >= 3) {
+					current.next.next = createContribution(type, type.pD, i + d + 2)
+				}
+				if (d === 4) {
+					current.next.next.next = createContribution(type, type.pD, i + 11)
+				}
 				i += baseStep
 			}
 			const result = [conts, createLookupPairs(type.lookup, conts)]
@@ -1086,7 +1107,7 @@ async function MineKhan() {
 		}
 
 		let temp = createContributionArray(types._3D)
-		const contributions3D = temp[0], lookup3D = temp[1]
+		const lookup3D = temp[1]
 		const perm = new Uint8Array(256)
 		const perm3D = new Uint8Array(256)
 		const source = new Uint8Array(setOf(256))
@@ -1097,7 +1118,7 @@ async function MineKhan() {
 			var r = (seed + 31) % (i + 1)
 			r += r < 0 ? i + 1 : 0
 			perm[i] = source[r]
-			perm3D[i] = (perm[i] % 24) * 3
+			perm3D[i] = perm[i] % 24 * 3
 			source[r] = source[i]
 		})
 		base3D = undefined
@@ -1116,20 +1137,20 @@ async function MineKhan() {
 			const xins = xs - xsb, yins = ys - ysb, zins = zs - zsb
 			const inSum = xins + yins + zins
 			var c = lookup3D.get(
-				(yins - zins + 1) |
-				((xins - yins + 1) << 1) |
-				((xins - zins + 1) << 2) |
-				(inSum << 3) |
-				((inSum + zins) << 5) |
-				((inSum + yins) << 7) |
-				((inSum + xins) << 9)
+				yins - zins + 1
+				| xins - yins + 1 << 1
+				| xins - zins + 1 << 2
+				| inSum << 3
+				| inSum + zins << 5
+				| inSum + yins << 7
+				| inSum + xins << 9
 			)
 			var i, value = 0
 			while (c !== undefined) {
 				const dx = dx0 + c.dx, dy = dy0 + c.dy, dz = dz0 + c.dz
 				let attn = 2 - dx * dx - dy * dy - dz * dz
 				if (attn > 0) {
-					i = pD[(((p[(xsb + c.xsb) & 0xFF] + (ysb + c.ysb)) & 0xFF) + (zsb + c.zsb)) & 0xFF]
+					i = pD[(p[xsb + c.xsb & 0xFF] + (ysb + c.ysb) & 0xFF) + (zsb + c.zsb) & 0xFF]
 					attn *= attn
 					value += attn * attn * (g[i++] * dx + g[i++] * dy + g[i] * dz)
 				}
@@ -1150,7 +1171,8 @@ async function MineKhan() {
 				this.x = x.x
 				this.y = x.y
 				this.z = x.z
-			} else {
+			}
+			else {
 				this.x = x
 				this.y = y
 				this.z = z
@@ -1187,10 +1209,10 @@ async function MineKhan() {
 		}
 		ctx.strokeStyle = "rgb(" + r + ", " + g + ", " + b + ")"
 	}
-	let line = function(x1, y1, x2, y2) {
-		ctx.moveTo(x1, y1)
-		ctx.lineTo(x2, y2)
-	}
+	// function line(x1, y1, x2, y2) {
+	// 	ctx.moveTo(x1, y1)
+	// 	ctx.lineTo(x2, y2)
+	// }
 	function text(txt, x, y, h) {
 		h = h || 0
 
@@ -1205,16 +1227,16 @@ async function MineKhan() {
 	let strokeWeight = function(num) {
 		ctx.lineWidth = num
 	}
-	const ARROW = "arrow"
+	// const ARROW = "arrow"
 	const HAND = "pointer"
-	const CROSS = "crosshair"
+	// const CROSS = "crosshair"
 	let cursor = function(type) {
 		canvas.style.cursor = type
 	}
 	randomSeed(Math.random() * 10000000 | 0)
 
 	async function createDatabase() {
-		return await new Promise(async (resolve, reject) => {
+		return await new Promise((resolve, reject) => {
 			let request = window.indexedDB.open("MineKhan", 1)
 
 			request.onupgradeneeded = function(event) {
@@ -1226,7 +1248,7 @@ async function MineKhan() {
 				store.createIndex("data", "data", { unique: false })
 			}
 
-			request.onsuccess = function(e) {
+			request.onsuccess = function() {
 				resolve(request.result)
 			}
 
@@ -1237,27 +1259,27 @@ async function MineKhan() {
 		})
 	}
 	async function loadFromDB(id) {
-		return await new Promise(async (resolve, reject) => {
-			let db = await createDatabase()
-			let trans = db.transaction("worlds", "readwrite")
-			let store = trans.objectStore("worlds")
-			let req = id ? store.get(id) : store.getAll()
-			req.onsuccess = function(e) {
+		let db = await createDatabase()
+		let trans = db.transaction("worlds", "readwrite")
+		let store = trans.objectStore("worlds")
+		let req = id ? store.get(id) : store.getAll()
+		return await new Promise(resolve => {
+			req.onsuccess = function() {
 				resolve(req.result)
 				db.close()
 			}
-			req.onerror = function(e) { 
+			req.onerror = function() {
 				resolve(null)
 				db.close()
 			}
 		})
 	}
 	async function saveToDB(id, data) {
-		return new Promise(async (resolve, reject) => {
-			let db = await createDatabase()
-			let trans = db.transaction("worlds", "readwrite")
-			let store = trans.objectStore("worlds")
-			let req = store.put({ id: id, data: data })
+		let db = await createDatabase()
+		let trans = db.transaction("worlds", "readwrite")
+		let store = trans.objectStore("worlds")
+		let req = store.put({ id: id, data: data })
+		return new Promise((resolve, reject) => {
 			req.onsuccess = function() {
 				resolve(req.result)
 			}
@@ -1267,11 +1289,11 @@ async function MineKhan() {
 		})
 	}
 	async function deleteFromDB(id) {
-		return new Promise(async (resolve, reject) => {
-			let db = await createDatabase()
-			let trans = db.transaction("worlds", "readwrite")
-			let store = trans.objectStore("worlds")
-			let req = store.delete(id)
+		let db = await createDatabase()
+		let trans = db.transaction("worlds", "readwrite")
+		let store = trans.objectStore("worlds")
+		let req = store.delete(id)
+		return new Promise((resolve, reject) => {
 			req.onsuccess = function() {
 				resolve(req.result)
 			}
@@ -1305,7 +1327,6 @@ async function MineKhan() {
 	let superflat = false
 	let trees = true
 	let caves = true
-	let currentFov = 90
 
 	let blockIds = {}
 	blockData.forEach(block => blockIds[block.name] = block.id)
@@ -1339,11 +1360,11 @@ async function MineKhan() {
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
 	const FLIP     = 0x400 // 11th bit
-	const NORTH    = 0 // 12th and 13th bits for the 4 directions
+	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
 	const SOUTH    = 0x800
 	const EAST     = 0x1000
 	const WEST     = 0x1800
-	const ROTATION = 0x1800 // Mask for the direction bits
+	// const ROTATION = 0x1800 // Mask for the direction bits
 	let blockMode  = CUBE
 	let tex
 	let textureAtlas
@@ -1375,16 +1396,16 @@ async function MineKhan() {
 			exit: [window.savebox, window.saveDirections, window.message]
 		},
 		"loadsave menu": {
-			enter: [window.worlds, window.boxCenterTop, window.quota],
-			exit: [window.worlds, window.boxCenterTop, window.quota],
+			enter: [window.worlds, window.boxCenterTop, quota],
+			exit: [window.worlds, window.boxCenterTop, quota],
 			onenter: () => {
 				window.boxCenterTop.placeholder = "Enter Save String (Optional)"
 				if (navigator && navigator.storage && navigator.storage.estimate) {
 					navigator.storage.estimate().then(data => {
-						window.quota.innerText = `${data.usage.toLocaleString()} / ${data.quota.toLocaleString()} bytes (${(100 * data.usage / data.quota).toLocaleString(undefined, { maximumSignificantDigits: 2 })}%) of your quota used`
+						quota.innerText = `${data.usage.toLocaleString()} / ${data.quota.toLocaleString()} bytes (${(100 * data.usage / data.quota).toLocaleString(undefined, { maximumSignificantDigits: 2 })}%) of your quota used`
 					}).catch(console.error)
 				}
-				window.boxCenterTop.onmousedown = e => {
+				window.boxCenterTop.onmousedown = () => {
 					let elem = document.getElementsByClassName("selected")
 					if (elem && elem[0]) {
 						elem[0].classList.remove("selected")
@@ -1487,7 +1508,7 @@ async function MineKhan() {
 	}
 	let place
 	let inventory = {
-		hotbar: [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
 		main: [],
 		hotbarSlot: 0,
 		size: 40 * min(width, height) / 600,
@@ -1727,13 +1748,13 @@ async function MineKhan() {
 			pos.max = minmax.splice(3, 3)
 			pos.min = minmax
 			tex = tex.map(c => c / 16 / 16)
-			
+
 			return {
 				pos: pos,
 				tex: tex
 			}
 		}
-		
+
 		// 90 degree clockwise rotation; returns a new shape object
 		function rotate(shape) {
 			let verts = shape.verts
@@ -1754,7 +1775,7 @@ async function MineKhan() {
 						c[k + 1] = face[k + 1]
 						c[k + 2] = -face[k]
 					}
-					
+
 					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
 					if (i === 0) {
 						// Bottom
@@ -1872,7 +1893,7 @@ async function MineKhan() {
 		for (let shape in shapes) {
 			let obj = shapes[shape]
 			let verts = obj.verts
-			
+
 			// Populate the vertex coordinates
 			for (let i = 0; i < verts.length; i++) {
 				let side = verts[i]
@@ -1984,8 +2005,8 @@ async function MineKhan() {
 	function genIcons() {
 		blockIcons = [null]
 		blockIcons.lengths = []
-		let texOrder = [ 1, 2, 3 ]
-		let shadows = [ 1, 0.4, 0.7 ]
+		let texOrder = [1, 2, 3]
+		let shadows = [1, 0.4, 0.7]
 		let scale = 0.16 / height * inventory.size
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
@@ -2086,7 +2107,7 @@ async function MineKhan() {
 
 	let matrix = new Float32Array(16); // A temperary matrix that may store random data.
 	let projection = new Float32Array(16)
-	let defaultModelView = new Float32Array([ -10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1 ])
+	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Matrix {
 		constructor(arr) {
 			this.elements = new Float32Array(arr || 16)
@@ -2247,7 +2268,7 @@ async function MineKhan() {
 		}
 	}
 
-	let defaultTransformation = new Matrix([ -10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1 ])
+	let defaultTransformation = new Matrix([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
 		constructor() {
 			this.x = 0
@@ -2283,7 +2304,8 @@ async function MineKhan() {
 				this.step = (fov - this.currentFov) / time
 				this.lastStep = now
 				return
-			} else {
+			}
+			else {
 				this.targetFov = fov
 			}
 
@@ -2503,7 +2525,6 @@ async function MineKhan() {
 		let scale = 1 / tang
 		let near = 1
 		let far = 1000000
-		currentFov = fov
 
 		projection[0] = scale / width * height
 		projection[5] = scale
@@ -2515,7 +2536,8 @@ async function MineKhan() {
 		if (camera) {
 			camera.transform()
 			uniformMatrix("view3d", program3D, "uView", false, camera.getMatrix())
-		} else {
+		}
+		else {
 			copyArr(defaultModelView, modelView)
 			rotX(modelView, rx)
 			rotY(modelView, ry)
@@ -2552,7 +2574,7 @@ async function MineKhan() {
 		let minutes = floor(millis / MINUTE)
 
 		if (years) {
-			return `${years} year${years > 1 ? "s" : ""} and ${days} day${day !== 1 ? "s" : ""} ago`
+			return `${years} year${years > 1 ? "s" : ""} and ${days} day${days !== 1 ? "s" : ""} ago`
 		}
 		if (days) {
 			return `${days} day${days > 1 ? "s" : ""} and ${hours} hour${hours !== 1 ? "s" : ""} ago`
@@ -2563,7 +2585,7 @@ async function MineKhan() {
 		return `${minutes} minute${minutes > 1 ? "s" : ""} ago`
 	}
 	function roundBits(number) {
-		return ((number * 1000000 + 0.5) | 0) / 1000000
+		return (number * 1000000 + 0.5 | 0) / 1000000
 	}
 	function rayTrace(x, y, z, shape) {
 		let cf, cd = 1e9; //Closest face and distance
@@ -2602,7 +2624,8 @@ async function MineKhan() {
 		//West and East faces
 		if (east) {
 			faces = verts[4]
-		} else {
+		}
+		else {
 			faces = verts[5]
 		}
 		if (p.direction.x) {
@@ -2626,7 +2649,8 @@ async function MineKhan() {
 		//South and North faces
 		if (north) {
 			faces = verts[2]
-		} else {
+		}
+		else {
 			faces = verts[3]
 		}
 		if (p.direction.z) {
@@ -2646,18 +2670,17 @@ async function MineKhan() {
 				}
 			}
 		}
-		return [ cd, cf ]
+		return [cd, cf]
 	}
 	function runRayTrace(x, y, z) {
 		let block = world.getBlock(x, y, z)
 		if (block) {
-			let shape = blockData[block].shape
 			let rt = rayTrace(x, y, z, blockData[block].shape)
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0]
 				hitBox.face = rt[1]
-				hitBox.pos = [ x, y, z ]
+				hitBox.pos = [x, y, z]
 				hitBox.shape = blockData[block].shape
 			}
 		}
@@ -2672,18 +2695,13 @@ async function MineKhan() {
 		}
 		let blockState = world.getBlock(p2.x, p2.y, p2.z)
 		if (blockState) {
-			hitBox.pos = [ p2.x, p2.y, p2.z ]
+			hitBox.pos = [p2.x, p2.y, p2.z]
 			hitBox.closest = 0
 			hitBox.shape = blockData[blockState].shape
 			return
 		}
 
 		let pd = p.direction
-
-		// Target block
-		let tx = round(pd.x * reach + p.x)
-		let ty = round(pd.y * reach + p.y)
-		let tz = round(pd.z * reach + p.z)
 
 		let minX = p2.x
 		let maxX = 0
@@ -2780,7 +2798,8 @@ async function MineKhan() {
 						p.onGround = true
 						p.y = round((face[1] + y + p.bottomH) * 10000) / 10000
 						return false
-					} else {
+					}
+					else {
 						return true
 					}
 				}
@@ -2791,7 +2810,8 @@ async function MineKhan() {
 		//West and East faces
 		if (vx < 0) {
 			faces = verts[4]
-		} else if (vx > 0) {
+		}
+		else if (vx > 0) {
 			faces = verts[5]
 		}
 		if (vx) {
@@ -2816,7 +2836,8 @@ async function MineKhan() {
 		//South and North faces
 		if (vz < 0) {
 			faces = verts[2]
-		} else if (vz > 0) {
+		}
+		else if (vz > 0) {
 			faces = verts[3]
 		}
 		if (vz) {
@@ -2843,8 +2864,9 @@ async function MineKhan() {
 		size: 0,
 		add: function(x, y, z, block) {
 			if (this.size === this.array.length) {
-				this.array.push([ x, y, z, block ])
-			} else {
+				this.array.push([x, y, z, block])
+			}
+			else {
 				this.array[this.size][0] = x
 				this.array[this.size][1] = y
 				this.array[this.size][2] = z
@@ -2962,7 +2984,8 @@ async function MineKhan() {
 			let drag = p.onGround ? 0.5 : 0.85
 			p.velocity.z += (p.velocity.z * drag - p.velocity.z) * dt
 			p.velocity.x += (p.velocity.x * drag - p.velocity.x) * dt
-		} else {
+		}
+		else {
 			let drag = 0.9
 			p.velocity.z += (p.velocity.z * drag - p.velocity.z) * dt
 			p.velocity.x += (p.velocity.x * drag - p.velocity.x) * dt
@@ -2986,10 +3009,12 @@ async function MineKhan() {
 			if(Key[" "]) {
 				p.velocity.y = p.jumpSpeed
 				p.onGround = false
-			} else {
+			}
+			else {
 				p.velocity.y = 0
 			}
-		} else {
+		}
+		else {
 			p.velocity.y += p.gravityStength * dt
 			if(p.velocity.y < -p.maxYVelocity) {
 				p.velocity.y = -p.maxYVelocity
@@ -3021,7 +3046,8 @@ async function MineKhan() {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
 			uniformMatrix("view3d", program3D, "uView", false, camera.getMatrix())
-		} else {
+		}
+		else {
 			//copyArr(modelView, matrix)
 			trans(modelView, x, y, z)
 			matMult()
@@ -3038,13 +3064,16 @@ async function MineKhan() {
 			let shape = t && blockData[t].shape
 			if (t && shape.rotate) {
 				let pi = Math.PI / 4
-				if (p.ry <= pi) {} // North; default
-				else if (p.ry < 3 * pi) {
-					t |= WEST
-				} else if (p.ry < 5 * pi) {
-					t |= SOUTH
-				} else if (p.ry < 7 * pi) {
-					t |= EAST
+				if (p.ry > pi) { // If not north
+					if (p.ry < 3 * pi) {
+						t |= WEST
+					}
+					else if (p.ry < 5 * pi) {
+						t |= SOUTH
+					}
+					else if (p.ry < 7 * pi) {
+						t |= EAST
+					}
 				}
 			}
 
@@ -3055,7 +3084,8 @@ async function MineKhan() {
 			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t)
 			if (t) {
 				p.lastPlace = now
-			} else {
+			}
+			else {
 				p.lastBreak = now
 			}
 		}
@@ -3089,7 +3119,7 @@ async function MineKhan() {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff ? (holding | blockMode) : holding)
+			changeWorldBlock(holding < 0xff ? holding | blockMode : holding)
 		}
 	}
 
@@ -3121,7 +3151,7 @@ async function MineKhan() {
 		let caveSize = 0.0055
 		let cave1 = abs(0.5 - caveNoise(x * smooth, y * smooth, z * smooth)) < caveSize
 		let cave2 = abs(0.5 - caveNoise(y * smooth, z * smooth, x * smooth)) < caveSize
-		return (cave1 && cave2)
+		return cave1 && cave2
 	}
 	function carveSphere(x, y, z) {
 		if (y > 3) {
@@ -3137,7 +3167,7 @@ async function MineKhan() {
 	}
 	/**
 	 * Returns a 1 if the face is exposed and should be drawn, or a 0 if the face is hidden
-	 * 
+	 *
 	 * @param {number} x - The X coordinate of the block that may be covering a face
 	 * @param {number} y - The Y coordinate of the block that may be covering a face
 	 * @param {number} z - The Z coordinate of the block that may be covering a face
@@ -3168,7 +3198,7 @@ async function MineKhan() {
 		return 0
 	}
 	let getShadows = {
-		shade: [ 1, 0.85, 0.7, 0.6, 0.3 ],
+		shade: [1, 0.85, 0.7, 0.6, 0.3],
 		ret: [],
 		blocks: [],
 		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
@@ -3286,7 +3316,7 @@ async function MineKhan() {
 			return ret
 		},
 	}
-	
+
 	function average(l, a, b, c, d) {
 		a = l[a]
 		b = l[b]
@@ -3298,15 +3328,18 @@ async function MineKhan() {
 		if (b && abs(a-b) <= 2) {
 			total += b
 			count++
-		} else zero++
+		}
+		else zero++
 		if (c && abs(a-c) <= 2) {
 			total += c
 			count++
-		} else zero++
+		}
+		else zero++
 		if (d && abs(a-d) <= 2) {
 			total += d
 			count++
-		} else zero++
+		}
+		else zero++
 
 		let mx = max(a, b, c, d)
 		if (mx > 2) {
@@ -3315,21 +3348,21 @@ async function MineKhan() {
 		if (mx > 1) {
 			return zero ? total / (count * 15 + 15) : total / (count * 15)
 		}
-		return (total) / 60
+		return total / 60
 	}
 	let getLight = {
 		blocks: [],
 		top: function(x, y, z, block, ret, blockLight = 0) { // Actually the bottom... How did these get flipped?
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 0, 1, 3)
 			ret[1] = average(blocks, 4, 1, 2, 5)
@@ -3340,15 +3373,15 @@ async function MineKhan() {
 		},
 		bottom: function(x, y, z, block, ret, blockLight = 0) { // Actually the top
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 3, 6, 7)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3358,15 +3391,15 @@ async function MineKhan() {
 		},
 		north: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 5, 7, 8)
 			ret[1] = average(blocks, 4, 3, 6, 7)
@@ -3376,15 +3409,15 @@ async function MineKhan() {
 		},
 		south: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x+1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x+1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 1, 2, 5)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3394,15 +3427,15 @@ async function MineKhan() {
 		},
 		east: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x+1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x+1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x+1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x+1, y, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x+1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x+1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x+1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x+1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x+1, y, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x+1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 1, 2, 5)
 			ret[1] = average(blocks, 4, 5, 7, 8)
@@ -3412,15 +3445,15 @@ async function MineKhan() {
 		},
 		west: function(x, y, z, block, ret, blockLight = 0) {
 			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[4] = (getBlock(x-1, y, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[5] = (getBlock(x-1, y+1, z, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[7] = (getBlock(x-1, y, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
-			blocks[8] = (getBlock(x-1, y+1, z+1, block) & 0xf << (blockLight * 4)) >> blockLight * 4
+			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[4] = (getBlock(x-1, y, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[5] = (getBlock(x-1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[7] = (getBlock(x-1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
+			blocks[8] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
 
 			ret[0] = average(blocks, 4, 5, 7, 8)
 			ret[1] = average(blocks, 4, 1, 2, 5)
@@ -3455,7 +3488,7 @@ async function MineKhan() {
 			this.edited = false
 			this.caves = !caves
 			this.pallete = [0]
-			this.palleteMap = {"0": 0}
+			this.palleteMap = { "0": 0 }
 			this.palleteSize = 0
 		}
 		getBlock(x, y, z) {
@@ -3495,16 +3528,17 @@ async function MineKhan() {
 							this.palleteMap[blockState] = this.pallete.length
 							palleteIndex = this.pallete.length
 							this.pallete.push(blockState)
-						} else {
+						}
+						else {
 							palleteIndex = this.palleteMap[blockState]
 						}
 
-						visible = blockState && (hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east")
+						visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east")
 						| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west") << 1
 						| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top") << 2
 						| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom") << 3
 						| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north") << 4
-						| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south") << 5)
+						| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south") << 5
 						if (visible) {
 							pos = (i | j << 4 | k << 8) << 19
 							this.renderData[this.renderLength++] = 1 << 31 | pos | visible << 13 | palleteIndex
@@ -3526,12 +3560,12 @@ async function MineKhan() {
 			y += this.y
 			z += this.z
 			let blockState = this.blocks[i * s * s + j * s + k]
-			let visible = blockState && (hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east")
+			let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east")
 			| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west") << 1
 			| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top") << 2
 			| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom") << 3
 			| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north") << 4
-			| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south") << 5)
+			| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south") << 5
 			let pos = (i | j << 4 | k << 8) << 19
 			let index = -1
 
@@ -3589,7 +3623,7 @@ async function MineKhan() {
 			let shapeTexVerts = null
 			let pallete = this.pallete
 			// let intShad = interpolateShadows
-			
+
 			for (let i = 0; i < length; i++) {
 				data = rData[i]
 				block = blockData[pallete[data & 0x1fff]]
@@ -3682,7 +3716,7 @@ async function MineKhan() {
 		tick() {
 			for (let i = 0; i < 3; i++) {
 				let rnd = Math.random() * this.blocks.length | 0
-				if ((this.blocks[rnd]) === blockIds.grass) {
+				if (this.blocks[rnd] === blockIds.grass) {
 					// Spread grass
 
 					let x = (rnd >> 8) + this.x
@@ -3711,12 +3745,12 @@ async function MineKhan() {
 		getLight(x, y, z, block = 0) {
 			let s = this.size
 			let i = x * s * s + y * s + z
-			return (this.light[i] & 15 << (block * 4)) >> (block * 4)
+			return (this.light[i] & 15 << block * 4) >> block * 4
 		}
 		setLight(x, y, z, level, block = 0) {
 			let s = this.size
 			let i = x * s * s + y * s + z
-			this.light[i] = level << (block * 4) | (this.light[i] & 15 << (!block * 4))
+			this.light[i] = level << block * 4 | this.light[i] & 15 << !block * 4
 		}
 	}
 	let emptySection = new Section(0, 0, 0, 16)
@@ -3779,7 +3813,8 @@ async function MineKhan() {
 						if (!stop && !data.transparent) {
 							this.tops[z * 16 + x] = y
 							stop = true
-						} else if (!stop) {
+						}
+						else if (!stop) {
 							this.setLight(x, y, z, 15, 0)
 						}
 					}
@@ -3871,7 +3906,8 @@ async function MineKhan() {
 					world.setLight(x, y, z, 0, blockLight)
 					spread.push(x, y, z)
 				}
-			} else if (light > level) {
+			}
+			else if (light > level) {
 				respread[light].push(x, y, z)
 			}
 			if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
@@ -3971,7 +4007,7 @@ async function MineKhan() {
 		}
 		populate() {
 			randomSeed(hash(this.x, this.z) * 210000000)
-			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false, topsi = 0
+			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
 			for (let i = 0; i < 16; i++) {
 				for (let k = 0; k < 16; k++) {
@@ -4002,7 +4038,8 @@ async function MineKhan() {
 										if (place) {
 											world.spawnBlock(wx + x, top - 2, wz + z, blockIds.leaves)
 										}
-									} else {
+									}
+									else {
 										world.spawnBlock(wx + x, top - 2, wz + z, blockIds.leaves)
 									}
 								}
@@ -4019,7 +4056,8 @@ async function MineKhan() {
 										if (place) {
 											world.spawnBlock(wx + x, top - 1, wz + z, blockIds.leaves)
 										}
-									} else {
+									}
+									else {
 										world.spawnBlock(wx + x, top - 1, wz + z, blockIds.leaves)
 									}
 								}
@@ -4036,7 +4074,8 @@ async function MineKhan() {
 										if (place) {
 											world.spawnBlock(wx + x, top, wz + z, blockIds.leaves)
 										}
-									} else {
+									}
+									else {
 										world.spawnBlock(wx + x, top, wz + z, blockIds.leaves)
 									}
 								}
@@ -4112,13 +4151,11 @@ async function MineKhan() {
 			this.populated = true
 		}
 		genMesh() {
-			let start = performance.now()
 			let barray = bigArray
 			let index = 0
 			for (let i = 0; i < this.sections.length; i++) {
 				index = this.sections[i].genMesh(barray, index)
 			}
-			let arrayDone = performance.now()
 
 			if (!this.buffer) {
 				this.buffer = gl.createBuffer()
@@ -4166,7 +4203,7 @@ async function MineKhan() {
 			let chunkX = this.x >> 4
 			let chunkZ = this.z >> 4
 			let load = null
-			
+
 			for (let i = 0; i < world.loadFrom.length; i++) {
 				load = world.loadFrom[i]
 				if (load.x === chunkX && load.z === chunkZ) {
@@ -4188,8 +4225,9 @@ async function MineKhan() {
 		}
 		add(x, y, z, block) {
 			if (this.size === this.array.length) {
-				this.array.push([ x, y, z, block ])
-			} else {
+				this.array.push([x, y, z, block])
+			}
+			else {
 				this.array[this.size][0] = x
 				this.array[this.size][1] = y
 				this.array[this.size][2] = z
@@ -4240,7 +4278,7 @@ async function MineKhan() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer)
 			gl.bufferData(gl.ARRAY_BUFFER, texture, gl.STATIC_DRAW)
 			gl.vertexAttribPointer(glCache.aTextureEntity, 2, gl.FLOAT, false, 0, 0)
-			
+
 			gl.enableVertexAttribArray(glCache.aVertexEntity)
 			gl.enableVertexAttribArray(glCache.aTextureEntity)
 			glExtensions.vertex_array_object.bindVertexArrayOES(null)
@@ -4286,7 +4324,8 @@ async function MineKhan() {
 							this.y = round((face[1] + y + this.height / 2) * 10000) / 10000
 							this.vely = 0
 							return false
-						} else {
+						}
+						else {
 							return true
 						}
 					}
@@ -4297,7 +4336,8 @@ async function MineKhan() {
 			//West and East faces
 			if (vx < 0) {
 				faces = verts[4]
-			} else if (vx > 0) {
+			}
+			else if (vx > 0) {
 				faces = verts[5]
 			}
 			if (vx) {
@@ -4322,7 +4362,8 @@ async function MineKhan() {
 			//South and North faces
 			if (vz < 0) {
 				faces = verts[2]
-			} else if (vz > 0) {
+			}
+			else if (vz > 0) {
 				faces = verts[3]
 			}
 			if (vz) {
@@ -4552,12 +4593,14 @@ async function MineKhan() {
 		let dz = p.z - c.z
 		if (dx > 16) {
 			dx -= 16
-		} else if (dx > 0) {
+		}
+		else if (dx > 0) {
 			dx = 0
 		}
 		if (dz > 16) {
 			dz -= 16
-		} else if (dz > 0) {
+		}
+		else if (dz > 0) {
 			dz = 0
 		}
 		return Math.sqrt(dx * dx + dz * dz)
@@ -4586,7 +4629,8 @@ async function MineKhan() {
 				if (world.loadFrom.length && !chunk.loaded && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
 					world.loadQueue.push(chunk)
 					done = false
-				} else if (!world.loadFrom.length && !chunk.loaded) {
+				}
+				else if (!world.loadFrom.length && !chunk.loaded) {
 					chunk.loaded = true
 				}
 				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
@@ -4666,13 +4710,14 @@ async function MineKhan() {
 	let playerPositions = {}
 	let playerEntities = {}
 	let playerDistances = []
-	let currentUser = {username: "Player"}
+	let currentUser = { username: "Player" }
 	async function loggedIn() {
-		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(e => 401)
+		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(() => "401")
 		if (!exists || exists === "401") {
 			if (location.href.startsWith("https://willard.fun")) {
 				alert("You're not logged in. Head over to https://willard.fun/login to login or register before connecting to the server.")
-			} else {
+			}
+			else {
 				alert("Multiplayer is currently only available on https://willard.fun/login => https://willard.fun/minekhan")
 			}
 			return false
@@ -4692,7 +4737,7 @@ async function MineKhan() {
 			host = true
 		}
 		multiplayer = new WebSocket("wss://willard.fun/ws?target=" + target)
-		multiplayer.onopen = event => {
+		multiplayer.onopen = () => {
 			multiplayer.send(JSON.stringify({
 				type: "connect"
 			}))
@@ -4708,9 +4753,11 @@ async function MineKhan() {
 			if (packet.type === "setBlock") {
 				let a = packet.data
 				world.setBlock(a[0], a[1], a[2], a[3], false, true)
-			} else if (packet.type === "genChunk") {
-
-			} else if (packet.type === "connect") {
+			}
+			else if (packet.type === "genChunk") {
+				// TO-DO: generate chunks
+			}
+			else if (packet.type === "connect") {
 				if (host) {
 					multiplayer.send(JSON.stringify({
 						type: "save",
@@ -4718,15 +4765,19 @@ async function MineKhan() {
 					}))
 				}
 				chat(`${packet.author} has joined.`)
-			} else if (packet.type === "save" && screen === "multiplayer menu") {
+			}
+			else if (packet.type === "save" && screen === "multiplayer menu") {
 				world = new World()
 				world.loadSave(packet.data)
 				changeScene("loading")
-			} else if (packet.type === "users") {
+			}
+			else if (packet.type === "users") {
 				console.log(packet.data)
-			} else if (packet.type === "ban") {
+			}
+			else if (packet.type === "ban") {
 				console.log(packet.data)
-			} else if (packet.type === "pos") {
+			}
+			else if (packet.type === "pos") {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
@@ -4736,15 +4787,21 @@ async function MineKhan() {
 				ent.y = pos.y
 				ent.z = pos.z
 				packet.data.time = now
-			} else if (packet.type === "dc") {
+			}
+			else if (packet.type === "dc") {
 				chat(`${packet.author} has disconnected.`)
 				delete playerPositions[packet.author]
 				delete playerEntities[packet.author]
-			} else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
+			}
+			else if (packet.type === "eval") { // Blocked server-side; Can only be sent directly from the server for announcements and live patches
 				try {
 					eval(packet.data)
-				} catch(e) {}
-			} else if (packet.type === "chat") {
+				}
+				catch(e) {
+					// Do nothing
+				}
+			}
+			else if (packet.type === "chat") {
 				chat(`${packet.author}: ${packet.data}`)
 			}
 		}
@@ -4753,7 +4810,8 @@ async function MineKhan() {
 			if (!host) {
 				alert("Connection lost!")
 				changeScene("main menu")
-			} else {
+			}
+			else {
 				alert("Connection lost!")
 			}
 			clearInterval(multiplayer.pos)
@@ -4796,7 +4854,7 @@ async function MineKhan() {
 		constructor() {
 			generatedChunks = 0
 			fogDist = 16
-			p.y = superflat ? 6 : (round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
+			p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 
 			//Initialize the world's arrays
 			this.chunks = []
@@ -4817,15 +4875,13 @@ async function MineKhan() {
 			this.lastChunk = ","
 		}
 		genChunk(chunk) {
-			let x = chunk.x >> 4
-			let z = chunk.z >> 4
 			let trueX = chunk.x
 			let trueZ = chunk.z
 
 			if (chunk.generated) {
 				return false
 			}
-			let hide = !loadString
+
 			let smoothness = generator.smooth
 			let hilliness = generator.height
 			let gen = 0
@@ -4860,10 +4916,12 @@ async function MineKhan() {
 					for (z = minChunkZ; z <= maxChunkZ; z++) {
 						if (y < 0) {
 							ret.push(lights ? fullSection.light : fullSection.blocks)
-						} else if (this.chunks[x] && this.chunks[x][z]) {
+						}
+						else if (this.chunks[x] && this.chunks[x][z]) {
 							section = this.chunks[x][z].sections[y] || emptySection
 							ret.push(lights ? section.light : section.blocks)
-						} else {
+						}
+						else {
 							ret.push(lights ? emptySection.light : emptySection.blocks)
 						}
 					}
@@ -4893,9 +4951,11 @@ async function MineKhan() {
 			let Z = (z >> 4) + this.offsetZ
 			if (y > maxHeight) {
 				return blockIds.air
-			} else if (y < 0) {
+			}
+			else if (y < 0) {
 				return blockIds.bedrock
-			} else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
+			}
+			else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 				return this.getWorldBlock(x, y, z)
 			}
 			return this.loaded[X * this.lwidth + Z].getBlock(x & 15, y, z & 15)
@@ -4919,7 +4979,8 @@ async function MineKhan() {
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, true, data.lightLevel)
 				}
-			} else {
+			}
+			else {
 				let data = blockData[chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
@@ -4959,10 +5020,18 @@ async function MineKhan() {
 			chunk.updateBlock(xm, y, zm, this, lazy)
 
 			// Update the corner chunks so shadows in adjacent chunks update correctly
-			if (xm | zm === 0) { this.updateBlock(x - 1, y, z - 1, lazy); }
-			if (xm === 15 && zm === 0) { this.updateBlock(x + 1, y, z - 1, lazy); }
-			if (xm === 0 && zm === 15) { this.updateBlock(x - 1, y, z + 1, lazy); }
-			if (xm & zm === 15) { this.updateBlock(x + 1, y, z + 1, lazy); }
+			if (xm | zm === 0) {
+				this.updateBlock(x - 1, y, z - 1, lazy);
+			}
+			if (xm === 15 && zm === 0) {
+				this.updateBlock(x + 1, y, z - 1, lazy);
+			}
+			if (xm === 0 && zm === 15) {
+				this.updateBlock(x - 1, y, z + 1, lazy);
+			}
+			if (xm & zm === 15) {
+				this.updateBlock(x + 1, y, z + 1, lazy);
+			}
 		}
 		getLight(x, y, z, blockLight = 0) {
 			let X = (x >> 4) + this.offsetX
@@ -5000,12 +5069,14 @@ async function MineKhan() {
 						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 15)
 							spread.push(x, i, z)
-						} else {
+						}
+						else {
 							break
 						}
 					}
 					chunk.spreadLight(spread, 14, true)
-				} else {
+				}
+				else {
 					center = max(up, down, north, south, east, west)
 					if (center > 0) center -= 1
 					this.setLight(x, y, z, center)
@@ -5047,7 +5118,8 @@ async function MineKhan() {
 						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 0)
 							spread.push(x, i, z)
-						} else {
+						}
+						else {
 							break
 						}
 					}
@@ -5072,7 +5144,8 @@ async function MineKhan() {
 				spread.push(x, y, z)
 				chunk.spreadLight(spread, blockLight - 1, true, 1)
 
-			} else if (!place && blockLight) { // Light block was removed
+			}
+			else if (!place && blockLight) { // Light block was removed
 				this.setLight(x, y, z, 0, 1)
 				spread.push(x, y, z)
 				let respread = []
@@ -5097,7 +5170,8 @@ async function MineKhan() {
 			if (chunk.buffer) {
 				//Only used if spawning a block post-gen
 				this.setBlock(x, y, z, blockID, true)
-			} else if (!chunk.getBlock(x & 15, y, z & 15)) {
+			}
+			else if (!chunk.getBlock(x & 15, y, z & 15)) {
 				chunk.setBlock(x & 15, y, z & 15, blockID)
 			}
 		}
@@ -5136,7 +5210,6 @@ async function MineKhan() {
 				debug.start = performance.now()
 				if (this.meshQueue.length) {
 					// Update all chunk meshes.
-					let len = this.meshQueue.length - 1
 					do {
 						this.meshQueue.pop().genMesh()
 					} while(this.meshQueue.length)
@@ -5154,7 +5227,8 @@ async function MineKhan() {
 					if (!chunk.caves) {
 						chunk.carveCaves()
 						debug("Carve caves")
-					} else if (!chunk.populated) {
+					}
+					else if (!chunk.populated) {
 						chunk.populate()
 						this.populateQueue.pop()
 					}
@@ -5175,14 +5249,18 @@ async function MineKhan() {
 
 				if (this.chunkGenQueue.length && !doneWork) {
 					let chunk = this.chunkGenQueue[0]
-					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {}
+					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
+						// The requirements haven't been filled yet; don't do anything else.
+					}
 					else if (!chunk.optimized) {
 						chunk.optimize(this)
 						debug("Optimize")
-					} else if (!chunk.buffer) {
+					}
+					else if (!chunk.buffer) {
 						chunk.genMesh()
 						debug("Initial mesh")
-					} else {
+					}
+					else {
 						this.chunkGenQueue.shift()
 						generatedChunks++
 					}
@@ -5198,7 +5276,8 @@ async function MineKhan() {
 			let skyLight
 			if (multiplayer) {
 				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 5, 0.1), 1)
-			} else {
+			}
+			else {
 				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
 			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
@@ -5210,7 +5289,7 @@ async function MineKhan() {
 
 			renderedChunks = 0
 
-			let dist = (settings.renderDistance) * 16
+			let dist = settings.renderDistance * 16
 			if (this.chunkGenQueue.length) {
 				this.chunkGenQueue.sort(sortChunks)
 				let chunk = this.chunkGenQueue[0]
@@ -5314,7 +5393,7 @@ async function MineKhan() {
 					if (chunk.edited) {
 						for (let y = 0; y < chunk.sections.length; y++) {
 							if (chunk.sections[y].edited) {
-								edited.push([ chunk.sections[y], chunk.cleanSections[y] ])
+								edited.push([chunk.sections[y], chunk.cleanSections[y]])
 							}
 						}
 					}
@@ -5432,7 +5511,8 @@ async function MineKhan() {
 			p.z = parseInt(playerData[2], 36);
 			p.rx = parseInt(playerData[3], 36) / 100;
 			p.ry = parseInt(playerData[4], 36) / 100;
-			let editCount = parseInt(data.shift(), 36);
+			// let editCount = parseInt(data.shift(), 36);
+			data.shift()
 
 			this.loadFrom = [];
 
@@ -5506,7 +5586,8 @@ async function MineKhan() {
 				p.FOV(settings.fov, 100)
 			}
 			p.sprinting = false
-		} else if(abs(move.x) > 0 && abs(move.z) > 0) {
+		}
+		else if(abs(move.x) > 0 && abs(move.z) > 0) {
 			move.x *= move.ang
 			move.z *= move.ang
 		}
@@ -5635,7 +5716,7 @@ async function MineKhan() {
 			this.w = w
 			this.index = 0
 			this.disabled = disabled || (() => false)
-			this.hoverText = !hoverText || typeof hoverText === "string" ? (() => hoverText) : hoverText
+			this.hoverText = !hoverText || typeof hoverText === "string" ? () => hoverText : hoverText
 			this.scenes = Array.isArray(scenes) ? scenes : [scenes]
 			this.labels = Array.isArray(labels) ? labels : [labels]
 			this.callback = callback
@@ -5658,13 +5739,15 @@ async function MineKhan() {
 				strokeWeight(7)
 				stroke(255)
 				cursor(HAND)
-			} else {
+			}
+			else {
 				strokeWeight(3)
 				stroke(0)
 			}
 			if (disabled) {
 				fill(60)
-			} else {
+			}
+			else {
 				fill(120)
 			}
 			ctx.rect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h)
@@ -5676,21 +5759,23 @@ async function MineKhan() {
 			textSize(16)
 			ctx.textAlign = 'center'
 			text(this.labels[this.index], this.x, this.y + this.h / 8)
-			
+
 			if (hovering && hoverText) {
 				hoverbox.innerText = hoverText
 				hoverbox.classList.remove("hidden")
 				if (mouseY < height / 2) {
 					hoverbox.style.bottom = ""
 					hoverbox.style.top = mouseY + 10 + "px"
-				} else {
+				}
+				else {
 					hoverbox.style.top = ""
 					hoverbox.style.bottom = height - mouseY + 10 + "px"
 				}
 				if (mouseX < width / 2) {
 					hoverbox.style.right = ""
 					hoverbox.style.left = mouseX + 10 + "px"
-				} else {
+				}
+				else {
 					hoverbox.style.left = ""
 					hoverbox.style.right = width - mouseX + 10 + "px"
 				}
@@ -5728,7 +5813,6 @@ async function MineKhan() {
 	}
 	Button.all = []
 
-	var initEverything
 	function initButtons() {
 		Button.all = []
 		Slider.all = []
@@ -5736,15 +5820,15 @@ async function MineKhan() {
 		const always = () => true
 
 		// Main menu buttons
-		Button.add(width / 2, height / 2 - 20, 400, 40, "Singleplayer", "main menu", r => {
+		Button.add(width / 2, height / 2 - 20, 400, 40, "Singleplayer", "main menu", () => {
 			initWorldsMenu()
 			changeScene("loadsave menu")
 		})
-		Button.add(width / 2, height / 2 + 35, 400, 40, "Multiplayer", "main menu", r => {
+		Button.add(width / 2, height / 2 + 35, 400, 40, "Multiplayer", "main menu", () => {
 			initMultiplayerMenu()
 			changeScene("multiplayer menu")
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
-		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", r => changeScene("options"))
+		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
 
 		// Creation menu buttons
 		Button.add(width / 2, 135, 300, 40, ["World Type: Normal", "World Type: Superflat"], "creation menu", r => superflat = r === "World Type: Superflat")
@@ -5764,12 +5848,13 @@ async function MineKhan() {
 		})
 		Button.add(width / 2, 285, 300, 40, "Game Mode: Creative", "creation menu", nothing, always, "Coming Soon\n\nPlease stop asking for survival features. I don't want to half-implement anything, and I don't currently have the systems in place to create a full-featured survival mode. It'll come in due time.")
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
-		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", r => {
+		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			world = new World()
 			world.id = "" + now + (Math.random() * 1000000 | 0)
 			let name = boxCenterTop.value || "World"
 			let number = ""
-			while(true) {
+			let naming = true
+			while(naming) {
 				let match = false
 				for (let id in worlds) {
 					if (worlds[id].name === name + number) {
@@ -5779,18 +5864,19 @@ async function MineKhan() {
 				}
 				if (match) {
 					number = number ? number + 1 : 1
-				} else {
+				}
+				else {
 					name = name + number
-					break
+					naming = false
 				}
 			}
-			world.name = name.replace(/;/g, "\u037e")
+			world.name = name.replace(/;/g, "\u037e") // Greek question mark lol
 			win.world = world
 			world.loadChunks()
 			world.chunkGenQueue.sort(sortChunks)
 			changeScene("loading")
 		})
-		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", r => changeScene(previousScreen))
+		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", () => changeScene(previousScreen))
 
 		// Loadsave menu buttons
 		const selected = () => !selectedWorld || !worlds[selectedWorld]
@@ -5799,27 +5885,28 @@ async function MineKhan() {
 		let w2 = min(width / 2 - 10, 450)
 		let x2 = w2 / 2 + 5
 		let mid = width / 2
-		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", r => changeScene("editworld"), () => (selected() || !worlds[selectedWorld].edited))
-		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", r => {
+		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", () => changeScene("editworld"), () => selected() || !worlds[selectedWorld].edited)
+		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
 			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}?`)) {
 				deleteFromDB(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
 				selectedWorld = 0
 			}
-		}, () => (selected() || !worlds[selectedWorld].edited), "Delete the world forever.")
-		Button.add(mid + x4, height - 30, w4, 40, "Export", "loadsave menu", r => {
+		}, () => selected() || !worlds[selectedWorld].edited, "Delete the world forever.")
+		Button.add(mid + x4, height - 30, w4, 40, "Export", "loadsave menu", () => {
 			boxCenterTop.value = worlds[selectedWorld].code
 		}, selected, "Export the save code into the text box above for copy/paste.")
-		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "loadsave menu", r => changeScene("main menu"))
-		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "loadsave menu", r => {
+		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "loadsave menu", () => changeScene("main menu"))
+		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "loadsave menu", () => {
 			world = new World()
 			win.world = world
 
 			let code
 			if (!selectedWorld) {
 				code = boxCenterTop.value
-			} else {
+			}
+			else {
 				let data = worlds[selectedWorld]
 				if (data) {
 					code = data.code
@@ -5827,7 +5914,7 @@ async function MineKhan() {
 					world.edited = data.edited
 				}
 			}
-			
+
 			if (code) {
 				try {
 					world.loadSave(code)
@@ -5840,34 +5927,34 @@ async function MineKhan() {
 				changeScene("loading")
 			}
 		}, () => !(!selectedWorld && boxCenterTop.value) && !worlds[selectedWorld])
-		Button.add(mid + x2, height - 75, w2, 40, "Create New World", "loadsave menu", r => changeScene("creation menu"))
+		Button.add(mid + x2, height - 75, w2, 40, "Create New World", "loadsave menu", () => changeScene("creation menu"))
 
-		Button.add(mid, height / 2, w2, 40, "Save", "editworld", r => {
+		Button.add(mid, height / 2, w2, 40, "Save", "editworld", () => {
 			let w = worlds[selectedWorld]
 			w.name = boxCenterTop.value.replace(/;/g, "\u037e")
 			let split = w.code.split(";")
 			split[0] = w.name
 			w.code = split.join(";")
-			saveToDB(w.id, w).then(success => {
+			saveToDB(w.id, w).then(() => {
 				initWorldsMenu()
 				changeScene("loadsave menu")
 			}).catch(e => console.error(e))
 		})
-		Button.add(mid, height / 2 + 50, w2, 40, "Back", "editworld", r => changeScene(previousScreen))
+		Button.add(mid, height / 2 + 50, w2, 40, "Back", "editworld", () => changeScene(previousScreen))
 
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
-		Button.add(width / 2, 275, 300, 40, "Options", "pause", r => changeScene("options"))
+		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
 		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
-		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", r => {
+		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
 			savebox.value = world.getSaveString()
 		})
-		Button.add(width / 2, 425, 300, 40, "Open World To Public", "pause", r => {
+		Button.add(width / 2, 425, 300, 40, "Open World To Public", "pause", () => {
 			initMultiplayer()
 		}, () => !!multiplayer || !location.href.startsWith("https://willard.fun"))
-		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", r => {
+		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", () => {
 			savebox.value = world.getSaveString()
 			if (multiplayer) {
 				multiplayer.close()
@@ -5875,16 +5962,16 @@ async function MineKhan() {
 			initWorldsMenu()
 			changeScene("main menu")
 		})
-		
+
 		// Options buttons
-		Button.add(width / 2, 455, width / 3, 40, "Back", "options", r => changeScene(previousScreen))
-		
+		Button.add(width / 2, 455, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
+
 		// Comingsoon menu buttons
-		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", r => changeScene(previousScreen))
+		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
 
 		// Multiplayer buttons
-		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", r => changeScene("main menu"))
-		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "multiplayer menu", r => {
+		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", () => changeScene("main menu"))
+		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "multiplayer menu", () => {
 			world = new World()
 			win.world = world
 
@@ -5926,13 +6013,13 @@ async function MineKhan() {
 			var colors = []
 			var pixels = []
 			var dCount = 0
-			for (;str[4 + dCount] === "0"; dCount++) {}
-			var ccount = parseInt(str.substr(4+dCount, dCount+1), 36)
+			for (; str[4 + dCount] === "0"; dCount++);
+			var ccount = parseInt(str.substr(4 + dCount, dCount + 1), 36)
 			for (var i = 0; i < ccount; i++) {
-				var num = parseInt(str.substr(5 + 2*dCount + i * 7, 7), 36)
-				colors.push([ num >>> 24 & 255, num >>> 16 & 255, num >>> 8 & 255, num & 255 ])
+				var num = parseInt(str.substr(5 + 2 * dCount + i * 7, 7), 36)
+				colors.push([num >>> 24 & 255, num >>> 16 & 255, num >>> 8 & 255, num & 255])
 			}
-			for (let i = 5 + 2*dCount + ccount * 7; i < str.length; i++) {
+			for (let i = 5 + 2 * dCount + ccount * 7; i < str.length; i++) {
 				let num = parseInt(str[i], 36)
 				pixels.push(colors[num][0], colors[num][1], colors[num][2], colors[num][3])
 			}
@@ -5947,7 +6034,7 @@ async function MineKhan() {
 				let texY = i >> 4
 				let offsetX = texX * s
 				let offsetY = texY * s
-				textureCoords.push(new Float32Array([ offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s ]))
+				textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
 			}
 
 			// Set all of the textures into 1 big tiled texture
@@ -5955,7 +6042,8 @@ async function MineKhan() {
 			for (let i in textures) {
 				if (typeof textures[i] === "function") {
 					textures[i](n)
-				} else if (typeof textures[i] === "string") {
+				}
+				else if (typeof textures[i] === "string") {
 					let pix = getPixels(textures[i])
 					for (let j = 0; j < pix.length; j += 4) {
 						setPixel(n, j >> 2 & 15, j >> 6, pix[j], pix[j+1], pix[j+2], pix[j+3])
@@ -6001,7 +6089,7 @@ async function MineKhan() {
 		genIcons()
 	}
 	function drawIcon(x, y, id) {
-		id = id < 0xff ? (id | blockMode) : id
+		id = id < 0xff ? id | blockMode : id
 		x =  x / (3 * height) - 0.1666 * width / height
 		y = y / (3 * height) - 0.1666
 		initModelView(null, x, y, 0, 0, 0)
@@ -6198,9 +6286,11 @@ async function MineKhan() {
 			let temp = inventory.hotbar[overHot]
 			inventory.hotbar[overHot] = inventory.holding
 			inventory.holding = temp
-		} else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		}
+		else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			inventory.holding = over + 1
-		} else {
+		}
+		else {
 			inventory.holding = 0
 		}
 
@@ -6241,7 +6331,8 @@ async function MineKhan() {
 	document.onpointerlockchange = function() {
 		if (document.pointerLockElement === canvas) {
 			document.onmousemove = mmoved
-		} else {
+		}
+		else {
 			document.onmousemove = trackMouse
 			if (screen === "play" && !freezeFrame) {
 				changeScene("pause")
@@ -6269,7 +6360,8 @@ async function MineKhan() {
 				index = inventory.hotbar.indexOf(block)
 				if (index >= 0) {
 					inventory.hotbarSlot = index
-				} else {
+				}
+				else {
 					inventory.hotbar[inventory.hotbarSlot] = block
 				}
 				break
@@ -6281,12 +6373,14 @@ async function MineKhan() {
 			if (document.pointerLockElement !== canvas) {
 				getPointer()
 				p.lastBreak = now
-			} else {
+			}
+			else {
 				place = false
 				if(e.button === 0) {
 					if(Key.control) {
 						place = true
-					} else {
+					}
+					else {
 						changeWorldBlock(0)
 					}
 				}
@@ -6298,7 +6392,8 @@ async function MineKhan() {
 					newWorldBlock()
 				}
 			}
-		} else if (screen === "inventory") {
+		}
+		else if (screen === "inventory") {
 			clickInv()
 		}
 
@@ -6331,7 +6426,7 @@ async function MineKhan() {
 		Key[k] = true
 
 		if (k === "enter") {
-			blockMode = blockMode === CUBE ? SLAB : (blockMode === SLAB ? STAIR : CUBE)
+			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
 			updateHUD = true
 		}
 
@@ -6359,7 +6454,8 @@ async function MineKhan() {
 			if (k === " " && !p.spectator) {
 				if (now < p.lastJump + 400) {
 					p.flying ^= true
-				} else {
+				}
+				else {
 					p.lastJump = now
 				}
 			}
@@ -6405,11 +6501,13 @@ async function MineKhan() {
 				holding = inventory.hotbar[inventory.hotbarSlot]
 				updateHUD = true
 			}
-		} else if (screen === "pause") {
+		}
+		else if (screen === "pause") {
 			if(k === "p") {
 				play()
 			}
-		} else if (screen === "inventory") {
+		}
+		else if (screen === "inventory") {
 			if (k === "e") {
 				play()
 			}
@@ -6447,7 +6545,7 @@ async function MineKhan() {
 	canvas.oncontextmenu = function(e) {
 		e.preventDefault()
 	}
-	window.onbeforeunload = e => { 
+	window.onbeforeunload = e => {
 		if (screen === "play" && Key.control) {
 			releasePointer()
 			e.preventDefault()
@@ -6460,20 +6558,22 @@ async function MineKhan() {
 		e.stopPropagation()
 		if (e.deltaY > 0) {
 			inventory.hotbarSlot++
-		} else if (e.deltaY < 0) {
+		}
+		else if (e.deltaY < 0) {
 			inventory.hotbarSlot--
 		}
 		if (inventory.hotbarSlot > 8) {
 			inventory.hotbarSlot = 0
-		} else if (inventory.hotbarSlot < 0) {
+		}
+		else if (inventory.hotbarSlot < 0) {
 			inventory.hotbarSlot = 8
 		}
 
 		updateHUD = true
 		holding = inventory.hotbar[inventory.hotbarSlot]
 	}
-	document.onwheel = e => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
-	window.onresize = e => {
+	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
+	window.onresize = () => {
 		width = window.innerWidth
 		height = window.innerHeight
 		canvas.height = height
@@ -6490,7 +6590,8 @@ async function MineKhan() {
 
 		if (screen === "play") {
 			play()
-		} else {
+		}
+		else {
 			drawScreens[screen]()
 			Button.draw()
 			Slider.draw()
@@ -6504,7 +6605,8 @@ async function MineKhan() {
 				e.stopPropagation()
 				sendChat(msg)
 				chatInput.value = ""
-			} else {
+			}
+			else {
 				play()
 			}
 		}
@@ -6523,7 +6625,7 @@ async function MineKhan() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.useProgram(program2D)
-		
+
 		gl.enableVertexAttribArray(glCache.aVertex2)
 		gl.enableVertexAttribArray(glCache.aTexture2)
 		gl.enableVertexAttribArray(glCache.aShadow2)
@@ -6533,7 +6635,7 @@ async function MineKhan() {
 		gl.disableVertexAttribArray(glCache.aShadow2)
 		gl.disableVertexAttribArray(glCache.aVertex2)
 		gl.useProgram(program3D)
-		
+
 		gl.enableVertexAttribArray(glCache.aVertex)
 		gl.enableVertexAttribArray(glCache.aTexture)
 		gl.enableVertexAttribArray(glCache.aShadow)
@@ -6574,7 +6676,8 @@ async function MineKhan() {
 				const extensionName = availableExtensions[i]
 				glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
 			}
-		} else {
+		}
+		else {
 			gl = win.gl
 		}
 
@@ -6588,7 +6691,7 @@ async function MineKhan() {
 		program3D = createProgramObject(gl, _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
 		program2D = createProgramObject(gl, _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
 		programEntity = createProgramObject(gl, _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
-		
+
 		gl.useProgram(program2D)
 		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
 		glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
@@ -6891,7 +6994,7 @@ async function MineKhan() {
 				block2(blocks[i + 0], blocks[i + 1], blocks[i + 2], blocks[i + 3])
 			}
 		}
-		
+
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
@@ -6946,7 +7049,7 @@ async function MineKhan() {
 		p.sprintSpeed = 1.5
 		p.flySpeed = 2.5
 		p.x = 8
-		p.y = superflat ? 6 : (round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra)
+		p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 		p.z = 8
 		p.previousX = 8
 		p.previousY = 70
@@ -6968,7 +7071,7 @@ async function MineKhan() {
 		p.flying = false
 		p.sneaking = false
 		p.spectator = false
-		
+
 		win.player = p
 		win.p2 = p2
 	}
@@ -6989,7 +7092,7 @@ async function MineKhan() {
 		function addWorld(name, version, size, id, edited) {
 			let div = document.createElement("div")
 			div.className = "world"
-			div.onclick = e => {
+			div.onclick = () => {
 				deselect()
 				div.classList.add("selected")
 				selectedWorld = id
@@ -6997,20 +7100,20 @@ async function MineKhan() {
 			let br = "<br>"
 			div.id = id
 			div.innerHTML = "<strong>" + name + "</strong>" + br
-			
+
 			if (edited){
-				let str = (new Date(edited).toLocaleDateString(undefined, {
+				let str = new Date(edited).toLocaleDateString(undefined, {
 					year: "numeric",
 					month: "short",
 					day: "numeric",
 					hour: "numeric",
 					minute: "2-digit"
-				}))
+				})
 				div.innerHTML += str + br
 			}
 			div.innerHTML += version + br
 			div.innerHTML += `${size.toLocaleString()} bytes used`
-			
+
 			window.worlds.appendChild(div)
 		}
 
@@ -7039,11 +7142,11 @@ async function MineKhan() {
 					res.splice(index, 1)
 				}
 			}
-			
+
 			if (res && res.length) {
 				res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
 				for (let data of res) {
-					addWorld(data.name, data.version, (data.code.length + 60), data.id, data.edited)
+					addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited)
 					worlds[data.id] = data
 				}
 			}
@@ -7075,7 +7178,7 @@ async function MineKhan() {
 		function addWorld(name, host, online, id) {
 			let div = document.createElement("div")
 			div.className = "world"
-			div.onclick = e => {
+			div.onclick = () => {
 				deselect()
 				div.classList.add("selected")
 				selectedWorld = id
@@ -7083,10 +7186,10 @@ async function MineKhan() {
 			let br = "<br>"
 			div.id = id
 			div.innerHTML = "<strong>" + name + "</strong>" + br
-			
+
 			div.innerHTML += "Hosted by " + host + br
 			div.innerHTML += online + " players online" + br
-			
+
 			window.worlds.appendChild(div)
 		}
 
@@ -7119,7 +7222,7 @@ async function MineKhan() {
 		}
 
 		initBackgrounds()
-		
+
 		drawScreens[screen]()
 		Button.draw()
 		Slider.draw()
@@ -7215,7 +7318,8 @@ async function MineKhan() {
 				p.y = load.y * 16
 				p.z = load.z * 16
 				standing = false
-			} else {
+			}
+			else {
 				p.x = p2.x
 				p.y = p2.y
 				p.z = p2.z
@@ -7227,7 +7331,8 @@ async function MineKhan() {
 					for (let z = cz - 1; z <= cz + 1; z++) {
 						if (!world.chunks[x] || !world.chunks[x][z] || !world.chunks[x][z].buffer) {
 							standing = false
-						} else {
+						}
+						else {
 							sub++
 						}
 					}
@@ -7290,13 +7395,12 @@ async function MineKhan() {
 	})()
 
 	// Give the font time to load and redraw the homescreen
-	setTimeout(e => {
+	setTimeout(() => {
 		drawScreens[screen]()
 		Button.draw()
 		Slider.draw()
 	}, 100)
 
-	let debugMenu = false
 	function gameLoop() {
 		now = Date.now()
 		let frameStart = performance.now()
