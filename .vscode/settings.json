@@ -1,3 +1,4 @@
 {
-	"editor.defaultFormatter": null
+	"editor.defaultFormatter": null,
+	"editor.formatOnPaste": false
 }
