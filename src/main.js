@@ -8,11 +8,14 @@ import fragmentShaderSrc2D from './shaders/2dFragmentShader.glsl'
 import vertexShaderSrcEntity from './shaders/entityVertexShader.glsl'
 import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 
+// import css
+import './index.css';
+
 // imports
-import { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile } from "./random.js";
-import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./3Dutils.js";
-import { timeString, roundBits } from "./utils.js";
-import { texturesFunc, blockData, BLOCK_COUNT } from "./blockData.js";
+import { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile } from "./js/random.js";
+import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js";
+import { timeString, roundBits } from "./js/utils.js";
+import { texturesFunc, blockData, BLOCK_COUNT } from "./js/blockData.js";
 
 window.blockData = blockData
 window.canvas = document.getElementById("overlay")

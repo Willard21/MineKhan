@@ -208,29 +208,17 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _main_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
-// import main js
-
-// import css
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-/* harmony import */ var _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
-/* harmony import */ var _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
-/* harmony import */ var _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
-/* harmony import */ var _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6);
-/* harmony import */ var _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(7);
-/* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(8);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(9);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(10);
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(11);
+/* harmony import */ var _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
+/* harmony import */ var _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
+/* harmony import */ var _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6);
+/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
+/* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
+/* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
+/* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
+/* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
 
 
 // GLSL Shader code
@@ -241,13 +229,16 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+// import css
+
+
 // imports
 
 
 
 
 
-window.blockData = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"]
+window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"]
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
 window.savebox = document.getElementById("savebox")
@@ -329,7 +320,7 @@ async function MineKhan() {
 	let cursor = function(type) {
 		canvas.style.cursor = type
 	}
-	Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["randomSeed"])(Math.random() * 10000000 | 0)
+	Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["randomSeed"])(Math.random() * 10000000 | 0)
 
 	async function createDatabase() {
 		return await new Promise((resolve, reject) => {
@@ -425,8 +416,8 @@ async function MineKhan() {
 	let caves = true
 
 	let blockIds = {}
-	_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"].forEach(block => blockIds[block.name] = block.id)
-	win.blockData = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"]
+	_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"].forEach(block => blockIds[block.name] = block.id)
+	win.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"]
 	win.blockIds = blockIds
 
 	// Configurable and savable settings
@@ -590,7 +581,7 @@ async function MineKhan() {
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
-	let vec1 = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["PVector"](), vec2 = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["PVector"](), vec3 = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["PVector"]()
+	let vec1 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](), vec2 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](), vec3 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"]()
 	let move = {
 		x: 0,
 		y: 0,
@@ -1028,8 +1019,8 @@ async function MineKhan() {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 		}
 
-		for (let i = 0; i < _blockData_js__WEBPACK_IMPORTED_MODULE_9__["BLOCK_COUNT"]; i++) {
-			let baseBlock = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i]
+		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
+			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i]
 			let slabBlock = Object.create(baseBlock)
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
@@ -1037,15 +1028,15 @@ async function MineKhan() {
 			slabBlock.shape = shapes.slab
 			baseBlock.shape = shapes.cube
 			stairBlock.shape = shapes.stair
-			_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i | SLAB] = slabBlock
-			_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i | STAIR] = stairBlock
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | SLAB] = slabBlock
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | STAIR] = stairBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i | SLAB | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | SLAB | j << 10] = block
 				}
 			}
 			v = stairBlock.shape.varients
@@ -1054,7 +1045,7 @@ async function MineKhan() {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i | STAIR | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | STAIR | j << 10] = block
 				}
 			}
 		}
@@ -1104,11 +1095,11 @@ async function MineKhan() {
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
 		let scale = 0.16 / height * inventory.size
-		for (let i = 1; i < _blockData_js__WEBPACK_IMPORTED_MODULE_9__["BLOCK_COUNT"]; i++) {
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
 			let data = []
-			let block = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][i]
+			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i]
 			if (block.icon) {
-				block = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][blockIds[block.icon]]
+				block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockIds[block.icon]]
 			}
 			for (let j = 11; j >= 0; j--) {
 				data.push(-hexagonVerts[j * 3 + 0] * scale)
@@ -1193,7 +1184,7 @@ async function MineKhan() {
 	let projection = new Float32Array(16)
 	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
-	let defaultTransformation = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["Matrix"]([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
+	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
 		constructor() {
 			this.x = 0
@@ -1207,11 +1198,11 @@ async function MineKhan() {
 			this.step = 0
 			this.lastStep = 0
 			this.projection = new Float32Array(5)
-			this.transformation = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["Matrix"]()
+			this.transformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]()
 			this.direction = { x: 1, y: 0, z: 0 }; // Normalized direction vector
 			this.frustum = [] // The 5 planes of the viewing frustum (there's no far plane)
 			for (let i = 0; i < 5; i++) {
-				this.frustum.push(new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["Plane"](1, 0, 0))
+				this.frustum.push(new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Plane"](1, 0, 0))
 			}
 		}
 		FOV(fov, time) {
@@ -1294,7 +1285,7 @@ async function MineKhan() {
 			let Y = vec2
 			Y.set(dir)
 			Y.mult(-1)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["cross"])(Y, X, Y)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(Y, X, Y)
 
 			//Near plane
 			this.frustum[0].set(dir.x, dir.y, dir.z)
@@ -1304,28 +1295,28 @@ async function MineKhan() {
 			aux.mult(this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["cross"])(aux, X, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(aux, X, aux)
 			this.frustum[1].set(aux.x, aux.y, aux.z)
 
 			aux.set(Y)
 			aux.mult(-this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["cross"])(X, aux, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(X, aux, aux)
 			this.frustum[2].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(-this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["cross"])(aux, Y, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(aux, Y, aux)
 			this.frustum[3].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["cross"])(Y, aux, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(Y, aux, aux)
 			this.frustum[4].set(aux.x, aux.y, aux.z)
 		}
 		canSee(x, y, z, maxY) {
@@ -1389,12 +1380,12 @@ async function MineKhan() {
 			uniformMatrix("view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["copyArr"])(defaultModelView, modelView)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["rotX"])(modelView, rx)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["rotY"])(modelView, ry)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["trans"])(modelView, -x, -y, -z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["copyArr"])(defaultModelView, modelView)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["rotX"])(modelView, rx)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["rotY"])(modelView, ry)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, -x, -y, -z)
 			matMult()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["transpose"])(matrix)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["transpose"])(matrix)
 			uniformMatrix("view3d", program3D, "uView", false, matrix)
 		}
 	}
@@ -1487,13 +1478,13 @@ async function MineKhan() {
 	function runRayTrace(x, y, z) {
 		let block = world.getBlock(x, y, z)
 		if (block) {
-			let rt = rayTrace(x, y, z, _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block].shape)
+			let rt = rayTrace(x, y, z, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape)
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0]
 				hitBox.face = rt[1]
 				hitBox.pos = [x, y, z]
-				hitBox.shape = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block].shape
+				hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape
 			}
 		}
 	}
@@ -1509,7 +1500,7 @@ async function MineKhan() {
 		if (blockState) {
 			hitBox.pos = [p2.x, p2.y, p2.z]
 			hitBox.closest = 0
-			hitBox.shape = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][blockState].shape
+			hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockState].shape
 			return
 		}
 
@@ -1571,25 +1562,25 @@ async function MineKhan() {
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id
 	}
 	let onBox = function(x, y, z, w, h, d) {
-		let iy = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(y - h/2 - p.topH)
-		let ih = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(h + p.bottomH + p.topH)
-		let ix = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(x - w/2 - p.w)
-		let iw = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(w + p.w*2)
-		let iz = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(z - d/2 - p.w)
-		let id = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(d + p.w*2)
+		let iy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(y - h/2 - p.topH)
+		let ih = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(h + p.bottomH + p.topH)
+		let ix = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(x - w/2 - p.w)
+		let iw = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(w + p.w*2)
+		let iz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(z - d/2 - p.w)
+		let id = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(d + p.w*2)
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id
 	}
 	function collided(x, y, z, vx, vy, vz, block) {
 		if(p.spectator) {
 			return false
 		}
-		let verts = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block].shape.verts
-		let px = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.x - p.w - x)
-		let py = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.y - p.bottomH - y)
-		let pz = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.z - p.w - z)
-		let pxx = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.x + p.w - x)
-		let pyy = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.y + p.topH - y)
-		let pzz = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(p.z + p.w - z)
+		let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape.verts
+		let px = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.x - p.w - x)
+		let py = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.y - p.bottomH - y)
+		let pz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.z - p.w - z)
+		let pxx = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.x + p.w - x)
+		let pyy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.y + p.topH - y)
+		let pzz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.z + p.w - z)
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max
 
 		//Top and bottom faces
@@ -1704,7 +1695,7 @@ async function MineKhan() {
 			for (let y = pminY; y <= pmaxY; y++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
-					if (_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block].solid) {
+					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].solid) {
 						contacts.add(x, y, z, block)
 					}
 				}
@@ -1861,19 +1852,19 @@ async function MineKhan() {
 		}
 		else {
 			//copyArr(modelView, matrix)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["trans"])(modelView, x, y, z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, x, y, z)
 			matMult()
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["trans"])(modelView, -x, -y, -z)
-			Object(_3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["transpose"])(matrix)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, -x, -y, -z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["transpose"])(matrix)
 			uniformMatrix("view3d", program3D, "uView", false, matrix)
 		}
-		box2(0xff, _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][t].textures)
+		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][t].shape
+			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][t].shape
 			if (t && shape.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
@@ -1993,8 +1984,8 @@ async function MineKhan() {
 			return 1
 		}
 
-		let data = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block]
-		let sourceData = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][type]
+		let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block]
+		let sourceData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][type]
 
 		let sourceRange = 3
 		let hiderRange = 3
@@ -2016,15 +2007,15 @@ async function MineKhan() {
 		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y-1, z-1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y-1, z, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y-1, z+1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y-1, z-1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y-1, z, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y-1, z+1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
 
 			ret[0] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75
 			ret[1] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75
@@ -2035,15 +2026,15 @@ async function MineKhan() {
 		bottom: function(x, y, z, block) { // Actually the top
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y+1, z-1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y+1, z, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y+1, z+1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y+1, z-1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y+1, z, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y+1, z+1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
 
 			ret[0] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]
 			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]
@@ -2054,15 +2045,15 @@ async function MineKhan() {
 		north: function(x, y, z, block) {
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y-1, z+1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y, z+1, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y, z+1, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y, z+1, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y+1, z+1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y-1, z+1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y, z+1, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y, z+1, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y, z+1, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y+1, z+1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
 
 			ret[0] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
 			ret[1] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
@@ -2073,15 +2064,15 @@ async function MineKhan() {
 		south: function(x, y, z, block) {
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y, z-1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y-1, z-1, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y, z-1, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x, y+1, z-1, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y, z-1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y, z-1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y-1, z-1, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y, z-1, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x, y+1, z-1, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y, z-1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
 
 			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
 			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
@@ -2092,15 +2083,15 @@ async function MineKhan() {
 		east: function(x, y, z, block) {
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y, z-1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y, z, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y, z+1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z-1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y, z-1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z-1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y, z, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y-1, z+1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y, z+1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x+1, y+1, z+1, block)].shadow
 
 			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8
 			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8
@@ -2111,15 +2102,15 @@ async function MineKhan() {
 		west: function(x, y, z, block) {
 			let blocks = this.blocks
 			let ret = this.ret
-			blocks[0] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y, z-1, block)].shadow
-			blocks[2] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[3] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z, block)].shadow
-			blocks[4] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y, z, block)].shadow
-			blocks[5] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z, block)].shadow
-			blocks[6] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[7] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y, z+1, block)].shadow
-			blocks[8] = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
+			blocks[0] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z-1, block)].shadow
+			blocks[1] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y, z-1, block)].shadow
+			blocks[2] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z-1, block)].shadow
+			blocks[3] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z, block)].shadow
+			blocks[4] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y, z, block)].shadow
+			blocks[5] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z, block)].shadow
+			blocks[6] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y-1, z+1, block)].shadow
+			blocks[7] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y, z+1, block)].shadow
+			blocks[8] = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][getBlock(x-1, y+1, z+1, block)].shadow
 
 			ret[0] = this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8
 			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8
@@ -2438,7 +2429,7 @@ async function MineKhan() {
 
 			for (let i = 0; i < length; i++) {
 				data = rData[i]
-				block = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][pallete[data & 0x1fff]]
+				block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][pallete[data & 0x1fff]]
 				tex = block.textures
 				sides = data >> 13 & 0x3f
 				loc = data >> 19 & 0xfff
@@ -2534,7 +2525,7 @@ async function MineKhan() {
 					let x = (rnd >> 8) + this.x
 					let y = (rnd >> 4 & 15) + this.y
 					let z = (rnd & 15) + this.z
-					if (!_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][world.getBlock(x, y + 1, z)].transparent) {
+					if (!_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][world.getBlock(x, y + 1, z)].transparent) {
 						world.setBlock(x, y, z, blockIds.dirt, false)
 						return
 					}
@@ -2616,7 +2607,7 @@ async function MineKhan() {
 				for (let z = 0; z < 16; z++) {
 					let stop = false
 					for (let y = max; y >= 0; y--) {
-						let data = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][this.getBlock(x, y, z)]
+						let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][this.getBlock(x, y, z)]
 						if (data.lightLevel) {
 							if (!blockSpread[data.lightLevel]) blockSpread[data.lightLevel] = []
 							blockSpread[data.lightLevel].push(x + this.x, y, z + this.z)
@@ -2680,7 +2671,7 @@ async function MineKhan() {
 		}
 		trySpread(x, y, z, level, spread, blockLight, update = false) {
 			if (world.getLight(x, y, z, blockLight) < level) {
-				if (_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][world.getBlock(x, y, z)].transparent) {
+				if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][world.getBlock(x, y, z)].transparent) {
 					world.setLight(x, y, z, level, blockLight)
 					spread.push(x, y, z)
 				}
@@ -2712,7 +2703,7 @@ async function MineKhan() {
 		}
 		tryUnSpread(x, y, z, level, spread, respread, blockLight) {
 			let light = world.getLight(x, y, z, blockLight)
-			let trans = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][world.getBlock(x, y, z)].transparent
+			let trans = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][world.getBlock(x, y, z)].transparent
 			if (light === level) {
 				if (trans) {
 					world.setLight(x, y, z, 0, blockLight)
@@ -2818,7 +2809,7 @@ async function MineKhan() {
 			}
 		}
 		populate() {
-			Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["randomSeed"])(Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["hash"])(this.x, this.z) * 210000000)
+			Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["randomSeed"])(Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["hash"])(this.x, this.z) * 210000000)
 			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
 			for (let i = 0; i < 16; i++) {
@@ -2827,11 +2818,11 @@ async function MineKhan() {
 					wz = this.z + k
 
 					ground = this.tops[k * 16 + i]
-					if (trees && Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
+					if (trees && Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
 
-						top = ground + floor(4.5 + Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])(2.5))
-						rand = floor(Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])(4096))
-						let tree = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 0.6 ? blockIds.oakLog : ++top && blockIds.birchLog
+						top = ground + floor(4.5 + Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])(2.5))
+						rand = floor(Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])(4096))
+						let tree = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 0.6 ? blockIds.oakLog : ++top && blockIds.birchLog
 
 						//Center
 						for (let j = ground + 1; j <= top; j++) {
@@ -2910,48 +2901,48 @@ async function MineKhan() {
 					// Lapis: 4.1
 					ground -= 4
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 3.7 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * 16 | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 3.7 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * 16 | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre)
 						}
 					}
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 111.5 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * 64 | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 111.5 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * 64 | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre)
 						}
 					}
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 185.5 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * ground | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 185.5 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * ground | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre)
 						}
 					}
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 10.4 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * 32 | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 10.4 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * 32 | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre)
 						}
 					}
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 29.1 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * 16 | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 29.1 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * 16 | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre)
 						}
 					}
 
-					if (Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() < 4.1 / 256) {
-						let y = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["random"])() * 32 | 0 + 1
+					if (Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() < 4.1 / 256) {
+						let y = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["random"])() * 32 | 0 + 1
 						y = y < ground ? y : ground
 						if (this.getBlock(i, y, k)) {
 							this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre)
@@ -3108,13 +3099,13 @@ async function MineKhan() {
 			// this.vely += (this.vely * 0.9 - this.vely) * dt
 		}
 		collided(x, y, z, vx, vy, vz, block) {
-			let verts = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][block].shape.verts
-			let px = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.x - this.width / 2 - x)
-			let py = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.y - this.height / 2 - y)
-			let pz = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.z - this.depth / 2 - z)
-			let pxx = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.x + this.width / 2 - x)
-			let pyy = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.y + this.height / 2 - y)
-			let pzz = Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["roundBits"])(this.z + this.depth / 2 - z)
+			let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape.verts
+			let px = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.x - this.width / 2 - x)
+			let py = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.y - this.height / 2 - y)
+			let pz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.z - this.depth / 2 - z)
+			let pxx = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.x + this.width / 2 - x)
+			let pyy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.y + this.height / 2 - y)
+			let pzz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(this.z + this.depth / 2 - z)
 			let minX, minY, minZ, maxX, maxY, maxZ, min, max
 
 			//Top and bottom faces
@@ -3283,7 +3274,7 @@ async function MineKhan() {
 		}
 		render() {
 			const offsetY = -0.1 * cos((performance.now() - this.spawn) * 0.0015) + 0.15
-			const modelMatrix = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["Matrix"]();
+			const modelMatrix = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]();
 			modelMatrix.identity()
 			modelMatrix.translate(this.x, this.y + offsetY, this.z)
 			modelMatrix.rotX(this.pitch)
@@ -3292,7 +3283,7 @@ async function MineKhan() {
 			const viewMatrix = p.transformation.elements
 			const proj = p.projection
 			const projectionMatrix = [proj[0], 0, 0, 0, 0, proj[1], 0, 0, 0, 0, proj[2], proj[3], 0, 0, proj[4], 0]
-			const modelViewProjectionMatrix = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["Matrix"]()
+			const modelViewProjectionMatrix = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]()
 			modelViewProjectionMatrix.identity()
 			modelViewProjectionMatrix.mult(projectionMatrix)
 			modelViewProjectionMatrix.mult(viewMatrix)
@@ -3317,7 +3308,7 @@ async function MineKhan() {
 
 	class Item extends Entity {
 		constructor(x, y, z, velx, vely, velz, blockID) {
-			const block = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][blockID]
+			const block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockID]
 			const tex = block.textures
 			const shape = block.shape
 			const shapeVerts = shape.verts
@@ -3353,7 +3344,7 @@ async function MineKhan() {
 
 	class Player extends Entity {
 		constructor(x, y, z, blockID) {
-			const block = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][blockID & 255]
+			const block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockID & 255]
 			const tex = block.textures
 			const shape = shapes.cube
 			const shapeVerts = shape.verts
@@ -3666,7 +3657,7 @@ async function MineKhan() {
 		constructor() {
 			generatedChunks = 0
 			fogDist = 16
-			p.y = superflat ? 6 : round(_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+			p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 
 			//Initialize the world's arrays
 			this.chunks = []
@@ -3699,7 +3690,7 @@ async function MineKhan() {
 			let gen = 0
 			for (let i = 0; i < 16; i++) {
 				for (let k = 0; k < 16; k++) {
-					gen = superflat ? 4 : round(_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
+					gen = superflat ? 4 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
 					chunk.tops[k * 16 + i] = gen
 
 					chunk.setBlock(i, gen, k, blockIds.grass)
@@ -3787,13 +3778,13 @@ async function MineKhan() {
 			let zm = z & 15
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
-				let data = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][blockID]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockID]
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, true, data.lightLevel)
 				}
 			}
 			else {
-				let data = _blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][chunk.getBlock(xm, y, zm)]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, false, data.lightLevel)
@@ -3878,7 +3869,7 @@ async function MineKhan() {
 			if (!place) { // Block was removed; increase light levels
 				if ((up & 15) === 15) {
 					for (let i = y; i > 0; i--) {
-						if (_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 15)
 							spread.push(x, i, z)
 						}
@@ -3927,7 +3918,7 @@ async function MineKhan() {
 				// Sky light
 				if (center === 15) {
 					for (let i = y-1; i > 0; i--) {
-						if (_blockData_js__WEBPACK_IMPORTED_MODULE_9__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 0)
 							spread.push(x, i, z)
 						}
@@ -4266,9 +4257,9 @@ async function MineKhan() {
 
 			this.name = data.shift()
 			worldSeed = parseInt(data.shift(), 36)
-			Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["seedHash"])(worldSeed)
-			caveNoise = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["openSimplexNoise"])(worldSeed)
-			_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noiseSeed(worldSeed)
+			Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed)
+			caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed)
+			_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed)
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -4314,9 +4305,9 @@ async function MineKhan() {
 			worldSeed = parseInt(data.shift(), 36);
 			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
-			Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["seedHash"])(worldSeed);
-			caveNoise = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["openSimplexNoise"])(worldSeed);
-			_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noiseSeed(worldSeed);
+			Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed);
+			caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed);
+			_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed);
 			let playerData = data.shift().split(",");
 			p.x = parseInt(playerData[0], 36);
 			p.y = parseInt(playerData[1], 36);
@@ -4757,7 +4748,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${Object(_utils_js__WEBPACK_IMPORTED_MODULE_8__["timeString"])(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["timeString"])(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -4838,7 +4829,7 @@ async function MineKhan() {
 			return pixels
 		};
 
-		const textures = Object(_blockData_js__WEBPACK_IMPORTED_MODULE_9__["texturesFunc"])(setPixel, getPixels);
+		const textures = Object(_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["texturesFunc"])(setPixel, getPixels);
 
 		{
 			// Specify the texture coords for each index
@@ -5066,7 +5057,7 @@ async function MineKhan() {
 
 		//Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		if (overInv >= 0 && overInv < _blockData_js__WEBPACK_IMPORTED_MODULE_9__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.lineWidth = 2
@@ -5078,7 +5069,7 @@ async function MineKhan() {
 		if (inventory.holding) {
 			drawIcon(mouseX, mouseY, inventory.holding)
 		}
-		for (let i = 1; i < _blockData_js__WEBPACK_IMPORTED_MODULE_9__["BLOCK_COUNT"]; i++) {
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
 			x = (i - 1) % perRow * s + 50
 			y = ((i - 1) / perRow | 0) * s + 50
 			drawIcon(x, y, i)
@@ -5101,7 +5092,7 @@ async function MineKhan() {
 			inventory.hotbar[overHot] = inventory.holding
 			inventory.holding = temp
 		}
-		else if (over >= 0 && over < _blockData_js__WEBPACK_IMPORTED_MODULE_9__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			inventory.holding = over + 1
 		}
 		else {
@@ -5858,12 +5849,12 @@ async function MineKhan() {
 	function initPlayer() {
 		p = new Camera()
 		p.speed = 0.075
-		p.velocity = new _3Dutils_js__WEBPACK_IMPORTED_MODULE_7__["PVector"](0, 0, 0)
+		p.velocity = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](0, 0, 0)
 		p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
 		p.flySpeed = 2.5
 		p.x = 8
-		p.y = superflat ? 6 : round(_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+		p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 		p.z = 8
 		p.previousX = 8
 		p.previousY = 70
@@ -6021,9 +6012,9 @@ async function MineKhan() {
 		console.log("Initializing world.")
 
 		worldSeed = Math.random() * 2000000000 | 0
-		Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["seedHash"])(worldSeed)
-		caveNoise = Object(_random_js__WEBPACK_IMPORTED_MODULE_6__["openSimplexNoise"])(worldSeed)
-		_random_js__WEBPACK_IMPORTED_MODULE_6__["noiseProfile"].noiseSeed(worldSeed)
+		Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed)
+		caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed)
+		_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed)
 
 		generatedChunks = 0
 
@@ -6266,7 +6257,7 @@ window.onload = async function() {
 
 
 /***/ }),
-/* 2 */
+/* 1 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6274,7 +6265,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    // If you are going to change this final lightlevel calculation\r\n    // you have to change line 4487 as well since it calculates lightlevel of entity based on this\r\n    vShadow = aShadow * min(max(aSkylight * uTime, aBlocklight) * 0.9 + 0.1, 1.0);\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n\r\n    float range = max(uDist / 5.0, 8.0);\r\n    vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);\r\n}");
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6282,7 +6273,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(mix(color.rgb * vShadow, vec3(0.33, 0.54, 0.72) * uTime, vFog), color.a);\r\n    if (gl_FragColor.a == 0.0) discard;\r\n}");
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6290,7 +6281,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("attribute vec2 aVertex;\r\nattribute vec2 aTexture;\r\nattribute float aShadow;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    vShadow = aShadow;\r\n    gl_Position = vec4(aVertex, 0.5, 1.0);\r\n}");
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6298,7 +6289,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * vShadow, color.a);\r\n    if (gl_FragColor.a == 0.0) discard;\r\n}");
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6306,7 +6297,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nvarying vec2  vTexture;\r\nuniform mat4 uView;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n}");
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6314,7 +6305,394 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uLightLevel;\r\nvarying vec2 vTexture;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * uLightLevel, color.a);\r\n}");
 
 /***/ }),
+/* 7 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9);
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ __webpack_exports__["default"] = (_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
 /* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var isOldIE = function isOldIE() {
+  var memo;
+  return function memorize() {
+    if (typeof memo === 'undefined') {
+      // Test for IE <= 9 as proposed by Browserhacks
+      // @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+      // Tests for existence of standard globals is to allow style-loader
+      // to operate correctly into non-standard environments
+      // @see https://github.com/webpack-contrib/style-loader/issues/177
+      memo = Boolean(window && document && document.all && !window.atob);
+    }
+
+    return memo;
+  };
+}();
+
+var getTarget = function getTarget() {
+  var memo = {};
+  return function memorize(target) {
+    if (typeof memo[target] === 'undefined') {
+      var styleTarget = document.querySelector(target); // Special case to return head of iframe instead of iframe itself
+
+      if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+        try {
+          // This will throw an exception if access to iframe is blocked
+          // due to cross-origin restrictions
+          styleTarget = styleTarget.contentDocument.head;
+        } catch (e) {
+          // istanbul ignore next
+          styleTarget = null;
+        }
+      }
+
+      memo[target] = styleTarget;
+    }
+
+    return memo[target];
+  };
+}();
+
+var stylesInDom = [];
+
+function getIndexByIdentifier(identifier) {
+  var result = -1;
+
+  for (var i = 0; i < stylesInDom.length; i++) {
+    if (stylesInDom[i].identifier === identifier) {
+      result = i;
+      break;
+    }
+  }
+
+  return result;
+}
+
+function modulesToDom(list, options) {
+  var idCountMap = {};
+  var identifiers = [];
+
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i];
+    var id = options.base ? item[0] + options.base : item[0];
+    var count = idCountMap[id] || 0;
+    var identifier = "".concat(id, " ").concat(count);
+    idCountMap[id] = count + 1;
+    var index = getIndexByIdentifier(identifier);
+    var obj = {
+      css: item[1],
+      media: item[2],
+      sourceMap: item[3]
+    };
+
+    if (index !== -1) {
+      stylesInDom[index].references++;
+      stylesInDom[index].updater(obj);
+    } else {
+      stylesInDom.push({
+        identifier: identifier,
+        updater: addStyle(obj, options),
+        references: 1
+      });
+    }
+
+    identifiers.push(identifier);
+  }
+
+  return identifiers;
+}
+
+function insertStyleElement(options) {
+  var style = document.createElement('style');
+  var attributes = options.attributes || {};
+
+  if (typeof attributes.nonce === 'undefined') {
+    var nonce =  true ? __webpack_require__.nc : undefined;
+
+    if (nonce) {
+      attributes.nonce = nonce;
+    }
+  }
+
+  Object.keys(attributes).forEach(function (key) {
+    style.setAttribute(key, attributes[key]);
+  });
+
+  if (typeof options.insert === 'function') {
+    options.insert(style);
+  } else {
+    var target = getTarget(options.insert || 'head');
+
+    if (!target) {
+      throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
+    }
+
+    target.appendChild(style);
+  }
+
+  return style;
+}
+
+function removeStyleElement(style) {
+  // istanbul ignore if
+  if (style.parentNode === null) {
+    return false;
+  }
+
+  style.parentNode.removeChild(style);
+}
+/* istanbul ignore next  */
+
+
+var replaceText = function replaceText() {
+  var textStore = [];
+  return function replace(index, replacement) {
+    textStore[index] = replacement;
+    return textStore.filter(Boolean).join('\n');
+  };
+}();
+
+function applyToSingletonTag(style, index, remove, obj) {
+  var css = remove ? '' : obj.media ? "@media ".concat(obj.media, " {").concat(obj.css, "}") : obj.css; // For old IE
+
+  /* istanbul ignore if  */
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = replaceText(index, css);
+  } else {
+    var cssNode = document.createTextNode(css);
+    var childNodes = style.childNodes;
+
+    if (childNodes[index]) {
+      style.removeChild(childNodes[index]);
+    }
+
+    if (childNodes.length) {
+      style.insertBefore(cssNode, childNodes[index]);
+    } else {
+      style.appendChild(cssNode);
+    }
+  }
+}
+
+function applyToTag(style, options, obj) {
+  var css = obj.css;
+  var media = obj.media;
+  var sourceMap = obj.sourceMap;
+
+  if (media) {
+    style.setAttribute('media', media);
+  } else {
+    style.removeAttribute('media');
+  }
+
+  if (sourceMap && typeof btoa !== 'undefined') {
+    css += "\n/*# sourceMappingURL=data:application/json;base64,".concat(btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))), " */");
+  } // For old IE
+
+  /* istanbul ignore if  */
+
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = css;
+  } else {
+    while (style.firstChild) {
+      style.removeChild(style.firstChild);
+    }
+
+    style.appendChild(document.createTextNode(css));
+  }
+}
+
+var singleton = null;
+var singletonCounter = 0;
+
+function addStyle(obj, options) {
+  var style;
+  var update;
+  var remove;
+
+  if (options.singleton) {
+    var styleIndex = singletonCounter++;
+    style = singleton || (singleton = insertStyleElement(options));
+    update = applyToSingletonTag.bind(null, style, styleIndex, false);
+    remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+  } else {
+    style = insertStyleElement(options);
+    update = applyToTag.bind(null, style, options);
+
+    remove = function remove() {
+      removeStyleElement(style);
+    };
+  }
+
+  update(obj);
+  return function updateStyle(newObj) {
+    if (newObj) {
+      if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap) {
+        return;
+      }
+
+      update(obj = newObj);
+    } else {
+      remove();
+    }
+  };
+}
+
+module.exports = function (list, options) {
+  options = options || {}; // Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+  // tags it will allow on a page
+
+  if (!options.singleton && typeof options.singleton !== 'boolean') {
+    options.singleton = isOldIE();
+  }
+
+  list = list || [];
+  var lastIdentifiers = modulesToDom(list, options);
+  return function update(newList) {
+    newList = newList || [];
+
+    if (Object.prototype.toString.call(newList) !== '[object Array]') {
+      return;
+    }
+
+    for (var i = 0; i < lastIdentifiers.length; i++) {
+      var identifier = lastIdentifiers[i];
+      var index = getIndexByIdentifier(identifier);
+      stylesInDom[index].references--;
+    }
+
+    var newLastIdentifiers = modulesToDom(newList, options);
+
+    for (var _i = 0; _i < lastIdentifiers.length; _i++) {
+      var _identifier = lastIdentifiers[_i];
+
+      var _index = getIndexByIdentifier(_identifier);
+
+      if (stylesInDom[_index].references === 0) {
+        stylesInDom[_index].updater();
+
+        stylesInDom.splice(_index, 1);
+      }
+    }
+
+    lastIdentifiers = newLastIdentifiers;
+  };
+};
+
+/***/ }),
+/* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(10);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}", ""]);
+// Exports
+/* harmony default export */ __webpack_exports__["default"] = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+// eslint-disable-next-line func-names
+module.exports = function (cssWithMappingToString) {
+  var list = []; // return the list of modules as css string
+
+  list.toString = function toString() {
+    return this.map(function (item) {
+      var content = cssWithMappingToString(item);
+
+      if (item[2]) {
+        return "@media ".concat(item[2], " {").concat(content, "}");
+      }
+
+      return content;
+    }).join("");
+  }; // import a list of modules into the list
+  // eslint-disable-next-line func-names
+
+
+  list.i = function (modules, mediaQuery, dedupe) {
+    if (typeof modules === "string") {
+      // eslint-disable-next-line no-param-reassign
+      modules = [[null, modules, ""]];
+    }
+
+    var alreadyImportedModules = {};
+
+    if (dedupe) {
+      for (var i = 0; i < this.length; i++) {
+        // eslint-disable-next-line prefer-destructuring
+        var id = this[i][0];
+
+        if (id != null) {
+          alreadyImportedModules[id] = true;
+        }
+      }
+    }
+
+    for (var _i = 0; _i < modules.length; _i++) {
+      var item = [].concat(modules[_i]);
+
+      if (dedupe && alreadyImportedModules[item[0]]) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      if (mediaQuery) {
+        if (!item[2]) {
+          item[2] = mediaQuery;
+        } else {
+          item[2] = "".concat(mediaQuery, " and ").concat(item[2]);
+        }
+      }
+
+      list.push(item);
+    }
+  };
+
+  return list;
+};
+
+/***/ }),
+/* 11 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6818,7 +7196,7 @@ function openSimplexNoise(clientSeed) {
 
 
 /***/ }),
-/* 9 */
+/* 12 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -7126,7 +7504,7 @@ function copyArr(a, b) {
 
 
 /***/ }),
-/* 10 */
+/* 13 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -7179,7 +7557,7 @@ function roundBits(number) {
 
 
 /***/ }),
-/* 11 */
+/* 14 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -7571,393 +7949,6 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 }
 
 
-
-/***/ }),
-/* 12 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
-
-            
-
-var options = {};
-
-options.insert = "head";
-options.singleton = false;
-
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
-
-
-
-/* harmony default export */ __webpack_exports__["default"] = (_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var isOldIE = function isOldIE() {
-  var memo;
-  return function memorize() {
-    if (typeof memo === 'undefined') {
-      // Test for IE <= 9 as proposed by Browserhacks
-      // @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
-      // Tests for existence of standard globals is to allow style-loader
-      // to operate correctly into non-standard environments
-      // @see https://github.com/webpack-contrib/style-loader/issues/177
-      memo = Boolean(window && document && document.all && !window.atob);
-    }
-
-    return memo;
-  };
-}();
-
-var getTarget = function getTarget() {
-  var memo = {};
-  return function memorize(target) {
-    if (typeof memo[target] === 'undefined') {
-      var styleTarget = document.querySelector(target); // Special case to return head of iframe instead of iframe itself
-
-      if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
-        try {
-          // This will throw an exception if access to iframe is blocked
-          // due to cross-origin restrictions
-          styleTarget = styleTarget.contentDocument.head;
-        } catch (e) {
-          // istanbul ignore next
-          styleTarget = null;
-        }
-      }
-
-      memo[target] = styleTarget;
-    }
-
-    return memo[target];
-  };
-}();
-
-var stylesInDom = [];
-
-function getIndexByIdentifier(identifier) {
-  var result = -1;
-
-  for (var i = 0; i < stylesInDom.length; i++) {
-    if (stylesInDom[i].identifier === identifier) {
-      result = i;
-      break;
-    }
-  }
-
-  return result;
-}
-
-function modulesToDom(list, options) {
-  var idCountMap = {};
-  var identifiers = [];
-
-  for (var i = 0; i < list.length; i++) {
-    var item = list[i];
-    var id = options.base ? item[0] + options.base : item[0];
-    var count = idCountMap[id] || 0;
-    var identifier = "".concat(id, " ").concat(count);
-    idCountMap[id] = count + 1;
-    var index = getIndexByIdentifier(identifier);
-    var obj = {
-      css: item[1],
-      media: item[2],
-      sourceMap: item[3]
-    };
-
-    if (index !== -1) {
-      stylesInDom[index].references++;
-      stylesInDom[index].updater(obj);
-    } else {
-      stylesInDom.push({
-        identifier: identifier,
-        updater: addStyle(obj, options),
-        references: 1
-      });
-    }
-
-    identifiers.push(identifier);
-  }
-
-  return identifiers;
-}
-
-function insertStyleElement(options) {
-  var style = document.createElement('style');
-  var attributes = options.attributes || {};
-
-  if (typeof attributes.nonce === 'undefined') {
-    var nonce =  true ? __webpack_require__.nc : undefined;
-
-    if (nonce) {
-      attributes.nonce = nonce;
-    }
-  }
-
-  Object.keys(attributes).forEach(function (key) {
-    style.setAttribute(key, attributes[key]);
-  });
-
-  if (typeof options.insert === 'function') {
-    options.insert(style);
-  } else {
-    var target = getTarget(options.insert || 'head');
-
-    if (!target) {
-      throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
-    }
-
-    target.appendChild(style);
-  }
-
-  return style;
-}
-
-function removeStyleElement(style) {
-  // istanbul ignore if
-  if (style.parentNode === null) {
-    return false;
-  }
-
-  style.parentNode.removeChild(style);
-}
-/* istanbul ignore next  */
-
-
-var replaceText = function replaceText() {
-  var textStore = [];
-  return function replace(index, replacement) {
-    textStore[index] = replacement;
-    return textStore.filter(Boolean).join('\n');
-  };
-}();
-
-function applyToSingletonTag(style, index, remove, obj) {
-  var css = remove ? '' : obj.media ? "@media ".concat(obj.media, " {").concat(obj.css, "}") : obj.css; // For old IE
-
-  /* istanbul ignore if  */
-
-  if (style.styleSheet) {
-    style.styleSheet.cssText = replaceText(index, css);
-  } else {
-    var cssNode = document.createTextNode(css);
-    var childNodes = style.childNodes;
-
-    if (childNodes[index]) {
-      style.removeChild(childNodes[index]);
-    }
-
-    if (childNodes.length) {
-      style.insertBefore(cssNode, childNodes[index]);
-    } else {
-      style.appendChild(cssNode);
-    }
-  }
-}
-
-function applyToTag(style, options, obj) {
-  var css = obj.css;
-  var media = obj.media;
-  var sourceMap = obj.sourceMap;
-
-  if (media) {
-    style.setAttribute('media', media);
-  } else {
-    style.removeAttribute('media');
-  }
-
-  if (sourceMap && typeof btoa !== 'undefined') {
-    css += "\n/*# sourceMappingURL=data:application/json;base64,".concat(btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))), " */");
-  } // For old IE
-
-  /* istanbul ignore if  */
-
-
-  if (style.styleSheet) {
-    style.styleSheet.cssText = css;
-  } else {
-    while (style.firstChild) {
-      style.removeChild(style.firstChild);
-    }
-
-    style.appendChild(document.createTextNode(css));
-  }
-}
-
-var singleton = null;
-var singletonCounter = 0;
-
-function addStyle(obj, options) {
-  var style;
-  var update;
-  var remove;
-
-  if (options.singleton) {
-    var styleIndex = singletonCounter++;
-    style = singleton || (singleton = insertStyleElement(options));
-    update = applyToSingletonTag.bind(null, style, styleIndex, false);
-    remove = applyToSingletonTag.bind(null, style, styleIndex, true);
-  } else {
-    style = insertStyleElement(options);
-    update = applyToTag.bind(null, style, options);
-
-    remove = function remove() {
-      removeStyleElement(style);
-    };
-  }
-
-  update(obj);
-  return function updateStyle(newObj) {
-    if (newObj) {
-      if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap) {
-        return;
-      }
-
-      update(obj = newObj);
-    } else {
-      remove();
-    }
-  };
-}
-
-module.exports = function (list, options) {
-  options = options || {}; // Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-  // tags it will allow on a page
-
-  if (!options.singleton && typeof options.singleton !== 'boolean') {
-    options.singleton = isOldIE();
-  }
-
-  list = list || [];
-  var lastIdentifiers = modulesToDom(list, options);
-  return function update(newList) {
-    newList = newList || [];
-
-    if (Object.prototype.toString.call(newList) !== '[object Array]') {
-      return;
-    }
-
-    for (var i = 0; i < lastIdentifiers.length; i++) {
-      var identifier = lastIdentifiers[i];
-      var index = getIndexByIdentifier(identifier);
-      stylesInDom[index].references--;
-    }
-
-    var newLastIdentifiers = modulesToDom(newList, options);
-
-    for (var _i = 0; _i < lastIdentifiers.length; _i++) {
-      var _identifier = lastIdentifiers[_i];
-
-      var _index = getIndexByIdentifier(_identifier);
-
-      if (stylesInDom[_index].references === 0) {
-        stylesInDom[_index].updater();
-
-        stylesInDom.splice(_index, 1);
-      }
-    }
-
-    lastIdentifiers = newLastIdentifiers;
-  };
-};
-
-/***/ }),
-/* 14 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
-// Imports
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
-// Module
-___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}", ""]);
-// Exports
-/* harmony default export */ __webpack_exports__["default"] = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/*
-  MIT License http://www.opensource.org/licenses/mit-license.php
-  Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-// eslint-disable-next-line func-names
-module.exports = function (cssWithMappingToString) {
-  var list = []; // return the list of modules as css string
-
-  list.toString = function toString() {
-    return this.map(function (item) {
-      var content = cssWithMappingToString(item);
-
-      if (item[2]) {
-        return "@media ".concat(item[2], " {").concat(content, "}");
-      }
-
-      return content;
-    }).join("");
-  }; // import a list of modules into the list
-  // eslint-disable-next-line func-names
-
-
-  list.i = function (modules, mediaQuery, dedupe) {
-    if (typeof modules === "string") {
-      // eslint-disable-next-line no-param-reassign
-      modules = [[null, modules, ""]];
-    }
-
-    var alreadyImportedModules = {};
-
-    if (dedupe) {
-      for (var i = 0; i < this.length; i++) {
-        // eslint-disable-next-line prefer-destructuring
-        var id = this[i][0];
-
-        if (id != null) {
-          alreadyImportedModules[id] = true;
-        }
-      }
-    }
-
-    for (var _i = 0; _i < modules.length; _i++) {
-      var item = [].concat(modules[_i]);
-
-      if (dedupe && alreadyImportedModules[item[0]]) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      if (mediaQuery) {
-        if (!item[2]) {
-          item[2] = mediaQuery;
-        } else {
-          item[2] = "".concat(mediaQuery, " and ").concat(item[2]);
-        }
-      }
-
-      list.push(item);
-    }
-  };
-
-  return list;
-};
 
 /***/ })
 /******/ ]);</script></body>

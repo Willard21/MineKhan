@@ -10,7 +10,7 @@ if (__dirname.includes("willard/server/dev")) {
 
 module.exports = {
 	mode: "none",
-	entry: "./src/index.js",
+	entry: "./src/main.js",
 	output: {
 		path: path.resolve(__dirname, output),
 		filename: "main.js",
