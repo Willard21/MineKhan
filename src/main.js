@@ -32,11 +32,13 @@ async function MineKhan() {
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
-  
+
 	// Shh don't tell anyone I'm overriding native objects
-	String.prototype.hashCode = function() {
-		var hash = 0, i, chr;
-		if (this.length === 0) return hash;
+	String.prototype.hashCode = function () {
+		var hash = 0,
+			i,
+			chr
+		if (this.length === 0) return hash
 		for (i = 0; i < this.length; i++) {
 			chr = this.charCodeAt(i)
 			hash = (hash << 5) - hash + chr
@@ -7493,14 +7495,13 @@ async function MineKhan() {
 				changeScene("pause")
 			}
 
-
 			if (k === "t") {
 				// initTextures()
 				e.preventDefault()
 				changeScene("chat")
 			}
 
-			if(k === "b") {
+			if (k === "b") {
 				p.autoBreak = !p.autoBreak
 				updateHUD = true
 			}
