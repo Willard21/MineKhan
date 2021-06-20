@@ -1,4 +1,3 @@
-let fragmentShaderSrcEntity = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
     precision highp float;
 #else
@@ -12,6 +11,4 @@ varying vec2 vTexture;
 void main(){
     vec4 color = texture2D(uSampler, vTexture);
     gl_FragColor = vec4(color.rgb * uLightLevel, color.a);
-}`
-
-export { fragmentShaderSrcEntity as default };
+}

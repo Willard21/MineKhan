@@ -1,12 +1,12 @@
 "use strict";
 
-// GLSL Shader code 
-import vertexShaderSrc3D from './shaders/blockVertexShader.js'
-import fragmentShaderSrc3D from './shaders/blockFragmentShader.js'
-import vertexShaderSrc2D from './shaders/2dVertexShader.js'
-import fragmentShaderSrc2D from './shaders/2dFragmentShader.js'
-import vertexShaderSrcEntity from './shaders/entityVertexShader.js'
-import fragmentShaderSrcEntity from './shaders/entityFragmentShader.js'
+// GLSL Shader code
+import vertexShaderSrc3D from './shaders/blockVertexShader.glsl'
+import fragmentShaderSrc3D from './shaders/blockFragmentShader.glsl'
+import vertexShaderSrc2D from './shaders/2dVertexShader.glsl'
+import fragmentShaderSrc2D from './shaders/2dFragmentShader.glsl'
+import vertexShaderSrcEntity from './shaders/entityVertexShader.glsl'
+import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 
 window.canvas = document.getElementById("overlay")
 window.ctx = canvas.getContext("2d")
