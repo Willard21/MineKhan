@@ -381,4 +381,24 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 	data.icon = data.icon || false
 }
 
-export { texturesFunc, blockData, BLOCK_COUNT };
+const blockIds = {}
+blockData.forEach(block => blockIds[block.name] = block.id)
+
+let Block = {
+	top: 0x4,
+	bottom: 0x8,
+	north: 0x20,
+	south: 0x10,
+	east: 0x2,
+	west: 0x1,
+}
+let Sides = {
+	top: 0,
+	bottom: 1,
+	north: 2,
+	south: 3,
+	east: 4,
+	west: 5,
+}
+
+export { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block, Sides };

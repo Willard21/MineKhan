@@ -14,9 +14,15 @@ import './index.css';
 // imports
 import { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile } from "./js/random.js";
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js";
-import { timeString, roundBits } from "./js/utils.js";
-import { texturesFunc, blockData, BLOCK_COUNT } from "./js/blockData.js";
+import { timeString, roundBits, compareArr } from "./js/utils.js";
+import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js";
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
+import { shapes } from "./js/shapes.js"
+import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
+import { initTextures, textureMap, textureCoords, textureAtlas } from './js/texture.js';
+// cave noise is used inside the module
+// eslint-disable-next-line no-unused-vars
+import { Section, noiseSettings } from "./js/section.js"
 
 window.blockData = blockData
 window.canvas = document.getElementById("overlay")
@@ -60,7 +66,6 @@ async function MineKhan() {
 
 	let world;
 	let worldSeed;
-	let caveNoise;
 
 	let fill = function(r, g, b) {
 		if (g === undefined) {
@@ -127,8 +132,6 @@ async function MineKhan() {
 	let trees = true
 	let caves = true
 
-	let blockIds = {}
-	blockData.forEach(block => blockIds[block.name] = block.id)
 	win.blockData = blockData
 	win.blockIds = blockIds
 
@@ -166,11 +169,7 @@ async function MineKhan() {
 	// const ROTATION = 0x1800 // Mask for the direction bits
 	let blockMode  = CUBE
 	let tex
-	let textureAtlas
-	let textureMap
 	let dirtBuffer
-	let dirtTexture
-	let textureCoords
 	let texCoordsBuffers
 	let mainbg, dirtbg // Background images
 	let bigArray = win.bigArray || new Float32Array(1000000)
@@ -341,175 +340,9 @@ async function MineKhan() {
 		}
 	}
 
-	let Block = {
-		top: 0x4,
-		bottom: 0x8,
-		north: 0x20,
-		south: 0x10,
-		east: 0x2,
-		west: 0x1,
-	}
-	let Sides = {
-		top: 0,
-		bottom: 1,
-		north: 2,
-		south: 3,
-		east: 4,
-		west: 5,
-	}
-
-	function createProgramObject(curContext, vetexShaderSource, fragmentShaderSource) {
-		let vertexShaderObject = curContext.createShader(curContext.VERTEX_SHADER)
-		curContext.shaderSource(vertexShaderObject, vetexShaderSource)
-		curContext.compileShader(vertexShaderObject)
-		if (!curContext.getShaderParameter(vertexShaderObject, curContext.COMPILE_STATUS)) {
-			throw curContext.getShaderInfoLog(vertexShaderObject)
-		}
-
-		let fragmentShaderObject = curContext.createShader(curContext.FRAGMENT_SHADER)
-		curContext.shaderSource(fragmentShaderObject, fragmentShaderSource)
-		curContext.compileShader(fragmentShaderObject)
-		if (!curContext.getShaderParameter(fragmentShaderObject, curContext.COMPILE_STATUS)) {
-			throw curContext.getShaderInfoLog(fragmentShaderObject)
-		}
-
-		let programObject = curContext.createProgram()
-		curContext.attachShader(programObject, vertexShaderObject)
-		curContext.attachShader(programObject, fragmentShaderObject)
-		curContext.linkProgram(programObject)
-		if (!curContext.getProgramParameter(programObject, curContext.LINK_STATUS)) {
-			throw "Error linking shaders."
-		}
-
-		return programObject
-	}
-
 	let program3D, program2D, programEntity
 
-	function objectify(x, y, z, width, height, textureX, textureY) {
-		return {
-			x: x,
-			y: y,
-			z: z,
-			w: width,
-			h: height,
-			tx: textureX,
-			ty: textureY
-		}
-	}
-	let shapes = {
-		/*
-			[
-				[(-x, -z), (+x, -z), (+x, +z), (-x, +z)], // minX = 0,  minZ = 2,  maxX = 6, maxZ = 8
-				[(-x, +z), (+x, +z), (+x, -z), (-x, -z)], // minX = 9,  minZ = 10, maxX = 3, maxZ = 4
-				[(+x, +y), (-x, +y), (-x, -y), (+x, -y)], // minX = 6,  minY = 7,  maxX = 0, maxY = 1
-				[(-x, +y), (+x, +y), (+x, -y), (-x, -y)], // minX = 9,  minY = 10, maxX = 3, maxY = 4
-				[(+y, -z), (+y, +z), (-y, +z), (-y, -z)], // minY = 10, minZ = 11, maxY = 4, maxZ = 5
-				[(+y, +z), (+y, -z), (-y, -z), (-y, +z)]  // minY = 7,  minZ = 8,  maxY = 1, maxZ = 2
-			]
-			*/
-		cube: {
-			verts: [
-				// x, y, z, width, height, textureX, textureY
-				// 0, 0, 0 is the corner on the top left of the texture
-				[objectify( 0,  0,  0, 16, 16, 0, 0)], //bottom
-				[objectify( 0, 16, 16, 16, 16, 0, 0)], //top
-				[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-				[objectify( 0, 16,  0, 16, 16, 0, 0)], //south
-				[objectify(16, 16,  0, 16, 16, 0, 0)], //east
-				[objectify( 0, 16, 16, 16, 16, 0, 0)]  //west
-			],
-			cull: {
-				top: 3,
-				bottom: 3,
-				north: 3,
-				south: 3,
-				east: 3,
-				west: 3
-			},
-			texVerts: [],
-			varients: [],
-			buffer: null,
-			size: 6
-		},
-		slab: {
-			verts: [
-				[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-				[objectify( 0, 8, 16, 16, 16, 0, 0)], //top
-				[objectify(16, 8, 16, 16, 8, 0, 0)], //north
-				[objectify( 0, 8,  0, 16, 8, 0, 0)], //south
-				[objectify(16, 8,  0, 16, 8, 0, 0)], //east
-				[objectify( 0, 8, 16, 16, 8, 0, 0)]  //west
-			],
-			cull: {
-				top: 0,
-				bottom: 3,
-				north: 1,
-				south: 1,
-				east: 1,
-				west: 1
-			},
-			texVerts: [],
-			buffer: null,
-			size: 6,
-			varients: [],
-			flip: true,
-			rotate: false
-		},
-		stair: {
-			verts: [
-				[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-				[objectify( 0, 8,  8, 16, 8, 0, 8), objectify( 0, 16,  16, 16, 8, 0, 0)], //top
-				[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-				[objectify( 0, 8,  0, 16, 8, 0, 0), objectify( 0, 16,  8, 16, 8, 0, 0)], //south
-				[objectify(16, 8, 0, 8, 8, 8, 0), objectify(16, 16, 8, 8, 16, 0, 0)], //east
-				[objectify( 0, 8, 8, 8, 8, 0, 0), objectify( 0, 16, 16, 8, 16, 8, 0)]  //west
-			],
-			cull: {
-				top: 0,
-				bottom: 3,
-				north: 3,
-				south: 0,
-				east: 0,
-				west: 0
-			},
-			texVerts: [],
-			buffer: null,
-			size: 10,
-			varients: [],
-			flip: true,
-			rotate: true
-		},
-	}
 	win.shapes = shapes
-
-	function compareArr(arr, out) {
-		let minX = 1000
-		let maxX = -1000
-		let minY = 1000
-		let maxY = -1000
-		let minZ = 1000
-		let maxZ = -1000
-		let num = 0
-		for (let i = 0; i < arr.length; i += 3) {
-			num = arr[i]
-			minX = minX > num ? num : minX
-			maxX = maxX < num ? num : maxX
-			num = arr[i + 1]
-			minY = minY > num ? num : minY
-			maxY = maxY < num ? num : maxY
-			num = arr[i + 2]
-			minZ = minZ > num ? num : minZ
-			maxZ = maxZ < num ? num : maxZ
-		}
-		out[0] = minX
-		out[1] = minY
-		out[2] = minZ
-		out[3] = maxX
-		out[4] = maxY
-		out[5] = maxZ
-		return out
-	}
 
 	function initShapes() {
 		function mapCoords(rect, face) {
@@ -866,28 +699,6 @@ async function MineKhan() {
 		}
 	}
 
-	function uniformMatrix(cacheId, programObj, vrName, transpose, matrix) {
-		let vrLocation = glCache[cacheId]
-		if(vrLocation === undefined) {
-			vrLocation = gl.getUniformLocation(programObj, vrName)
-			glCache[cacheId] = vrLocation
-		}
-		gl.uniformMatrix4fv(vrLocation, transpose, matrix)
-	}
-	function vertexAttribPointer(cacheId, programObj, vrName, size, VBO) {
-		let vrLocation = glCache[cacheId]
-		if(vrLocation === undefined) {
-			vrLocation = gl.getAttribLocation(programObj, vrName)
-			glCache[cacheId] = vrLocation
-		}
-		if (vrLocation !== -1) {
-			gl.enableVertexAttribArray(vrLocation)
-			gl.bindBuffer(gl.ARRAY_BUFFER, VBO)
-			gl.vertexAttribPointer(vrLocation, size, gl.FLOAT, false, 0, 0)
-
-		}
-	}
-
 	//Generate buffers for every block face and store them
 	let sideEdgeBuffers
 	let indexBuffer
@@ -1089,7 +900,7 @@ async function MineKhan() {
 	function initModelView(camera, x, y, z, rx, ry) {
 		if (camera) {
 			camera.transform()
-			uniformMatrix("view3d", program3D, "uView", false, camera.getMatrix())
+			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
 			copyArr(defaultModelView, modelView)
@@ -1098,7 +909,7 @@ async function MineKhan() {
 			trans(modelView, -x, -y, -z)
 			matMult()
 			transpose(matrix)
-			uniformMatrix("view3d", program3D, "uView", false, matrix)
+			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, matrix)
 		}
 	}
 
@@ -1542,16 +1353,16 @@ async function MineKhan() {
 			let i = 0
 			for (let side in Block) {
 				if (sides & Block[side]) {
-					vertexAttribPointer("aVertex", program3D, "aVertex", 3, sideEdgeBuffers[Sides[side]])
-					vertexAttribPointer("aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
+					vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[Sides[side]])
+					vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
 					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
 				}
 				i++
 			}
 		}
 		if (blockOutlines) {
-			vertexAttribPointer("aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			vertexAttribPointer("aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
+			vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
+			vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 			}
@@ -1560,7 +1371,7 @@ async function MineKhan() {
 	function block2(x, y, z, t, camera) {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
-			uniformMatrix("view3d", program3D, "uView", false, camera.getMatrix())
+			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
 			//copyArr(modelView, matrix)
@@ -1568,7 +1379,7 @@ async function MineKhan() {
 			matMult()
 			trans(modelView, -x, -y, -z)
 			transpose(matrix)
-			uniformMatrix("view3d", program3D, "uView", false, matrix)
+			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, matrix)
 		}
 		box2(0xff, blockData[t].textures)
 	}
@@ -1638,345 +1449,7 @@ async function MineKhan() {
 		}
 	}
 
-	// Save the coords for a small sphere used to carve out caves
-	let sphere;
-	{
-		let blocks = []
-		let radius = 3.5
-		let radsq = radius * radius
-		for (let i = -radius; i <= radius; i++) {
-			for (let j = -radius; j <= radius; j++) {
-				for (let k = -radius; k <= radius; k++) {
-					if (i*i + j*j + k*k < radsq) {
-						blocks.push(i|0, j|0, k|0)
-					}
-				}
-			}
-		}
-		sphere = new Int8Array(blocks)
-	}
-
-	function isCave(x, y, z) {
-		// Generate a 3D rigid multifractal noise shell.
-		// Then generate another one with different coordinates.
-		// Overlay them on top of each other, and the overlapping parts should form a cave-like structure.
-		// This is extremely slow, and requires generating 2 noise values for every single block in the world.
-		// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
-		let smooth = 0.02
-		let caveSize = 0.0055
-		let cave1 = abs(0.5 - caveNoise(x * smooth, y * smooth, z * smooth)) < caveSize
-		let cave2 = abs(0.5 - caveNoise(y * smooth, z * smooth, x * smooth)) < caveSize
-		return cave1 && cave2
-	}
-	function carveSphere(x, y, z) {
-		if (y > 3) {
-			for (let i = 0; i < sphere.length; i += 3) {
-				world.setBlock(x + sphere[i], y + sphere[i + 1], z + sphere[i + 2], blockIds.air, true)
-			}
-		}
-	}
-
 	let renderedChunks = 0
-	function getBlock(x, y, z, blocks) {
-		return blocks[((x >> 4) + 1) * 9 + ((y >> 4) + 1) * 3 + (z >> 4) + 1][((x & 15) << 8) + ((y & 15) << 4) + (z & 15)]
-	}
-	/**
-	 * Returns a 1 if the face is exposed and should be drawn, or a 0 if the face is hidden
-	 *
-	 * @param {number} x - The X coordinate of the block that may be covering a face
-	 * @param {number} y - The Y coordinate of the block that may be covering a face
-	 * @param {number} z - The Z coordinate of the block that may be covering a face
-	 * @param {Collection} blocks - Some collection of blocks that can return the block at (x, y, z)
-	 * @param {number} type - The blockstate of the block that's being considered for face culling
-	 * @param {function} func - The function that can be called to return a block from the blocks collection
-	*/
-	function hideFace(x, y, z, blocks, type, func, sourceDir, dir) {
-		let block = func.call(world, x, y, z, blocks)
-		if (!block) {
-			return 1
-		}
-
-		let data = blockData[block]
-		let sourceData = blockData[type]
-
-		let sourceRange = 3
-		let hiderRange = 3
-		if (func !== getBlock || screen === "loading") {
-			// getBlock is only used during the optimize phase of worldGen
-			sourceRange = sourceData.shape.cull[sourceDir]
-			hiderRange = data.shape.cull[dir]
-		}
-
-		if ((sourceRange & hiderRange) !== sourceRange || sourceRange === 0 || block !== type && data.transparent || data.transparent && data.shadow) {
-			return 1
-		}
-		return 0
-	}
-	let getShadows = {
-		shade: [1, 0.85, 0.7, 0.6, 0.3],
-		ret: [],
-		blocks: [],
-		top: function(x, y, z, block) { // Actually the bottom... How did these get flipped?
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = blockData[getBlock(x, y-1, z-1, block)].shadow
-			blocks[2] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[3] = blockData[getBlock(x-1, y-1, z, block)].shadow
-			blocks[4] = blockData[getBlock(x, y-1, z, block)].shadow
-			blocks[5] = blockData[getBlock(x+1, y-1, z, block)].shadow
-			blocks[6] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[7] = blockData[getBlock(x, y-1, z+1, block)].shadow
-			blocks[8] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
-
-			ret[0] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75
-			ret[1] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75
-			ret[2] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.75
-			ret[3] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.75
-			return ret
-		},
-		bottom: function(x, y, z, block) { // Actually the top
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[1] = blockData[getBlock(x, y+1, z-1, block)].shadow
-			blocks[2] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
-			blocks[3] = blockData[getBlock(x-1, y+1, z, block)].shadow
-			blocks[4] = blockData[getBlock(x, y+1, z, block)].shadow
-			blocks[5] = blockData[getBlock(x+1, y+1, z, block)].shadow
-			blocks[6] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
-			blocks[7] = blockData[getBlock(x, y+1, z+1, block)].shadow
-			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
-
-			ret[0] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]
-			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]
-			ret[2] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]
-			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]
-			return ret
-		},
-		north: function(x, y, z, block) {
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[1] = blockData[getBlock(x, y-1, z+1, block)].shadow
-			blocks[2] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
-			blocks[3] = blockData[getBlock(x-1, y, z+1, block)].shadow
-			blocks[4] = blockData[getBlock(x, y, z+1, block)].shadow
-			blocks[5] = blockData[getBlock(x+1, y, z+1, block)].shadow
-			blocks[6] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
-			blocks[7] = blockData[getBlock(x, y+1, z+1, block)].shadow
-			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
-
-			ret[0] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-			ret[1] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-			ret[2] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-			ret[3] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-			return ret
-		},
-		south: function(x, y, z, block) {
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = blockData[getBlock(x-1, y, z-1, block)].shadow
-			blocks[2] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[3] = blockData[getBlock(x, y-1, z-1, block)].shadow
-			blocks[4] = blockData[getBlock(x, y, z-1, block)].shadow
-			blocks[5] = blockData[getBlock(x, y+1, z-1, block)].shadow
-			blocks[6] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[7] = blockData[getBlock(x+1, y, z-1, block)].shadow
-			blocks[8] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
-
-			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-			return ret
-		},
-		east: function(x, y, z, block) {
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x+1, y-1, z-1, block)].shadow
-			blocks[1] = blockData[getBlock(x+1, y, z-1, block)].shadow
-			blocks[2] = blockData[getBlock(x+1, y+1, z-1, block)].shadow
-			blocks[3] = blockData[getBlock(x+1, y-1, z, block)].shadow
-			blocks[4] = blockData[getBlock(x+1, y, z, block)].shadow
-			blocks[5] = blockData[getBlock(x+1, y+1, z, block)].shadow
-			blocks[6] = blockData[getBlock(x+1, y-1, z+1, block)].shadow
-			blocks[7] = blockData[getBlock(x+1, y, z+1, block)].shadow
-			blocks[8] = blockData[getBlock(x+1, y+1, z+1, block)].shadow
-
-			ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8
-			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8
-			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.8
-			ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.8
-			return ret
-		},
-		west: function(x, y, z, block) {
-			let blocks = this.blocks
-			let ret = this.ret
-			blocks[0] = blockData[getBlock(x-1, y-1, z-1, block)].shadow
-			blocks[1] = blockData[getBlock(x-1, y, z-1, block)].shadow
-			blocks[2] = blockData[getBlock(x-1, y+1, z-1, block)].shadow
-			blocks[3] = blockData[getBlock(x-1, y-1, z, block)].shadow
-			blocks[4] = blockData[getBlock(x-1, y, z, block)].shadow
-			blocks[5] = blockData[getBlock(x-1, y+1, z, block)].shadow
-			blocks[6] = blockData[getBlock(x-1, y-1, z+1, block)].shadow
-			blocks[7] = blockData[getBlock(x-1, y, z+1, block)].shadow
-			blocks[8] = blockData[getBlock(x-1, y+1, z+1, block)].shadow
-
-			ret[0] = this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8
-			ret[1] = this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8
-			ret[2] = this.shade[blocks[4] + blocks[3] + blocks[1] + blocks[0]]*0.8
-			ret[3] = this.shade[blocks[6] + blocks[7] + blocks[3] + blocks[4]]*0.8
-			return ret
-		},
-	}
-
-	function average(l, a, b, c, d) {
-		a = l[a]
-		b = l[b]
-		c = l[c]
-		d = l[d]
-		let count = 1
-		let zero = 0
-		let total = a
-		if (b && abs(a-b) <= 2) {
-			total += b
-			count++
-		}
-		else zero++
-		if (c && abs(a-c) <= 2) {
-			total += c
-			count++
-		}
-		else zero++
-		if (d && abs(a-d) <= 2) {
-			total += d
-			count++
-		}
-		else zero++
-
-		let mx = max(a, b, c, d)
-		if (mx > 2) {
-			return total / (count * 15)
-		}
-		if (mx > 1) {
-			return zero ? total / (count * 15 + 15) : total / (count * 15)
-		}
-		return total / 60
-	}
-	let getLight = {
-		blocks: [],
-		top: function(x, y, z, block, ret, blockLight = 0) { // Actually the bottom... How did these get flipped?
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 0, 1, 3)
-			ret[1] = average(blocks, 4, 1, 2, 5)
-			ret[2] = average(blocks, 4, 5, 7, 8)
-			ret[3] = average(blocks, 4, 3, 6, 7)
-			// debugger
-			return ret
-		},
-		bottom: function(x, y, z, block, ret, blockLight = 0) { // Actually the top
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 3, 6, 7)
-			ret[1] = average(blocks, 4, 5, 7, 8)
-			ret[2] = average(blocks, 4, 1, 2, 5)
-			ret[3] = average(blocks, 4, 0, 1, 3)
-			return ret
-		},
-		north: function(x, y, z, block, ret, blockLight = 0) {
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 5, 7, 8)
-			ret[1] = average(blocks, 4, 3, 6, 7)
-			ret[2] = average(blocks, 4, 0, 1, 3)
-			ret[3] = average(blocks, 4, 1, 2, 5)
-			return ret
-		},
-		south: function(x, y, z, block, ret, blockLight = 0) {
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x+1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 1, 2, 5)
-			ret[1] = average(blocks, 4, 5, 7, 8)
-			ret[2] = average(blocks, 4, 3, 6, 7)
-			ret[3] = average(blocks, 4, 0, 1, 3)
-			return ret
-		},
-		east: function(x, y, z, block, ret, blockLight = 0) {
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x+1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x+1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x+1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x+1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x+1, y, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x+1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x+1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x+1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x+1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 1, 2, 5)
-			ret[1] = average(blocks, 4, 5, 7, 8)
-			ret[2] = average(blocks, 4, 3, 6, 7)
-			ret[3] = average(blocks, 4, 0, 1, 3)
-			return ret
-		},
-		west: function(x, y, z, block, ret, blockLight = 0) {
-			let blocks = this.blocks
-			blocks[0] = (getBlock(x-1, y-1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[1] = (getBlock(x-1, y, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[2] = (getBlock(x-1, y+1, z-1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[3] = (getBlock(x-1, y-1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[4] = (getBlock(x-1, y, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[5] = (getBlock(x-1, y+1, z, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[6] = (getBlock(x-1, y-1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[7] = (getBlock(x-1, y, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-			blocks[8] = (getBlock(x-1, y+1, z+1, block) & 0xf << blockLight * 4) >> blockLight * 4
-
-			ret[0] = average(blocks, 4, 5, 7, 8)
-			ret[1] = average(blocks, 4, 1, 2, 5)
-			ret[2] = average(blocks, 4, 0, 1, 3)
-			ret[3] = average(blocks, 4, 3, 6, 7)
-			return ret
-		},
-	}
 
 	/*
 	function interpolateShadows(shadows, x, y) {
@@ -1986,290 +1459,8 @@ async function MineKhan() {
 	}
 	*/
 
-	class Section {
-		constructor(x, y, z, size, chunk) {
-			this.x = x
-			this.y = y
-			this.z = z
-			this.size = size
-			this.arraySize = size * size * size
-			this.blocks = new Int32Array(this.arraySize)
-			this.light = new Uint8Array(this.arraySize)
-			this.renderData = []
-			this.renderLength = 0
-			this.faces = 0
-			this.hasVisibleBlocks = false
-			this.chunk = chunk
-			this.edited = false
-			this.caves = !caves
-			this.pallete = [0]
-			this.palleteMap = { "0": 0 }
-			this.palleteSize = 0
-		}
-		getBlock(x, y, z) {
-			let s = this.size
-			return this.blocks[x * s * s + y * s + z]
-		}
-		setBlock(x, y, z, blockId) {
-			let s = this.size
-			this.blocks[x * s * s + y * s + z] = blockId
-		}
-		deleteBlock(x, y, z) {
-			let s = this.size
-			this.blocks[x * s * s + y * s + z] = 0
-		}
-		optimize() {
-			let visible = false
-			let pos = 0
-			let xx = this.x
-			let yy = this.y
-			let zz = this.z
-			let blockState = 0
-			let palleteIndex = 0
-			let index = 0
-			let s = this.size
-			let blocks = this.blocks
-			this.hasVisibleBlocks = false
-			this.renderLength = 0
-			let localBlocks = world.getAdjacentSubchunks(xx, yy, zz)
-
-			//Check all the blocks in the subchunk to see if they're visible.
-			for (let i = 0; i < s; i++) {
-				for (let j = 0; j < s; j++) {
-					for (let k = 0; k < s; k++, index++) {
-						blockState = blocks[index]
-
-						if (this.palleteMap[blockState] === undefined) {
-							this.palleteMap[blockState] = this.pallete.length
-							palleteIndex = this.pallete.length
-							this.pallete.push(blockState)
-						}
-						else {
-							palleteIndex = this.palleteMap[blockState]
-						}
-
-						visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east")
-						| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west") << 1
-						| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top") << 2
-						| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom") << 3
-						| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north") << 4
-						| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south") << 5
-						if (visible) {
-							pos = (i | j << 4 | k << 8) << 19
-							this.renderData[this.renderLength++] = 1 << 31 | pos | visible << 13 | palleteIndex
-							this.hasVisibleBlocks = true
-						}
-					}
-				}
-			}
-		}
-		updateBlock(x, y, z, world) {
-			if (!world.meshQueue.includes(this.chunk)) {
-				world.meshQueue.push(this.chunk)
-			}
-			let i = x
-			let j = y
-			let k = z
-			let s = this.size
-			x += this.x
-			y += this.y
-			z += this.z
-			let blockState = this.blocks[i * s * s + j * s + k]
-			let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east")
-			| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west") << 1
-			| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top") << 2
-			| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom") << 3
-			| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north") << 4
-			| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south") << 5
-			let pos = (i | j << 4 | k << 8) << 19
-			let index = -1
-
-			// Find index of current block in this.renderData
-			for (let i = 0; i < this.renderLength; i++) {
-				if ((this.renderData[i] & 0x7ff80000) === pos) {
-					index = i
-					break
-				}
-			}
-
-			// Update pallete
-			if (this.palleteMap[blockState] === undefined) {
-				this.palleteMap[blockState] = this.pallete.length
-				this.pallete.push(blockState)
-			}
-
-			if (index < 0 && !visible) {
-				// Wasn't visible before, isn't visible after.
-				return
-			}
-			if (!visible) {
-				// Was visible before, isn't visible after.
-				this.renderData.splice(index, 1)
-				this.renderLength--
-				this.hasVisibleBlocks = !!this.renderLength
-				return
-			}
-			if (visible && index < 0) {
-				// Wasn't visible before, is visible after.
-				index = this.renderLength++
-				this.hasVisibleBlocks = true
-			}
-			this.renderData[index] = 1 << 31 | pos | visible << 13 | this.palleteMap[blockState]
-		}
-		genMesh(barray, index) {
-			if (!this.renderLength) {
-				return index
-			}
-			let length = this.renderLength
-			let rData = this.renderData
-			let x = 0, y = 0, z = 0, loc = 0, data = 0,
-				sides = 0, tex = null, x2 = 0, y2 = 0, z2 = 0,
-				verts = null, texVerts = null, texShapeVerts = null,
-				tx = 0, ty = 0
-			let wx = this.x, wy = this.y, wz = this.z
-			let blocks = world.getAdjacentSubchunks(wx, wy, wz)
-			let lightChunks = world.getAdjacentSubchunks(wx, wy, wz, true)
-			let block = null
-
-			let shadows = null, slights = [0, 0, 0, 0], blights = [0, 0, 0, 0]
-			let blockSides = Object.keys(Block)
-			let side = ""
-			let shapeVerts = null
-			let shapeTexVerts = null
-			let pallete = this.pallete
-			// let intShad = interpolateShadows
-
-			for (let i = 0; i < length; i++) {
-				data = rData[i]
-				block = blockData[pallete[data & 0x1fff]]
-				tex = block.textures
-				sides = data >> 13 & 0x3f
-				loc = data >> 19 & 0xfff
-				x = loc & 15
-				y = loc >> 4 & 15
-				z = loc >> 8 & 15
-
-				x2 = x + this.x
-				y2 = y + this.y
-				z2 = z + this.z
-
-				shapeVerts = block.shape.verts
-				shapeTexVerts = block.shape.texVerts
-
-				let texNum = 0
-				for (let n = 0; n < 6; n++) {
-					side = blockSides[n]
-					if (sides & Block[side]) {
-						shadows = getShadows[side](x, y, z, blocks)
-						slights = getLight[side](x, y, z, lightChunks, slights, 0)
-						blights = getLight[side](x, y, z, lightChunks, blights, 1)
-						let directionalFaces = shapeVerts[Sides[side]]
-						for (let facei = 0; facei < directionalFaces.length; facei++) {
-							verts = directionalFaces[facei]
-							texVerts = textureCoords[textureMap[tex[texNum]]]
-							tx = texVerts[0]
-							ty = texVerts[1]
-							texShapeVerts = shapeTexVerts[n][facei]
-
-							barray[index] = verts[0] + x2
-							barray[index+1] = verts[1] + y2
-							barray[index+2] = verts[2] + z2
-							barray[index+3] = tx + texShapeVerts[0]
-							barray[index+4] = ty + texShapeVerts[1]
-							barray[index+5] = shadows[0]
-							barray[index+6] = slights[0]
-							barray[index+7] = blights[0]
-
-							barray[index+8] = verts[3] + x2
-							barray[index+9] = verts[4] + y2
-							barray[index+10] = verts[5] + z2
-							barray[index+11] = tx + texShapeVerts[2]
-							barray[index+12] = ty + texShapeVerts[3]
-							barray[index+13] = shadows[1]
-							barray[index+14] = slights[1]
-							barray[index+15] = blights[1]
-
-							barray[index+16] = verts[6] + x2
-							barray[index+17] = verts[7] + y2
-							barray[index+18] = verts[8] + z2
-							barray[index+19] = tx + texShapeVerts[4]
-							barray[index+20] = ty + texShapeVerts[5]
-							barray[index+21] = shadows[2]
-							barray[index+22] = slights[2]
-							barray[index+23] = blights[2]
-
-							barray[index+24] = verts[9] + x2
-							barray[index+25] = verts[10] + y2
-							barray[index+26] = verts[11] + z2
-							barray[index+27] = tx + texShapeVerts[6]
-							barray[index+28] = ty + texShapeVerts[7]
-							barray[index+29] = shadows[3]
-							barray[index+30] = slights[3]
-							barray[index+31] = blights[3]
-							index += 32
-						}
-					}
-					texNum++
-				}
-			}
-			return index
-		}
-		carveCaves() {
-			let wx = this.x + 16, wz = this.z + 16, wy = this.y + 16
-			for (let x = this.x, xx = 0; x < wx; x++, xx++) {
-				for (let z = this.z, zz = 0; z < wz; z++, zz++) {
-					wy = this.chunk.tops[zz * 16 + xx]
-					for (let y = this.y; y < wy; y++) {
-						if (isCave(x, y, z)) {
-							carveSphere(x, y, z)
-						}
-					}
-				}
-			}
-			this.caves = true
-		}
-		tick() {
-			for (let i = 0; i < 3; i++) {
-				let rnd = Math.random() * this.blocks.length | 0
-				if (this.blocks[rnd] === blockIds.grass) {
-					// Spread grass
-
-					let x = (rnd >> 8) + this.x
-					let y = (rnd >> 4 & 15) + this.y
-					let z = (rnd & 15) + this.z
-					if (!blockData[world.getBlock(x, y + 1, z)].transparent) {
-						world.setBlock(x, y, z, blockIds.dirt, false)
-						return
-					}
-
-					let rnd2 = Math.random() * 27 | 0
-					let x2 = rnd2 % 3 - 1
-					rnd2 = (rnd2 - x2 - 1) / 3
-					let y2 = rnd2 % 3 - 1
-					rnd2 = (rnd2 - y2 - 1) / 3
-					z += rnd2 - 1
-					x += x2
-					y += y2
-
-					if (world.getBlock(x, y, z) === blockIds.dirt && world.getBlock(x, y + 1, z) === blockIds.air) {
-						world.setBlock(x, y, z, blockIds.grass, false)
-					}
-				}
-			}
-		}
-		getLight(x, y, z, block = 0) {
-			let s = this.size
-			let i = x * s * s + y * s + z
-			return (this.light[i] & 15 << block * 4) >> block * 4
-		}
-		setLight(x, y, z, level, block = 0) {
-			let s = this.size
-			let i = x * s * s + y * s + z
-			this.light[i] = level << block * 4 | this.light[i] & 15 << !block * 4
-		}
-	}
-	let emptySection = new Section(0, 0, 0, 16)
-	let fullSection = new Section(0, 0, 0, 16)
+	let emptySection = new Section(0, 0, 0, 16, caves, world)
+	let fullSection = new Section(0, 0, 0, 16, caves, world)
 	fullSection.blocks.fill(blockIds.bedrock)
 	emptySection.light.fill(15)
 
@@ -2300,7 +1491,7 @@ async function MineKhan() {
 		setBlock(x, y, z, blockID, user) {
 			if (!this.sections[y >> 4]) {
 				do {
-					this.sections.push(new Section(this.x, this.sections.length * 16, this.z, 16, this))
+					this.sections.push(new Section(this.x, this.sections.length * 16, this.z, 16, this, caves, world))
 				} while (!this.sections[y >> 4])
 			}
 			if (user && !this.sections[y >> 4].edited) {
@@ -3970,7 +3161,7 @@ async function MineKhan() {
 			this.name = data.shift()
 			worldSeed = parseInt(data.shift(), 36)
 			seedHash(worldSeed)
-			caveNoise = openSimplexNoise(worldSeed)
+			noiseSettings.caveNoise = openSimplexNoise(worldSeed)
 			noiseProfile.noiseSeed(worldSeed)
 
 			let playerData = data.shift().split(",")
@@ -4018,7 +3209,7 @@ async function MineKhan() {
 			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
 			seedHash(worldSeed);
-			caveNoise = openSimplexNoise(worldSeed);
+			noiseSettings.caveNoise = openSimplexNoise(worldSeed);
 			noiseProfile.noiseSeed(worldSeed);
 			let playerData = data.shift().split(",");
 			p.x = parseInt(playerData[0], 36);
@@ -4506,105 +3697,7 @@ async function MineKhan() {
 		})
 		Slider.add(width/2, 365, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
 	}
-	function initTextures() {
-		let textureSize = 256
-		let scale = 1 / 16
-		let texturePixels = new Uint8Array(textureSize * textureSize * 4)
-		textureMap = {}
-		textureCoords = []
 
-		const setPixel = function(textureNum, x, y, r, g, b, a) {
-			let texX = textureNum & 15
-			let texY = textureNum >> 4
-			let offset = (texY * 16 + y) * 1024 + texX * 64 + x * 4
-			texturePixels[offset] = r
-			texturePixels[offset + 1] = g
-			texturePixels[offset + 2] = b
-			texturePixels[offset + 3] = a !== undefined ? a : 255
-		}
-		const getPixels = function(str) {
-			// var w = parseInt(str.substr(0, 2), 36)
-			// var h = parseInt(str.substr(2, 2), 36)
-			var colors = []
-			var pixels = []
-			var dCount = 0
-			for (; str[4 + dCount] === "0"; dCount++);
-			var ccount = parseInt(str.substr(4 + dCount, dCount + 1), 36)
-			for (var i = 0; i < ccount; i++) {
-				var num = parseInt(str.substr(5 + 2 * dCount + i * 7, 7), 36)
-				colors.push([num >>> 24 & 255, num >>> 16 & 255, num >>> 8 & 255, num & 255])
-			}
-			for (let i = 5 + 2 * dCount + ccount * 7; i < str.length; i++) {
-				let num = parseInt(str[i], 36)
-				pixels.push(colors[num][0], colors[num][1], colors[num][2], colors[num][3])
-			}
-			return pixels
-		};
-
-		const textures = texturesFunc(setPixel, getPixels);
-
-		{
-			// Specify the texture coords for each index
-			const s = scale
-			for (let i = 0; i < 256; i++) {
-				let texX = i & 15
-				let texY = i >> 4
-				let offsetX = texX * s
-				let offsetY = texY * s
-				textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
-			}
-
-			// Set all of the textures into 1 big tiled texture
-			let n = 0
-			for (let i in textures) {
-				if (typeof textures[i] === "function") {
-					textures[i](n)
-				}
-				else if (typeof textures[i] === "string") {
-					let pix = getPixels(textures[i])
-					for (let j = 0; j < pix.length; j += 4) {
-						setPixel(n, j >> 2 & 15, j >> 6, pix[j], pix[j+1], pix[j+2], pix[j+3])
-					}
-				}
-				textureMap[i] = n
-				n++
-			}
-
-			//Set the hitbox texture to 1 pixel
-			let arr = new Float32Array(192)
-			for (let i = 0; i < 192; i += 2) {
-				arr[i] = textureCoords[textureMap.hitbox][0] + 0.01
-				arr[i + 1] = textureCoords[textureMap.hitbox][1] + 0.01
-			}
-			textureCoords[textureMap.hitbox] = arr
-		}
-
-		// Big texture with everything in it
-		textureAtlas = gl.createTexture()
-		gl.activeTexture(gl.TEXTURE0)
-		gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
-		gl.generateMipmap(gl.TEXTURE_2D)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-		gl.uniform1i(glCache.uSampler, 0)
-
-		// Dirt texture for the background
-		let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-		dirtTexture = gl.createTexture()
-		gl.activeTexture(gl.TEXTURE1)
-		gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
-		gl.generateMipmap(gl.TEXTURE_2D)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-
-		genIcons()
-	}
 	function drawIcon(x, y, id) {
 		id = id < 0xff ? id | blockMode : id
 		x =  x / (3 * height) - 0.1666 * width / height
@@ -5236,7 +4329,8 @@ async function MineKhan() {
 		gl.uniform1f(glCache.uDist, 1000)
 
 		//Send the block textures to the GPU
-		initTextures()
+		initTextures(gl, glCache)
+		genIcons()
 		initShapes()
 
 		// These buffers are only used for drawing the main menu blocks
@@ -5725,7 +4819,7 @@ async function MineKhan() {
 
 		worldSeed = Math.random() * 2000000000 | 0
 		seedHash(worldSeed)
-		caveNoise = openSimplexNoise(worldSeed)
+		noiseSettings.caveNoise = openSimplexNoise(worldSeed)
 		noiseProfile.noiseSeed(worldSeed)
 
 		generatedChunks = 0
