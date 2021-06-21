@@ -1,4 +1,5 @@
 {
 	"editor.defaultFormatter": null,
-	"editor.formatOnPaste": false
+	"editor.formatOnPaste": false,
+	"editor.insertSpaces": false
 }
