@@ -12,17 +12,18 @@ import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 import './index.css';
 
 // imports
-import { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile } from "./js/random.js";
+import { seedHash, randomSeed, openSimplexNoise, noiseProfile } from "./js/random.js";
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js";
 import { timeString, roundBits, compareArr } from "./js/utils.js";
 import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js";
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes } from "./js/shapes.js"
 import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
-import { initTextures, textureMap, textureCoords, textureAtlas } from './js/texture.js';
-// cave noise is used inside the module
-// eslint-disable-next-line no-unused-vars
-import { Section, noiseSettings } from "./js/section.js"
+import { initTextures, textureMap, textureCoords } from './js/texture.js';
+import { noiseSettings, fullSection, emptySection } from "./js/section.js"
+import { Chunk } from "./js/chunk.js"
+import { Item } from './js/item.js';
+import { Player } from "./js/player.js"
 
 window.blockData = blockData
 window.canvas = document.getElementById("overlay")
@@ -45,7 +46,7 @@ async function MineKhan() {
 
 	// cache Math object
 	const { Math, performance, Date, document } = window;
-	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math;
+	const { cos, sin, round, floor, min, max, abs, sqrt } = Math;
 	const win = window.parent;
 	const { console } = win;
 	const chatOutput = document.getElementById("chat")
@@ -1459,828 +1460,6 @@ async function MineKhan() {
 	}
 	*/
 
-	let emptySection = new Section(0, 0, 0, 16, caves, world)
-	let fullSection = new Section(0, 0, 0, 16, caves, world)
-	fullSection.blocks.fill(blockIds.bedrock)
-	emptySection.light.fill(15)
-
-	class Chunk {
-		constructor(x, z) {
-			this.x = x
-			this.z = z
-			this.maxY = 0
-			this.minY = 255
-			this.sections = []
-			this.cleanSections = []
-			this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
-			this.optimized = false
-			this.generated = false; // Terrain
-			this.populated = superflat // Trees and ores
-			this.lit = false
-			this.lazy = false
-			this.edited = false
-			this.loaded = false
-			// vao for this chunk
-			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
-			this.caves = !caves
-		}
-		getBlock(x, y, z) {
-			let s = y >> 4
-			return this.sections.length > s ? this.sections[s].getBlock(x, y & 15, z) : 0
-		}
-		setBlock(x, y, z, blockID, user) {
-			if (!this.sections[y >> 4]) {
-				do {
-					this.sections.push(new Section(this.x, this.sections.length * 16, this.z, 16, this, caves, world))
-				} while (!this.sections[y >> 4])
-			}
-			if (user && !this.sections[y >> 4].edited) {
-				this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
-				this.sections[y >> 4].edited = true
-				this.edited = true
-			}
-			this.sections[y >> 4].setBlock(x, y & 15, z, blockID)
-		}
-		fillLight() {
-			let max = this.sections.length * 16 - 1
-			let blockSpread = []
-
-			// Set virtical columns of light to level 15
-			for (let x = 0; x < 16; x++) {
-				for (let z = 0; z < 16; z++) {
-					let stop = false
-					for (let y = max; y >= 0; y--) {
-						let data = blockData[this.getBlock(x, y, z)]
-						if (data.lightLevel) {
-							if (!blockSpread[data.lightLevel]) blockSpread[data.lightLevel] = []
-							blockSpread[data.lightLevel].push(x + this.x, y, z + this.z)
-							this.setLight(x, y, z, data.lightLevel, 1)
-						}
-						if (!stop && !data.transparent) {
-							this.tops[z * 16 + x] = y
-							stop = true
-						}
-						else if (!stop) {
-							this.setLight(x, y, z, 15, 0)
-						}
-					}
-				}
-			}
-
-			// Spread the light to places where the virtical columns stopped earlier, plus chunk borders
-			let spread = []
-			for (let x = 0; x < 16; x++) {
-				for (let z = 0; z < 16; z++) {
-					for (let y = this.tops[z * 16 + x] + 1; y <= max; y++) {
-						if (x === 15 || this.tops[z * 16 + x + 1] > y) {
-							spread.push(x + this.x, y, z + this.z)
-							continue
-						}
-						if (x === 0 || this.tops[z * 16 + x - 1] > y) {
-							spread.push(x + this.x, y, z + this.z)
-							continue
-						}
-						if (z === 15 || this.tops[(z + 1) * 16 + x] > y) {
-							spread.push(x + this.x, y, z + this.z)
-							continue
-						}
-						if (z === 0 || this.tops[(z - 1) * 16 + x] > y) {
-							spread.push(x + this.x, y, z + this.z)
-							continue
-						}
-						break
-					}
-				}
-			}
-			this.spreadLight(spread, 14)
-
-			for (let i = blockSpread.length - 1; i > 0; i--) {
-				let blocks = blockSpread[i]
-				if (blocks && blocks.length) {
-					this.spreadLight(blocks, i - 1, false, 1)
-				}
-			}
-
-			this.lit = true
-		}
-		setLight(x, y, z, level, blockLight) {
-			if (y < this.sections.length * 16) {
-				this.sections[y >> 4].setLight(x, y & 15, z, level, blockLight)
-			}
-		}
-		getLight(x, y, z, blockLight = 0) {
-			if (y >= this.sections.length * 16) return 15
-			return this.sections[y >> 4].getLight(x, y & 15, z, blockLight)
-		}
-		trySpread(x, y, z, level, spread, blockLight, update = false) {
-			if (world.getLight(x, y, z, blockLight) < level) {
-				if (blockData[world.getBlock(x, y, z)].transparent) {
-					world.setLight(x, y, z, level, blockLight)
-					spread.push(x, y, z)
-				}
-			}
-			if (update && (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15)) {
-				let chunk = world.getChunk(x, z)
-				if (chunk.buffer && !world.meshQueue.includes(chunk)) {
-					world.meshQueue.push(chunk)
-				}
-			}
-		}
-		spreadLight(blocks, level, update = false, blockLight = 0) {
-			let spread = []
-			let x = 0, y = 0, z = 0
-			for (let i = 0; i < blocks.length; i += 3) {
-				x = blocks[i]
-				y = blocks[i+1]
-				z = blocks[i+2]
-				this.trySpread(x - 1, y, z, level, spread, blockLight, update)
-				this.trySpread(x + 1, y, z, level, spread, blockLight, update)
-				this.trySpread(x, y - 1, z, level, spread, blockLight, update)
-				this.trySpread(x, y + 1, z, level, spread, blockLight, update)
-				this.trySpread(x, y, z - 1, level, spread, blockLight, update)
-				this.trySpread(x, y, z + 1, level, spread, blockLight, update)
-			}
-			if (level > 1 && spread.length) {
-				this.spreadLight(spread, level - 1, update, blockLight)
-			}
-		}
-		tryUnSpread(x, y, z, level, spread, respread, blockLight) {
-			let light = world.getLight(x, y, z, blockLight)
-			let trans = blockData[world.getBlock(x, y, z)].transparent
-			if (light === level) {
-				if (trans) {
-					world.setLight(x, y, z, 0, blockLight)
-					spread.push(x, y, z)
-				}
-			}
-			else if (light > level) {
-				respread[light].push(x, y, z)
-			}
-			if (x < this.x || x > this.x + 15 || z < this.z || z > this.z + 15) {
-				let chunk = world.getChunk(x, z)
-				if (chunk && chunk.buffer && !world.meshQueue.includes(chunk)) {
-					world.meshQueue.push(chunk)
-				}
-			}
-		}
-		unSpreadLight(blocks, level, respread, blockLight) {
-			let spread = []
-			let x = 0, y = 0, z = 0
-			for (let i = 0; i < blocks.length; i += 3) {
-				x = blocks[i]
-				y = blocks[i+1]
-				z = blocks[i+2]
-				this.tryUnSpread(x - 1, y, z, level, spread, respread, blockLight)
-				this.tryUnSpread(x + 1, y, z, level, spread, respread, blockLight)
-				this.tryUnSpread(x, y - 1, z, level, spread, respread, blockLight)
-				this.tryUnSpread(x, y + 1, z, level, spread, respread, blockLight)
-				this.tryUnSpread(x, y, z - 1, level, spread, respread, blockLight)
-				this.tryUnSpread(x, y, z + 1, level, spread, respread, blockLight)
-			}
-			if (level > 1 && spread.length) {
-				this.unSpreadLight(spread, level - 1, respread, blockLight)
-			}
-		}
-		reSpreadLight(respread, blockLight) {
-			for (let i = respread.length - 1; i > 1; i--) {
-				let blocks = respread[i]
-				let level = i - 1
-				let spread = respread[level]
-				for (let j = 0; j < blocks.length; j += 3) {
-					let x = blocks[j]
-					let y = blocks[j+1]
-					let z = blocks[j+2]
-					this.trySpread(x - 1, y, z, level, spread, blockLight)
-					this.trySpread(x + 1, y, z, level, spread, blockLight)
-					this.trySpread(x, y - 1, z, level, spread, blockLight)
-					this.trySpread(x, y + 1, z, level, spread, blockLight)
-					this.trySpread(x, y, z - 1, level, spread, blockLight)
-					this.trySpread(x, y, z + 1, level, spread, blockLight)
-				}
-			}
-		}
-		optimize() {
-			for (let i = 0; i < this.sections.length; i++) {
-				this.sections[i].optimize()
-			}
-			if (!world.meshQueue.includes(this)) {
-				world.meshQueue.push(this)
-			}
-			this.optimized = true
-		}
-		render() {
-			if (!this.buffer) {
-				return
-			}
-			if (p.canSee(this.x, this.minY, this.z, this.maxY)) {
-				renderedChunks++
-				glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
-				gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
-				glExtensions.vertex_array_object.bindVertexArrayOES(null)
-			}
-		}
-		updateBlock(x, y, z, world, lazy) {
-			if (this.buffer) {
-				this.lazy = lazy
-				if (this.sections.length > y >> 4) {
-					this.sections[y >> 4].updateBlock(x, y & 15, z, world)
-				}
-			}
-		}
-		deleteBlock(x, y, z, user) {
-			if (!this.sections[y >> 4]) {
-				return
-			}
-			if (user && !this.sections[y >> 4].edited) {
-				this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
-				this.sections[y >> 4].edited = true
-				this.edited = true
-			}
-			this.sections[y >> 4].deleteBlock(x, y & 15, z)
-			this.minY = y < this.minY ? y : this.minY
-			this.maxY = y > this.maxY ? y : this.maxY
-		}
-		carveCaves() {
-			for (let i = 0; i < this.sections.length; i++) {
-				if (!this.sections[i].caves) {
-					this.sections[i].carveCaves()
-					if (i + 1 >= this.sections.length) {
-						this.caves = true
-					}
-					return
-				}
-			}
-		}
-		populate() {
-			randomSeed(hash(this.x, this.z) * 210000000)
-			let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
-
-			for (let i = 0; i < 16; i++) {
-				for (let k = 0; k < 16; k++) {
-					wx = this.x + i
-					wz = this.z + k
-
-					ground = this.tops[k * 16 + i]
-					if (trees && random() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
-
-						top = ground + floor(4.5 + random(2.5))
-						rand = floor(random(4096))
-						let tree = random() < 0.6 ? blockIds.oakLog : ++top && blockIds.birchLog
-
-						//Center
-						for (let j = ground + 1; j <= top; j++) {
-							this.setBlock(i, j, k, tree)
-						}
-						this.setBlock(i, top + 1, k, blockIds.leaves)
-						this.setBlock(i, ground, k, blockIds.dirt)
-
-						//Bottom leaves
-						for (let x = -2; x <= 2; x++) {
-							for (let z = -2; z <= 2; z++) {
-								if (x || z) {
-									if ((x * z & 7) === 4) {
-										place = rand & 1
-										rand >>>= 1
-										if (place) {
-											world.spawnBlock(wx + x, top - 2, wz + z, blockIds.leaves)
-										}
-									}
-									else {
-										world.spawnBlock(wx + x, top - 2, wz + z, blockIds.leaves)
-									}
-								}
-							}
-						}
-
-						//2nd layer leaves
-						for (let x = -2; x <= 2; x++) {
-							for (let z = -2; z <= 2; z++) {
-								if (x || z) {
-									if ((x * z & 7) === 4) {
-										place = rand & 1
-										rand >>>= 1
-										if (place) {
-											world.spawnBlock(wx + x, top - 1, wz + z, blockIds.leaves)
-										}
-									}
-									else {
-										world.spawnBlock(wx + x, top - 1, wz + z, blockIds.leaves)
-									}
-								}
-							}
-						}
-
-						//3rd layer leaves
-						for (let x = -1; x <= 1; x++) {
-							for (let z = -1; z <= 1; z++) {
-								if (x || z) {
-									if (x & z) {
-										place = rand & 1
-										rand >>>= 1
-										if (place) {
-											world.spawnBlock(wx + x, top, wz + z, blockIds.leaves)
-										}
-									}
-									else {
-										world.spawnBlock(wx + x, top, wz + z, blockIds.leaves)
-									}
-								}
-							}
-						}
-
-						//Top leaves
-						world.spawnBlock(wx + 1, top + 1, wz, blockIds.leaves)
-						world.spawnBlock(wx, top + 1, wz - 1, blockIds.leaves)
-						world.spawnBlock(wx, top + 1, wz + 1, blockIds.leaves)
-						world.spawnBlock(wx - 1, top + 1, wz, blockIds.leaves)
-					}
-
-					// Blocks of each per chunk in Minecraft
-					// Coal: 185.5
-					// Iron: 111.5
-					// Gold: 10.4
-					// Redstone: 29.1
-					// Diamond: 3.7
-					// Lapis: 4.1
-					ground -= 4
-
-					if (random() < 3.7 / 256) {
-						let y = random() * 16 | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre)
-						}
-					}
-
-					if (random() < 111.5 / 256) {
-						let y = random() * 64 | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre)
-						}
-					}
-
-					if (random() < 185.5 / 256) {
-						let y = random() * ground | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre)
-						}
-					}
-
-					if (random() < 10.4 / 256) {
-						let y = random() * 32 | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre)
-						}
-					}
-
-					if (random() < 29.1 / 256) {
-						let y = random() * 16 | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre)
-						}
-					}
-
-					if (random() < 4.1 / 256) {
-						let y = random() * 32 | 0 + 1
-						y = y < ground ? y : ground
-						if (this.getBlock(i, y, k)) {
-							this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre)
-						}
-					}
-				}
-			}
-
-			this.populated = true
-		}
-		genMesh() {
-			let barray = bigArray
-			let index = 0
-			for (let i = 0; i < this.sections.length; i++) {
-				index = this.sections[i].genMesh(barray, index)
-			}
-
-			if (!this.buffer) {
-				this.buffer = gl.createBuffer()
-			}
-			let data = barray.slice(0, index)
-
-			let maxY = 0
-			let minY = 255
-			let y = 0
-			for (let i = 1; i < data.length; i += 6) {
-				y = data[i]
-				maxY = max(maxY, y)
-				minY = min(minY, y)
-			}
-			this.maxY = maxY
-			this.minY = minY
-			this.faces = data.length / 32
-			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
-			gl.enableVertexAttribArray(glCache.aVertex)
-			gl.enableVertexAttribArray(glCache.aTexture)
-			gl.enableVertexAttribArray(glCache.aShadow)
-			gl.enableVertexAttribArray(glCache.aSkylight)
-			gl.enableVertexAttribArray(glCache.aBlocklight)
-			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 32, 0)
-			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 32, 12)
-			gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 32, 20)
-			gl.vertexAttribPointer(glCache.aSkylight, 1, gl.FLOAT, false, 32, 24)
-			gl.vertexAttribPointer(glCache.aBlocklight, 1, gl.FLOAT, false, 32, 28)
-			glExtensions.vertex_array_object.bindVertexArrayOES(null)
-			this.lazy = false
-		}
-		tick() {
-			if (this.edited) {
-				for (let i = 0; i < this.sections.length; i++) {
-					if (this.sections[i].edited) {
-						this.sections[i].tick()
-					}
-				}
-			}
-		}
-		load() {
-			let chunkX = this.x >> 4
-			let chunkZ = this.z >> 4
-			let load = null
-
-			for (let i = 0; i < world.loadFrom.length; i++) {
-				load = world.loadFrom[i]
-				if (load.x === chunkX && load.z === chunkZ) {
-					let y = load.y * 16
-					for (let j in load.blocks) {
-						world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
-					}
-					world.loadFrom.splice(i--, 1)
-				}
-			}
-			this.loaded = true
-		}
-	}
-
-	class Contacts {
-		constructor() {
-			this.array = []
-			this.size = 0
-		}
-		add(x, y, z, block) {
-			if (this.size === this.array.length) {
-				this.array.push([x, y, z, block])
-			}
-			else {
-				this.array[this.size][0] = x
-				this.array[this.size][1] = y
-				this.array[this.size][2] = z
-				this.array[this.size][3] = block
-			}
-			this.size++
-		}
-		clear() {
-			this.size = 0
-		}
-	}
-
-	class Entity {
-		constructor(x, y, z, pitch, yaw, velx, vely, velz, width, height, depth, vertices, texture, faces, despawns) {
-			this.x = x
-			this.y = y
-			this.z = z
-			this.previousX = x
-			this.previousY = y
-			this.previousZ = z
-			this.canStepX = true
-			this.canStepY = true
-			this.pitch = pitch
-			this.yaw = yaw
-			this.velx = velx
-			this.vely = vely
-			this.velz = velz
-			this.width = width
-			this.height = height
-			this.depth = depth
-			this.contacts = new Contacts()
-			this.lastUpdate = performance.now()
-			this.onGround = false
-			this.despawns = despawns
-			this.spawn = this.lastUpdate
-			this.canDespawn = false
-			this.faces = faces
-			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
-			const verticesBuffer = gl.createBuffer()
-			const textureBuffer = gl.createBuffer()
-			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer)
-			gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
-			gl.vertexAttribPointer(glCache.aVertexEntity, 3, gl.FLOAT, false, 0, 0)
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer)
-			gl.bufferData(gl.ARRAY_BUFFER, texture, gl.STATIC_DRAW)
-			gl.vertexAttribPointer(glCache.aTextureEntity, 2, gl.FLOAT, false, 0, 0)
-
-			gl.enableVertexAttribArray(glCache.aVertexEntity)
-			gl.enableVertexAttribArray(glCache.aTextureEntity)
-			glExtensions.vertex_array_object.bindVertexArrayOES(null)
-		}
-		updateVelocity(now) {
-			let dt = (now - this.lastUpdate) / 33
-			dt = dt > 2 ? 2 : dt
-			this.vely += -0.02 * dt
-			if (this.vely < -1.5) {
-				this.vely = -1.5
-			}
-
-			this.velz += (this.velz * 0.9 - this.velz) * dt
-			this.velx += (this.velx * 0.9 - this.velx) * dt
-			// this.vely += (this.vely * 0.9 - this.vely) * dt
-		}
-		collided(x, y, z, vx, vy, vz, block) {
-			let verts = blockData[block].shape.verts
-			let px = roundBits(this.x - this.width / 2 - x)
-			let py = roundBits(this.y - this.height / 2 - y)
-			let pz = roundBits(this.z - this.depth / 2 - z)
-			let pxx = roundBits(this.x + this.width / 2 - x)
-			let pyy = roundBits(this.y + this.height / 2 - y)
-			let pzz = roundBits(this.z + this.depth / 2 - z)
-			let minX, minY, minZ, maxX, maxY, maxZ, min, max
-
-			//Top and bottom faces
-			let faces = verts[0]
-			if (vy <= 0) {
-				faces = verts[1]
-			}
-			if (!vx && !vz) {
-				for (let face of faces) {
-					min = face.min
-					minX = min[0]
-					minZ = min[2]
-					max = face.max
-					maxX = max[0]
-					maxZ = max[2]
-					if (face[1] > py && face[1] < pyy && minX < pxx && maxX > px && minZ < pzz && maxZ > pz) {
-						if (vy <= 0) {
-							this.onGround = true
-							this.y = round((face[1] + y + this.height / 2) * 10000) / 10000
-							this.vely = 0
-							return false
-						}
-						else {
-							return true
-						}
-					}
-				}
-				return false
-			}
-
-			//West and East faces
-			if (vx < 0) {
-				faces = verts[4]
-			}
-			else if (vx > 0) {
-				faces = verts[5]
-			}
-			if (vx) {
-				let col = false
-				for (let face of faces) {
-					min = face.min
-					minZ = min[2]
-					minY = min[1]
-					max = face.max
-					maxZ = max[2]
-					maxY = max[1]
-					if (face[0] > px && face[0] < pxx && minY < pyy && maxY > py && minZ < pzz && maxZ > pz) {
-						if (maxY - py > 0.5) {
-							this.canStepX = false
-						}
-						col = true
-					}
-				}
-				return col
-			}
-
-			//South and North faces
-			if (vz < 0) {
-				faces = verts[2]
-			}
-			else if (vz > 0) {
-				faces = verts[3]
-			}
-			if (vz) {
-				let col = false
-				for (let face of faces) {
-					min = face.min
-					minX = min[0]
-					minY = min[1]
-					max = face.max
-					maxX = max[0]
-					maxY = max[1]
-					if (face[2] > pz && face[2] < pzz && minY < pyy && maxY > py && minX < pxx && maxX > px) {
-						if (maxY - py > 0.5) {
-							this.canStepZ = false
-						}
-						col = true
-					}
-				}
-				return col
-			}
-		}
-		move(now) {
-			let pminX = floor(this.x - this.width / 2)
-			let pmaxX = ceil(this.x + this.width / 2)
-			let pminY = floor(this.y - this.height / 2)
-			let pmaxY = ceil(this.y + this.height / 2)
-			let pminZ = floor(this.z - this.depth / 2)
-			let pmaxZ = ceil(this.z + this.depth / 2)
-			let block = null
-
-			for (let x = pminX; x <= pmaxX; x++) {
-				for (let y = pminY; y <= pmaxY; y++) {
-					for (let z = pminZ; z <= pmaxZ; z++) {
-						let block = world.getBlock(x, y, z)
-						if (block) {
-							this.contacts.add(x, y, z, block)
-						}
-					}
-				}
-			}
-			let dt = (now - this.lastUpdate) / 33
-			dt = dt > 2 ? 2 : dt
-
-			this.previousX = this.x
-			this.previousY = this.y
-			this.previousZ = this.z
-
-			this.canStepX = false
-			this.canStepY = false
-			this.onGround = false
-			//Check collisions in the Y direction
-			this.y += this.vely * dt
-			for (let i = 0; i < this.contacts.size; i++) {
-				block = this.contacts.array[i]
-				if (this.collided(block[0], block[1], block[2], 0, this.vely, 0, block[3])) {
-					this.y = this.previousY
-					this.vely = 0
-					break
-				}
-			}
-
-			if (this.y === this.previousY) {
-				this.canStepX = true
-				this.canStepZ = true
-			}
-
-			//Check collisions in the X direction
-			this.x += this.velx * dt
-			for (let i = 0; i < this.contacts.size; i++) {
-				block = this.contacts.array[i]
-				if (this.collided(block[0], block[1], block[2], this.velx, 0, 0, block[3])) {
-					if (this.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-						continue
-					}
-					this.x = this.previousX
-					this.velx = 0
-					break
-				}
-			}
-
-			//Check collisions in the Z direction
-			this.z += this.velz * dt
-			for (let i = 0; i < this.contacts.size; i++) {
-				block = this.contacts.array[i]
-				if (this.collided(block[0], block[1], block[2], 0, 0, this.velz, block[3])) {
-					if (this.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-						continue
-					}
-					this.z = this.previousZ
-					this.velz = 0
-					break
-				}
-			}
-
-			this.lastUpdate = now
-			this.contacts.clear()
-		}
-		update() {
-			let now = performance.now()
-			this.updateVelocity(now)
-			this.move(now)
-			if (now - this.spawn > this.despawns) {
-				this.canDespawn = true
-			}
-		}
-		render() {
-			const offsetY = -0.1 * cos((performance.now() - this.spawn) * 0.0015) + 0.15
-			const modelMatrix = new Matrix();
-			modelMatrix.identity()
-			modelMatrix.translate(this.x, this.y + offsetY, this.z)
-			modelMatrix.rotX(this.pitch)
-			modelMatrix.rotY(this.yaw)
-			modelMatrix.scale(this.width, this.height, this.depth)
-			const viewMatrix = p.transformation.elements
-			const proj = p.projection
-			const projectionMatrix = [proj[0], 0, 0, 0, 0, proj[1], 0, 0, 0, 0, proj[2], proj[3], 0, 0, proj[4], 0]
-			const modelViewProjectionMatrix = new Matrix()
-			modelViewProjectionMatrix.identity()
-			modelViewProjectionMatrix.mult(projectionMatrix)
-			modelViewProjectionMatrix.mult(viewMatrix)
-			modelViewProjectionMatrix.mult(modelMatrix.elements)
-			// row major to column major
-			modelViewProjectionMatrix.transpose()
-			const x = round(this.x)
-			const y = round(this.y)
-			const z = round(this.z)
-			const blockLight = world.getLight(x, y, z, 1)
-			const skyLight = world.getLight(x, y, z, 0)
-			const lightLevel = min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
-			gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
-			gl.uniform1i(glCache.uSamplerEntity, 0)
-			gl.uniform1f(glCache.uLightLevelEntity, lightLevel)
-			gl.uniformMatrix4fv(glCache.uViewEntity, false, modelViewProjectionMatrix.elements)
-			glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
-			gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
-			glExtensions.vertex_array_object.bindVertexArrayOES(null)
-		}
-	}
-
-	class Item extends Entity {
-		constructor(x, y, z, velx, vely, velz, blockID) {
-			const block = blockData[blockID]
-			const tex = block.textures
-			const shape = block.shape
-			const shapeVerts = shape.verts
-			const shapeTexVerts = shape.texVerts
-			const size = shape.size
-			let blockSides = Object.keys(Block)
-			let texNum = 0
-			let texture = []
-			let index = 0
-			for (let n = 0; n < 6; n++) {
-				let side = blockSides[n]
-				let directionalFaces = shapeVerts[Sides[side]]
-				for (let facei = 0; facei < directionalFaces.length; facei++) {
-					let texVerts = textureCoords[textureMap[tex[texNum]]]
-					let tx = texVerts[0]
-					let ty = texVerts[1]
-					let texShapeVerts = shapeTexVerts[n][facei]
-					texture[index    ] = tx + texShapeVerts[0]
-					texture[index + 1] = ty + texShapeVerts[1]
-					texture[index + 2] = tx + texShapeVerts[2]
-					texture[index + 3] = ty + texShapeVerts[3]
-					texture[index + 4] = tx + texShapeVerts[4]
-					texture[index + 5] = ty + texShapeVerts[5]
-					texture[index + 6] = tx + texShapeVerts[6]
-					texture[index + 7] = ty + texShapeVerts[7]
-					index += 8
-				}
-				texNum++
-			}
-			super(x, y, z, Math.PI / 4, Math.PI / 4, velx, vely, velz, 0.25, 0.25, 0.25, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, 1500000)
-		}
-	}
-
-	class Player extends Entity {
-		constructor(x, y, z, blockID) {
-			const block = blockData[blockID & 255]
-			const tex = block.textures
-			const shape = shapes.cube
-			const shapeVerts = shape.verts
-			const shapeTexVerts = shape.texVerts
-			const size = shape.size
-			let blockSides = Object.keys(Block)
-			let texNum = 0
-			let texture = []
-			let index = 0
-			for (let n = 0; n < 6; n++) {
-				let side = blockSides[n]
-				let directionalFaces = shapeVerts[Sides[side]]
-				for (let facei = 0; facei < directionalFaces.length; facei++) {
-					let texVerts = textureCoords[textureMap[tex[texNum]]]
-					let tx = texVerts[0]
-					let ty = texVerts[1]
-					let texShapeVerts = shapeTexVerts[n][facei]
-					texture[index    ] = tx + texShapeVerts[0]
-					texture[index + 1] = ty + texShapeVerts[1]
-					texture[index + 2] = tx + texShapeVerts[2]
-					texture[index + 3] = ty + texShapeVerts[3]
-					texture[index + 4] = tx + texShapeVerts[4]
-					texture[index + 5] = ty + texShapeVerts[5]
-					texture[index + 6] = tx + texShapeVerts[6]
-					texture[index + 7] = ty + texShapeVerts[7]
-					index += 8
-				}
-				texNum++
-			}
-			super(x, y, z, 0, 0, 0, 0, 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity)
-		}
-	}
-
 	let analytics = {
 		totalTickTime: 0,
 		worstFrameTime: 0,
@@ -2487,7 +1666,7 @@ async function MineKhan() {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new Player(pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1)
+				if (!playerEntities[name]) playerEntities[name] = new Player(pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
@@ -2556,6 +1735,12 @@ async function MineKhan() {
 
 	let fogDist = 16
 	let frameCount = -3600
+
+	emptySection.setWorld(world);
+	emptySection.setCaves(caves);
+	fullSection.setWorld(world);
+	fullSection.setCaves(caves);
+
 	class World {
 		constructor() {
 			generatedChunks = 0
@@ -2870,7 +2055,7 @@ async function MineKhan() {
 			}
 			let chunk = this.chunks[chunkX][chunkZ]
 			if (!chunk) {
-				chunk = new Chunk(chunkX * 16, chunkZ * 16)
+				chunk = new Chunk(chunkX * 16, chunkZ * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
 				this.chunks[chunkX][chunkZ] = chunk
 			}
 			if (chunk.buffer) {
@@ -2917,7 +2102,7 @@ async function MineKhan() {
 				if (this.meshQueue.length) {
 					// Update all chunk meshes.
 					do {
-						this.meshQueue.pop().genMesh()
+						this.meshQueue.pop().genMesh(indexBuffer, bigArray)
 					} while(this.meshQueue.length)
 					doneWork = true
 					debug("Meshes")
@@ -2963,7 +2148,7 @@ async function MineKhan() {
 						debug("Optimize")
 					}
 					else if (!chunk.buffer) {
-						chunk.genMesh()
+						chunk.genMesh(indexBuffer, bigArray)
 						debug("Initial mesh")
 					}
 					else {
@@ -3014,9 +2199,11 @@ async function MineKhan() {
 			gl.uniform1f(glCache.uTime, skyLight)
 
 			let c = this.sortedChunks
+			let glob = { renderedChunks };
 			for (let chunk of c) {
-				chunk.render()
+				chunk.render(p, glob)
 			}
+			renderedChunks = glob.renderedChunks
 
 			gl.uniform3f(glCache.uPos, 0, 0, 0)
 
@@ -3075,7 +2262,7 @@ async function MineKhan() {
 						this.chunks[x] = []
 					}
 					if (!this.chunks[x][z]) {
-						chunk = new Chunk(x * 16, z * 16)
+						chunk = new Chunk(x * 16, z * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
 						if (maxDist(cx, cz, x, z) <= settings.renderDistance) {
 							this.chunkGenQueue.push(chunk)
 						}
@@ -4103,7 +3290,7 @@ async function MineKhan() {
 
 			if (Key.backspace) {
 				let d = p.direction
-				world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot]))
+				world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
 			}
 
 			if(Number(k)) {

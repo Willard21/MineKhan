@@ -637,6 +637,18 @@ class Section {
 		let i = x * s * s + y * s + z
 		this.light[i] = level << block * 4 | this.light[i] & 15 << !block * 4
 	}
+	setWorld(world) {
+		this.world = world
+	}
+	setCaves(caves) {
+		this.caves = caves
+	}
 }
 
-export { Section, noiseSettings };
+let emptySection = new Section(0, 0, 0, 16, null, null)
+let fullSection = new Section(0, 0, 0, 16, null, null)
+
+fullSection.blocks.fill(blockIds.bedrock)
+emptySection.light.fill(15)
+
+export { Section, noiseSettings, emptySection, fullSection };
