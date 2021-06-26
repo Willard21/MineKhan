@@ -206,10 +206,10 @@ class Chunk {
 			}
 		}
 	}
-	optimize() {
+	optimize(screen) {
 		const { world } = this
 		for (let i = 0; i < this.sections.length; i++) {
-			this.sections[i].optimize()
+			this.sections[i].optimize(screen)
 		}
 		if (!world.meshQueue.includes(this)) {
 			world.meshQueue.push(this)
@@ -228,11 +228,11 @@ class Chunk {
 			glExtensions.vertex_array_object.bindVertexArrayOES(null)
 		}
 	}
-	updateBlock(x, y, z, world, lazy) {
+	updateBlock(x, y, z, world, lazy, screen) {
 		if (this.buffer) {
 			this.lazy = lazy
 			if (this.sections.length > y >> 4) {
-				this.sections[y >> 4].updateBlock(x, y & 15, z, world)
+				this.sections[y >> 4].updateBlock(x, y & 15, z, world, screen)
 			}
 		}
 	}

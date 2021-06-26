@@ -2052,7 +2052,7 @@ async function MineKhan() {
 		updateBlock(x, y, z, lazy) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
-				chunk.updateBlock(x & 15, y, z & 15, this, lazy)
+				chunk.updateBlock(x & 15, y, z & 15, this, lazy, screen)
 			}
 		}
 		getChunk(x, z) {
@@ -2121,36 +2121,36 @@ async function MineKhan() {
 
 			//Update the 6 adjacent blocks and 1 changed block
 			if (xm && xm !== 15 && zm && zm !== 15) {
-				chunk.updateBlock(xm - 1, y, zm, this, lazy)
-				chunk.updateBlock(xm + 1, y, zm, this, lazy)
-				chunk.updateBlock(xm, y - 1, zm, this, lazy)
-				chunk.updateBlock(xm, y + 1, zm, this, lazy)
-				chunk.updateBlock(xm, y, zm - 1, this, lazy)
-				chunk.updateBlock(xm, y, zm + 1, this, lazy)
+				chunk.updateBlock(xm - 1, y, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y - 1, zm, this, lazy, screen)
+				chunk.updateBlock(xm + 1, y, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y + 1, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y, zm - 1, this, lazy, screen)
+				chunk.updateBlock(xm, y, zm + 1, this, lazy, screen)
 			}
 			else {
-				this.updateBlock(x - 1, y, z, lazy)
-				this.updateBlock(x + 1, y, z, lazy)
-				this.updateBlock(x, y - 1, z, lazy)
-				this.updateBlock(x, y + 1, z, lazy)
-				this.updateBlock(x, y, z - 1, lazy)
-				this.updateBlock(x, y, z + 1, lazy)
+				this.updateBlock(x - 1, y, z, lazy, screen)
+				this.updateBlock(x + 1, y, z, lazy, screen)
+				this.updateBlock(x, y - 1, z, lazy, screen)
+				this.updateBlock(x, y + 1, z, lazy, screen)
+				this.updateBlock(x, y, z - 1, lazy, screen)
+				this.updateBlock(x, y, z + 1, lazy, screen)
 			}
 
-			chunk.updateBlock(xm, y, zm, this, lazy)
+			chunk.updateBlock(xm, y, zm, this, lazy, screen)
 
 			// Update the corner chunks so shadows in adjacent chunks update correctly
 			if (xm | zm === 0) {
-				this.updateBlock(x - 1, y, z - 1, lazy);
+				this.updateBlock(x - 1, y, z - 1, lazy, screen);
 			}
 			if (xm === 15 && zm === 0) {
-				this.updateBlock(x + 1, y, z - 1, lazy);
+				this.updateBlock(x + 1, y, z - 1, lazy, screen);
 			}
 			if (xm === 0 && zm === 15) {
-				this.updateBlock(x - 1, y, z + 1, lazy);
+				this.updateBlock(x - 1, y, z + 1, lazy, screen);
 			}
 			if (xm & zm === 15) {
-				this.updateBlock(x + 1, y, z + 1, lazy);
+				this.updateBlock(x + 1, y, z + 1, lazy, screen);
 			}
 		}
 		getLight(x, y, z, blockLight = 0) {
@@ -2373,7 +2373,7 @@ async function MineKhan() {
 						// The requirements haven't been filled yet; don't do anything else.
 					}
 					else if (!chunk.optimized) {
-						chunk.optimize(this)
+						chunk.optimize(screen)
 						debug("Optimize")
 					}
 					else if (!chunk.buffer) {
@@ -6658,7 +6658,7 @@ function carveSphere(x, y, z, world) {
  * @param {function} func - The function that can be called to return a block from the blocks collection
  * @param {World} world - the world
 */
-function hideFace(x, y, z, blocks, type, func, sourceDir, dir, world) {
+function hideFace(x, y, z, blocks, type, func, sourceDir, dir, world, screen) {
 	let block = func.call(world, x, y, z, blocks)
 	if (!block) {
 		return 1
@@ -6983,7 +6983,7 @@ class Section {
 		let s = this.size
 		this.blocks[x * s * s + y * s + z] = 0
 	}
-	optimize() {
+	optimize(screen) {
 		const { world } = this
 		let visible = false
 		let pos = 0
@@ -7014,12 +7014,12 @@ class Section {
 						palleteIndex = this.palleteMap[blockState]
 					}
 
-					visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east", world)
-					| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west", world) << 1
-					| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top", world) << 2
-					| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom", world) << 3
-					| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north", world) << 4
-					| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south", world) << 5
+					visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east", world, screen)
+					| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west", world, screen) << 1
+					| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top", world, screen) << 2
+					| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom", world, screen) << 3
+					| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north", world, screen) << 4
+					| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south", world, screen) << 5
 					if (visible) {
 						pos = (i | j << 4 | k << 8) << 19
 						this.renderData[this.renderLength++] = 1 << 31 | pos | visible << 13 | palleteIndex
@@ -7029,7 +7029,7 @@ class Section {
 			}
 		}
 	}
-	updateBlock(x, y, z, world) {
+	updateBlock(x, y, z, world, screen) {
 		if (!world.meshQueue.includes(this.chunk)) {
 			world.meshQueue.push(this.chunk)
 		}
@@ -7041,12 +7041,12 @@ class Section {
 		y += this.y
 		z += this.z
 		let blockState = this.blocks[i * s * s + j * s + k]
-		let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east", world)
-		| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west", world) << 1
-		| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top", world) << 2
-		| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom", world) << 3
-		| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north", world) << 4
-		| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south", world) << 5
+		let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east", world, screen)
+		| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west", world, screen) << 1
+		| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top", world, screen) << 2
+		| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom", world, screen) << 3
+		| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north", world, screen) << 4
+		| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south", world, screen) << 5
 		let pos = (i | j << 4 | k << 8) << 19
 		let index = -1
 
@@ -7470,10 +7470,10 @@ class Chunk {
 			}
 		}
 	}
-	optimize() {
+	optimize(screen) {
 		const { world } = this
 		for (let i = 0; i < this.sections.length; i++) {
-			this.sections[i].optimize()
+			this.sections[i].optimize(screen)
 		}
 		if (!world.meshQueue.includes(this)) {
 			world.meshQueue.push(this)
@@ -7492,11 +7492,11 @@ class Chunk {
 			glExtensions.vertex_array_object.bindVertexArrayOES(null)
 		}
 	}
-	updateBlock(x, y, z, world, lazy) {
+	updateBlock(x, y, z, world, lazy, screen) {
 		if (this.buffer) {
 			this.lazy = lazy
 			if (this.sections.length > y >> 4) {
-				this.sections[y >> 4].updateBlock(x, y & 15, z, world)
+				this.sections[y >> 4].updateBlock(x, y & 15, z, world, screen)
 			}
 		}
 	}

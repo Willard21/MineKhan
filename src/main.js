@@ -1823,7 +1823,7 @@ async function MineKhan() {
 		updateBlock(x, y, z, lazy) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
-				chunk.updateBlock(x & 15, y, z & 15, this, lazy)
+				chunk.updateBlock(x & 15, y, z & 15, this, lazy, screen)
 			}
 		}
 		getChunk(x, z) {
@@ -1892,36 +1892,36 @@ async function MineKhan() {
 
 			//Update the 6 adjacent blocks and 1 changed block
 			if (xm && xm !== 15 && zm && zm !== 15) {
-				chunk.updateBlock(xm - 1, y, zm, this, lazy)
-				chunk.updateBlock(xm + 1, y, zm, this, lazy)
-				chunk.updateBlock(xm, y - 1, zm, this, lazy)
-				chunk.updateBlock(xm, y + 1, zm, this, lazy)
-				chunk.updateBlock(xm, y, zm - 1, this, lazy)
-				chunk.updateBlock(xm, y, zm + 1, this, lazy)
+				chunk.updateBlock(xm - 1, y, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y - 1, zm, this, lazy, screen)
+				chunk.updateBlock(xm + 1, y, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y + 1, zm, this, lazy, screen)
+				chunk.updateBlock(xm, y, zm - 1, this, lazy, screen)
+				chunk.updateBlock(xm, y, zm + 1, this, lazy, screen)
 			}
 			else {
-				this.updateBlock(x - 1, y, z, lazy)
-				this.updateBlock(x + 1, y, z, lazy)
-				this.updateBlock(x, y - 1, z, lazy)
-				this.updateBlock(x, y + 1, z, lazy)
-				this.updateBlock(x, y, z - 1, lazy)
-				this.updateBlock(x, y, z + 1, lazy)
+				this.updateBlock(x - 1, y, z, lazy, screen)
+				this.updateBlock(x + 1, y, z, lazy, screen)
+				this.updateBlock(x, y - 1, z, lazy, screen)
+				this.updateBlock(x, y + 1, z, lazy, screen)
+				this.updateBlock(x, y, z - 1, lazy, screen)
+				this.updateBlock(x, y, z + 1, lazy, screen)
 			}
 
-			chunk.updateBlock(xm, y, zm, this, lazy)
+			chunk.updateBlock(xm, y, zm, this, lazy, screen)
 
 			// Update the corner chunks so shadows in adjacent chunks update correctly
 			if (xm | zm === 0) {
-				this.updateBlock(x - 1, y, z - 1, lazy);
+				this.updateBlock(x - 1, y, z - 1, lazy, screen);
 			}
 			if (xm === 15 && zm === 0) {
-				this.updateBlock(x + 1, y, z - 1, lazy);
+				this.updateBlock(x + 1, y, z - 1, lazy, screen);
 			}
 			if (xm === 0 && zm === 15) {
-				this.updateBlock(x - 1, y, z + 1, lazy);
+				this.updateBlock(x - 1, y, z + 1, lazy, screen);
 			}
 			if (xm & zm === 15) {
-				this.updateBlock(x + 1, y, z + 1, lazy);
+				this.updateBlock(x + 1, y, z + 1, lazy, screen);
 			}
 		}
 		getLight(x, y, z, blockLight = 0) {
@@ -2144,7 +2144,7 @@ async function MineKhan() {
 						// The requirements haven't been filled yet; don't do anything else.
 					}
 					else if (!chunk.optimized) {
-						chunk.optimize(this)
+						chunk.optimize(screen)
 						debug("Optimize")
 					}
 					else if (!chunk.buffer) {

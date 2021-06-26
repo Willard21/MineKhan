@@ -59,7 +59,7 @@ function carveSphere(x, y, z, world) {
  * @param {function} func - The function that can be called to return a block from the blocks collection
  * @param {World} world - the world
 */
-function hideFace(x, y, z, blocks, type, func, sourceDir, dir, world) {
+function hideFace(x, y, z, blocks, type, func, sourceDir, dir, world, screen) {
 	let block = func.call(world, x, y, z, blocks)
 	if (!block) {
 		return 1
@@ -384,7 +384,7 @@ class Section {
 		let s = this.size
 		this.blocks[x * s * s + y * s + z] = 0
 	}
-	optimize() {
+	optimize(screen) {
 		const { world } = this
 		let visible = false
 		let pos = 0
@@ -415,12 +415,12 @@ class Section {
 						palleteIndex = this.palleteMap[blockState]
 					}
 
-					visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east", world)
-					| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west", world) << 1
-					| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top", world) << 2
-					| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom", world) << 3
-					| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north", world) << 4
-					| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south", world) << 5
+					visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east", world, screen)
+					| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west", world, screen) << 1
+					| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top", world, screen) << 2
+					| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom", world, screen) << 3
+					| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north", world, screen) << 4
+					| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south", world, screen) << 5
 					if (visible) {
 						pos = (i | j << 4 | k << 8) << 19
 						this.renderData[this.renderLength++] = 1 << 31 | pos | visible << 13 | palleteIndex
@@ -430,7 +430,7 @@ class Section {
 			}
 		}
 	}
-	updateBlock(x, y, z, world) {
+	updateBlock(x, y, z, world, screen) {
 		if (!world.meshQueue.includes(this.chunk)) {
 			world.meshQueue.push(this.chunk)
 		}
@@ -442,12 +442,12 @@ class Section {
 		y += this.y
 		z += this.z
 		let blockState = this.blocks[i * s * s + j * s + k]
-		let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east", world)
-		| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west", world) << 1
-		| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top", world) << 2
-		| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom", world) << 3
-		| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north", world) << 4
-		| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south", world) << 5
+		let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east", world, screen)
+		| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west", world, screen) << 1
+		| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top", world, screen) << 2
+		| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom", world, screen) << 3
+		| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north", world, screen) << 4
+		| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south", world, screen) << 5
 		let pos = (i | j << 4 | k << 8) << 19
 		let index = -1
 
