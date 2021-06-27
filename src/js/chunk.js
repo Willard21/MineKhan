@@ -5,7 +5,7 @@ import { Section } from "./section.js"
 const { floor, min, max } = Math;
 
 class Chunk {
-	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves, trees) {
+	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
@@ -27,7 +27,6 @@ class Chunk {
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
-		this.tress = trees
 	}
 	getBlock(x, y, z) {
 		let s = y >> 4
@@ -260,7 +259,7 @@ class Chunk {
 			}
 		}
 	}
-	populate() {
+	populate(trees) {
 		const { world } = this
 		randomSeed(hash(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
@@ -271,7 +270,7 @@ class Chunk {
 				wz = this.z + k
 
 				ground = this.tops[k * 16 + i]
-				if (this.trees && random() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
+				if (trees && random() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
 
 					top = ground + floor(4.5 + random(2.5))
 					rand = floor(random(4096))
