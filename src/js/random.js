@@ -70,7 +70,7 @@ class Marsaglia {
 	}
 }
 
-// The noise and random functions are copied from the processing.js source code; these others are polyfills made by me to avoid needing to remove all the pjs draw calls
+// The noise and random functions are copied from the processing.js source code
 
 const {
 	randomSeed,
@@ -253,30 +253,29 @@ class PerlinNoise {
 		if (seed === undefined) {
 			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`");
 		}
+		// console.log("New noise generator with seed", seed)
 
-		const rnd = new Marsaglia(seed);
-
-		// permutation
-		this.perm = new Uint8Array(0x200);
+		const rnd = new Marsaglia(seed)
 
 		// generate permutation
-		const { perm } = this;
+		const perm = new Uint8Array(0x200)
+		this.perm = perm
 
 		// fill 0x0..0x100
 		for (let i = 0; i < 0x100; ++i) {
-			perm[i] = i;
+			perm[i] = i
 		}
 
 		for (let i = 0; i < 0x100; ++i) {
-			const j = rnd.nextInt() & 0xFF;
-			const t = perm[j];
-			perm[j] = perm[i];
-			perm[i] = t;
+			const j = rnd.nextInt() & 0xFF
+			const t = perm[j]
+			perm[j] = perm[i]
+			perm[i] = t
 		}
 
 		// copy to avoid taking mod in perm[0]
 		// copies from first half of array, into the second half
-		perm.copyWithin(0x100, 0x0, 0x100);
+		perm.copyWithin(0x100, 0x0, 0x100)
 	}
 }
 

@@ -8,11 +8,14 @@ import fragmentShaderSrc2D from './shaders/2dFragmentShader.glsl'
 import vertexShaderSrcEntity from './shaders/entityVertexShader.glsl'
 import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 
+// Import Worker code
+import workerCode from './js/Worker.jsw'
+
 // import css
 import './index.css';
 
 // imports
-import { seedHash, randomSeed, openSimplexNoise, noiseProfile } from "./js/random.js";
+import { seedHash, randomSeed, noiseProfile } from "./js/random.js";
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js";
 import { timeString, roundBits, compareArr } from "./js/utils.js";
 import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js";
@@ -20,7 +23,7 @@ import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB
 import { shapes } from "./js/shapes.js"
 import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
 import { initTextures, textureMap, textureCoords } from './js/texture.js';
-import { noiseSettings, fullSection, emptySection } from "./js/section.js"
+import { fullSection, emptySection } from "./js/section.js"
 import { Chunk } from "./js/chunk.js"
 import { Item } from './js/item.js';
 import { Player } from "./js/player.js"
@@ -65,8 +68,49 @@ async function MineKhan() {
 		return hash;
 	}
 
+	// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
+	const workerURL = window.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+	window.workers = []
+	window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
+	let jobId = 1
+	const pendingJobs = new Map()
+	for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
+		let worker = new Worker(workerURL)
+		worker.onmessage = e => {
+			let [promise, resolve] = pendingJobs.get(e.data.jobId)
+			resolve(e.data)
+			pendingJobs.delete(e.data.jobId)
+			window.workers.push(worker)
+			window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
+		}
+		window.workers.push(worker)
+	}
+
+	window.doWork = function(data) {
+		let job = []
+		let promise = new Promise(resolve => {
+			let id = jobId++
+			data.jobId = id
+			job[1] = resolve
+			pendingJobs.set(id, job)
+			window.workers.shift().postMessage(data)
+		})
+		job[0] = promise
+		window.pendingWorkers.push(promise)
+		return promise
+	}
+
 	let world;
 	let worldSeed;
+
+	function setSeed(seed) {
+		worldSeed = seed
+		noiseProfile.noiseSeed(seed)
+		seedHash(seed)
+		while(window.workers.length) {
+			window.doWork({ seed })
+		}
+	}
 
 	let fill = function(r, g, b) {
 		if (g === undefined) {
@@ -2066,8 +2110,7 @@ async function MineKhan() {
 				chunk.setBlock(x & 15, y, z & 15, blockID)
 			}
 		}
-		tick() {
-			let tickStart = performance.now()
+		async tick() {
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
 			let maxChunkZ = (p.z >> 4) + settings.renderDistance
 			let chunk = maxChunkX + "," + maxChunkZ
@@ -2096,8 +2139,13 @@ async function MineKhan() {
 				}
 			}
 
-			do {
-				let doneWork = false
+			// Make sure there's only 1 "world gen" loop running at a time
+			if (this.ticking) return
+			this.ticking = true
+
+			let doneWork = true
+			while(doneWork) {
+				doneWork = false
 				debug.start = performance.now()
 				if (this.meshQueue.length) {
 					// Update all chunk meshes.
@@ -2113,10 +2161,11 @@ async function MineKhan() {
 					this.genChunk(chunk)
 					doneWork = true
 				}
+
 				if (this.populateQueue.length && !doneWork) {
 					let chunk = this.populateQueue[this.populateQueue.length - 1]
 					if (!chunk.caves) {
-						chunk.carveCaves()
+						await chunk.carveCaves()
 						debug("Carve caves")
 					}
 					else if (!chunk.populated) {
@@ -2129,10 +2178,8 @@ async function MineKhan() {
 				if (this.loadQueue.length && !doneWork) {
 					this.loadQueue.pop().load()
 					doneWork = true
-					if (!this.loadQueue.length) {
-						return
-					}
 				}
+
 				if (this.lightingQueue.length && !doneWork) {
 					this.lightingQueue.pop().fillLight()
 					doneWork = true
@@ -2157,10 +2204,10 @@ async function MineKhan() {
 					}
 					doneWork = true
 				}
-				if (!doneWork) {
-					break
-				}
-			} while(performance.now() - tickStart < 5)
+
+				await Promise.resolve() // Yield the main thread to render passes
+			}
+			this.ticking = false
 		}
 		render() {
 			initModelView(p)
@@ -2346,10 +2393,7 @@ async function MineKhan() {
 			}
 
 			this.name = data.shift()
-			worldSeed = parseInt(data.shift(), 36)
-			seedHash(worldSeed)
-			noiseSettings.caveNoise = openSimplexNoise(worldSeed)
-			noiseProfile.noiseSeed(worldSeed)
+			setSeed(parseInt(data.shift(), 36))
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -2391,14 +2435,11 @@ async function MineKhan() {
 			}
 		}
 		loadOldSave(str) {
-			let data = str.split(";");
-			worldSeed = parseInt(data.shift(), 36);
+			let data = str.split(";")
+			setSeed(parseInt(data.shift(), 36))
 			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
-			seedHash(worldSeed);
-			noiseSettings.caveNoise = openSimplexNoise(worldSeed);
-			noiseProfile.noiseSeed(worldSeed);
-			let playerData = data.shift().split(",");
+			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36);
 			p.y = parseInt(playerData[1], 36);
 			p.z = parseInt(playerData[2], 36);
@@ -4004,10 +4045,7 @@ async function MineKhan() {
 	function initEverything() {
 		console.log("Initializing world.")
 
-		worldSeed = Math.random() * 2000000000 | 0
-		seedHash(worldSeed)
-		noiseSettings.caveNoise = openSimplexNoise(worldSeed)
-		noiseProfile.noiseSeed(worldSeed)
+		setSeed(Math.random() * 2000000000 | 0)
 
 		generatedChunks = 0
 

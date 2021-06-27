@@ -27,19 +27,6 @@ let sphere;
 	sphere = new Int8Array(blocks)
 }
 
-function isCave(x, y, z) {
-	// Generate a 3D rigid multifractal noise shell.
-	// Then generate another one with different coordinates.
-	// Overlay them on top of each other, and the overlapping parts should form a cave-like structure.
-	// This is extremely slow, and requires generating 2 noise values for every single block in the world.
-	// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
-	let smooth = 0.02
-	let caveSize = 0.0055
-	let cave1 = abs(0.5 - noiseSettings.caveNoise(x * smooth, y * smooth, z * smooth)) < caveSize
-	let cave2 = abs(0.5 - noiseSettings.caveNoise(y * smooth, z * smooth, x * smooth)) < caveSize
-	return cave1 && cave2
-}
-
 function carveSphere(x, y, z, world) {
 	if (y > 3) {
 		for (let i = 0; i < sphere.length; i += 3) {
@@ -582,15 +569,28 @@ class Section {
 		}
 		return index
 	}
-	carveCaves() {
+	async carveCaves() {
 		const { world } = this
-		let wx = this.x + 16, wz = this.z + 16, wy = this.y + 16
-		for (let x = this.x, xx = 0; x < wx; x++, xx++) {
-			for (let z = this.z, zz = 0; z < wz; z++, zz++) {
-				wy = this.chunk.tops[zz * 16 + xx]
-				for (let y = this.y; y < wy; y++) {
-					if (isCave(x, y, z)) {
-						carveSphere(x, y, z, world)
+		while (!window.workers.length) {
+			await Promise.race(window.pendingWorkers)
+		}
+		const data = await window.doWork({
+			caves: true,
+			x: this.x,
+			y: this.y,
+			z: this.z
+		})
+		const caves = data.caves
+
+		let sx = this.x, sy = this.y, sz = this.z
+		let cy = 0
+		for (let x = 0; x < 16; x++) {
+			for (let z = 0; z < 16; z++) {
+				cy = this.chunk.tops[z * 16 + x]
+				cy = cy > sy + 15 ? 16 : cy & 15
+				for (let y = 0; y < cy; y++) {
+					if (caves[x * 256 + y * 16 + z]) {
+						carveSphere(sx + x, sy + y, sz + z, world)
 					}
 				}
 			}

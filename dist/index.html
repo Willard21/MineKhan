@@ -214,19 +214,20 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
 /* harmony import */ var _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
 /* harmony import */ var _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6);
-/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
-/* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
-/* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
-/* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
-/* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
-/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
-/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
-/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
-/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(18);
-/* harmony import */ var _js_section_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(19);
-/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
-/* harmony import */ var _js_item_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
-/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(23);
+/* harmony import */ var _js_Worker_jsw__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
+/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(8);
+/* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
+/* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
+/* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
+/* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
+/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
+/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
+/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(18);
+/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(19);
+/* harmony import */ var _js_section_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
+/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
+/* harmony import */ var _js_item_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(22);
+/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(24);
 
 
 // GLSL Shader code
@@ -235,6 +236,9 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+
+// Import Worker code
 
 
 // import css
@@ -254,7 +258,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"]
+window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"]
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
 window.savebox = document.getElementById("savebox")
@@ -294,8 +298,49 @@ async function MineKhan() {
 		return hash;
 	}
 
+	// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
+	const workerURL = window.URL.createObjectURL(new Blob([_js_Worker_jsw__WEBPACK_IMPORTED_MODULE_6__["default"]], { type: "text/javascript" }))
+	window.workers = []
+	window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
+	let jobId = 1
+	const pendingJobs = new Map()
+	for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
+		let worker = new Worker(workerURL)
+		worker.onmessage = e => {
+			let [promise, resolve] = pendingJobs.get(e.data.jobId)
+			resolve(e.data)
+			pendingJobs.delete(e.data.jobId)
+			window.workers.push(worker)
+			window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
+		}
+		window.workers.push(worker)
+	}
+
+	window.doWork = function(data) {
+		let job = []
+		let promise = new Promise(resolve => {
+			let id = jobId++
+			data.jobId = id
+			job[1] = resolve
+			pendingJobs.set(id, job)
+			window.workers.shift().postMessage(data)
+		})
+		job[0] = promise
+		window.pendingWorkers.push(promise)
+		return promise
+	}
+
 	let world;
 	let worldSeed;
+
+	function setSeed(seed) {
+		worldSeed = seed
+		_js_random_js__WEBPACK_IMPORTED_MODULE_8__["noiseProfile"].noiseSeed(seed)
+		Object(_js_random_js__WEBPACK_IMPORTED_MODULE_8__["seedHash"])(seed)
+		while(window.workers.length) {
+			window.doWork({ seed })
+		}
+	}
 
 	let fill = function(r, g, b) {
 		if (g === undefined) {
@@ -335,10 +380,10 @@ async function MineKhan() {
 	let cursor = function(type) {
 		canvas.style.cursor = type
 	}
-	Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["randomSeed"])(Math.random() * 10000000 | 0)
+	Object(_js_random_js__WEBPACK_IMPORTED_MODULE_8__["randomSeed"])(Math.random() * 10000000 | 0)
 
 	function save() {
-		Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["saveToDB"])(world.id, {
+		Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["saveToDB"])(world.id, {
 			id: world.id,
 			edited: now,
 			name: world.name,
@@ -348,10 +393,10 @@ async function MineKhan() {
 	}
 
 	// Expose these functions to the global scope for debugging
-	win.saveToDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["saveToDB"]
-	win.loadFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["loadFromDB"]
-	win.createDatabase = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["createDatabase"]
-	win.deleteFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["deleteFromDB"]
+	win.saveToDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["saveToDB"]
+	win.loadFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["loadFromDB"]
+	win.createDatabase = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["createDatabase"]
+	win.deleteFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["deleteFromDB"]
 
 	//globals
 	//{
@@ -362,8 +407,8 @@ async function MineKhan() {
 	let trees = true
 	let caves = true
 
-	win.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"]
-	win.blockIds = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"]
+	win.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"]
+	win.blockIds = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"]
 
 	// Configurable and savable settings
 	let settings = {
@@ -484,7 +529,7 @@ async function MineKhan() {
 	let previousScreen = screen
 	function changeScene(newScene) {
 		if (screen === "options") {
-			Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["saveToDB"])("settings", settings).catch(e => console.error(e))
+			Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["saveToDB"])("settings", settings).catch(e => console.error(e))
 		}
 
 		if (html[screen] && html[screen].exit) {
@@ -522,7 +567,7 @@ async function MineKhan() {
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
-	let vec1 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](), vec2 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](), vec3 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"]()
+	let vec1 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["PVector"](), vec2 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["PVector"](), vec3 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["PVector"]()
 	let move = {
 		x: 0,
 		y: 0,
@@ -572,7 +617,7 @@ async function MineKhan() {
 
 	let program3D, program2D, programEntity
 
-	win.shapes = _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"]
+	win.shapes = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"]
 
 	function initShapes() {
 		function mapCoords(rect, face) {
@@ -606,7 +651,7 @@ async function MineKhan() {
 					break
 			}
 			pos = pos.map(c => c / 16 - 0.5)
-			let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["compareArr"])(pos, [])
+			let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["compareArr"])(pos, [])
 			pos.max = minmax.splice(3, 3)
 			pos.min = minmax
 			tex = tex.map(c => c / 16 / 16)
@@ -650,7 +695,7 @@ async function MineKhan() {
 						tex[i][j].unshift(...tex[i][j].splice(-2, 2))
 					}
 
-					let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["compareArr"])(c, [])
+					let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["compareArr"])(c, [])
 					c.max = minmax.splice(3, 3)
 					c.min = minmax
 				}
@@ -712,7 +757,7 @@ async function MineKhan() {
 						c[k + 1] = -face[k + 1]
 						c[k + 2] = face[k]
 					}
-					let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["compareArr"])(c, [])
+					let minmax = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["compareArr"])(c, [])
 					c.max = minmax.splice(3, 3)
 					c.min = minmax
 
@@ -752,8 +797,8 @@ async function MineKhan() {
 			}
 		}
 
-		for (let shape in _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"]) {
-			let obj = _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"][shape]
+		for (let shape in _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"]) {
+			let obj = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"][shape]
 			let verts = obj.verts
 
 			// Populate the vertex coordinates
@@ -794,24 +839,24 @@ async function MineKhan() {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 		}
 
-		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
-			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i]
+		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["BLOCK_COUNT"]; i++) {
+			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i]
 			let slabBlock = Object.create(baseBlock)
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
-			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"].slab
-			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"].cube
-			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"].stair
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | SLAB] = slabBlock
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | STAIR] = stairBlock
+			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"].slab
+			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"].cube
+			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"].stair
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i | SLAB] = slabBlock
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i | STAIR] = stairBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | SLAB | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i | SLAB | j << 10] = block
 				}
 			}
 			v = stairBlock.shape.varients
@@ -820,7 +865,7 @@ async function MineKhan() {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i | STAIR | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i | STAIR | j << 10] = block
 				}
 			}
 		}
@@ -870,18 +915,18 @@ async function MineKhan() {
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
 		let scale = 0.16 / height * inventory.size
-		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["BLOCK_COUNT"]; i++) {
 			let data = []
-			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][i]
+			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][i]
 			if (block.icon) {
-				block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"][block.icon]]
+				block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"][block.icon]]
 			}
 			for (let j = 11; j >= 0; j--) {
 				data.push(-hexagonVerts[j * 3 + 0] * scale)
 				data.push(hexagonVerts[j * 3 + 1] * scale)
 				data.push(0.1666666)
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"][block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"][block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"][block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"][block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
 			}
 			let buffer = gl.createBuffer()
@@ -892,7 +937,7 @@ async function MineKhan() {
 
 			data = []
 			for (let j = 11; j >= 0; j--) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"][block.textures[texOrder[floor(j / 4)]]]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"][block.textures[texOrder[floor(j / 4)]]]]
 
 				data.push(-slabIconVerts[j * 3 + 0] * scale)
 				data.push(slabIconVerts[j * 3 + 1] * scale)
@@ -911,7 +956,7 @@ async function MineKhan() {
 			let v = stairIconVerts
 			for (let j = 23; j >= 0; j--) {
 				let num = floor(j / 8)
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"][block.textures[texOrder[num]]]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"][_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"][block.textures[texOrder[num]]]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scale)
@@ -937,7 +982,7 @@ async function MineKhan() {
 	let projection = new Float32Array(16)
 	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
-	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
+	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["Matrix"]([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
 		constructor() {
 			this.x = 0
@@ -951,11 +996,11 @@ async function MineKhan() {
 			this.step = 0
 			this.lastStep = 0
 			this.projection = new Float32Array(5)
-			this.transformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Matrix"]()
+			this.transformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["Matrix"]()
 			this.direction = { x: 1, y: 0, z: 0 }; // Normalized direction vector
 			this.frustum = [] // The 5 planes of the viewing frustum (there's no far plane)
 			for (let i = 0; i < 5; i++) {
-				this.frustum.push(new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["Plane"](1, 0, 0))
+				this.frustum.push(new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["Plane"](1, 0, 0))
 			}
 		}
 		FOV(fov, time) {
@@ -1038,7 +1083,7 @@ async function MineKhan() {
 			let Y = vec2
 			Y.set(dir)
 			Y.mult(-1)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(Y, X, Y)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["cross"])(Y, X, Y)
 
 			//Near plane
 			this.frustum[0].set(dir.x, dir.y, dir.z)
@@ -1048,28 +1093,28 @@ async function MineKhan() {
 			aux.mult(this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(aux, X, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["cross"])(aux, X, aux)
 			this.frustum[1].set(aux.x, aux.y, aux.z)
 
 			aux.set(Y)
 			aux.mult(-this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(X, aux, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["cross"])(X, aux, aux)
 			this.frustum[2].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(-this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(aux, Y, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["cross"])(aux, Y, aux)
 			this.frustum[3].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["cross"])(Y, aux, aux)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["cross"])(Y, aux, aux)
 			this.frustum[4].set(aux.x, aux.y, aux.z)
 		}
 		canSee(x, y, z, maxY) {
@@ -1130,16 +1175,16 @@ async function MineKhan() {
 	function initModelView(camera, x, y, z, rx, ry) {
 		if (camera) {
 			camera.transform()
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["copyArr"])(defaultModelView, modelView)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["rotX"])(modelView, rx)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["rotY"])(modelView, ry)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, -x, -y, -z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["copyArr"])(defaultModelView, modelView)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["rotX"])(modelView, rx)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["rotY"])(modelView, ry)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["trans"])(modelView, -x, -y, -z)
 			matMult()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["transpose"])(matrix)
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, matrix)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["transpose"])(matrix)
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, matrix)
 		}
 	}
 
@@ -1231,13 +1276,13 @@ async function MineKhan() {
 	function runRayTrace(x, y, z) {
 		let block = world.getBlock(x, y, z)
 		if (block) {
-			let rt = rayTrace(x, y, z, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape)
+			let rt = rayTrace(x, y, z, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][block].shape)
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0]
 				hitBox.face = rt[1]
 				hitBox.pos = [x, y, z]
-				hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape
+				hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][block].shape
 			}
 		}
 	}
@@ -1253,7 +1298,7 @@ async function MineKhan() {
 		if (blockState) {
 			hitBox.pos = [p2.x, p2.y, p2.z]
 			hitBox.closest = 0
-			hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockState].shape
+			hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][blockState].shape
 			return
 		}
 
@@ -1315,25 +1360,25 @@ async function MineKhan() {
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id
 	}
 	let onBox = function(x, y, z, w, h, d) {
-		let iy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(y - h/2 - p.topH)
-		let ih = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(h + p.bottomH + p.topH)
-		let ix = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(x - w/2 - p.w)
-		let iw = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(w + p.w*2)
-		let iz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(z - d/2 - p.w)
-		let id = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(d + p.w*2)
+		let iy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(y - h/2 - p.topH)
+		let ih = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(h + p.bottomH + p.topH)
+		let ix = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(x - w/2 - p.w)
+		let iw = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(w + p.w*2)
+		let iz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(z - d/2 - p.w)
+		let id = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(d + p.w*2)
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id
 	}
 	function collided(x, y, z, vx, vy, vz, block) {
 		if(p.spectator) {
 			return false
 		}
-		let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].shape.verts
-		let px = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.x - p.w - x)
-		let py = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.y - p.bottomH - y)
-		let pz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.z - p.w - z)
-		let pxx = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.x + p.w - x)
-		let pyy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.y + p.topH - y)
-		let pzz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["roundBits"])(p.z + p.w - z)
+		let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][block].shape.verts
+		let px = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.x - p.w - x)
+		let py = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.y - p.bottomH - y)
+		let pz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.z - p.w - z)
+		let pxx = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.x + p.w - x)
+		let pyy = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.y + p.topH - y)
+		let pzz = Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["roundBits"])(p.z + p.w - z)
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max
 
 		//Top and bottom faces
@@ -1448,7 +1493,7 @@ async function MineKhan() {
 			for (let y = pminY; y <= pmaxY; y++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
-					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][block].solid) {
+					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][block].solid) {
 						contacts.add(x, y, z, block)
 					}
 				}
@@ -1581,18 +1626,18 @@ async function MineKhan() {
 	function box2(sides, tex) {
 		if (blockFill) {
 			let i = 0
-			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["Block"]) {
-				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["Block"][side]) {
-					Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["vertexAttribPointer"])(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["Sides"][side]])
-					Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["vertexAttribPointer"])(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"][tex[i]]])
+			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["Block"]) {
+				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["Block"][side]) {
+					Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["vertexAttribPointer"])(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["Sides"][side]])
+					Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["vertexAttribPointer"])(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"][tex[i]]])
 					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
 				}
 				i++
 			}
 		}
 		if (blockOutlines) {
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["vertexAttribPointer"])(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["vertexAttribPointer"])(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureMap"].hitbox])
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["vertexAttribPointer"])(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["vertexAttribPointer"])(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureMap"].hitbox])
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 			}
@@ -1601,23 +1646,23 @@ async function MineKhan() {
 	function block2(x, y, z, t, camera) {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
 			//copyArr(modelView, matrix)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, x, y, z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["trans"])(modelView, x, y, z)
 			matMult()
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["trans"])(modelView, -x, -y, -z)
-			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["transpose"])(matrix)
-			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, matrix)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["trans"])(modelView, -x, -y, -z)
+			Object(_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["transpose"])(matrix)
+			Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["uniformMatrix"])(gl, glCache, "view3d", program3D, "uView", false, matrix)
 		}
-		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][t].textures)
+		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][t].shape
+			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][t].shape
 			if (t && shape.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
@@ -1895,7 +1940,7 @@ async function MineKhan() {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_18__["Player"](pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
+				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_19__["Player"](pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
@@ -1965,16 +2010,16 @@ async function MineKhan() {
 	let fogDist = 16
 	let frameCount = -3600
 
-	_js_section_js__WEBPACK_IMPORTED_MODULE_15__["emptySection"].setWorld(world);
-	_js_section_js__WEBPACK_IMPORTED_MODULE_15__["emptySection"].setCaves(caves);
-	_js_section_js__WEBPACK_IMPORTED_MODULE_15__["fullSection"].setWorld(world);
-	_js_section_js__WEBPACK_IMPORTED_MODULE_15__["fullSection"].setCaves(caves);
+	_js_section_js__WEBPACK_IMPORTED_MODULE_16__["emptySection"].setWorld(world);
+	_js_section_js__WEBPACK_IMPORTED_MODULE_16__["emptySection"].setCaves(caves);
+	_js_section_js__WEBPACK_IMPORTED_MODULE_16__["fullSection"].setWorld(world);
+	_js_section_js__WEBPACK_IMPORTED_MODULE_16__["fullSection"].setCaves(caves);
 
 	class World {
 		constructor() {
 			generatedChunks = 0
 			fogDist = 16
-			p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+			p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_8__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 
 			//Initialize the world's arrays
 			this.chunks = []
@@ -2007,17 +2052,17 @@ async function MineKhan() {
 			let gen = 0
 			for (let i = 0; i < 16; i++) {
 				for (let k = 0; k < 16; k++) {
-					gen = superflat ? 4 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
+					gen = superflat ? 4 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_8__["noiseProfile"].noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
 					chunk.tops[k * 16 + i] = gen
 
-					chunk.setBlock(i, gen, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].grass)
-					chunk.setBlock(i, gen - 1, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].dirt)
-					chunk.setBlock(i, gen - 2, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].dirt)
-					chunk.setBlock(i, gen - 3, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].dirt)
+					chunk.setBlock(i, gen, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].grass)
+					chunk.setBlock(i, gen - 1, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].dirt)
+					chunk.setBlock(i, gen - 2, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].dirt)
+					chunk.setBlock(i, gen - 3, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].dirt)
 					for (let j = 1; j < gen - 3; j++) {
-						chunk.setBlock(i, j, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].stone)
+						chunk.setBlock(i, j, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].stone)
 					}
-					chunk.setBlock(i, 0, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].bedrock)
+					chunk.setBlock(i, 0, k, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].bedrock)
 				}
 			}
 			chunk.generated = true
@@ -2035,14 +2080,14 @@ async function MineKhan() {
 				for (let y = minChunkY; y <= maxChunkY; y++) {
 					for (z = minChunkZ; z <= maxChunkZ; z++) {
 						if (y < 0) {
-							ret.push(lights ? _js_section_js__WEBPACK_IMPORTED_MODULE_15__["fullSection"].light : _js_section_js__WEBPACK_IMPORTED_MODULE_15__["fullSection"].blocks)
+							ret.push(lights ? _js_section_js__WEBPACK_IMPORTED_MODULE_16__["fullSection"].light : _js_section_js__WEBPACK_IMPORTED_MODULE_16__["fullSection"].blocks)
 						}
 						else if (this.chunks[x] && this.chunks[x][z]) {
-							section = this.chunks[x][z].sections[y] || _js_section_js__WEBPACK_IMPORTED_MODULE_15__["emptySection"]
+							section = this.chunks[x][z].sections[y] || _js_section_js__WEBPACK_IMPORTED_MODULE_16__["emptySection"]
 							ret.push(lights ? section.light : section.blocks)
 						}
 						else {
-							ret.push(lights ? _js_section_js__WEBPACK_IMPORTED_MODULE_15__["emptySection"].light : _js_section_js__WEBPACK_IMPORTED_MODULE_15__["emptySection"].blocks)
+							ret.push(lights ? _js_section_js__WEBPACK_IMPORTED_MODULE_16__["emptySection"].light : _js_section_js__WEBPACK_IMPORTED_MODULE_16__["emptySection"].blocks)
 						}
 					}
 				}
@@ -2062,7 +2107,7 @@ async function MineKhan() {
 		}
 		getWorldBlock(x, y, z) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].air
+				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].air
 			}
 			return this.chunks[x >> 4][z >> 4].getBlock(x & 15, y, z & 15)
 		}
@@ -2070,10 +2115,10 @@ async function MineKhan() {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
 			if (y > maxHeight) {
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].air
+				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].air
 			}
 			else if (y < 0) {
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockIds"].bedrock
+				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockIds"].bedrock
 			}
 			else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 				return this.getWorldBlock(x, y, z)
@@ -2095,13 +2140,13 @@ async function MineKhan() {
 			let zm = z & 15
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
-				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][blockID]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][blockID]
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, true, data.lightLevel)
 				}
 			}
 			else {
-				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(xm, y, zm)]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, false, data.lightLevel)
@@ -2186,7 +2231,7 @@ async function MineKhan() {
 			if (!place) { // Block was removed; increase light levels
 				if ((up & 15) === 15) {
 					for (let i = y; i > 0; i--) {
-						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 15)
 							spread.push(x, i, z)
 						}
@@ -2235,7 +2280,7 @@ async function MineKhan() {
 				// Sky light
 				if (center === 15) {
 					for (let i = y-1; i > 0; i--) {
-						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setLight(cx, i, cz, 0)
 							spread.push(x, i, z)
 						}
@@ -2284,7 +2329,7 @@ async function MineKhan() {
 			}
 			let chunk = this.chunks[chunkX][chunkZ]
 			if (!chunk) {
-				chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_16__["Chunk"](chunkX * 16, chunkZ * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
+				chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__["Chunk"](chunkX * 16, chunkZ * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
 				this.chunks[chunkX][chunkZ] = chunk
 			}
 			if (chunk.buffer) {
@@ -2295,8 +2340,7 @@ async function MineKhan() {
 				chunk.setBlock(x & 15, y, z & 15, blockID)
 			}
 		}
-		tick() {
-			let tickStart = performance.now()
+		async tick() {
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
 			let maxChunkZ = (p.z >> 4) + settings.renderDistance
 			let chunk = maxChunkX + "," + maxChunkZ
@@ -2325,8 +2369,13 @@ async function MineKhan() {
 				}
 			}
 
-			do {
-				let doneWork = false
+			// Make sure there's only 1 "world gen" loop running at a time
+			if (this.ticking) return
+			this.ticking = true
+
+			let doneWork = true
+			while(doneWork) {
+				doneWork = false
 				debug.start = performance.now()
 				if (this.meshQueue.length) {
 					// Update all chunk meshes.
@@ -2342,10 +2391,11 @@ async function MineKhan() {
 					this.genChunk(chunk)
 					doneWork = true
 				}
+
 				if (this.populateQueue.length && !doneWork) {
 					let chunk = this.populateQueue[this.populateQueue.length - 1]
 					if (!chunk.caves) {
-						chunk.carveCaves()
+						await chunk.carveCaves()
 						debug("Carve caves")
 					}
 					else if (!chunk.populated) {
@@ -2358,10 +2408,8 @@ async function MineKhan() {
 				if (this.loadQueue.length && !doneWork) {
 					this.loadQueue.pop().load()
 					doneWork = true
-					if (!this.loadQueue.length) {
-						return
-					}
 				}
+
 				if (this.lightingQueue.length && !doneWork) {
 					this.lightingQueue.pop().fillLight()
 					doneWork = true
@@ -2386,10 +2434,10 @@ async function MineKhan() {
 					}
 					doneWork = true
 				}
-				if (!doneWork) {
-					break
-				}
-			} while(performance.now() - tickStart < 5)
+
+				await Promise.resolve() // Yield the main thread to render passes
+			}
+			this.ticking = false
 		}
 		render() {
 			initModelView(p)
@@ -2491,7 +2539,7 @@ async function MineKhan() {
 						this.chunks[x] = []
 					}
 					if (!this.chunks[x][z]) {
-						chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_16__["Chunk"](x * 16, z * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
+						chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__["Chunk"](x * 16, z * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
 						if (maxDist(cx, cz, x, z) <= settings.renderDistance) {
 							this.chunkGenQueue.push(chunk)
 						}
@@ -2575,10 +2623,7 @@ async function MineKhan() {
 			}
 
 			this.name = data.shift()
-			worldSeed = parseInt(data.shift(), 36)
-			Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed)
-			_js_section_js__WEBPACK_IMPORTED_MODULE_15__["noiseSettings"].caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed)
-			_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed)
+			setSeed(parseInt(data.shift(), 36))
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -2620,14 +2665,11 @@ async function MineKhan() {
 			}
 		}
 		loadOldSave(str) {
-			let data = str.split(";");
-			worldSeed = parseInt(data.shift(), 36);
+			let data = str.split(";")
+			setSeed(parseInt(data.shift(), 36))
 			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
-			Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed);
-			_js_section_js__WEBPACK_IMPORTED_MODULE_15__["noiseSettings"].caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed);
-			_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed);
-			let playerData = data.shift().split(",");
+			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36);
 			p.y = parseInt(playerData[1], 36);
 			p.z = parseInt(playerData[2], 36);
@@ -3010,7 +3052,7 @@ async function MineKhan() {
 		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", () => changeScene("editworld"), () => selected() || !worlds[selectedWorld].edited)
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
 			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}?`)) {
-				Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["deleteFromDB"])(selectedWorld)
+				Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["deleteFromDB"])(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
 				selectedWorld = 0
@@ -3057,7 +3099,7 @@ async function MineKhan() {
 			let split = w.code.split(";")
 			split[0] = w.name
 			w.code = split.join(";")
-			Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["saveToDB"])(w.id, w).then(() => {
+			Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["saveToDB"])(w.id, w).then(() => {
 				initWorldsMenu()
 				changeScene("loadsave menu")
 			}).catch(e => console.error(e))
@@ -3067,7 +3109,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_9__["timeString"])(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${Object(_js_utils_js__WEBPACK_IMPORTED_MODULE_10__["timeString"])(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -3278,7 +3320,7 @@ async function MineKhan() {
 
 		//Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.lineWidth = 2
@@ -3290,7 +3332,7 @@ async function MineKhan() {
 		if (inventory.holding) {
 			drawIcon(mouseX, mouseY, inventory.holding)
 		}
-		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"]; i++) {
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["BLOCK_COUNT"]; i++) {
 			x = (i - 1) % perRow * s + 50
 			y = ((i - 1) / perRow | 0) * s + 50
 			drawIcon(x, y, i)
@@ -3313,7 +3355,7 @@ async function MineKhan() {
 			inventory.hotbar[overHot] = inventory.holding
 			inventory.holding = temp
 		}
-		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_10__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["BLOCK_COUNT"] - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			inventory.holding = over + 1
 		}
 		else {
@@ -3519,7 +3561,7 @@ async function MineKhan() {
 
 			if (Key.backspace) {
 				let d = p.direction
-				world.entities.push(new _js_item_js__WEBPACK_IMPORTED_MODULE_17__["Item"](p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
+				world.entities.push(new _js_item_js__WEBPACK_IMPORTED_MODULE_18__["Item"](p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
 			}
 
 			if(Number(k)) {
@@ -3714,9 +3756,9 @@ async function MineKhan() {
 		modelView = new Float32Array(16)
 		glCache = {}
 		win.glCache = glCache
-		program3D = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["createProgramObject"])(gl, _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
-		program2D = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["createProgramObject"])(gl, _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
-		programEntity = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_13__["createProgramObject"])(gl, _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
+		program3D = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["createProgramObject"])(gl, _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
+		program2D = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["createProgramObject"])(gl, _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
+		programEntity = Object(_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__["createProgramObject"])(gl, _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
 
 		gl.useProgram(program2D)
 		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
@@ -3745,23 +3787,23 @@ async function MineKhan() {
 		gl.uniform1f(glCache.uDist, 1000)
 
 		//Send the block textures to the GPU
-		Object(_js_texture_js__WEBPACK_IMPORTED_MODULE_14__["initTextures"])(gl, glCache)
+		Object(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["initTextures"])(gl, glCache)
 		genIcons()
 		initShapes()
 
 		// These buffers are only used for drawing the main menu blocks
 		sideEdgeBuffers = {}
-		for (let side in _js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"].cube.verts) {
+		for (let side in _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"].cube.verts) {
 			let edgeBuffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_js_shapes_js__WEBPACK_IMPORTED_MODULE_12__["shapes"].cube.verts[side][0]), gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_js_shapes_js__WEBPACK_IMPORTED_MODULE_13__["shapes"].cube.verts[side][0]), gl.STATIC_DRAW)
 			sideEdgeBuffers[side] = edgeBuffer
 		}
 		texCoordsBuffers = []
-		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"]) {
+		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"]) {
 			let buff = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buff)
-			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_14__["textureCoords"][t], gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_15__["textureCoords"][t], gl.STATIC_DRAW)
 			texCoordsBuffers.push(buff)
 		}
 
@@ -4071,12 +4113,12 @@ async function MineKhan() {
 	function initPlayer() {
 		p = new Camera()
 		p.speed = 0.075
-		p.velocity = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_8__["PVector"](0, 0, 0)
+		p.velocity = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__["PVector"](0, 0, 0)
 		p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
 		p.flySpeed = 2.5
 		p.x = 8
-		p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+		p.y = superflat ? 6 : round(_js_random_js__WEBPACK_IMPORTED_MODULE_8__["noiseProfile"].noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 		p.z = 8
 		p.previousX = 8
 		p.previousY = 70
@@ -4160,7 +4202,7 @@ async function MineKhan() {
 				console.error(e)
 			}
 		}
-		Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_11__["loadFromDB"])().then(res => {
+		Object(_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__["loadFromDB"])().then(res => {
 			if(res && res.length) {
 				let index = res.findIndex(obj => obj.id === "settings")
 				if (index >= 0) {
@@ -4233,10 +4275,7 @@ async function MineKhan() {
 	function initEverything() {
 		console.log("Initializing world.")
 
-		worldSeed = Math.random() * 2000000000 | 0
-		Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["seedHash"])(worldSeed)
-		_js_section_js__WEBPACK_IMPORTED_MODULE_15__["noiseSettings"].caveNoise = Object(_js_random_js__WEBPACK_IMPORTED_MODULE_7__["openSimplexNoise"])(worldSeed)
-		_js_random_js__WEBPACK_IMPORTED_MODULE_7__["noiseProfile"].noiseSeed(worldSeed)
+		setSeed(Math.random() * 2000000000 | 0)
 
 		generatedChunks = 0
 
@@ -4532,9 +4571,17 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony default export */ __webpack_exports__["default"] = ("function Worker() {\n\tconst { abs, floor } = Math\n\n\tfunction openSimplexNoise(clientSeed) {\n\t\tconst toNums = function(s) {\n\t\t\treturn s.split(\",\").map(function(s) {\n\t\t\t\treturn new Uint8Array(s.split(\"\").map(function(v) {\n\t\t\t\t\treturn Number(v)\n\t\t\t\t}))\n\t\t\t})\n\t\t}\n\t\tconst decode = function(m, r, s) {\n\t\t\treturn new Int8Array(s.split(\"\").map(function(v) {\n\t\t\t\treturn parseInt(v, r) + m\n\t\t\t}))\n\t\t}\n\t\tconst toNumsB32 = function(s) {\n\t\t\treturn s.split(\",\").map(function(s) {\n\t\t\t\treturn parseInt(s, 32)\n\t\t\t})\n\t\t}\n\t\tconst NORM_3D = 1.0 / 206.0\n\t\tconst SQUISH_3D = 1 / 3\n\t\tconst STRETCH_3D = -1 / 6\n\t\tvar base3D = toNums(\"0000110010101001,2110210120113111,110010101001211021012011\")\n\t\tconst gradients3D = decode(-11, 23, \"0ff7mf7fmmfffmfffm07f70f77mm7ff0ff7m0f77m77f0mf7fm7ff0077707770m77f07f70\")\n\t\tvar lookupPairs3D = function() {\n\t\t\treturn new Uint16Array(toNumsB32(\"0,2,1,1,2,2,5,1,6,0,7,0,10,2,12,2,41,1,45,1,50,5,51,5,g6,0,g7,0,h2,4,h6,4,k5,3,k7,3,l0,5,l1,5,l2,4,l5,3,l6,4,l7,3,l8,d,l9,d,la,c,ld,e,le,c,lf,e,m8,k,ma,i,p9,l,pd,n,q8,k,q9,l,15e,j,15f,m,16a,i,16e,j,19d,n,19f,m,1a8,f,1a9,h,1aa,f,1ad,h,1ae,g,1af,g,1ag,b,1ah,a,1ai,b,1al,a,1am,9,1an,9,1bg,b,1bi,b,1eh,a,1el,a,1fg,8,1fh,8,1qm,9,1qn,9,1ri,7,1rm,7,1ul,6,1un,6,1vg,8,1vh,8,1vi,7,1vl,6,1vm,7,1vn,6\"))\n\t\t}\n\t\tvar p3D = decode(-1, 5, \"112011210110211120110121102132212220132122202131222022243214231243124213241324123222113311221213131221123113311112202311112022311112220342223113342223311342223131322023113322023311320223113320223131322203311322203131\")\n\t\tconst setOf = function(count) {\n\t\t\tvar a = [], i = 0;\n\t\t\twhile (i < count) {\n\t\t\t\ta.push(i++)\n\t\t\t}\n\t\t\treturn a\n\t\t}\n\t\tconst doFor = function(count, cb) {\n\t\t\tvar i = 0;\n\t\t\twhile (i < count && cb(i++) !== true);\n\t\t}\n\n\t\tfunction shuffleSeed(seed,count){\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t\tcount -= 1\n\t\t\treturn count > 0 ? shuffleSeed(seed, count) : seed\n\t\t}\n\t\tconst types = {\n\t\t\t_3D : {\n\t\t\t\tbase : base3D,\n\t\t\t\tsquish : SQUISH_3D,\n\t\t\t\tdimensions : 3,\n\t\t\t\tpD : p3D,\n\t\t\t\tlookup : lookupPairs3D,\n\t\t\t}\n\t\t}\n\n\t\tfunction createContribution(type, baseSet, index) {\n\t\t\tvar i = 0\n\t\t\tconst multiplier = baseSet[index ++]\n\t\t\tconst c = { next : undefined }\n\t\t\twhile(i < type.dimensions) {\n\t\t\t\tconst axis = \"xyzw\"[i]\n\t\t\t\tc[axis + \"sb\"] = baseSet[index + i]\n\t\t\t\tc[\"d\" + axis] = - baseSet[index + i++] - multiplier * type.squish\n\t\t\t}\n\t\t\treturn c\n\t\t}\n\n\t\tfunction createLookupPairs(lookupArray, contributions){\n\t\t\tvar i\n\t\t\tconst a = lookupArray()\n\t\t\tconst res = new Map()\n\t\t\tfor (i = 0; i < a.length; i += 2) {\n\t\t\t\tres.set(a[i], contributions[a[i + 1]]);\n\t\t\t}\n\t\t\treturn res\n\t\t}\n\n\t\tfunction createContributionArray(type) {\n\t\t\tconst conts = []\n\t\t\tconst d = type.dimensions\n\t\t\tconst baseStep = d * d\n\t\t\tvar k, i = 0\n\t\t\twhile (i < type.pD.length) {\n\t\t\t\tconst baseSet = type.base[type.pD[i]]\n\t\t\t\tlet previous, current\n\t\t\t\tk = 0\n\t\t\t\tdo {\n\t\t\t\t\tcurrent = createContribution(type, baseSet, k)\n\t\t\t\t\tif (!previous) {\n\t\t\t\t\t\tconts[i / baseStep] = current;\n\t\t\t\t\t}\n\t\t\t\t\telse {\n\t\t\t\t\t\tprevious.next = current;\n\t\t\t\t\t}\n\t\t\t\t\tprevious = current\n\t\t\t\t\tk += d + 1\n\t\t\t\t} while(k < baseSet.length)\n\n\t\t\t\tcurrent.next = createContribution(type, type.pD, i + 1)\n\t\t\t\tif (d >= 3) {\n\t\t\t\t\tcurrent.next.next = createContribution(type, type.pD, i + d + 2)\n\t\t\t\t}\n\t\t\t\tif (d === 4) {\n\t\t\t\t\tcurrent.next.next.next = createContribution(type, type.pD, i + 11)\n\t\t\t\t}\n\t\t\t\ti += baseStep\n\t\t\t}\n\t\t\tconst result = [conts, createLookupPairs(type.lookup, conts)]\n\t\t\ttype.base = undefined\n\t\t\ttype.lookup = undefined\n\t\t\treturn result\n\t\t}\n\n\t\tlet temp = createContributionArray(types._3D)\n\t\tconst lookup3D = temp[1]\n\t\tconst perm = new Uint8Array(256)\n\t\tconst perm3D = new Uint8Array(256)\n\t\tconst source = new Uint8Array(setOf(256))\n\t\tvar seed = shuffleSeed(clientSeed, 3)\n\t\tdoFor(256, function(i) {\n\t\t\ti = 255 - i\n\t\t\tseed = shuffleSeed(seed, 1)\n\t\t\tvar r = (seed + 31) % (i + 1)\n\t\t\tr += r < 0 ? i + 1 : 0\n\t\t\tperm[i] = source[r]\n\t\t\tperm3D[i] = perm[i] % 24 * 3\n\t\t\tsource[r] = source[i]\n\t\t})\n\t\tbase3D = undefined\n\t\tlookupPairs3D = undefined\n\t\tp3D = undefined\n\n\t\treturn function(x, y, z) {\n\t\t\tconst pD = perm3D\n\t\t\tconst p = perm\n\t\t\tconst g = gradients3D\n\t\t\tconst stretchOffset = (x + y + z) * STRETCH_3D\n\t\t\tconst xs = x + stretchOffset, ys = y + stretchOffset, zs = z + stretchOffset\n\t\t\tconst xsb = floor(xs), ysb = floor(ys), zsb = floor(zs)\n\t\t\tconst squishOffset\t= (xsb + ysb + zsb) * SQUISH_3D\n\t\t\tconst dx0 = x - (xsb + squishOffset), dy0 = y - (ysb + squishOffset), dz0 = z - (zsb + squishOffset)\n\t\t\tconst xins = xs - xsb, yins = ys - ysb, zins = zs - zsb\n\t\t\tconst inSum = xins + yins + zins\n\t\t\tvar c = lookup3D.get(\n\t\t\t\tyins - zins + 1\n\t\t\t\t\t| xins - yins + 1 << 1\n\t\t\t\t\t| xins - zins + 1 << 2\n\t\t\t\t\t| inSum << 3\n\t\t\t\t\t| inSum + zins << 5\n\t\t\t\t\t| inSum + yins << 7\n\t\t\t\t\t| inSum + xins << 9\n\t\t\t)\n\t\t\tvar i, value = 0\n\t\t\twhile (c !== undefined) {\n\t\t\t\tconst dx = dx0 + c.dx, dy = dy0 + c.dy, dz = dz0 + c.dz\n\t\t\t\tlet attn = 2 - dx * dx - dy * dy - dz * dz\n\t\t\t\tif (attn > 0) {\n\t\t\t\t\ti = pD[(p[xsb + c.xsb & 0xFF] + (ysb + c.ysb) & 0xFF) + (zsb + c.zsb) & 0xFF]\n\t\t\t\t\tattn *= attn\n\t\t\t\t\tvalue += attn * attn * (g[i++] * dx + g[i++] * dy + g[i] * dz)\n\t\t\t\t}\n\t\t\t\tc = c.next\n\t\t\t}\n\t\t\treturn value * NORM_3D + 0.5\n\t\t}\n\t}\n\n\tlet noise\n\tconst smooth = 0.02\n\tconst caveSize = 0.0055\n\tfunction isCave(x, y, z) {\n\t\t// Generate a 3D rigid multifractal noise shell.\n\t\t// Then generate another one with different coordinates.\n\t\t// Overlay them on top of each other, and the overlapping parts should form a cave-like structure.\n\t\t// This is extremely slow, and requires generating 2 noise values for every single block in the world.\n\t\t// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.\n\n\t\tlet cave1 = abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize\n\t\tlet cave2 = abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize\n\t\treturn cave1 && cave2\n\t}\n\n\tconst subChunk = new Int8Array(16 * 16 * 16)\n\tself.onmessage = function(e) {\n\n\t\tif (e.data && e.data.seed) {\n\t\t\tnoise = openSimplexNoise(e.data.seed)\n\t\t\tself.postMessage(e.data)\n\t\t}\n\t\tif (e.data && e.data.caves) {\n\t\t\tconst { x, y, z } = e.data\n\t\t\tfor (let X = 0; X < 16; X++) {\n\t\t\t\tfor (let Y = 0; Y < 16; Y++) {\n\t\t\t\t\tfor (let Z = 0; Z < 16; Z++) {\n\t\t\t\t\t\tsubChunk[X * 256 + Y * 16 + Z] = isCave(X + x, Y + y, Z + z) | 0\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tself.postMessage({\n\t\t\t\tjobId: e.data.jobId,\n\t\t\t\tcaves: subChunk,\n\t\t\t})\n\t\t}\n\t}\n}\n\nWorker()");
+
+/***/ }),
+/* 8 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(10);
 
             
 
@@ -4550,7 +4597,7 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 /* harmony default export */ __webpack_exports__["default"] = (_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4825,12 +4872,12 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(10);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
 /* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
 // Imports
 
@@ -4842,7 +4889,7 @@ ___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n\toverflow: hidden; /* Hide s
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4914,7 +4961,7 @@ module.exports = function (cssWithMappingToString) {
 };
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -4997,7 +5044,7 @@ class Marsaglia {
 	}
 }
 
-// The noise and random functions are copied from the processing.js source code; these others are polyfills made by me to avoid needing to remove all the pjs draw calls
+// The noise and random functions are copied from the processing.js source code
 
 const {
 	randomSeed,
@@ -5180,30 +5227,29 @@ class PerlinNoise {
 		if (seed === undefined) {
 			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`");
 		}
+		// console.log("New noise generator with seed", seed)
 
-		const rnd = new Marsaglia(seed);
-
-		// permutation
-		this.perm = new Uint8Array(0x200);
+		const rnd = new Marsaglia(seed)
 
 		// generate permutation
-		const { perm } = this;
+		const perm = new Uint8Array(0x200)
+		this.perm = perm
 
 		// fill 0x0..0x100
 		for (let i = 0; i < 0x100; ++i) {
-			perm[i] = i;
+			perm[i] = i
 		}
 
 		for (let i = 0; i < 0x100; ++i) {
-			const j = rnd.nextInt() & 0xFF;
-			const t = perm[j];
-			perm[j] = perm[i];
-			perm[i] = t;
+			const j = rnd.nextInt() & 0xFF
+			const t = perm[j]
+			perm[j] = perm[i]
+			perm[i] = t
 		}
 
 		// copy to avoid taking mod in perm[0]
 		// copies from first half of array, into the second half
-		perm.copyWithin(0x100, 0x0, 0x100);
+		perm.copyWithin(0x100, 0x0, 0x100)
 	}
 }
 
@@ -5418,7 +5464,7 @@ function openSimplexNoise(clientSeed) {
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -5726,7 +5772,7 @@ function copyArr(a, b) {
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -5808,7 +5854,7 @@ function compareArr(arr, out) {
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6225,7 +6271,7 @@ let Sides = {
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6305,7 +6351,7 @@ async function deleteFromDB(id) {
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6410,7 +6456,7 @@ let shapes = {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6470,7 +6516,7 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6479,7 +6525,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "textureMap", function() { return textureMap; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "textureCoords", function() { return textureCoords; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "textureAtlas", function() { return textureAtlas; });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
 
 
 const textureMap = {}
@@ -6586,7 +6632,7 @@ function initTextures(gl, glCache) {
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6595,8 +6641,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "noiseSettings", function() { return noiseSettings; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "emptySection", function() { return emptySection; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fullSection", function() { return fullSection; });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
 
 
 
@@ -6624,19 +6670,6 @@ let sphere;
 		}
 	}
 	sphere = new Int8Array(blocks)
-}
-
-function isCave(x, y, z) {
-	// Generate a 3D rigid multifractal noise shell.
-	// Then generate another one with different coordinates.
-	// Overlay them on top of each other, and the overlapping parts should form a cave-like structure.
-	// This is extremely slow, and requires generating 2 noise values for every single block in the world.
-	// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
-	let smooth = 0.02
-	let caveSize = 0.0055
-	let cave1 = abs(0.5 - noiseSettings.caveNoise(x * smooth, y * smooth, z * smooth)) < caveSize
-	let cave2 = abs(0.5 - noiseSettings.caveNoise(y * smooth, z * smooth, x * smooth)) < caveSize
-	return cave1 && cave2
 }
 
 function carveSphere(x, y, z, world) {
@@ -7181,15 +7214,28 @@ class Section {
 		}
 		return index
 	}
-	carveCaves() {
+	async carveCaves() {
 		const { world } = this
-		let wx = this.x + 16, wz = this.z + 16, wy = this.y + 16
-		for (let x = this.x, xx = 0; x < wx; x++, xx++) {
-			for (let z = this.z, zz = 0; z < wz; z++, zz++) {
-				wy = this.chunk.tops[zz * 16 + xx]
-				for (let y = this.y; y < wy; y++) {
-					if (isCave(x, y, z)) {
-						carveSphere(x, y, z, world)
+		while (!window.workers.length) {
+			await Promise.race(window.pendingWorkers)
+		}
+		const data = await window.doWork({
+			caves: true,
+			x: this.x,
+			y: this.y,
+			z: this.z
+		})
+		const caves = data.caves
+
+		let sx = this.x, sy = this.y, sz = this.z
+		let cy = 0
+		for (let x = 0; x < 16; x++) {
+			for (let z = 0; z < 16; z++) {
+				cy = this.chunk.tops[z * 16 + x]
+				cy = cy > sy + 15 ? 16 : cy & 15
+				for (let y = 0; y < cy; y++) {
+					if (caves[x * 256 + y * 16 + z]) {
+						carveSphere(sx + x, sy + y, sz + z, world)
 					}
 				}
 			}
@@ -7253,15 +7299,15 @@ emptySection.light.fill(15)
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Chunk", function() { return Chunk; });
-/* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
-/* harmony import */ var _section_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
+/* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(12);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(15);
+/* harmony import */ var _section_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(20);
 
 
 
@@ -7513,16 +7559,15 @@ class Chunk {
 		this.minY = y < this.minY ? y : this.minY
 		this.maxY = y > this.maxY ? y : this.maxY
 	}
-	carveCaves() {
+	async carveCaves() {
+		let promises = []
 		for (let i = 0; i < this.sections.length; i++) {
 			if (!this.sections[i].caves) {
-				this.sections[i].carveCaves()
-				if (i + 1 >= this.sections.length) {
-					this.caves = true
-				}
-				return
+				promises.push(this.sections[i].carveCaves())
 			}
 		}
+		await Promise.all(promises)
+		this.caves = true
 	}
 	populate() {
 		const { world } = this
@@ -7743,15 +7788,15 @@ class Chunk {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Item", function() { return Item; });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18);
-/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
+/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(23);
 
 
 
@@ -7795,16 +7840,16 @@ class Item extends _entity_js__WEBPACK_IMPORTED_MODULE_2__["Entity"] {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Entity", function() { return Entity; });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(13);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(12);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(18);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
+/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(13);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(19);
 
 
 
@@ -8108,16 +8153,16 @@ class Entity {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Player", function() { return Player; });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
-/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(18);
-/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(22);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
+/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(23);
 
 
 

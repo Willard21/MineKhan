@@ -249,16 +249,15 @@ class Chunk {
 		this.minY = y < this.minY ? y : this.minY
 		this.maxY = y > this.maxY ? y : this.maxY
 	}
-	carveCaves() {
+	async carveCaves() {
+		let promises = []
 		for (let i = 0; i < this.sections.length; i++) {
 			if (!this.sections[i].caves) {
-				this.sections[i].carveCaves()
-				if (i + 1 >= this.sections.length) {
-					this.caves = true
-				}
-				return
+				promises.push(this.sections[i].carveCaves())
 			}
 		}
+		await Promise.all(promises)
+		this.caves = true
 	}
 	populate() {
 		const { world } = this
