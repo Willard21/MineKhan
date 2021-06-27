@@ -2400,7 +2400,7 @@ async function MineKhan() {
 						debug("Carve caves")
 					}
 					else if (!chunk.populated) {
-						chunk.populate()
+						chunk.populate(trees)
 						this.populateQueue.pop()
 					}
 					doneWork = true
@@ -7316,7 +7316,7 @@ __webpack_require__.r(__webpack_exports__);
 const { floor, min, max } = Math;
 
 class Chunk {
-	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves, trees) {
+	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
@@ -7338,7 +7338,6 @@ class Chunk {
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
-		this.tress = trees
 	}
 	getBlock(x, y, z) {
 		let s = y >> 4
@@ -7570,7 +7569,7 @@ class Chunk {
 		await Promise.all(promises)
 		this.caves = true
 	}
-	populate() {
+	populate(trees) {
 		const { world } = this
 		Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["randomSeed"])(Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["hash"])(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
@@ -7581,7 +7580,7 @@ class Chunk {
 				wz = this.z + k
 
 				ground = this.tops[k * 16 + i]
-				if (this.trees && Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["random"])() < 0.005 && this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__["blockIds"].grass) {
+				if (trees && Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["random"])() < 0.005 && this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__["blockIds"].grass) {
 
 					top = ground + floor(4.5 + Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["random"])(2.5))
 					rand = floor(Object(_random_js__WEBPACK_IMPORTED_MODULE_0__["random"])(4096))

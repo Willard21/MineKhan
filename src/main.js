@@ -2170,7 +2170,7 @@ async function MineKhan() {
 						debug("Carve caves")
 					}
 					else if (!chunk.populated) {
-						chunk.populate()
+						chunk.populate(trees)
 						this.populateQueue.pop()
 					}
 					doneWork = true
