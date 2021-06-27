@@ -100,8 +100,8 @@ async function MineKhan() {
 		return promise
 	}
 
-	let world;
-	let worldSeed;
+	let world
+	let worldSeed
 
 	function setSeed(seed) {
 		worldSeed = seed
@@ -117,14 +117,14 @@ async function MineKhan() {
 			g = r
 			b = r
 		}
-		ctx.fillStyle = "rgb(" + r + ", " + g + ", " + b + ")"
+		ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
 	}
 	let stroke = function(r, g, b) {
 		if (g === undefined) {
 			g = r
 			b = r
 		}
-		ctx.strokeStyle = "rgb(" + r + ", " + g + ", " + b + ")"
+		ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`
 	}
 	// function line(x1, y1, x2, y2) {
 	// 	ctx.moveTo(x1, y1)
@@ -1787,6 +1787,7 @@ async function MineKhan() {
 
 	class World {
 		constructor() {
+			setSeed(Math.random() * 2000000000 | 0)
 			generatedChunks = 0
 			fogDist = 16
 			p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
@@ -2394,6 +2395,8 @@ async function MineKhan() {
 
 			this.name = data.shift()
 			setSeed(parseInt(data.shift(), 36))
+			noiseProfile.noiseSeed(worldSeed)
+			seedHash(worldSeed)
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -3888,7 +3891,7 @@ async function MineKhan() {
 		p.sprintSpeed = 1.5
 		p.flySpeed = 2.5
 		p.x = 8
-		p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+		p.y = superflat ? 6 : 70
 		p.z = 8
 		p.previousX = 8
 		p.previousY = 70
@@ -4044,8 +4047,6 @@ async function MineKhan() {
 
 	function initEverything() {
 		console.log("Initializing world.")
-
-		setSeed(Math.random() * 2000000000 | 0)
 
 		generatedChunks = 0
 
