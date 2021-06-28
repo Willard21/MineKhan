@@ -22,7 +22,7 @@ module.exports = {
 				use: ["style-loader", "css-loader"],
 			},
 			{
-				test: /\.(txt|glsl)$/i,
+				test: /\.(txt|glsl|jsw)$/i,
 				use: "raw-loader",
 			},
 		],

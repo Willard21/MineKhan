@@ -217,7 +217,7 @@ class Chunk {
 	}
 	render(p, global) {
 		const { glExtensions, gl } = this
-		if (!this.buffer) {
+		if (this.buffer === undefined) {
 			return
 		}
 		if (p.canSee(this.x, this.minY, this.z, this.maxY)) {
@@ -248,16 +248,15 @@ class Chunk {
 		this.minY = y < this.minY ? y : this.minY
 		this.maxY = y > this.maxY ? y : this.maxY
 	}
-	carveCaves() {
+	async carveCaves() {
+		let promises = []
 		for (let i = 0; i < this.sections.length; i++) {
 			if (!this.sections[i].caves) {
-				this.sections[i].carveCaves()
-				if (i + 1 >= this.sections.length) {
-					this.caves = true
-				}
-				return
+				promises.push(this.sections[i].carveCaves())
 			}
 		}
+		await Promise.all(promises)
+		this.caves = true
 	}
 	populate(trees) {
 		const { world } = this
