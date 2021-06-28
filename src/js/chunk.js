@@ -217,7 +217,7 @@ class Chunk {
 	}
 	render(p, global) {
 		const { glExtensions, gl } = this
-		if (!this.buffer) {
+		if (this.buffer === undefined) {
 			return
 		}
 		if (p.canSee(this.x, this.minY, this.z, this.maxY)) {

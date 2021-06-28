@@ -68,36 +68,49 @@ async function MineKhan() {
 		return hash;
 	}
 
-	// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-	const workerURL = window.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
-	window.workers = []
-	window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
-	let jobId = 1
-	const pendingJobs = new Map()
-	for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
-		let worker = new Worker(workerURL)
-		worker.onmessage = e => {
-			let [promise, resolve] = pendingJobs.get(e.data.jobId)
-			resolve(e.data)
-			pendingJobs.delete(e.data.jobId)
+	{
+		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
+		const workerURL = window.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+		window.workers = []
+		window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
+		let jobId = 1
+		const pendingJobs = new Map()
+		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
+			let worker = new Worker(workerURL)
+			worker.onmessage = e => {
+				let [promise, resolve] = pendingJobs.get(e.data.jobId)
+				resolve(e.data)
+				pendingJobs.delete(e.data.jobId)
+				window.workers.push(worker)
+				window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
+			}
 			window.workers.push(worker)
-			window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
 		}
-		window.workers.push(worker)
-	}
 
-	window.doWork = function(data) {
-		let job = []
-		let promise = new Promise(resolve => {
-			let id = jobId++
-			data.jobId = id
-			job[1] = resolve
-			pendingJobs.set(id, job)
-			window.workers.shift().postMessage(data)
-		})
-		job[0] = promise
-		window.pendingWorkers.push(promise)
-		return promise
+		window.doWork = function(data) {
+			let job = []
+			let promise = new Promise(resolve => {
+				let id = jobId++
+				data.jobId = id
+				job[1] = resolve
+				pendingJobs.set(id, job)
+				window.workers.shift().postMessage(data)
+			})
+			job[0] = promise
+			window.pendingWorkers.push(promise)
+			return promise
+		}
+
+		// await window.yieldThread() will pause the current task until the event loop is cleared
+		const channel = new MessageChannel();
+		let res
+		channel.port1.onmessage = () => res();
+		window.yieldThread = function() {
+			return new Promise(resolve => {
+				res = resolve
+				channel.port2.postMessage("");
+			})
+		}
 	}
 
 	let world
@@ -105,8 +118,8 @@ async function MineKhan() {
 
 	function setSeed(seed) {
 		worldSeed = seed
-		noiseProfile.noiseSeed(seed)
 		seedHash(seed)
+		noiseProfile.noiseSeed(seed)
 		while(window.workers.length) {
 			window.doWork({ seed })
 		}
@@ -758,8 +771,15 @@ async function MineKhan() {
 			this.x = 0
 			this.y = 0
 			this.z = 0
+			this.px = 0
+			this.py = 0
+			this.pz = 0
+
 			this.rx = 0; // Pitch
 			this.ry = 0; // Yaw
+			this.prx = 0; // Pitch
+			this.pry = 0; // Yaw
+
 			this.currentFov = 0
 			this.defaultFov = settings.fov
 			this.targetFov = settings.fov
@@ -807,10 +827,15 @@ async function MineKhan() {
 			this.projection[4] = -far * near / (far - near)
 		}
 		transform() {
+			let diff = (performance.now() - this.lastUpdate) / 50
+			if (diff > 1) diff = 1
+			let x = (this.x - this.px) * diff + this.px
+			let y = (this.y - this.py) * diff + this.py
+			let z = (this.z - this.pz) * diff + this.pz
 			this.transformation.copyMatrix(defaultTransformation)
 			this.transformation.rotX(this.rx)
 			this.transformation.rotY(this.ry)
-			this.transformation.translate(-this.x, -this.y, -this.z)
+			this.transformation.translate(-x, -y, -z)
 		}
 		getMatrix() {
 			let proj = this.projection
@@ -1157,6 +1182,7 @@ async function MineKhan() {
 			faces = verts[1]
 		}
 		if (!vx && !vz) {
+			let col = false
 			for (let face of faces) {
 				min = face.min
 				minX = min[0]
@@ -1165,17 +1191,18 @@ async function MineKhan() {
 				maxX = max[0]
 				maxZ = max[2]
 				if (face[1] > py && face[1] < pyy && minX < pxx && maxX > px && minZ < pzz && maxZ > pz) {
+					col = true
 					if (vy <= 0) {
 						p.onGround = true
 						p.y = round((face[1] + y + p.bottomH) * 10000) / 10000
-						return false
+						p.velocity.y = 0
 					}
 					else {
-						return true
+						p.y = face[1] + y - p.topH
 					}
 				}
 			}
-			return false
+			return col
 		}
 
 		//West and East faces
@@ -1195,8 +1222,9 @@ async function MineKhan() {
 				maxZ = max[2]
 				maxY = max[1]
 				if (face[0] > px && face[0] < pxx && minY < pyy && maxY > py && minZ < pzz && maxZ > pz) {
-					if (maxY - py > 0.5) {
+					if (maxY - py > 0.5 || !p.onGround) {
 						p.canStepX = false
+						p.x = x + face[0] + (vx < 0 ? p.w : -p.w) * 1.001
 					}
 					col = true
 				}
@@ -1221,8 +1249,9 @@ async function MineKhan() {
 				maxX = max[0]
 				maxY = max[1]
 				if (face[2] > pz && face[2] < pzz && minY < pyy && maxY > py && minX < pxx && maxX > px) {
-					if (maxY - py > 0.5) {
+					if (maxY - py > 0.5 || !p.onGround) {
 						p.canStepZ = false
+						p.z = z + face[2] + (vz < 0 ? p.w : -p.w) * 1.001
 					}
 					col = true
 				}
@@ -1250,17 +1279,17 @@ async function MineKhan() {
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
-		let pminX = p2.x - 1
-		let pmaxX = p2.x + 1
-		let pminY = p2.y - 2
-		let pmaxY = p2.y + 1
-		let pminZ = p2.z - 1
-		let pmaxZ = p2.z + 1
+		let pminX = round(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
+		let pmaxX = round(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
+		let pminY = round(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
+		let pmaxY = round(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
+		let pminZ = round(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
+		let pmaxZ = round(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 		let block = null
 		let vel = p.velocity
 
 		for (let x = pminX; x <= pmaxX; x++) {
-			for (let y = pminY; y <= pmaxY; y++) {
+			for (let y = pmaxY; y >= pminY; y--) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
 					if (blockData[block].solid) {
@@ -1270,27 +1299,23 @@ async function MineKhan() {
 			}
 		}
 
-		let dt = (performance.now() - p.lastUpdate) / 33
-		dt = dt > 2 ? 2 : dt
-
-		p.previousX = p.x
-		p.previousY = p.y
-		p.previousZ = p.z
+		p.px = p.x
+		p.py = p.y
+		p.pz = p.z
 
 		//Check collisions in the Y direction
 		p.onGround = false
 		p.canStepX = false
 		p.canStepZ = false
-		p.y += vel.y * dt
+		p.y += vel.y
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
 			if (collided(block[0], block[1], block[2], 0, vel.y, 0, block[3])) {
-				p.y = p.previousY
 				vel.y = 0
 				break
 			}
 		}
-		if (p.y === p.previousY && !p.flying) {
+		if (p.onGround) {
 			p.canStepX = true
 			p.canStepZ = true
 		}
@@ -1307,14 +1332,14 @@ async function MineKhan() {
 		}
 
 		//Check collisions in the X direction
-		p.x += vel.x * dt
+		p.x += vel.x
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
 			if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
 				if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
 					continue
 				}
-				p.x = p.previousX
+				// p.x = p.px
 				vel.x = 0
 				break
 			}
@@ -1324,20 +1349,20 @@ async function MineKhan() {
 		}
 
 		if (sneakLock && !sneakSafe) {
-			p.x = p.previousX
+			p.x = p.px
 			vel.x = 0
 		}
 		sneakSafe = false
 
 		//Check collisions in the Z direction
-		p.z += vel.z * dt
+		p.z += vel.z
 		for (let i = 0; i < contacts.size; i++) {
 			block = contacts.array[i]
 			if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
 				if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
 					continue
 				}
-				p.z = p.previousZ
+				// p.z = p.pz
 				vel.z = 0
 				break
 			}
@@ -1347,20 +1372,20 @@ async function MineKhan() {
 		}
 
 		if (sneakLock && !sneakSafe) {
-			p.z = p.previousZ
+			p.z = p.pz
 			vel.z = 0
 		}
 
 		if (!p.flying) {
 			let drag = p.onGround ? 0.5 : 0.85
-			p.velocity.z += (p.velocity.z * drag - p.velocity.z) * dt
-			p.velocity.x += (p.velocity.x * drag - p.velocity.x) * dt
+			p.velocity.z += p.velocity.z * drag - p.velocity.z
+			p.velocity.x += p.velocity.x * drag - p.velocity.x
 		}
 		else {
 			let drag = 0.9
-			p.velocity.z += (p.velocity.z * drag - p.velocity.z) * dt
-			p.velocity.x += (p.velocity.x * drag - p.velocity.x) * dt
-			p.velocity.y += (p.velocity.y * 0.8 - p.velocity.y) * dt
+			p.velocity.z += p.velocity.z * drag - p.velocity.z
+			p.velocity.x += p.velocity.x * drag - p.velocity.x
+			p.velocity.y += p.velocity.y * 0.8 - p.velocity.y
 			if (p.onGround && !p.spectator) {
 				p.flying = false
 			}
@@ -1374,21 +1399,15 @@ async function MineKhan() {
 		if (p.flying) {
 			return
 		}
-		let dt = (performance.now() - p.lastUpdate) / 33
-		dt = dt > 2 ? 2 : dt
+
+		p.velocity.y += p.gravityStrength
+		if(p.velocity.y < -p.maxYVelocity) {
+			p.velocity.y = -p.maxYVelocity
+		}
 		if(p.onGround) {
 			if(Key[" "]) {
 				p.velocity.y = p.jumpSpeed
 				p.onGround = false
-			}
-			else {
-				p.velocity.y = 0
-			}
-		}
-		else {
-			p.velocity.y += p.gravityStength * dt
-			if(p.velocity.y < -p.maxYVelocity) {
-				p.velocity.y = -p.maxYVelocity
 			}
 		}
 	}
@@ -1696,7 +1715,7 @@ async function MineKhan() {
 				chat(`${packet.author} has joined.`)
 			}
 			else if (packet.type === "save" && screen === "multiplayer menu") {
-				world = new World()
+				world = new World(true)
 				world.loadSave(packet.data)
 				changeScene("loading")
 			}
@@ -1786,11 +1805,14 @@ async function MineKhan() {
 	fullSection.setCaves(caves);
 
 	class World {
-		constructor() {
-			setSeed(Math.random() * 2000000000 | 0)
+		constructor(empty) {
+			if (!empty) {
+				setSeed(Math.random() * 2000000000 | 0)
+				p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
+			}
+
 			generatedChunks = 0
 			fogDist = 16
-			p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 
 			//Initialize the world's arrays
 			this.chunks = []
@@ -2145,7 +2167,7 @@ async function MineKhan() {
 			this.ticking = true
 
 			let doneWork = true
-			while(doneWork) {
+			while(doneWork && (screen === "play" || screen === "loading")) {
 				doneWork = false
 				debug.start = performance.now()
 				if (this.meshQueue.length) {
@@ -2206,7 +2228,8 @@ async function MineKhan() {
 					doneWork = true
 				}
 
-				await Promise.resolve() // Yield the main thread to render passes
+				// Yield the main thread to render passes
+				if (doneWork) await window.yieldThread()
 			}
 			this.ticking = false
 		}
@@ -2395,8 +2418,6 @@ async function MineKhan() {
 
 			this.name = data.shift()
 			setSeed(parseInt(data.shift(), 36))
-			noiseProfile.noiseSeed(worldSeed)
-			seedHash(worldSeed)
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -2477,33 +2498,22 @@ async function MineKhan() {
 		}
 	}
 
-	let defineWorld = function() {
-		let tickStart = performance.now()
-		world.tick()
-		analytics.totalTickTime += performance.now() - tickStart
-		let renderStart = performance.now()
-		world.render()
-		analytics.totalRenderTime += performance.now() - renderStart
-	}
-
 	let controls = function() {
 		move.x = 0
 		move.z = 0
-		let dt = (performance.now() - p.lastUpdate) / 33
-		dt = dt > 2 ? 2 : dt
 
 		if(Key.w) move.z += p.speed
 		if(Key.s) move.z -= p.speed
 		if(Key.a) move.x += p.speed
 		if(Key.d) move.x -= p.speed
 		if (p.flying) {
-			if(Key[" "]) p.velocity.y += 0.06 * dt
-			if(Key.shift) p.velocity.y -= 0.06 * dt
+			if(Key[" "]) p.velocity.y += 0.1
+			if(Key.shift) p.velocity.y -= 0.1
 		}
-		if(Key.arrowleft) p.ry -= 0.1 * dt
-		if(Key.arrowright) p.ry += 0.1 * dt
-		if(Key.arrowup) p.rx += 0.1 * dt
-		if(Key.arrowdown) p.rx -= 0.1 * dt
+		if(Key.arrowleft) p.ry -= 0.15
+		if(Key.arrowright) p.ry += 0.15
+		if(Key.arrowup) p.rx += 0.15
+		if(Key.arrowdown) p.rx -= 0.15
 
 		if (!p.sprinting && Key.q && !p.sneaking && Key.w) {
 			p.FOV(settings.fov + 10, 250)
@@ -2533,8 +2543,8 @@ async function MineKhan() {
 		let co = cos(p.ry)
 		let si = sin(p.ry)
 		let friction = p.onGround ? 1 : 0.3
-		p.velocity.x += (co * move.x - si * move.z) * friction * dt
-		p.velocity.z += (si * move.x + co * move.z) * friction * dt
+		p.velocity.x += (co * move.x - si * move.z) * friction
+		p.velocity.z += (si * move.x + co * move.z) * friction
 
 		const TAU = Math.PI * 2
 		const PI1_2 = Math.PI / 2
@@ -2542,8 +2552,6 @@ async function MineKhan() {
 		while(p.ry < 0)   p.ry += TAU
 		if(p.rx > PI1_2)  p.rx = PI1_2
 		if(p.rx < -PI1_2) p.rx = -PI1_2
-
-		p.setDirection()
 	}
 
 	class Slider {
@@ -2836,7 +2844,7 @@ async function MineKhan() {
 		}, selected, "Export the save code into the text box above for copy/paste.")
 		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "loadsave menu", () => changeScene("main menu"))
 		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "loadsave menu", () => {
-			world = new World()
+			world = new World(true)
 			win.world = world
 
 			let code
@@ -3311,7 +3319,7 @@ async function MineKhan() {
 					p.FOV(settings.fov, 100)
 				}
 				p.sprinting = false
-				p.speed = 0.03
+				p.speed = 0.05
 				p.bottomH = 1.32
 			}
 
@@ -3370,7 +3378,7 @@ async function MineKhan() {
 
 			if (k === "shift" && p.sneaking) {
 				p.sneaking = false
-				p.speed = 0.075
+				p.speed = 0.11
 				p.bottomH = 1.62
 				// p.y += 0.3
 			}
@@ -3885,25 +3893,22 @@ async function MineKhan() {
 	}
 	function initPlayer() {
 		p = new Camera()
-		p.speed = 0.075
+		p.speed = 0.11
 		p.velocity = new PVector(0, 0, 0)
 		p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
-		p.flySpeed = 2.5
+		p.flySpeed = 3.75
 		p.x = 8
 		p.y = superflat ? 6 : 70
 		p.z = 8
-		p.previousX = 8
-		p.previousY = 70
-		p.previousZ = 8
 		p.w = 3 / 8
 		p.bottomH = 1.62
 		p.topH = 0.18
 		p.onGround = false
-		p.jumpSpeed = 0.3
+		p.jumpSpeed = 0.45
 		p.sprinting = false
 		p.maxYVelocity = 1.5
-		p.gravityStength = -0.032
+		p.gravityStrength = -0.091
 		p.lastUpdate = performance.now()
 		p.lastBreak = now
 		p.lastPlace = now
@@ -3962,7 +3967,7 @@ async function MineKhan() {
 		worlds = {}
 		if (loadString) {
 			try {
-				let tempWorld = new World()
+				let tempWorld = new World(true)
 				tempWorld.loadSave(loadString)
 				addWorld(`${tempWorld.name} (Pre-loaded)`, tempWorld.version, loadString.length, now)
 				worlds[now] = {
@@ -4074,6 +4079,9 @@ async function MineKhan() {
 			changeScene("multiplayer menu")
 			initMultiplayer(urlParams.get("target"))
 		}
+
+		if (window.parent.tickid) window.clearTimeout(window.parent.tickid)
+		tickLoop()
 	}
 
 	// Define all the scene draw functions
@@ -4124,10 +4132,6 @@ async function MineKhan() {
 		}
 
 		drawScreens.play = () => {
-			controls()
-			runGravity()
-			resolveContactsAndUpdatePosition()
-
 			if (updateHUD) {
 				clear()
 				gl.clearColor(0, 0, 0, 0)
@@ -4140,7 +4144,10 @@ async function MineKhan() {
 				textSize(10)
 				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 			}
-			defineWorld()
+			let renderStart = performance.now()
+			p.setDirection()
+			world.render()
+			analytics.totalRenderTime += performance.now() - renderStart
 		}
 
 		drawScreens.loading = () => {
@@ -4238,7 +4245,25 @@ async function MineKhan() {
 		Slider.draw()
 	}, 100)
 
-	function gameLoop() {
+	function tickLoop() {
+		window.parent.tickid = window.setTimeout(tickLoop, 50) // 20 TPS
+
+		if (world && screen === "play") {
+			controls()
+			runGravity()
+			resolveContactsAndUpdatePosition()
+			// if (p.y < 6.12) {
+			// 	console.log(p.y)
+			// }
+
+			let tickStart = performance.now()
+			world.tick()
+			analytics.ticks++
+			analytics.totalTickTime += performance.now() - tickStart
+		}
+	}
+
+	function renderLoop() {
 		now = Date.now()
 		let frameStart = performance.now()
 		if (!gl) {
@@ -4256,7 +4281,7 @@ async function MineKhan() {
 		}
 
 		if (now - analytics.lastUpdate > 500 && analytics.frames) {
-			analytics.displayedTickTime = (analytics.totalTickTime / analytics.frames).toFixed(1)
+			analytics.displayedTickTime = (analytics.totalTickTime / analytics.ticks).toFixed(1)
 			analytics.displayedRenderTime = (analytics.totalRenderTime / analytics.frames).toFixed(1)
 			analytics.displayedFrameTime = (analytics.totalFrameTime / analytics.frames).toFixed(1)
 			analytics.fps = round(analytics.frames * 1000 / (now - analytics.lastUpdate))
@@ -4264,6 +4289,7 @@ async function MineKhan() {
 			analytics.frames = 0
 			analytics.totalRenderTime = 0
 			analytics.totalTickTime = 0
+			analytics.ticks = 0
 			analytics.totalFrameTime = 0
 			analytics.worstFrameTime = 0
 			analytics.lastUpdate = now
@@ -4273,9 +4299,9 @@ async function MineKhan() {
 		analytics.frames++
 		analytics.totalFrameTime += performance.now() - frameStart
 		analytics.worstFrameTime = max(performance.now() - frameStart, analytics.worstFrameTime)
-		win.raf = requestAnimationFrame(gameLoop)
+		win.raf = requestAnimationFrame(renderLoop)
 	}
-	return gameLoop
+	return renderLoop
 }
 
 window.onload = async function() {
