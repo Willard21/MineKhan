@@ -40,18 +40,16 @@ window.quota = document.getElementById("quota")
 window.hoverbox = document.getElementById("onhover")
 window.canvas.width  = window.innerWidth
 window.canvas.height = window.innerHeight
+window.controlMap = {}
 
-/* Set this text editor to max width by copying this into the JS console:
-document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
-*/
 async function MineKhan() {
-	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString } = window
+	// Cache user-defined globals
+	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
 
-	// cache Math object
-	const { Math, performance, Date, document } = window;
-	const { cos, sin, round, floor, min, max, abs, sqrt } = Math;
-	const win = window.parent;
-	const { console } = win;
+	// cache global objects locally.
+	const { Math, performance, Date, document, console } = window
+	const { cos, sin, round, floor, min, max, abs, sqrt } = Math
+	const win = window.parent
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
@@ -75,7 +73,7 @@ async function MineKhan() {
 		window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
 		let jobId = 1
 		const pendingJobs = new Map()
-		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
+		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1 || 1; i < count; i++) { // Generate between 1 and (processors - 1) workers.
 			let worker = new Worker(workerURL)
 			worker.onmessage = e => {
 				let [promise, resolve] = pendingJobs.get(e.data.jobId)
@@ -113,8 +111,7 @@ async function MineKhan() {
 		}
 	}
 
-	let world
-	let worldSeed
+	let world, worldSeed
 
 	function setSeed(seed) {
 		worldSeed = seed
@@ -362,7 +359,6 @@ async function MineKhan() {
 		y: 0,
 		z: 0,
 	}
-	let place
 	let inventory = {
 		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
 		main: [],
@@ -370,11 +366,53 @@ async function MineKhan() {
 		size: 40 * min(width, height) / 600,
 		holding: 0,
 	}
+
+	function setControl(name, key, shift = false, ctrl = false, alt = false) {
+		controlMap[name] = {
+			key,
+			shift,
+			ctrl,
+			alt,
+			get pressed() {
+				return Boolean(Key[this.key]
+					&& (!this.shift || Key.ShiftLeft || Key.ShiftRight)
+					&& (!this.ctrl || Key.ControlLeft || Key.ControlRight)
+					&& (!this.alt || Key.AltLeft || Key.AltRight))
+			},
+			// Check to see if all of an event's data matches this key map
+			event(e) {
+				return Boolean(e.code === this.key
+					&& (!this.shift || e.shiftKey)
+					&& (!this.ctrl || e.ctrlKey)
+					&& (!this.alt || e.altKey))
+			}
+		}
+	}
+	setControl("jump", "Space")
+	setControl("walkForwards", "KeyW")
+	setControl("strafeLeft", "KeyA")
+	setControl("walkBackwards", "KeyS")
+	setControl("strafeRight", "KeyD")
+	setControl("sprint", "KeyQ")
+	setControl("openInventory", "KeyE")
+	setControl("openChat", "KeyT")
+	setControl("pause", "KeyP")
+	setControl("hyperBuilder", "KeyH")
+	setControl("superBreaker", "KeyB")
+	setControl("toggleSpectator", "KeyL")
+	setControl("zoom", "KeyZ")
+	setControl("cycleBlockShapes", "Enter")
+	setControl("sneak", "ShiftLeft")
+	setControl("dropItem", "Backspace")
+	setControl("breakBlock", "leftMouse")
+	setControl("placeBlock", "rightMouse")
+	setControl("pickBlock", "middleMouse")
 	//}
 
 	function play() {
 		canvas.onblur()
 		p.lastBreak = now
+		holding = inventory.hotbar[inventory.hotbarSlot]
 		updateHUD = true
 		use3d()
 		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
@@ -1405,7 +1443,7 @@ async function MineKhan() {
 			p.velocity.y = -p.maxYVelocity
 		}
 		if(p.onGround) {
-			if(Key[" "]) {
+			if(controlMap.jump.pressed) {
 				p.velocity.y = p.jumpSpeed
 				p.onGround = false
 			}
@@ -2143,10 +2181,10 @@ async function MineKhan() {
 				this.chunkGenQueue.sort(sortChunks)
 			}
 
-			if (Key.leftMouse && !Key.control && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
+			if (controlMap.breakBlock.pressed && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
 				changeWorldBlock(0)
 			}
-			if ((Key.rightMouse || Key.leftMouse && Key.control) && (p.lastPlace < now - 250 || p.autoBuild)) {
+			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				newWorldBlock()
 			}
 
@@ -2502,20 +2540,20 @@ async function MineKhan() {
 		move.x = 0
 		move.z = 0
 
-		if(Key.w) move.z += p.speed
-		if(Key.s) move.z -= p.speed
-		if(Key.a) move.x += p.speed
-		if(Key.d) move.x -= p.speed
+		if(controlMap.walkForwards.pressed) move.z += p.speed
+		if(controlMap.walkBackwards.pressed) move.z -= p.speed
+		if(controlMap.strafeLeft.pressed) move.x += p.speed
+		if(controlMap.strafeRight.pressed) move.x -= p.speed
 		if (p.flying) {
-			if(Key[" "]) p.velocity.y += 0.1
-			if(Key.shift) p.velocity.y -= 0.1
+			if(controlMap.jump.pressed) p.velocity.y += 0.1
+			if(controlMap.sneak.pressed) p.velocity.y -= 0.1
 		}
-		if(Key.arrowleft) p.ry -= 0.15
-		if(Key.arrowright) p.ry += 0.15
-		if(Key.arrowup) p.rx += 0.15
-		if(Key.arrowdown) p.rx -= 0.15
+		if(Key.ArrowLeft) p.ry -= 0.15
+		if(Key.ArrowRight) p.ry += 0.15
+		if(Key.ArrowUp) p.rx += 0.15
+		if(Key.ArrowDown) p.rx -= 0.15
 
-		if (!p.sprinting && Key.q && !p.sneaking && Key.w) {
+		if (!p.sprinting && controlMap.sprint.pressed && !p.sneaking && controlMap.walkForwards.pressed) {
 			p.FOV(settings.fov + 10, 250)
 			p.sprinting = true
 		}
@@ -3176,6 +3214,122 @@ async function MineKhan() {
 			Slider.drag()
 		}
 	}
+
+	// For user controls that react immediately in the event handlers.
+	function controlEvent(name, event) {
+		if (name === controlMap.cycleBlockShapes.key) {
+			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
+			updateHUD = true
+		}
+
+		if(screen === "play") {
+			if (document.pointerLockElement !== canvas) {
+				getPointer()
+				p.lastBreak = now
+			}
+			else {
+				if (name === controlMap.breakBlock.key) {
+					changeWorldBlock(0)
+				}
+
+				// holding = inventory.hotbar[inventory.hotbarSlot]
+				if(name === controlMap.placeBlock.key && holding) {
+					newWorldBlock()
+				}
+
+				if (name === controlMap.pickBlock && hitBox.pos) {
+					updateHUD = true
+					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
+					let index = inventory.hotbar.indexOf(block)
+					if (index >= 0) {
+						inventory.hotbarSlot = index
+					}
+					else {
+						inventory.hotbar[inventory.hotbarSlot] = block
+					}
+				}
+
+				if(name === controlMap.pause.key) {
+					releasePointer()
+					changeScene("pause")
+				}
+
+				if (name === controlMap.openChat.key) {
+					event.preventDefault()
+					changeScene("chat")
+				}
+
+				if(name === controlMap.superBreaker.key) {
+					p.autoBreak = !p.autoBreak
+					updateHUD = true
+				}
+
+				if(name === controlMap.hyperBuilder.key) {
+					p.autoBuild = !p.autoBuild
+					updateHUD = true
+				}
+
+				if (name === controlMap.jump.key && !p.spectator) {
+					if (now < p.lastJump + 400) {
+						p.flying = !p.flying
+					}
+					else {
+						p.lastJump = now
+					}
+				}
+
+				if (name === controlMap.zoom.key) {
+					p.FOV(10, 300)
+				}
+
+				if (name === controlMap.sneak.key && !p.flying) {
+					p.sneaking = true
+					if (p.sprinting) {
+						p.FOV(settings.fov, 100)
+					}
+					p.sprinting = false
+					p.speed = 0.05
+					p.bottomH = 1.32
+				}
+
+				if (name === controlMap.toggleSpectator.key) {
+					p.spectator = !p.spectator
+					p.flying = true
+					p.onGround = false
+					updateHUD = true
+				}
+
+				if (name === controlMap.openInventory.key) {
+					changeScene("inventory")
+					releasePointer()
+				}
+
+				if (name === "Semicolon") {
+					releasePointer()
+					freezeFrame = true
+				}
+
+				if (name === controlMap.dropItem.key) {
+					let d = p.direction
+					world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
+				}
+			}
+		}
+		else if (screen === "pause" && name === controlMap.pause.key) {
+			play()
+		}
+		else if (screen === "inventory") {
+			if (name === "leftMouse") {
+				clickInv()
+			}
+			if (name === controlMap.openInventory.key) {
+				play()
+			}
+			if (name === controlMap.cycleBlockShapes.key) {
+				drawScreens.inventory()
+			}
+		}
+	}
 	document.onmousemove = trackMouse
 	document.onpointerlockchange = function() {
 		if (document.pointerLockElement === canvas) {
@@ -3196,191 +3350,75 @@ async function MineKhan() {
 		mouseX = e.x
 		mouseY = e.y
 		mouseDown = true
-		let block, index
+		let name
 		switch(e.button) {
 			case 0:
-				Key.leftMouse = true
+				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
+				else name = "leftMouse"
 				break
 			case 1:
-				Key.middleMouse = true
-				if (!hitBox.pos) break
-				updateHUD = true
-				block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
-				index = inventory.hotbar.indexOf(block)
-				if (index >= 0) {
-					inventory.hotbarSlot = index
-				}
-				else {
-					inventory.hotbar[inventory.hotbarSlot] = block
-				}
+				name = "middleMouse"
 				break
 			case 2:
-				Key.rightMouse = true
+				name = "rightMouse"
 				break
 		}
-		if(screen === "play") {
-			if (document.pointerLockElement !== canvas) {
-				getPointer()
-				p.lastBreak = now
-			}
-			else {
-				place = false
-				if(e.button === 0) {
-					if(Key.control) {
-						place = true
-					}
-					else {
-						changeWorldBlock(0)
-					}
-				}
-				holding = inventory.hotbar[inventory.hotbarSlot]
-				if(e.button === 2 && holding) {
-					place = true
-				}
-				if(place) {
-					newWorldBlock()
-				}
-			}
-		}
-		else if (screen === "inventory") {
-			clickInv()
-		}
+		Key[name] = true
+		controlEvent(name)
 
 		Button.click()
 		Slider.click()
 	}
 	canvas.onmouseup = function(e) {
+		let name
 		switch(e.button) {
 			case 0:
-				Key.leftMouse = false
+				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
+				else name = "leftMouse"
 				break
 			case 1:
-				Key.middleMouse = false
+				name = "middleMouse"
 				break
 			case 2:
-				Key.rightMouse = false
+				name = "rightMouse"
 				break
 		}
+		Key[name] = false
 		mouseDown = false
 		Slider.release()
 	}
 	canvas.onkeydown = function(e) {
-		let k = e.key.toLowerCase()
-		if (k === " " || k === "arrowdown" || k === "arrowup") {
+		let code = e.code
+		if (code === "Space" || code === "ArrowDown" || code === "ArrowUp") {
 			e.preventDefault()
 		}
-		if (e.repeat || Key[k]) {
+		if (e.repeat || Key[code]) {
 			return
 		}
-		Key[k] = true
+		Key[code] = true
 
-		if (k === "enter") {
-			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
+		controlEvent(code, e)
+
+		if (screen === "play" && Number(e.key)) {
+			inventory.hotbarSlot = e.key - 1
+			holding = inventory.hotbar[inventory.hotbarSlot]
 			updateHUD = true
-		}
-
-		if (screen === "play") {
-			if(k === "p") {
-				releasePointer()
-				changeScene("pause")
-			}
-
-			if (k === "t") {
-				// initTextures()
-				e.preventDefault()
-				changeScene("chat")
-			}
-
-			if(k === "b") {
-				p.autoBreak = !p.autoBreak
-				updateHUD = true
-			}
-			if(k === "h") {
-				p.autoBuild = !p.autoBuild
-				updateHUD = true
-			}
-
-			if (k === " " && !p.spectator) {
-				if (now < p.lastJump + 400) {
-					p.flying ^= true
-				}
-				else {
-					p.lastJump = now
-				}
-			}
-
-			if (k === "z") {
-				p.FOV(10, 300)
-			}
-
-			if (k === "shift" && !p.flying) {
-				p.sneaking = true
-				if (p.sprinting) {
-					p.FOV(settings.fov, 100)
-				}
-				p.sprinting = false
-				p.speed = 0.05
-				p.bottomH = 1.32
-			}
-
-			if (k === "l") {
-				p.spectator = !p.spectator
-				p.flying = true
-				p.onGround = false
-				updateHUD = true
-			}
-
-			if (k === "e") {
-				changeScene("inventory")
-				releasePointer()
-			}
-
-			if (k === ";") {
-				releasePointer()
-				freezeFrame = true
-			}
-
-			if (Key.backspace) {
-				let d = p.direction
-				world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
-			}
-
-			if(Number(k)) {
-				inventory.hotbarSlot = Number(k) - 1
-				holding = inventory.hotbar[inventory.hotbarSlot]
-				updateHUD = true
-			}
-		}
-		else if (screen === "pause") {
-			if(k === "p") {
-				play()
-			}
-		}
-		else if (screen === "inventory") {
-			if (k === "e") {
-				play()
-			}
-			if (k === "enter") {
-				drawScreens.inventory()
-			}
 		}
 	}
 	canvas.onkeyup = function(e) {
-		let k = e.key.toLowerCase()
-		Key[k] = false
-		if(k === "escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
+		Key[e.code] = false
+		if(e.code === "Escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
 			play()
 		}
 		if (screen === "play") {
-			if (k === "z") {
+			if (e.code === controlMap.zoom.key) {
 				p.FOV(settings.fov, 300)
 			}
 
-			if (k === "shift" && p.sneaking) {
+			if (e.code === controlMap.sneak.key && p.sneaking) {
 				p.sneaking = false
 				p.speed = 0.11
 				p.bottomH = 1.62
-				// p.y += 0.3
 			}
 		}
 	}

@@ -285,8 +285,15 @@ class Entity {
 		const x = round(this.x)
 		const y = round(this.y)
 		const z = round(this.z)
-		const blockLight = world.getLight(x, y, z, 1)
-		const skyLight = world.getLight(x, y, z, 0)
+		let blockLight = 15
+		let skyLight = 15
+		try {
+			blockLight = world.getLight(x, y, z, 1)
+			skyLight = world.getLight(x, y, z, 0)
+		}
+		catch(e) {
+			console.error(e)
+		}
 		const lightLevel = min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
 		gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 		gl.uniform1i(glCache.uSamplerEntity, 0)
