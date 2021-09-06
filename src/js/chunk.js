@@ -27,6 +27,7 @@ class Chunk {
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
+		this.doubleRender = false
 	}
 	getBlock(x, y, z) {
 		let s = y >> 4
@@ -42,6 +43,12 @@ class Chunk {
 			this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
 			this.sections[y >> 4].edited = true
 			this.edited = true
+		}
+		if (blockData[blockID].semiTrans) {
+			this.doubleRender = true
+			if (!this.world.doubleRenderChunks.includes(this)) {
+				this.world.doubleRenderChunks.push(this)
+			}
 		}
 		this.sections[y >> 4].setBlock(x, y & 15, z, blockID)
 	}

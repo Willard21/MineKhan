@@ -4,7 +4,7 @@ import { textureCoords, textureMap } from "./texture.js"
 import { Entity } from "./entity.js"
 
 class Player extends Entity {
-	constructor(x, y, z, blockID, glExtensions, gl, glCache, indexBuffer, world, p) {
+	constructor(x, y, z, vx, vy, vz, blockID, glExtensions, gl, glCache, indexBuffer, world, p) {
 		const block = blockData[blockID & 255]
 		const tex = block.textures
 		const shape = shapes.cube
@@ -35,7 +35,7 @@ class Player extends Entity {
 			}
 			texNum++
 		}
-		super(x, y, z, 0, 0, 0, 0, 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity, glExtensions, gl, glCache, indexBuffer, world, p)
+		super(x, y, z, 0, 0, vx || 0, vy || 0, vz || 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity, glExtensions, gl, glCache, indexBuffer, world, p)
 	}
 }
 

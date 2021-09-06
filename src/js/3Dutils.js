@@ -32,6 +32,12 @@ class PVector {
 		this.y *= m
 		this.z *= m
 	}
+	mag() {
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
+	}
+	magSquared() {
+		return this.x * this.x + this.y * this.y + this.z * this.z
+	}
 }
 
 const { cos, sin } = Math;

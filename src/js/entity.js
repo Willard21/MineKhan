@@ -79,7 +79,7 @@ class Entity {
 	updateVelocity(now) {
 		let dt = (now - this.lastUpdate) / 33
 		dt = dt > 2 ? 2 : dt
-		this.vely += -0.02 * dt
+		// this.vely += -0.02 * dt
 		if (this.vely < -1.5) {
 			this.vely = -1.5
 		}
@@ -282,19 +282,19 @@ class Entity {
 		modelViewProjectionMatrix.mult(modelMatrix.elements)
 		// row major to column major
 		modelViewProjectionMatrix.transpose()
-		const x = round(this.x)
-		const y = round(this.y)
-		const z = round(this.z)
-		let blockLight = 15
-		let skyLight = 15
-		try {
-			blockLight = world.getLight(x, y, z, 1)
-			skyLight = world.getLight(x, y, z, 0)
-		}
-		catch(e) {
-			console.error(e)
-		}
-		const lightLevel = min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
+		// const x = round(this.x)
+		// const y = round(this.y)
+		// const z = round(this.z)
+		// let blockLight = 15
+		// let skyLight = 15
+		// try {
+		// 	blockLight = world.getLight(x, y, z, 1)
+		// 	skyLight = world.getLight(x, y, z, 0)
+		// }
+		// catch(e) {
+		// 	console.error(e)
+		// }
+		const lightLevel = 1 // min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
 		gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 		gl.uniform1i(glCache.uSamplerEntity, 0)
 		gl.uniform1f(glCache.uLightLevelEntity, lightLevel)

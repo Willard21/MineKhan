@@ -72,6 +72,14 @@ const texturesFunc = function (setPixel, getPixels) {
 				}
 			}
 		},
+		water: n => {
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					let brightness = Math.random() * 100 | 0
+					setPixel(n, x, y, brightness, brightness, 255, 100)
+				}
+			}
+		},
 		hitbox: n => {
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
@@ -331,7 +339,8 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false }
+	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false },
+	{ name: "water", semiTrans: true, transparent: true, solid: false, shadow: false}
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -379,6 +388,7 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 	data.lightLevel = data.lightLevel || 0;
 	data.solid = data.solid !== undefined ? data.solid : true
 	data.icon = data.icon || false
+	data.semiTrans = data.semiTrans || false
 }
 
 const blockIds = {}

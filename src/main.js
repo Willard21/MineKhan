@@ -48,7 +48,7 @@ async function MineKhan() {
 
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
-	const { cos, sin, round, floor, min, max, abs, sqrt } = Math
+	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
 	const win = window.parent
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
@@ -182,7 +182,7 @@ async function MineKhan() {
 	//{
 	let version = "Alpha 0.7.1"
 	let reach = 5 // Max distance player can place or break blocks
-	let sky = [0.33, 0.54, 0.72] // 0 to 1 RGB color scale
+	let sky = new Float32Array([0.33, 0.54, 0.72]) // 0 to 1 RGB color scale
 	let superflat = false
 	let trees = true
 	let caves = true
@@ -1236,7 +1236,7 @@ async function MineKhan() {
 						p.velocity.y = 0
 					}
 					else {
-						p.y = face[1] + y - p.topH
+						p.y = face[1] + y - p.topH - 0.01
 					}
 				}
 			}
@@ -1317,17 +1317,22 @@ async function MineKhan() {
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
-		let pminX = round(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
-		let pmaxX = round(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
-		let pminY = round(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
-		let pmaxY = round(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
-		let pminZ = round(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
-		let pmaxZ = round(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
-		let block = null
-		let vel = p.velocity
+		let mag = p.velocity.mag()
+		let steps = Math.ceil(mag)
+		const VX = p.velocity.x / steps
+		const VY = p.velocity.y / steps
+		const VZ = p.velocity.z / steps
 
-		for (let x = pminX; x <= pmaxX; x++) {
-			for (let y = pmaxY; y >= pminY; y--) {
+		let pminX = floor(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
+		let pmaxX = ceil(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
+		let pminY = floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
+		let pmaxY = ceil(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
+		let pminZ = floor(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
+		let pmaxZ = ceil(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
+		let block = null
+
+		for (let y = pmaxY; y >= pminY; y--) {
+			for (let x = pminX; x <= pmaxX; x++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
 					if (blockData[block].solid) {
@@ -1337,82 +1342,92 @@ async function MineKhan() {
 			}
 		}
 
+		let hasCollided = false
 		p.px = p.x
 		p.py = p.y
 		p.pz = p.z
+		for (let j = 1; j <= steps && !hasCollided; j++) {
+			let px = p.x
+			let pz = p.z
 
-		//Check collisions in the Y direction
-		p.onGround = false
-		p.canStepX = false
-		p.canStepZ = false
-		p.y += vel.y
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], 0, vel.y, 0, block[3])) {
-				vel.y = 0
-				break
-			}
-		}
-		if (p.onGround) {
-			p.canStepX = true
-			p.canStepZ = true
-		}
-
-		var sneakLock = false, sneakSafe = false
-		if (p.sneaking) {
+			//Check collisions in the Y direction
+			p.onGround = false
+			p.canStepX = false
+			p.canStepZ = false
+			p.y += VY
 			for (let i = 0; i < contacts.size; i++) {
 				block = contacts.array[i]
-				if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
-					sneakLock = true
+				if (collided(block[0], block[1], block[2], 0, VY, 0, block[3])) {
+					p.velocity.y = 0
+					hasCollided = true
 					break
 				}
 			}
-		}
+			if (p.onGround) {
+				p.canStepX = true
+				p.canStepZ = true
+			}
 
-		//Check collisions in the X direction
-		p.x += vel.x
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
-				if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-					continue
+			var sneakLock = false, sneakSafe = false
+			if (p.sneaking) {
+				for (let i = 0; i < contacts.size; i++) {
+					block = contacts.array[i]
+					if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
+						sneakLock = true
+						break
+					}
 				}
-				// p.x = p.px
-				vel.x = 0
-				break
 			}
-			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
-				sneakSafe = true
-			}
-		}
 
-		if (sneakLock && !sneakSafe) {
-			p.x = p.px
-			vel.x = 0
-		}
-		sneakSafe = false
-
-		//Check collisions in the Z direction
-		p.z += vel.z
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
-				if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-					continue
+			//Check collisions in the X direction
+			p.x += VX
+			for (let i = 0; i < contacts.size; i++) {
+				block = contacts.array[i]
+				if (collided(block[0], block[1], block[2], VX, 0, 0, block[3])) {
+					if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+						continue
+					}
+					p.velocity.x = 0
+					hasCollided = true
+					break
 				}
-				// p.z = p.pz
-				vel.z = 0
-				break
+				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					sneakSafe = true
+				}
 			}
-			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
-				sneakSafe = true
-			}
-		}
 
-		if (sneakLock && !sneakSafe) {
-			p.z = p.pz
-			vel.z = 0
+			if (sneakLock && !sneakSafe) {
+				p.x = px
+				p.velocity.x = 0
+				hasCollided = true
+			}
+			sneakSafe = false
+
+			//Check collisions in the Z direction
+			p.z += VZ
+			for (let i = 0; i < contacts.size; i++) {
+				block = contacts.array[i]
+				if (collided(block[0], block[1], block[2], 0, 0, VZ, block[3])) {
+					if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+						continue
+					}
+					// p.z = p.pz
+					p.velocity.z = 0
+					hasCollided = true
+					break
+				}
+				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					sneakSafe = true
+				}
+			}
+
+			if (sneakLock && !sneakSafe) {
+				p.z = pz
+				p.velocity.z = 0
+				hasCollided = true
+			}
 		}
+		
 
 		if (!p.flying) {
 			let drag = p.onGround ? 0.5 : 0.85
@@ -1692,6 +1707,34 @@ async function MineKhan() {
 		chat(`${currentUser.username}: ${msg}`)
 	}
 
+	let commands = new Map()
+	commands.set("ban", args => {
+		let username = args[0]
+		if (!username) {
+			chat(`Please provide a username. Like /ban Willard`)
+			return
+		}
+		if (!window.ban) {
+			chat("This is a singleplayer world. There's nobody to ban.")
+			return
+		}
+		window.ban(username)
+	})
+	commands.set("online", args => {
+		if (window.online && multiplayer) {
+			window.online()
+		} else {
+			chat("You're all alone. Sorry.")
+		}
+	})
+
+	function sendCommand(msg) {
+		msg = msg.substr(1)
+		let parts = msg.split(" ")
+		let cmd = parts.shift()
+		if (commands.has(cmd)) commands.get(cmd)(parts)
+	}
+
 	var multiplayer = null
 	let playerPositions = {}
 	let playerEntities = {}
@@ -1758,20 +1801,23 @@ async function MineKhan() {
 				changeScene("loading")
 			}
 			else if (packet.type === "users") {
-				console.log(packet.data)
+				chat(packet.data.join(", "))
 			}
 			else if (packet.type === "ban") {
-				console.log(packet.data)
+				chat(packet.data)
 			}
 			else if (packet.type === "pos") {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new Player(pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
+				if (!playerEntities[name]) playerEntities[name] = new Player(pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
 				ent.z = pos.z
+				ent.velx = pos.vx || 0
+				ent.vely = pos.vy || 0
+				ent.velz = pos.vz || 0
 				packet.data.time = now
 			}
 			else if (packet.type === "dc") {
@@ -1798,7 +1844,7 @@ async function MineKhan() {
 				changeScene("main menu")
 			}
 			else {
-				alert("Connection lost!")
+				alert("Connection lost! Willard probably restarted the server. You can re-open your world from the pause menu.")
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -1810,6 +1856,14 @@ async function MineKhan() {
 		}
 
 		window.ban = function(username) {
+			if (!multiplayer) {
+				chat("Not in a multiplayer world.")
+				return
+			}
+			if (!host) {
+				chat("You don't have permission to do that.")
+				return
+			}
 			multiplayer.send(JSON.stringify({
 				type: "ban",
 				data: username || ""
@@ -1818,12 +1872,13 @@ async function MineKhan() {
 
 		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
 			type: "pos",
-			data: p2
+			data: {x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z}
 		})), 500)
 
 		window.dists = () => {
 			console.log(playerPositions)
 			console.log(playerDistances)
+			return playerEntities
 		}
 	}
 
@@ -1856,6 +1911,7 @@ async function MineKhan() {
 			this.chunks = []
 			this.loaded = []
 			this.sortedChunks = []
+			this.doubleRenderChunks = []
 			this.offsetX = 0
 			this.offsetZ = 0
 			this.lwidth = 0
@@ -2275,10 +2331,10 @@ async function MineKhan() {
 			initModelView(p)
 			let skyLight
 			if (multiplayer) {
-				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 5, 0.1), 1)
+				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 3, 0.1), 1)
 			}
 			else {
-				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
+				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 3, 0.1), 1)
 			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -2312,6 +2368,16 @@ async function MineKhan() {
 			for (let chunk of c) {
 				chunk.render(p, glob)
 			}
+			if (this.doubleRenderChunks.length) {
+				gl.depthMask(false)
+				gl.uniform1i(glCache.uTrans, 1)
+				for (let chunk of this.doubleRenderChunks) {
+					chunk.render(p, glob)
+				}
+				gl.uniform1i(glCache.uTrans, 0)
+				gl.depthMask(true)
+			}
+			
 			renderedChunks = glob.renderedChunks
 
 			gl.uniform3f(glCache.uPos, 0, 0, 0)
@@ -2326,6 +2392,7 @@ async function MineKhan() {
 			if (multiplayer) {
 				for (let name in playerEntities) {
 					const entity = playerEntities[name]
+					entity.update()
 					entity.render()
 				}
 			}
@@ -2382,6 +2449,16 @@ async function MineKhan() {
 						this.chunkGenQueue.push(chunk)
 					}
 					this.loaded[i++] = chunk
+				}
+			}
+			this.sortedChunks.length = 0
+			this.doubleRenderChunks.length = 0
+			for (let chunk of this.loaded) {
+				if (renderFilter(chunk)) {
+					this.sortedChunks.push(chunk)
+				}
+				if (chunk.doubleRender) {
+					this.doubleRenderChunks.push(chunk)
 				}
 			}
 			this.sortedChunks = this.loaded.filter(renderFilter)
@@ -3237,7 +3314,7 @@ async function MineKhan() {
 					newWorldBlock()
 				}
 
-				if (name === controlMap.pickBlock && hitBox.pos) {
+				if (name === controlMap.pickBlock.key && hitBox.pos) {
 					updateHUD = true
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
 					let index = inventory.hotbar.indexOf(block)
@@ -3490,7 +3567,11 @@ async function MineKhan() {
 			if (msg) {
 				e.preventDefault()
 				e.stopPropagation()
-				sendChat(msg)
+				if (msg.startsWith("/")) {
+					sendCommand(msg)
+				} else {
+					sendChat(msg)
+				}
 				chatInput.value = ""
 			}
 			else {
@@ -3597,6 +3678,8 @@ async function MineKhan() {
 		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
+		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
+		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
 		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
 		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
@@ -3604,6 +3687,8 @@ async function MineKhan() {
 		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 		gl.uniform1f(glCache.uDist, 1000)
+		gl.uniform3f(glCache.uSky, sky[0], sky[1], sky[2])
+		gl.uniform1i(glCache.uTrans, 0)
 
 		//Send the block textures to the GPU
 		initTextures(gl, glCache)
