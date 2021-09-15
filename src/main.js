@@ -1709,7 +1709,7 @@ async function MineKhan() {
 
 	let commands = new Map()
 	commands.set("ban", args => {
-		let username = args[0]
+		let username = args.join(" ")
 		if (!username) {
 			chat(`Please provide a username. Like /ban Willard`)
 			return
@@ -1777,6 +1777,7 @@ async function MineKhan() {
 				}))
 			}
 		}
+		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
 			let packet = JSON.parse(msg.data)
 			if (packet.type === "setBlock") {
@@ -1820,6 +1821,9 @@ async function MineKhan() {
 				ent.velz = pos.vz || 0
 				packet.data.time = now
 			}
+			else if (packet.type === "error") {
+				multiplayerError = packet.data
+			}
 			else if (packet.type === "dc") {
 				chat(`${packet.author} has disconnected.`)
 				delete playerPositions[packet.author]
@@ -1840,11 +1844,11 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				alert("Connection lost!")
+				alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
 			else {
-				alert("Connection lost! Willard probably restarted the server. You can re-open your world from the pause menu.")
+				alert(`Connection lost! ${multiplayerError || "Willard probably restarted the server. You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -3578,7 +3582,7 @@ async function MineKhan() {
 				play()
 			}
 		}
-		if (e.key === "Escape") {
+		else if (e.key === "Escape") {
 			e.preventDefault()
 			e.stopPropagation()
 			play()
