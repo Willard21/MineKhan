@@ -84,16 +84,16 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 <html lang="en-us">
 	<head>
 		<meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Play creative mode Minecraft right from your browser!">
-        <meta name="keywords" content="Khan Academy, Programs, Search">
-        <meta property="og:title" content="MineKhan"/>
-        <meta property="og:description" content="Play creative mode Minecraft right from your browser!"/>
-        <meta property="og:image" content="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="Play creative mode Minecraft right from your browser!">
+		<meta name="keywords" content="Khan Academy, Programs, Search">
+		<meta property="og:title" content="MineKhan"/>
+		<meta property="og:description" content="Play creative mode Minecraft right from your browser!"/>
+		<meta property="og:image" content="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png"/>
 		<title>MineKhan</title>
 		<!-- <link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"> -->
-        <link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin>
-        <link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
+		<link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
 	</head>
 	<body>
 	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
@@ -101,8 +101,12 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
 	<div id="quota" class="hidden"></div>
 	<div id="onhover" class="hidden"></div>
-    <div id="chat" class="hidden"></div>
-    <input id="chatbar" class="hidden">
+	<div id="chat" class="hidden"></div>
+	<input id="chatbar" class="hidden" list="commands">
+	<datalist id="commands">
+		<option>/ban</option>
+ 		<option>/online</option>
+	</datalist>
 	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 		To share your world on KA, copy/paste the saveString<br>
 		from this box into the code on line 190.<br>
@@ -115,7 +119,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		// Code edits will erase the world.
 		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
 		window.loadString = ""
-    </script>
+	</script>
 	<script>/******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -270,18 +274,16 @@ window.quota = document.getElementById("quota")
 window.hoverbox = document.getElementById("onhover")
 window.canvas.width  = window.innerWidth
 window.canvas.height = window.innerHeight
+window.controlMap = {}
 
-/* Set this text editor to max width by copying this into the JS console:
-document.getElementsByClassName("_1chbfei")[0].setAttribute('style', 'max-width: 100vw !important')
-*/
 async function MineKhan() {
-	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString } = window
+	// Cache user-defined globals
+	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
 
-	// cache Math object
-	const { Math, performance, Date, document } = window;
-	const { cos, sin, round, floor, min, max, abs, sqrt } = Math;
-	const win = window.parent;
-	const { console } = win;
+	// cache global objects locally.
+	const { Math, performance, Date, document, console } = window
+	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
+	const win = window.parent
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
@@ -305,7 +307,7 @@ async function MineKhan() {
 		window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
 		let jobId = 1
 		const pendingJobs = new Map()
-		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1; i < count; i++) {
+		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1 || 1; i < count; i++) { // Generate between 1 and (processors - 1) workers.
 			let worker = new Worker(workerURL)
 			worker.onmessage = e => {
 				let [promise, resolve] = pendingJobs.get(e.data.jobId)
@@ -343,8 +345,7 @@ async function MineKhan() {
 		}
 	}
 
-	let world
-	let worldSeed
+	let world, worldSeed
 
 	function setSeed(seed) {
 		worldSeed = seed
@@ -415,7 +416,7 @@ async function MineKhan() {
 	//{
 	let version = "Alpha 0.7.1"
 	let reach = 5 // Max distance player can place or break blocks
-	let sky = [0.33, 0.54, 0.72] // 0 to 1 RGB color scale
+	let sky = new Float32Array([0.33, 0.54, 0.72]) // 0 to 1 RGB color scale
 	let superflat = false
 	let trees = true
 	let caves = true
@@ -592,7 +593,6 @@ async function MineKhan() {
 		y: 0,
 		z: 0,
 	}
-	let place
 	let inventory = {
 		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
 		main: [],
@@ -600,11 +600,53 @@ async function MineKhan() {
 		size: 40 * min(width, height) / 600,
 		holding: 0,
 	}
+
+	function setControl(name, key, shift = false, ctrl = false, alt = false) {
+		controlMap[name] = {
+			key,
+			shift,
+			ctrl,
+			alt,
+			get pressed() {
+				return Boolean(Key[this.key]
+					&& (!this.shift || Key.ShiftLeft || Key.ShiftRight)
+					&& (!this.ctrl || Key.ControlLeft || Key.ControlRight)
+					&& (!this.alt || Key.AltLeft || Key.AltRight))
+			},
+			// Check to see if all of an event's data matches this key map
+			event(e) {
+				return Boolean(e.code === this.key
+					&& (!this.shift || e.shiftKey)
+					&& (!this.ctrl || e.ctrlKey)
+					&& (!this.alt || e.altKey))
+			}
+		}
+	}
+	setControl("jump", "Space")
+	setControl("walkForwards", "KeyW")
+	setControl("strafeLeft", "KeyA")
+	setControl("walkBackwards", "KeyS")
+	setControl("strafeRight", "KeyD")
+	setControl("sprint", "KeyQ")
+	setControl("openInventory", "KeyE")
+	setControl("openChat", "KeyT")
+	setControl("pause", "KeyP")
+	setControl("hyperBuilder", "KeyH")
+	setControl("superBreaker", "KeyB")
+	setControl("toggleSpectator", "KeyL")
+	setControl("zoom", "KeyZ")
+	setControl("cycleBlockShapes", "Enter")
+	setControl("sneak", "ShiftLeft")
+	setControl("dropItem", "Backspace")
+	setControl("breakBlock", "leftMouse")
+	setControl("placeBlock", "rightMouse")
+	setControl("pickBlock", "middleMouse")
 	//}
 
 	function play() {
 		canvas.onblur()
 		p.lastBreak = now
+		holding = inventory.hotbar[inventory.hotbarSlot]
 		updateHUD = true
 		use3d()
 		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
@@ -1428,7 +1470,7 @@ async function MineKhan() {
 						p.velocity.y = 0
 					}
 					else {
-						p.y = face[1] + y - p.topH
+						p.y = face[1] + y - p.topH - 0.01
 					}
 				}
 			}
@@ -1455,7 +1497,6 @@ async function MineKhan() {
 					if (maxY - py > 0.5 || !p.onGround) {
 						p.canStepX = false
 						p.x = x + face[0] + (vx < 0 ? p.w : -p.w) * 1.001
-						console.log("No step!")
 					}
 					col = true
 				}
@@ -1483,7 +1524,6 @@ async function MineKhan() {
 					if (maxY - py > 0.5 || !p.onGround) {
 						p.canStepZ = false
 						p.z = z + face[2] + (vz < 0 ? p.w : -p.w) * 1.001
-						console.log("No step!")
 					}
 					col = true
 				}
@@ -1511,17 +1551,22 @@ async function MineKhan() {
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
-		let pminX = round(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
-		let pmaxX = round(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
-		let pminY = round(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
-		let pmaxY = round(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
-		let pminZ = round(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
-		let pmaxZ = round(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
-		let block = null
-		let vel = p.velocity
+		let mag = p.velocity.mag()
+		let steps = Math.ceil(mag)
+		const VX = p.velocity.x / steps
+		const VY = p.velocity.y / steps
+		const VZ = p.velocity.z / steps
 
-		for (let x = pminX; x <= pmaxX; x++) {
-			for (let y = pmaxY; y >= pminY; y--) {
+		let pminX = floor(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
+		let pmaxX = ceil(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
+		let pminY = floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
+		let pmaxY = ceil(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
+		let pminZ = floor(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
+		let pmaxZ = ceil(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
+		let block = null
+
+		for (let y = pmaxY; y >= pminY; y--) {
+			for (let x = pminX; x <= pmaxX; x++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
 					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__["blockData"][block].solid) {
@@ -1531,82 +1576,92 @@ async function MineKhan() {
 			}
 		}
 
+		let hasCollided = false
 		p.px = p.x
 		p.py = p.y
 		p.pz = p.z
+		for (let j = 1; j <= steps && !hasCollided; j++) {
+			let px = p.x
+			let pz = p.z
 
-		//Check collisions in the Y direction
-		p.onGround = false
-		p.canStepX = false
-		p.canStepZ = false
-		p.y += vel.y
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], 0, vel.y, 0, block[3])) {
-				vel.y = 0
-				break
-			}
-		}
-		if (p.onGround) {
-			p.canStepX = true
-			p.canStepZ = true
-		}
-
-		var sneakLock = false, sneakSafe = false
-		if (p.sneaking) {
+			//Check collisions in the Y direction
+			p.onGround = false
+			p.canStepX = false
+			p.canStepZ = false
+			p.y += VY
 			for (let i = 0; i < contacts.size; i++) {
 				block = contacts.array[i]
-				if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
-					sneakLock = true
+				if (collided(block[0], block[1], block[2], 0, VY, 0, block[3])) {
+					p.velocity.y = 0
+					hasCollided = true
 					break
 				}
 			}
-		}
+			if (p.onGround) {
+				p.canStepX = true
+				p.canStepZ = true
+			}
 
-		//Check collisions in the X direction
-		p.x += vel.x
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], vel.x, 0, 0, block[3])) {
-				if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-					continue
+			var sneakLock = false, sneakSafe = false
+			if (p.sneaking) {
+				for (let i = 0; i < contacts.size; i++) {
+					block = contacts.array[i]
+					if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
+						sneakLock = true
+						break
+					}
 				}
-				// p.x = p.px
-				vel.x = 0
-				break
 			}
-			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
-				sneakSafe = true
-			}
-		}
 
-		if (sneakLock && !sneakSafe) {
-			p.x = p.px
-			vel.x = 0
-		}
-		sneakSafe = false
-
-		//Check collisions in the Z direction
-		p.z += vel.z
-		for (let i = 0; i < contacts.size; i++) {
-			block = contacts.array[i]
-			if (collided(block[0], block[1], block[2], 0, 0, vel.z, block[3])) {
-				if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
-					continue
+			//Check collisions in the X direction
+			p.x += VX
+			for (let i = 0; i < contacts.size; i++) {
+				block = contacts.array[i]
+				if (collided(block[0], block[1], block[2], VX, 0, 0, block[3])) {
+					if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+						continue
+					}
+					p.velocity.x = 0
+					hasCollided = true
+					break
 				}
-				// p.z = p.pz
-				vel.z = 0
-				break
+				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					sneakSafe = true
+				}
 			}
-			if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
-				sneakSafe = true
-			}
-		}
 
-		if (sneakLock && !sneakSafe) {
-			p.z = p.pz
-			vel.z = 0
+			if (sneakLock && !sneakSafe) {
+				p.x = px
+				p.velocity.x = 0
+				hasCollided = true
+			}
+			sneakSafe = false
+
+			//Check collisions in the Z direction
+			p.z += VZ
+			for (let i = 0; i < contacts.size; i++) {
+				block = contacts.array[i]
+				if (collided(block[0], block[1], block[2], 0, 0, VZ, block[3])) {
+					if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+						continue
+					}
+					// p.z = p.pz
+					p.velocity.z = 0
+					hasCollided = true
+					break
+				}
+				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					sneakSafe = true
+				}
+			}
+
+			if (sneakLock && !sneakSafe) {
+				p.z = pz
+				p.velocity.z = 0
+				hasCollided = true
+			}
 		}
+		
 
 		if (!p.flying) {
 			let drag = p.onGround ? 0.5 : 0.85
@@ -1637,7 +1692,7 @@ async function MineKhan() {
 			p.velocity.y = -p.maxYVelocity
 		}
 		if(p.onGround) {
-			if(Key[" "]) {
+			if(controlMap.jump.pressed) {
 				p.velocity.y = p.jumpSpeed
 				p.onGround = false
 			}
@@ -1886,6 +1941,34 @@ async function MineKhan() {
 		chat(`${currentUser.username}: ${msg}`)
 	}
 
+	let commands = new Map()
+	commands.set("ban", args => {
+		let username = args.join(" ")
+		if (!username) {
+			chat(`Please provide a username. Like /ban Willard`)
+			return
+		}
+		if (!window.ban) {
+			chat("This is a singleplayer world. There's nobody to ban.")
+			return
+		}
+		window.ban(username)
+	})
+	commands.set("online", args => {
+		if (window.online && multiplayer) {
+			window.online()
+		} else {
+			chat("You're all alone. Sorry.")
+		}
+	})
+
+	function sendCommand(msg) {
+		msg = msg.substr(1)
+		let parts = msg.split(" ")
+		let cmd = parts.shift()
+		if (commands.has(cmd)) commands.get(cmd)(parts)
+	}
+
 	var multiplayer = null
 	let playerPositions = {}
 	let playerEntities = {}
@@ -1928,6 +2011,7 @@ async function MineKhan() {
 				}))
 			}
 		}
+		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
 			let packet = JSON.parse(msg.data)
 			if (packet.type === "setBlock") {
@@ -1952,21 +2036,27 @@ async function MineKhan() {
 				changeScene("loading")
 			}
 			else if (packet.type === "users") {
-				console.log(packet.data)
+				chat(packet.data.join(", "))
 			}
 			else if (packet.type === "ban") {
-				console.log(packet.data)
+				chat(packet.data)
 			}
 			else if (packet.type === "pos") {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_19__["Player"](pos.x, pos.y, pos.z, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
+				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_19__["Player"](pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
 				ent.z = pos.z
+				ent.velx = pos.vx || 0
+				ent.vely = pos.vy || 0
+				ent.velz = pos.vz || 0
 				packet.data.time = now
+			}
+			else if (packet.type === "error") {
+				multiplayerError = packet.data
 			}
 			else if (packet.type === "dc") {
 				chat(`${packet.author} has disconnected.`)
@@ -1988,11 +2078,11 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				alert("Connection lost!")
+				alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
 			else {
-				alert("Connection lost!")
+				alert(`Connection lost! ${multiplayerError || "Willard probably restarted the server. You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -2004,6 +2094,14 @@ async function MineKhan() {
 		}
 
 		window.ban = function(username) {
+			if (!multiplayer) {
+				chat("Not in a multiplayer world.")
+				return
+			}
+			if (!host) {
+				chat("You don't have permission to do that.")
+				return
+			}
 			multiplayer.send(JSON.stringify({
 				type: "ban",
 				data: username || ""
@@ -2012,12 +2110,13 @@ async function MineKhan() {
 
 		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
 			type: "pos",
-			data: p2
+			data: {x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z}
 		})), 500)
 
 		window.dists = () => {
 			console.log(playerPositions)
 			console.log(playerDistances)
+			return playerEntities
 		}
 	}
 
@@ -2050,6 +2149,7 @@ async function MineKhan() {
 			this.chunks = []
 			this.loaded = []
 			this.sortedChunks = []
+			this.doubleRenderChunks = []
 			this.offsetX = 0
 			this.offsetZ = 0
 			this.lwidth = 0
@@ -2375,10 +2475,10 @@ async function MineKhan() {
 				this.chunkGenQueue.sort(sortChunks)
 			}
 
-			if (Key.leftMouse && !Key.control && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
+			if (controlMap.breakBlock.pressed && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
 				changeWorldBlock(0)
 			}
-			if ((Key.rightMouse || Key.leftMouse && Key.control) && (p.lastPlace < now - 250 || p.autoBuild)) {
+			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				newWorldBlock()
 			}
 
@@ -2469,10 +2569,10 @@ async function MineKhan() {
 			initModelView(p)
 			let skyLight
 			if (multiplayer) {
-				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 5, 0.1), 1)
+				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 3, 0.1), 1)
 			}
 			else {
-				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 5, 0.1), 1)
+				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 3, 0.1), 1)
 			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -2506,6 +2606,16 @@ async function MineKhan() {
 			for (let chunk of c) {
 				chunk.render(p, glob)
 			}
+			if (this.doubleRenderChunks.length) {
+				gl.depthMask(false)
+				gl.uniform1i(glCache.uTrans, 1)
+				for (let chunk of this.doubleRenderChunks) {
+					chunk.render(p, glob)
+				}
+				gl.uniform1i(glCache.uTrans, 0)
+				gl.depthMask(true)
+			}
+			
 			renderedChunks = glob.renderedChunks
 
 			gl.uniform3f(glCache.uPos, 0, 0, 0)
@@ -2520,6 +2630,7 @@ async function MineKhan() {
 			if (multiplayer) {
 				for (let name in playerEntities) {
 					const entity = playerEntities[name]
+					entity.update()
 					entity.render()
 				}
 			}
@@ -2576,6 +2687,16 @@ async function MineKhan() {
 						this.chunkGenQueue.push(chunk)
 					}
 					this.loaded[i++] = chunk
+				}
+			}
+			this.sortedChunks.length = 0
+			this.doubleRenderChunks.length = 0
+			for (let chunk of this.loaded) {
+				if (renderFilter(chunk)) {
+					this.sortedChunks.push(chunk)
+				}
+				if (chunk.doubleRender) {
+					this.doubleRenderChunks.push(chunk)
 				}
 			}
 			this.sortedChunks = this.loaded.filter(renderFilter)
@@ -2734,20 +2855,20 @@ async function MineKhan() {
 		move.x = 0
 		move.z = 0
 
-		if(Key.w) move.z += p.speed
-		if(Key.s) move.z -= p.speed
-		if(Key.a) move.x += p.speed
-		if(Key.d) move.x -= p.speed
+		if(controlMap.walkForwards.pressed) move.z += p.speed
+		if(controlMap.walkBackwards.pressed) move.z -= p.speed
+		if(controlMap.strafeLeft.pressed) move.x += p.speed
+		if(controlMap.strafeRight.pressed) move.x -= p.speed
 		if (p.flying) {
-			if(Key[" "]) p.velocity.y += 0.1
-			if(Key.shift) p.velocity.y -= 0.1
+			if(controlMap.jump.pressed) p.velocity.y += 0.1
+			if(controlMap.sneak.pressed) p.velocity.y -= 0.1
 		}
-		if(Key.arrowleft) p.ry -= 0.15
-		if(Key.arrowright) p.ry += 0.15
-		if(Key.arrowup) p.rx += 0.15
-		if(Key.arrowdown) p.rx -= 0.15
+		if(Key.ArrowLeft) p.ry -= 0.15
+		if(Key.ArrowRight) p.ry += 0.15
+		if(Key.ArrowUp) p.rx += 0.15
+		if(Key.ArrowDown) p.rx -= 0.15
 
-		if (!p.sprinting && Key.q && !p.sneaking && Key.w) {
+		if (!p.sprinting && controlMap.sprint.pressed && !p.sneaking && controlMap.walkForwards.pressed) {
 			p.FOV(settings.fov + 10, 250)
 			p.sprinting = true
 		}
@@ -3408,6 +3529,122 @@ async function MineKhan() {
 			Slider.drag()
 		}
 	}
+
+	// For user controls that react immediately in the event handlers.
+	function controlEvent(name, event) {
+		if (name === controlMap.cycleBlockShapes.key) {
+			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
+			updateHUD = true
+		}
+
+		if(screen === "play") {
+			if (document.pointerLockElement !== canvas) {
+				getPointer()
+				p.lastBreak = now
+			}
+			else {
+				if (name === controlMap.breakBlock.key) {
+					changeWorldBlock(0)
+				}
+
+				// holding = inventory.hotbar[inventory.hotbarSlot]
+				if(name === controlMap.placeBlock.key && holding) {
+					newWorldBlock()
+				}
+
+				if (name === controlMap.pickBlock.key && hitBox.pos) {
+					updateHUD = true
+					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
+					let index = inventory.hotbar.indexOf(block)
+					if (index >= 0) {
+						inventory.hotbarSlot = index
+					}
+					else {
+						inventory.hotbar[inventory.hotbarSlot] = block
+					}
+				}
+
+				if(name === controlMap.pause.key) {
+					releasePointer()
+					changeScene("pause")
+				}
+
+				if (name === controlMap.openChat.key) {
+					event.preventDefault()
+					changeScene("chat")
+				}
+
+				if(name === controlMap.superBreaker.key) {
+					p.autoBreak = !p.autoBreak
+					updateHUD = true
+				}
+
+				if(name === controlMap.hyperBuilder.key) {
+					p.autoBuild = !p.autoBuild
+					updateHUD = true
+				}
+
+				if (name === controlMap.jump.key && !p.spectator) {
+					if (now < p.lastJump + 400) {
+						p.flying = !p.flying
+					}
+					else {
+						p.lastJump = now
+					}
+				}
+
+				if (name === controlMap.zoom.key) {
+					p.FOV(10, 300)
+				}
+
+				if (name === controlMap.sneak.key && !p.flying) {
+					p.sneaking = true
+					if (p.sprinting) {
+						p.FOV(settings.fov, 100)
+					}
+					p.sprinting = false
+					p.speed = 0.05
+					p.bottomH = 1.32
+				}
+
+				if (name === controlMap.toggleSpectator.key) {
+					p.spectator = !p.spectator
+					p.flying = true
+					p.onGround = false
+					updateHUD = true
+				}
+
+				if (name === controlMap.openInventory.key) {
+					changeScene("inventory")
+					releasePointer()
+				}
+
+				if (name === "Semicolon") {
+					releasePointer()
+					freezeFrame = true
+				}
+
+				if (name === controlMap.dropItem.key) {
+					let d = p.direction
+					world.entities.push(new _js_item_js__WEBPACK_IMPORTED_MODULE_18__["Item"](p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
+				}
+			}
+		}
+		else if (screen === "pause" && name === controlMap.pause.key) {
+			play()
+		}
+		else if (screen === "inventory") {
+			if (name === "leftMouse") {
+				clickInv()
+			}
+			if (name === controlMap.openInventory.key) {
+				play()
+			}
+			if (name === controlMap.cycleBlockShapes.key) {
+				drawScreens.inventory()
+			}
+		}
+	}
 	document.onmousemove = trackMouse
 	document.onpointerlockchange = function() {
 		if (document.pointerLockElement === canvas) {
@@ -3428,191 +3665,75 @@ async function MineKhan() {
 		mouseX = e.x
 		mouseY = e.y
 		mouseDown = true
-		let block, index
+		let name
 		switch(e.button) {
 			case 0:
-				Key.leftMouse = true
+				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
+				else name = "leftMouse"
 				break
 			case 1:
-				Key.middleMouse = true
-				if (!hitBox.pos) break
-				updateHUD = true
-				block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
-				index = inventory.hotbar.indexOf(block)
-				if (index >= 0) {
-					inventory.hotbarSlot = index
-				}
-				else {
-					inventory.hotbar[inventory.hotbarSlot] = block
-				}
+				name = "middleMouse"
 				break
 			case 2:
-				Key.rightMouse = true
+				name = "rightMouse"
 				break
 		}
-		if(screen === "play") {
-			if (document.pointerLockElement !== canvas) {
-				getPointer()
-				p.lastBreak = now
-			}
-			else {
-				place = false
-				if(e.button === 0) {
-					if(Key.control) {
-						place = true
-					}
-					else {
-						changeWorldBlock(0)
-					}
-				}
-				holding = inventory.hotbar[inventory.hotbarSlot]
-				if(e.button === 2 && holding) {
-					place = true
-				}
-				if(place) {
-					newWorldBlock()
-				}
-			}
-		}
-		else if (screen === "inventory") {
-			clickInv()
-		}
+		Key[name] = true
+		controlEvent(name)
 
 		Button.click()
 		Slider.click()
 	}
 	canvas.onmouseup = function(e) {
+		let name
 		switch(e.button) {
 			case 0:
-				Key.leftMouse = false
+				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
+				else name = "leftMouse"
 				break
 			case 1:
-				Key.middleMouse = false
+				name = "middleMouse"
 				break
 			case 2:
-				Key.rightMouse = false
+				name = "rightMouse"
 				break
 		}
+		Key[name] = false
 		mouseDown = false
 		Slider.release()
 	}
 	canvas.onkeydown = function(e) {
-		let k = e.key.toLowerCase()
-		if (k === " " || k === "arrowdown" || k === "arrowup") {
+		let code = e.code
+		if (code === "Space" || code === "ArrowDown" || code === "ArrowUp") {
 			e.preventDefault()
 		}
-		if (e.repeat || Key[k]) {
+		if (e.repeat || Key[code]) {
 			return
 		}
-		Key[k] = true
+		Key[code] = true
 
-		if (k === "enter") {
-			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
+		controlEvent(code, e)
+
+		if (screen === "play" && Number(e.key)) {
+			inventory.hotbarSlot = e.key - 1
+			holding = inventory.hotbar[inventory.hotbarSlot]
 			updateHUD = true
-		}
-
-		if (screen === "play") {
-			if(k === "p") {
-				releasePointer()
-				changeScene("pause")
-			}
-
-			if (k === "t") {
-				// initTextures()
-				e.preventDefault()
-				changeScene("chat")
-			}
-
-			if(k === "b") {
-				p.autoBreak = !p.autoBreak
-				updateHUD = true
-			}
-			if(k === "h") {
-				p.autoBuild = !p.autoBuild
-				updateHUD = true
-			}
-
-			if (k === " " && !p.spectator) {
-				if (now < p.lastJump + 400) {
-					p.flying ^= true
-				}
-				else {
-					p.lastJump = now
-				}
-			}
-
-			if (k === "z") {
-				p.FOV(10, 300)
-			}
-
-			if (k === "shift" && !p.flying) {
-				p.sneaking = true
-				if (p.sprinting) {
-					p.FOV(settings.fov, 100)
-				}
-				p.sprinting = false
-				p.speed = 0.05
-				p.bottomH = 1.32
-			}
-
-			if (k === "l") {
-				p.spectator = !p.spectator
-				p.flying = true
-				p.onGround = false
-				updateHUD = true
-			}
-
-			if (k === "e") {
-				changeScene("inventory")
-				releasePointer()
-			}
-
-			if (k === ";") {
-				releasePointer()
-				freezeFrame = true
-			}
-
-			if (Key.backspace) {
-				let d = p.direction
-				world.entities.push(new _js_item_js__WEBPACK_IMPORTED_MODULE_18__["Item"](p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
-			}
-
-			if(Number(k)) {
-				inventory.hotbarSlot = Number(k) - 1
-				holding = inventory.hotbar[inventory.hotbarSlot]
-				updateHUD = true
-			}
-		}
-		else if (screen === "pause") {
-			if(k === "p") {
-				play()
-			}
-		}
-		else if (screen === "inventory") {
-			if (k === "e") {
-				play()
-			}
-			if (k === "enter") {
-				drawScreens.inventory()
-			}
 		}
 	}
 	canvas.onkeyup = function(e) {
-		let k = e.key.toLowerCase()
-		Key[k] = false
-		if(k === "escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
+		Key[e.code] = false
+		if(e.code === "Escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
 			play()
 		}
 		if (screen === "play") {
-			if (k === "z") {
+			if (e.code === controlMap.zoom.key) {
 				p.FOV(settings.fov, 300)
 			}
 
-			if (k === "shift" && p.sneaking) {
+			if (e.code === controlMap.sneak.key && p.sneaking) {
 				p.sneaking = false
 				p.speed = 0.11
 				p.bottomH = 1.62
-				// p.y += 0.3
 			}
 		}
 	}
@@ -3684,14 +3805,18 @@ async function MineKhan() {
 			if (msg) {
 				e.preventDefault()
 				e.stopPropagation()
-				sendChat(msg)
+				if (msg.startsWith("/")) {
+					sendCommand(msg)
+				} else {
+					sendChat(msg)
+				}
 				chatInput.value = ""
 			}
 			else {
 				play()
 			}
 		}
-		if (e.key === "Escape") {
+		else if (e.key === "Escape") {
 			e.preventDefault()
 			e.stopPropagation()
 			play()
@@ -3791,6 +3916,8 @@ async function MineKhan() {
 		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
+		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
+		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
 		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
 		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
@@ -3798,6 +3925,8 @@ async function MineKhan() {
 		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 		gl.uniform1f(glCache.uDist, 1000)
+		gl.uniform3f(glCache.uSky, sky[0], sky[1], sky[2])
+		gl.uniform1i(glCache.uTrans, 0)
 
 		//Send the block textures to the GPU
 		Object(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__["initTextures"])(gl, glCache)
@@ -4560,7 +4689,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(mix(color.rgb * vShadow, vec3(0.33, 0.54, 0.72) * uTime, vFog), color.a);\r\n    if (gl_FragColor.a == 0.0) discard;\r\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nuniform bool uTrans;\r\nuniform vec3 uSky; // vec3(0.33, 0.54, 0.72)\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(mix(color.rgb * vShadow, uSky * uTime, vFog), color.a);\r\n    if (!uTrans && gl_FragColor.a != 1.0) discard;\r\n    else if (uTrans && gl_FragColor.a == 1.0) discard;\r\n}");
 
 /***/ }),
 /* 3 */
@@ -4912,7 +5041,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.i, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n\tpadding-right: 20px;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}", ""]);
 // Exports
 /* harmony default export */ __webpack_exports__["default"] = (___CSS_LOADER_EXPORT___);
 
@@ -5541,6 +5670,12 @@ class PVector {
 		this.y *= m
 		this.z *= m
 	}
+	mag() {
+		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
+	}
+	magSquared() {
+		return this.x * this.x + this.y * this.y + this.z * this.z
+	}
 }
 
 const { cos, sin } = Math;
@@ -5968,6 +6103,14 @@ const texturesFunc = function (setPixel, getPixels) {
 				}
 			}
 		},
+		water: n => {
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					let brightness = Math.random() * 100 | 0
+					setPixel(n, x, y, brightness, brightness, 255, 100)
+				}
+			}
+		},
 		hitbox: n => {
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
@@ -6227,7 +6370,8 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false }
+	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false },
+	{ name: "water", semiTrans: true, transparent: true, solid: false, shadow: false}
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -6275,6 +6419,7 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 	data.lightLevel = data.lightLevel || 0;
 	data.solid = data.solid !== undefined ? data.solid : true
 	data.icon = data.icon || false
+	data.semiTrans = data.semiTrans || false
 }
 
 const blockIds = {}
@@ -7366,6 +7511,7 @@ class Chunk {
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
+		this.doubleRender = false
 	}
 	getBlock(x, y, z) {
 		let s = y >> 4
@@ -7381,6 +7527,12 @@ class Chunk {
 			this.cleanSections[y >> 4] = this.sections[y >> 4].blocks.slice()
 			this.sections[y >> 4].edited = true
 			this.edited = true
+		}
+		if (_blockData_js__WEBPACK_IMPORTED_MODULE_1__["blockData"][blockID].semiTrans) {
+			this.doubleRender = true
+			if (!this.world.doubleRenderChunks.includes(this)) {
+				this.world.doubleRenderChunks.push(this)
+			}
 		}
 		this.sections[y >> 4].setBlock(x, y & 15, z, blockID)
 	}
@@ -7959,7 +8111,7 @@ class Entity {
 	updateVelocity(now) {
 		let dt = (now - this.lastUpdate) / 33
 		dt = dt > 2 ? 2 : dt
-		this.vely += -0.02 * dt
+		// this.vely += -0.02 * dt
 		if (this.vely < -1.5) {
 			this.vely = -1.5
 		}
@@ -8162,12 +8314,19 @@ class Entity {
 		modelViewProjectionMatrix.mult(modelMatrix.elements)
 		// row major to column major
 		modelViewProjectionMatrix.transpose()
-		const x = round(this.x)
-		const y = round(this.y)
-		const z = round(this.z)
-		const blockLight = world.getLight(x, y, z, 1)
-		const skyLight = world.getLight(x, y, z, 0)
-		const lightLevel = min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
+		// const x = round(this.x)
+		// const y = round(this.y)
+		// const z = round(this.z)
+		// let blockLight = 15
+		// let skyLight = 15
+		// try {
+		// 	blockLight = world.getLight(x, y, z, 1)
+		// 	skyLight = world.getLight(x, y, z, 0)
+		// }
+		// catch(e) {
+		// 	console.error(e)
+		// }
+		const lightLevel = 1 // min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
 		gl.bindTexture(gl.TEXTURE_2D, _texture_js__WEBPACK_IMPORTED_MODULE_3__["textureAtlas"])
 		gl.uniform1i(glCache.uSamplerEntity, 0)
 		gl.uniform1f(glCache.uLightLevelEntity, lightLevel)
@@ -8197,7 +8356,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__["Entity"] {
-	constructor(x, y, z, blockID, glExtensions, gl, glCache, indexBuffer, world, p) {
+	constructor(x, y, z, vx, vy, vz, blockID, glExtensions, gl, glCache, indexBuffer, world, p) {
 		const block = _blockData_js__WEBPACK_IMPORTED_MODULE_0__["blockData"][blockID & 255]
 		const tex = block.textures
 		const shape = _shapes_js__WEBPACK_IMPORTED_MODULE_1__["shapes"].cube
@@ -8228,7 +8387,7 @@ class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__["Entity"] {
 			}
 			texNum++
 		}
-		super(x, y, z, 0, 0, 0, 0, 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity, glExtensions, gl, glCache, indexBuffer, world, p)
+		super(x, y, z, 0, 0, vx || 0, vy || 0, vz || 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity, glExtensions, gl, glCache, indexBuffer, world, p)
 	}
 }
 
@@ -8239,55 +8398,55 @@ class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__["Entity"] {
 </html>
 
 <!-- function hcyl(bottom, height, radius, id) {
-    let radsq = radius * radius
-    let innerRadsq = (radius - 1.2) * (radius - 1.2)
-    height += bottom
-    for (let x = -radius; x <= radius; x++) {
-        for (let y = bottom; y < height; y++) {
-            for (let z = -radius; z <= radius; z++) {
-                let d = x * x + z * z
-                if (d < radsq && d >= innerRadsq) {
-                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-                }
-            }
-        }
-    }
+	let radsq = radius * radius
+	let innerRadsq = (radius - 1.2) * (radius - 1.2)
+	height += bottom
+	for (let x = -radius; x <= radius; x++) {
+		for (let y = bottom; y < height; y++) {
+			for (let z = -radius; z <= radius; z++) {
+				let d = x * x + z * z
+				if (d < radsq && d >= innerRadsq) {
+					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+				}
+			}
+		}
+	}
 }
 
 function cyl(bottom, height, radius, id) {
-    let radsq = radius * radius
-    height += bottom
-    for (let x = -radius; x <= radius; x++) {
-        for (let y = bottom; y < height; y++) {
-            for (let z = -radius; z <= radius; z++) {
-                let d = x * x + z * z
-                if (d < radsq) {
-                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-                }
-            }
-        }
-    }
+	let radsq = radius * radius
+	height += bottom
+	for (let x = -radius; x <= radius; x++) {
+		for (let y = bottom; y < height; y++) {
+			for (let z = -radius; z <= radius; z++) {
+				let d = x * x + z * z
+				if (d < radsq) {
+					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+				}
+			}
+		}
+	}
 }
 
 function sphereoid(w, h, d, id) {
-    let w2 = w * w
-    let h2 = h * h
-    let d2 = d * d
-    let w3 = (w - 1.5) * (w - 1.5)
-    let h3 = (h - 1.5) * (h - 1.5)
-    let d3 = (d - 1.5) * (d - 1.5)
+	let w2 = w * w
+	let h2 = h * h
+	let d2 = d * d
+	let w3 = (w - 1.5) * (w - 1.5)
+	let h3 = (h - 1.5) * (h - 1.5)
+	let d3 = (d - 1.5) * (d - 1.5)
 
-    for (let y = -h; y < h; y++) {
-        for (let x = -w; x <= w; x++) {
-            for (let z = -d; z <= d; z++) {
-                let n = x * x / w2 + y * y / h2 + z * z / d2
-                let n2 = x * x / w3 + y * y / h3 + z * z / d3
-                if (n < 1 && n2 >= 1) {
-                    world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-                }
-            }
-        }
-    }
+	for (let y = -h; y < h; y++) {
+		for (let x = -w; x <= w; x++) {
+			for (let z = -d; z <= d; z++) {
+				let n = x * x / w2 + y * y / h2 + z * z / d2
+				let n2 = x * x / w3 + y * y / h3 + z * z / d3
+				if (n < 1 && n2 >= 1) {
+					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
+				}
+			}
+		}
+	}
 }
 
 function sleep(ms) {
@@ -8298,24 +8457,24 @@ async function asphereoid(w, h, d, id) {
 	let px = p2.x
 	let py = p2.y
 	let pz = p2.z
-    let w2 = w * w
-    let h2 = h * h
-    let d2 = d * d
-    let w3 = (w - 1.5) * (w - 1.5)
-    let h3 = (h - 1.5) * (h - 1.5)
-    let d3 = (d - 1.5) * (d - 1.5)
+	let w2 = w * w
+	let h2 = h * h
+	let d2 = d * d
+	let w3 = (w - 1.5) * (w - 1.5)
+	let h3 = (h - 1.5) * (h - 1.5)
+	let d3 = (d - 1.5) * (d - 1.5)
 
-    for (let y = -h; y < h; y++) {
-        for (let x = -w; x <= w; x++) {
-            for (let z = -d; z <= d; z++) {
-                let n = x * x / w2 + y * y / h2 + z * z / d2
-                let n2 = x * x / w3 + y * y / h3 + z * z / d3
-                if (n < 1 && n2 >= 1) {
-                    world.setBlock(px + x, py + y, pz + z, id)
+	for (let y = -h; y < h; y++) {
+		for (let x = -w; x <= w; x++) {
+			for (let z = -d; z <= d; z++) {
+				let n = x * x / w2 + y * y / h2 + z * z / d2
+				let n2 = x * x / w3 + y * y / h3 + z * z / d3
+				if (n < 1 && n2 >= 1) {
+					world.setBlock(px + x, py + y, pz + z, id)
 					await sleep(10)
-                }
-            }
-        }
-    }
+				}
+			}
+		}
+	}
 }
 -->
