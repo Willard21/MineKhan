@@ -19,24 +19,91 @@ function initTextures(gl, glCache) {
 		texturePixels[offset + 2] = b
 		texturePixels[offset + 3] = a !== undefined ? a : 255
 	}
-	const getPixels = function(str) {
-		// var w = parseInt(str.substr(0, 2), 36)
-		// var h = parseInt(str.substr(2, 2), 36)
-		var colors = []
-		var pixels = []
-		var dCount = 0
-		for (; str[4 + dCount] === "0"; dCount++);
-		var ccount = parseInt(str.substr(4 + dCount, dCount + 1), 36)
-		for (var i = 0; i < ccount; i++) {
-			var num = parseInt(str.substr(5 + 2 * dCount + i * 7, 7), 36)
-			colors.push([num >>> 24 & 255, num >>> 16 & 255, num >>> 8 & 255, num & 255])
+
+	const base256CharSet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEF!#$%&L(MNO)*+,-./:;<=WSTR>Q?@[]P^_{|}~ÀÁÂÃUVÄÅÆÇÈÉÊËÌÍKÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãGäåæçèéêHëìíîXïðñIòóôõö÷øùúJûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦYħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťZ'
+	const base256DecodeMap = new Map()
+	for (let i = 0; i < 256; i++) base256DecodeMap.set(base256CharSet[i], i)
+	function decodeByte(str) {
+		let num = 0
+		for (let char of str) {
+			num <<= 8
+			num += base256DecodeMap.get(char)
 		}
-		for (let i = 5 + 2 * dCount + ccount * 7; i < str.length; i++) {
-			let num = parseInt(str[i], 36)
-			pixels.push(colors[num][0], colors[num][1], colors[num][2], colors[num][3])
+		return num
+	}
+
+	const getPixels = function(str, r = 255, g = 255, b = 255) {
+		const width = decodeByte(str.substr(0, 2))
+		const height = decodeByte(str.substr(2, 2))
+		const colorCount = decodeByte(str.substr(4, 1))
+		const colors = []
+		const pixels = new Uint8ClampedArray(width * height * 4)
+		let pixi = 0
+	
+		for (let i = 0; i < colorCount; i++) {
+			const num = decodeByte(str.substr(5 + i * 3, 3))
+	
+			let alpha = (num & 63) << 2
+			let blue  = (num >>> 6 & 63) << 2
+			let green = (num >>> 12 & 63) << 2
+			let red   = (num >>> 18 & 63) << 2
+			if (alpha >= 240) alpha = 255 // Make sure we didn't accidentally make the texture transparent
+	
+			if (red === blue && red === green) {
+				red = red / 252 * r | 0
+				green = green / 252 * g | 0
+				blue = blue / 252 * b | 0
+			}
+			colors.push([ red, green, blue, alpha ])
+		}
+	
+		// Special case for a texture filled with 1 pixel color
+		if (colorCount === 1) {
+			while (pixi < pixels.length) {
+				pixels[pixi + 0] = colors[0][0]
+				pixels[pixi + 1] = colors[0][1]
+				pixels[pixi + 2] = colors[0][2]
+				pixels[pixi + 3] = colors[0][3]
+				pixi += 4
+			}
+			return pixels
+		}
+	
+		let bytes = []
+		for (let i = 5 + colorCount * 3; i < str.length; i++) { // Load the bit-packed index array
+			const byte = decodeByte(str[i])
+			bytes.push(byte)
+		}
+	
+		const bits = Math.ceil(Math.log2(colorCount))
+		const bitMask = (1 << bits) - 1
+		let filledBits = 8
+		let byte = bytes.shift()
+		while (bytes.length || filledBits) {
+			let num = 0
+			if (filledBits >= bits) { // The entire number is inside the byte
+				num = byte >> (filledBits - bits) & bitMask
+				if (filledBits === bits && bytes.length) {
+					byte = bytes.shift()
+					filledBits = 8
+				}
+				else filledBits -= bits
+			}
+			else {
+				num = byte << (bits - filledBits) & bitMask // Only part of the number is in the byte
+				byte = bytes.shift() // Load in the next byte
+				num |= byte >> (8 - bits + filledBits) // Apply the rest of the number from this byte
+				filledBits += 8 - bits
+			}
+	
+			pixels[pixi + 0] = colors[num][0]
+			pixels[pixi + 1] = colors[num][1]
+			pixels[pixi + 2] = colors[num][2]
+			pixels[pixi + 3] = colors[num][3]
+			pixi += 4
 		}
 		return pixels
-	};
+	}
 
 	const textures = texturesFunc(setPixel, getPixels);
 
