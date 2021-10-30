@@ -2882,6 +2882,7 @@ async function MineKhan() {
 		Slider.all = []
 		const nothing = () => false
 		const always = () => true
+		let survival = false
 
 		// Main menu buttons
 		Button.add(width / 2, height / 2 - 20, 400, 40, "Singleplayer", "main menu", () => {
@@ -2910,9 +2911,13 @@ async function MineKhan() {
 			}
 			return superflat
 		})
-		Button.add(width / 2, 285, 300, 40, "Game Mode: Creative", "creation menu", nothing, always, "Coming Soon\n\nPlease stop asking for survival features. I don't want to half-implement anything, and I don't currently have the systems in place to create a full-featured survival mode. It'll come in due time.")
+		Button.add(width / 2, 285, 300, 40, ["Game Mode: Creative", "Game Mode: Survival"], "creation menu", r => survival = r === "Game Mode: Survival")
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
+			if (survival) {
+				window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
+				return
+			}
 			world = new World()
 			world.id = "" + now + (Math.random() * 1000000 | 0)
 			let name = boxCenterTop.value || "World"
