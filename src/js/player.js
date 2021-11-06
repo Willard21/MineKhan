@@ -5,6 +5,7 @@ import { Entity } from "./entity.js"
 
 class Player extends Entity {
 	constructor(x, y, z, vx, vy, vz, blockID, glExtensions, gl, glCache, indexBuffer, world, p) {
+		this.camera = null
 		const block = blockData[blockID & 255]
 		const tex = block.textures
 		const shape = shapes.cube
@@ -36,6 +37,34 @@ class Player extends Entity {
 			texNum++
 		}
 		super(x, y, z, 0, 0, vx || 0, vy || 0, vz || 0, 0.6, 1.7, 0.6, new Float32Array(shapeVerts.flat(Infinity)), new Float32Array(texture), size, Infinity, glExtensions, gl, glCache, indexBuffer, world, p)
+	}
+	render() {
+		const { gl, glCache, glExtensions, p } = this
+		const modelMatrix = new Matrix();
+		modelMatrix.identity()
+		modelMatrix.translate(this.x, this.y, this.z)
+		modelMatrix.rotX(this.pitch)
+		modelMatrix.rotY(this.yaw)
+		modelMatrix.scale(this.width, this.height, this.depth)
+		const viewMatrix = p.transformation.elements
+		const proj = p.projection
+		const projectionMatrix = [proj[0], 0, 0, 0, 0, proj[1], 0, 0, 0, 0, proj[2], proj[3], 0, 0, proj[4], 0]
+		const modelViewProjectionMatrix = new Matrix()
+		modelViewProjectionMatrix.identity()
+		modelViewProjectionMatrix.mult(projectionMatrix)
+		modelViewProjectionMatrix.mult(viewMatrix)
+		modelViewProjectionMatrix.mult(modelMatrix.elements)
+		// row major to column major
+		modelViewProjectionMatrix.transpose()
+
+		const lightLevel = 1 // min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
+		gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
+		gl.uniform1i(glCache.uSamplerEntity, 0)
+		gl.uniform1f(glCache.uLightLevelEntity, lightLevel)
+		gl.uniformMatrix4fv(glCache.uViewEntity, false, modelViewProjectionMatrix.elements)
+		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
+		gl.drawElements(gl.TRIANGLES, 6 * this.faces, gl.UNSIGNED_INT, 0)
+		glExtensions.vertex_array_object.bindVertexArrayOES(null)
 	}
 }
 

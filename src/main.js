@@ -1,4 +1,4 @@
-"use strict";
+"use strict"
 
 // GLSL Shader code
 import vertexShaderSrc3D from './shaders/blockVertexShader.glsl'
@@ -12,20 +12,20 @@ import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 import workerCode from './js/Worker.jsw'
 
 // import css
-import './index.css';
+import './index.css'
 
 // imports
-import { seedHash, randomSeed, noiseProfile } from "./js/random.js";
-import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js";
-import { timeString, roundBits, compareArr } from "./js/utils.js";
-import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js";
+import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
+import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
+import { timeString, roundBits, compareArr } from "./js/utils.js"
+import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js"
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes } from "./js/shapes.js"
 import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
-import { initTextures, textureMap, textureCoords } from './js/texture.js';
+import { initTextures, textureMap, textureCoords } from './js/texture.js'
 import { fullSection, emptySection } from "./js/section.js"
 import { Chunk } from "./js/chunk.js"
-import { Item } from './js/item.js';
+import { Item } from './js/item.js'
 import { Player } from "./js/player.js"
 
 window.blockData = blockData
@@ -56,14 +56,14 @@ async function MineKhan() {
 
 	// Shh don't tell anyone I'm overriding native objects
 	String.prototype.hashCode = function() {
-		var hash = 0, i, chr;
-		if (this.length === 0) return hash;
+		var hash = 0, i, chr
+		if (this.length === 0) return hash
 		for (i = 0; i < this.length; i++) {
-			chr   = this.charCodeAt(i);
-			hash  = (hash << 5) - hash + chr;
-			hash |= 0; // Convert to 32bit integer
+			chr   = this.charCodeAt(i)
+			hash  = (hash << 5) - hash + chr
+			hash |= 0 // Convert to 32bit integer
 		}
-		return hash;
+		return hash
 	}
 
 	{
@@ -100,13 +100,13 @@ async function MineKhan() {
 		}
 
 		// await window.yieldThread() will pause the current task until the event loop is cleared
-		const channel = new MessageChannel();
+		const channel = new MessageChannel()
 		let res
-		channel.port1.onmessage = () => res();
+		channel.port1.onmessage = () => res()
 		window.yieldThread = function() {
 			return new Promise(resolve => {
 				res = resolve
-				channel.port2.postMessage("");
+				channel.port2.postMessage("")
 			})
 		}
 	}
@@ -799,7 +799,7 @@ async function MineKhan() {
 	let sideEdgeBuffers
 	let indexBuffer
 
-	let matrix = new Float32Array(16); // A temperary matrix that may store random data.
+	let matrix = new Float32Array(16) // A temperary matrix that may store random data.
 	let projection = new Float32Array(16)
 	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
@@ -813,10 +813,10 @@ async function MineKhan() {
 			this.py = 0
 			this.pz = 0
 
-			this.rx = 0; // Pitch
-			this.ry = 0; // Yaw
-			this.prx = 0; // Pitch
-			this.pry = 0; // Yaw
+			this.rx = 0 // Pitch
+			this.ry = 0 // Yaw
+			this.prx = 0 // Pitch
+			this.pry = 0 // Yaw
 
 			this.currentFov = 0
 			this.defaultFov = settings.fov
@@ -825,7 +825,7 @@ async function MineKhan() {
 			this.lastStep = 0
 			this.projection = new Float32Array(5)
 			this.transformation = new Matrix()
-			this.direction = { x: 1, y: 0, z: 0 }; // Normalized direction vector
+			this.direction = { x: 1, y: 0, z: 0 } // Normalized direction vector
 			this.frustum = [] // The 5 planes of the viewing frustum (there's no far plane)
 			for (let i = 0; i < 5; i++) {
 				this.frustum.push(new Plane(1, 0, 0))
@@ -855,8 +855,8 @@ async function MineKhan() {
 			const scale = 1 / tang
 			const near = 1
 			const far = 1000000
-			this.currentFov = fov; // Store the state of the projection matrix
-			this.nearH = near * tang; // This is needed for frustum culling
+			this.currentFov = fov // Store the state of the projection matrix
+			this.nearH = near * tang // This is needed for frustum culling
 
 			this.projection[0] = scale / width * height
 			this.projection[1] = scale
@@ -1022,10 +1022,10 @@ async function MineKhan() {
 	}
 
 	function rayTrace(x, y, z, shape) {
-		let cf, cd = 1e9; //Closest face and distance
-		let m; //Absolute distance to intersection point
-		let ix, iy, iz; //Intersection coords
-		let minX, minY, minZ, maxX, maxY, maxZ, min, max; //Bounds of face coordinates
+		let cf, cd = 1e9 //Closest face and distance
+		let m //Absolute distance to intersection point
+		let ix, iy, iz //Intersection coords
+		let minX, minY, minZ, maxX, maxY, maxZ, min, max //Bounds of face coordinates
 		let east = p.direction.x < 0
 		let top = p.direction.y < 0
 		let north = p.direction.z < 0
@@ -1049,7 +1049,7 @@ async function MineKhan() {
 				ix = m * p.direction.x + p.x
 				iz = m * p.direction.z + p.z
 				if (m > 0 && m < cd && ix >= x + minX && ix <= x + maxX && iz >= z + minZ && iz <= z + maxZ) {
-					cd = m; //Ray crosses bottom face
+					cd = m //Ray crosses bottom face
 					cf = top ? "top" : "bottom"
 				}
 			}
@@ -1176,7 +1176,7 @@ async function MineKhan() {
 				runRayTrace(minX, minY, maxZ)
 			}
 			if (hitBox.pos) {
-				return; //The ray has collided; it can't possibly find a closer collision now
+				return //The ray has collided; it can't possibly find a closer collision now
 			}
 			minZ = maxZ
 			minY = maxY
@@ -1776,6 +1776,10 @@ async function MineKhan() {
 					name: world.name
 				}))
 			}
+			multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
+				type: "pos",
+				data: {x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z}
+			})), 500)
 		}
 		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
@@ -1874,11 +1878,6 @@ async function MineKhan() {
 			}))
 		}
 
-		multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
-			type: "pos",
-			data: {x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z}
-		})), 500)
-
 		window.dists = () => {
 			console.log(playerPositions)
 			console.log(playerDistances)
@@ -1896,10 +1895,10 @@ async function MineKhan() {
 	let fogDist = 16
 	let frameCount = -3600
 
-	emptySection.setWorld(world);
-	emptySection.setCaves(caves);
-	fullSection.setWorld(world);
-	fullSection.setCaves(caves);
+	emptySection.setWorld(world)
+	emptySection.setCaves(caves)
+	fullSection.setWorld(world)
+	fullSection.setCaves(caves)
 
 	class World {
 		constructor(empty) {
@@ -2077,16 +2076,16 @@ async function MineKhan() {
 
 			// Update the corner chunks so shadows in adjacent chunks update correctly
 			if (xm | zm === 0) {
-				this.updateBlock(x - 1, y, z - 1, lazy, screen);
+				this.updateBlock(x - 1, y, z - 1, lazy, screen)
 			}
 			if (xm === 15 && zm === 0) {
-				this.updateBlock(x + 1, y, z - 1, lazy, screen);
+				this.updateBlock(x + 1, y, z - 1, lazy, screen)
 			}
 			if (xm === 0 && zm === 15) {
-				this.updateBlock(x - 1, y, z + 1, lazy, screen);
+				this.updateBlock(x - 1, y, z + 1, lazy, screen)
 			}
 			if (xm & zm === 15) {
-				this.updateBlock(x + 1, y, z + 1, lazy, screen);
+				this.updateBlock(x + 1, y, z + 1, lazy, screen)
 			}
 		}
 		getLight(x, y, z, blockLight = 0) {
@@ -2368,7 +2367,7 @@ async function MineKhan() {
 			gl.uniform1f(glCache.uTime, skyLight)
 
 			let c = this.sortedChunks
-			let glob = { renderedChunks };
+			let glob = { renderedChunks }
 			for (let chunk of c) {
 				chunk.render(p, glob)
 			}
@@ -2523,7 +2522,7 @@ async function MineKhan() {
 						str += (pallete[blocks[j]] << 12 | j).toString(36) + ","
 					}
 				}
-				str = str.substr(0, str.length - 1); //Remove trailing comma
+				str = str.substr(0, str.length - 1) //Remove trailing comma
 				str += ";"
 			}
 			if (str.match(/;$/)) str = str.substr(0, str.length - 1)
@@ -2583,19 +2582,19 @@ async function MineKhan() {
 			this.id = now
 			this.name = "Old World " + (Math.random() * 1000 | 0)
 			let playerData = data.shift().split(",")
-			p.x = parseInt(playerData[0], 36);
-			p.y = parseInt(playerData[1], 36);
-			p.z = parseInt(playerData[2], 36);
-			p.rx = parseInt(playerData[3], 36) / 100;
-			p.ry = parseInt(playerData[4], 36) / 100;
-			// let editCount = parseInt(data.shift(), 36);
+			p.x = parseInt(playerData[0], 36)
+			p.y = parseInt(playerData[1], 36)
+			p.z = parseInt(playerData[2], 36)
+			p.rx = parseInt(playerData[3], 36) / 100
+			p.ry = parseInt(playerData[4], 36) / 100
+			// let editCount = parseInt(data.shift(), 36)
 			data.shift()
 
-			this.loadFrom = [];
+			this.loadFrom = []
 
 			let coords = data.shift().split(",").map(function(n) {
-				return parseInt(n, 36);
-			});
+				return parseInt(n, 36)
+			})
 			for (let j = 0; j < coords.length; j += 3) {
 				this.loadFrom.push({
 					x: coords[j],
@@ -2606,12 +2605,12 @@ async function MineKhan() {
 			}
 
 			for (let i = 0; data.length > 0; i++) {
-				let blocks = data.shift().split(",");
+				let blocks = data.shift().split(",")
 				for (let j = 0; j < blocks.length; j++) {
-					let block = parseInt(blocks[j], 36);
-					let index = block >> 8;
-					let id = block & 0x7f | (block & 0x80) << 1;
-					this.loadFrom[i].blocks[index] = id;
+					let block = parseInt(blocks[j], 36)
+					let index = block >> 8
+					let id = block & 0x7f | (block & 0x80) << 1
+					this.loadFrom[i].blocks[index] = id
 				}
 			}
 		}
@@ -3970,7 +3969,7 @@ async function MineKhan() {
 				-8, -2, 6, 1,
 				-8, -2, 7, 1,
 				-8, -2, 8, 1,
-			);
+			)
 
 			for (let i = 0; i < blocks.length; i += 4) {
 				block2(blocks[i + 0], blocks[i + 1], blocks[i + 2], blocks[i + 3])
