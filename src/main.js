@@ -162,14 +162,24 @@ async function MineKhan() {
 	}
 	randomSeed(Math.random() * 10000000 | 0)
 
-	function save() {
-		saveToDB(world.id, {
+	async function save() {
+		let saveObj = {
 			id: world.id,
 			edited: now,
 			name: world.name,
 			version: version,
 			code: world.getSaveString()
-		}).then(() => world.edited = now).catch(e => console.error(e))
+		}
+		await saveToDB(world.id, saveObj).catch(e => console.error(e))
+		world.edited = now
+		console.log('Saving to server')
+		await fetch('https://willard.fun/minekhan/saves', {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(saveObj)
+		})
 	}
 
 	// Expose these functions to the global scope for debugging
@@ -1902,6 +1912,7 @@ async function MineKhan() {
 
 	class World {
 		constructor(empty) {
+			document.getElementById('background-text').classList.add('hidden')
 			if (!empty) {
 				setSeed(Math.random() * 2000000000 | 0)
 				p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
@@ -2955,10 +2966,11 @@ async function MineKhan() {
 		let mid = width / 2
 		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", () => changeScene("editworld"), () => selected() || !worlds[selectedWorld].edited)
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
-			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}?`)) {
+			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}? This will also delete it from the cloud.`)) {
 				deleteFromDB(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
+				fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
 				selectedWorld = 0
 			}
 		}, () => selected() || !worlds[selectedWorld].edited, "Delete the world forever.")
@@ -2966,7 +2978,7 @@ async function MineKhan() {
 			boxCenterTop.value = worlds[selectedWorld].code
 		}, selected, "Export the save code into the text box above for copy/paste.")
 		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "loadsave menu", () => changeScene("main menu"))
-		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "loadsave menu", () => {
+		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "loadsave menu", async () => {
 			world = new World(true)
 			win.world = world
 
@@ -2977,9 +2989,13 @@ async function MineKhan() {
 			else {
 				let data = worlds[selectedWorld]
 				if (data) {
-					code = data.code
 					world.id = data.id
 					world.edited = data.edited
+					if (data.code) code = data.code
+					else {
+						let cloudWorld = await fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`).then(res => res.json())
+						code = cloudWorld.code
+					}
 				}
 			}
 
@@ -3013,7 +3029,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your computer/browser. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -4053,6 +4069,13 @@ async function MineKhan() {
 		win.player = p
 		win.p2 = p2
 	}
+
+	function sanitize(text) {
+		const el = document.createElement('div')
+		el.textContent = text
+		return el.innerHTML
+	}
+
 	function initWorldsMenu() {
 		while (window.worlds.firstChild) {
 			window.worlds.removeChild(window.worlds.firstChild)
@@ -4067,7 +4090,7 @@ async function MineKhan() {
 			}
 		}
 
-		function addWorld(name, version, size, id, edited) {
+		function addWorld(name, version, size, id, edited, cloud) {
 			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = () => {
@@ -4077,7 +4100,7 @@ async function MineKhan() {
 			}
 			let br = "<br>"
 			div.id = id
-			div.innerHTML = "<strong>" + name + "</strong>" + br
+			div.innerHTML = "<strong>" + sanitize(name) + "</strong>" + br
 
 			if (edited){
 				let str = new Date(edited).toLocaleDateString(undefined, {
@@ -4090,7 +4113,8 @@ async function MineKhan() {
 				div.innerHTML += str + br
 			}
 			div.innerHTML += version + br
-			div.innerHTML += `${size.toLocaleString()} bytes used`
+			if (cloud) div.innerHTML += `Cloud Save (${size.toLocaleString()} bytes)`
+			else div.innerHTML += `${size.toLocaleString()} bytes used`
 
 			window.worlds.appendChild(div)
 		}
@@ -4111,7 +4135,7 @@ async function MineKhan() {
 				console.error(e)
 			}
 		}
-		loadFromDB().then(res => {
+		loadFromDB().then(async res => {
 			if(res && res.length) {
 				let index = res.findIndex(obj => obj.id === "settings")
 				if (index >= 0) {
@@ -4124,10 +4148,23 @@ async function MineKhan() {
 			if (res && res.length) {
 				res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
 				for (let data of res) {
-					addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited)
+					addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited, false)
+					data.cloud = false
 					worlds[data.id] = data
 				}
 			}
+
+			let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
+			if (Array.isArray(cloudSaves) && cloudSaves.length) {
+				for (let data of cloudSaves) {
+					if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
+
+					addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
+					data.cloud = true
+					worlds[data.id] = data
+				}
+			}
+
 			window.worlds.onclick = Button.draw
 			window.boxCenterTop.onkeyup = Button.draw
 		}).catch(e => console.error(e))
@@ -4163,9 +4200,9 @@ async function MineKhan() {
 			}
 			let br = "<br>"
 			div.id = id
-			div.innerHTML = "<strong>" + name + "</strong>" + br
+			div.innerHTML = "<strong>" + sanitize(name) + "</strong>" + br
 
-			div.innerHTML += "Hosted by " + host + br
+			div.innerHTML += "Hosted by " + sanitize(host) + br
 			div.innerHTML += online + " players online" + br
 
 			window.worlds.appendChild(div)
