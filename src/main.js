@@ -318,6 +318,7 @@ async function MineKhan() {
 	let screen = "main menu"
 	let previousScreen = screen
 	function changeScene(newScene) {
+		document.getElementById('background-text').classList.add('hidden')
 		if (screen === "options") {
 			saveToDB("settings", settings).catch(e => console.error(e))
 		}
@@ -1912,7 +1913,6 @@ async function MineKhan() {
 
 	class World {
 		constructor(empty) {
-			document.getElementById('background-text').classList.add('hidden')
 			if (!empty) {
 				setSeed(Math.random() * 2000000000 | 0)
 				p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
