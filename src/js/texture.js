@@ -33,6 +33,9 @@ function initTextures(gl, glCache) {
 	}
 
 	const getPixels = function(str, r = 255, g = 255, b = 255) {
+		if (Array.isArray(r)) {
+			[r, g, b] = r
+		}
 		const width = decodeByte(str.substr(0, 2))
 		const height = decodeByte(str.substr(2, 2))
 		const colorCount = decodeByte(str.substr(4, 1))
@@ -120,17 +123,19 @@ function initTextures(gl, glCache) {
 
 		// Set all of the textures into 1 big tiled texture
 		let n = 0
-		for (let i in textures) {
-			if (typeof textures[i] === "function") {
-				textures[i](n)
+		for (let name in textures) {
+			if (typeof textures[name] === "function") {
+				textures[name](n)
 			}
-			else if (typeof textures[i] === "string") {
-				let pix = getPixels(textures[i])
+			else if (typeof textures[name] === "string") {
+				let pix = name.includes("water") ?
+				getPixels(textures[name], 40, 100, 220) :
+				getPixels(textures[name])
 				for (let j = 0; j < pix.length; j += 4) {
 					setPixel(n, j >> 2 & 15, j >> 6, pix[j], pix[j+1], pix[j+2], pix[j+3])
 				}
 			}
-			textureMap[i] = n
+			textureMap[name] = n
 			n++
 		}
 
