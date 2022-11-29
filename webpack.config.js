@@ -1,11 +1,11 @@
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ScriptExtHtmlWebpackPlugin = require("script-ext-html-webpack-plugin");
-const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin")
+const InlinePlugin = require("html-inline-script-webpack-plugin")
+const path = require("path")
 
-// I know it's a bad idea, but I don't really care.
-let output = "./dist";
+// Build straight into production if building on my VPS
+let output = "./dist"
 if (__dirname.includes("willard/server/dev")) {
-	output = "../../public/minekhan";
+	output = "../../public/minekhan"
 }
 
 module.exports = {
@@ -22,7 +22,7 @@ module.exports = {
 				use: ["style-loader", "css-loader"],
 			},
 			{
-				test: /\.(txt|glsl|jsw)$/i,
+				test: /\.(txt|glsl)$|workers\//i,
 				use: "raw-loader",
 			},
 		],
@@ -31,8 +31,12 @@ module.exports = {
 		new HtmlWebpackPlugin({
 			template: './src/index.html',
 		}),
-		new ScriptExtHtmlWebpackPlugin({
-			inline: "main",
-		}),
+		// new InlinePlugin(),
 	],
-};
+	watch: true,
+	watchOptions: {
+		aggregateTimeout: 100,
+		// poll: 1000,
+		ignored: '**/node_modules',
+	},
+}

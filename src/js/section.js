@@ -1,5 +1,6 @@
 import { blockData, blockIds, Block, Sides } from "./blockData.js"
 import { textureMap, textureCoords } from "./texture.js"
+const { abs, max } = Math
 
 function getBlock(x, y, z, blocks) {
 	return blocks[((x >> 4) + 1) * 9 + ((y >> 4) + 1) * 3 + (z >> 4) + 1][((x & 15) << 8) + ((y & 15) << 4) + (z & 15)]
@@ -189,8 +190,6 @@ let getShadows = {
 	},
 }
 
-const { abs, max } = Math
-
 function average(l, a, b, c, d) {
 	a = l[a]
 	b = l[b]
@@ -350,127 +349,21 @@ class Section {
 		this.renderData = []
 		this.renderLength = 0
 		this.faces = 0
-		this.hasVisibleBlocks = false
 		this.chunk = chunk
 		this.edited = false
-		this.caves = !caves
+		this.caves = caves
 		this.pallete = [0]
 		this.palleteMap = { "0": 0 }
 		this.palleteSize = 0
 		this.world = world
 	}
-	getBlock(x, y, z) {
-		let s = this.size
-		return this.blocks[x * s * s + y * s + z]
-	}
-	setBlock(x, y, z, blockId) {
-		let s = this.size
-		this.blocks[x * s * s + y * s + z] = blockId
-	}
+
 	deleteBlock(x, y, z) {
 		let s = this.size
 		this.blocks[x * s * s + y * s + z] = 0
 	}
-	optimize(screen) {
-		const { world } = this
-		let visible = false
-		let pos = 0
-		let xx = this.x
-		let yy = this.y
-		let zz = this.z
-		let blockState = 0
-		let palleteIndex = 0
-		let index = 0
-		let s = this.size
-		let blocks = this.blocks
-		this.hasVisibleBlocks = false
-		this.renderLength = 0
-		let localBlocks = world.getAdjacentSubchunks(xx, yy, zz)
 
-		//Check all the blocks in the subchunk to see if they're visible.
-		for (let i = 0; i < s; i++) {
-			for (let j = 0; j < s; j++) {
-				for (let k = 0; k < s; k++, index++) {
-					blockState = blocks[index]
-
-					if (this.palleteMap[blockState] === undefined) {
-						this.palleteMap[blockState] = this.pallete.length
-						palleteIndex = this.pallete.length
-						this.pallete.push(blockState)
-					}
-					else {
-						palleteIndex = this.palleteMap[blockState]
-					}
-
-					visible = blockState && hideFace(i-1, j, k, localBlocks, blockState, getBlock, "west", "east", world, screen)
-					| hideFace(i+1, j, k, localBlocks, blockState, getBlock, "east", "west", world, screen) << 1
-					| hideFace(i, j-1, k, localBlocks, blockState, getBlock, "bottom", "top", world, screen) << 2
-					| hideFace(i, j+1, k, localBlocks, blockState, getBlock, "top", "bottom", world, screen) << 3
-					| hideFace(i, j, k-1, localBlocks, blockState, getBlock, "south", "north", world, screen) << 4
-					| hideFace(i, j, k+1, localBlocks, blockState, getBlock, "north", "south", world, screen) << 5
-					if (visible) {
-						pos = (i | j << 4 | k << 8) << 19
-						this.renderData[this.renderLength++] = 1 << 31 | pos | visible << 13 | palleteIndex
-						this.hasVisibleBlocks = true
-					}
-				}
-			}
-		}
-	}
-	updateBlock(x, y, z, world, screen) {
-		if (!world.meshQueue.includes(this.chunk)) {
-			world.meshQueue.push(this.chunk)
-		}
-		let i = x
-		let j = y
-		let k = z
-		let s = this.size
-		x += this.x
-		y += this.y
-		z += this.z
-		let blockState = this.blocks[i * s * s + j * s + k]
-		let visible = blockState && hideFace(x-1, y, z, 0, blockState, world.getBlock, "west", "east", world, screen)
-		| hideFace(x+1, y, z, 0, blockState, world.getBlock, "east", "west", world, screen) << 1
-		| hideFace(x, y-1, z, 0, blockState, world.getBlock, "bottom", "top", world, screen) << 2
-		| hideFace(x, y+1, z, 0, blockState, world.getBlock, "top", "bottom", world, screen) << 3
-		| hideFace(x, y, z-1, 0, blockState, world.getBlock, "south", "north", world, screen) << 4
-		| hideFace(x, y, z+1, 0, blockState, world.getBlock, "north", "south", world, screen) << 5
-		let pos = (i | j << 4 | k << 8) << 19
-		let index = -1
-
-		// Find index of current block in this.renderData
-		for (let i = 0; i < this.renderLength; i++) {
-			if ((this.renderData[i] & 0x7ff80000) === pos) {
-				index = i
-				break
-			}
-		}
-
-		// Update pallete
-		if (this.palleteMap[blockState] === undefined) {
-			this.palleteMap[blockState] = this.pallete.length
-			this.pallete.push(blockState)
-		}
-
-		if (index < 0 && !visible) {
-			// Wasn't visible before, isn't visible after.
-			return
-		}
-		if (!visible) {
-			// Was visible before, isn't visible after.
-			this.renderData.splice(index, 1)
-			this.renderLength--
-			this.hasVisibleBlocks = !!this.renderLength
-			return
-		}
-		if (visible && index < 0) {
-			// Wasn't visible before, is visible after.
-			index = this.renderLength++
-			this.hasVisibleBlocks = true
-		}
-		this.renderData[index] = 1 << 31 | pos | visible << 13 | this.palleteMap[blockState]
-	}
-	genMesh(barray, index) {
+	genMesh(bigArray, index) {
 		const { world } = this
 		if (!this.renderLength) {
 			return index
@@ -492,7 +385,6 @@ class Section {
 		let shapeVerts = null
 		let shapeTexVerts = null
 		let pallete = this.pallete
-		// let intShad = interpolateShadows
 
 		for (let i = 0; i < length; i++) {
 			data = rData[i]
@@ -526,41 +418,41 @@ class Section {
 						ty = texVerts[1]
 						texShapeVerts = shapeTexVerts[n][facei]
 
-						barray[index] = verts[0] + x2
-						barray[index+1] = verts[1] + y2
-						barray[index+2] = verts[2] + z2
-						barray[index+3] = tx + texShapeVerts[0]
-						barray[index+4] = ty + texShapeVerts[1]
-						barray[index+5] = shadows[0]
-						barray[index+6] = slights[0]
-						barray[index+7] = blights[0]
+						bigArray[index] = verts[0] + x2
+						bigArray[index+1] = verts[1] + y2
+						bigArray[index+2] = verts[2] + z2
+						bigArray[index+3] = tx + texShapeVerts[0]
+						bigArray[index+4] = ty + texShapeVerts[1]
+						bigArray[index+5] = shadows[0]
+						bigArray[index+6] = slights[0]
+						bigArray[index+7] = blights[0]
 
-						barray[index+8] = verts[3] + x2
-						barray[index+9] = verts[4] + y2
-						barray[index+10] = verts[5] + z2
-						barray[index+11] = tx + texShapeVerts[2]
-						barray[index+12] = ty + texShapeVerts[3]
-						barray[index+13] = shadows[1]
-						barray[index+14] = slights[1]
-						barray[index+15] = blights[1]
+						bigArray[index+8] = verts[3] + x2
+						bigArray[index+9] = verts[4] + y2
+						bigArray[index+10] = verts[5] + z2
+						bigArray[index+11] = tx + texShapeVerts[2]
+						bigArray[index+12] = ty + texShapeVerts[3]
+						bigArray[index+13] = shadows[1]
+						bigArray[index+14] = slights[1]
+						bigArray[index+15] = blights[1]
 
-						barray[index+16] = verts[6] + x2
-						barray[index+17] = verts[7] + y2
-						barray[index+18] = verts[8] + z2
-						barray[index+19] = tx + texShapeVerts[4]
-						barray[index+20] = ty + texShapeVerts[5]
-						barray[index+21] = shadows[2]
-						barray[index+22] = slights[2]
-						barray[index+23] = blights[2]
+						bigArray[index+16] = verts[6] + x2
+						bigArray[index+17] = verts[7] + y2
+						bigArray[index+18] = verts[8] + z2
+						bigArray[index+19] = tx + texShapeVerts[4]
+						bigArray[index+20] = ty + texShapeVerts[5]
+						bigArray[index+21] = shadows[2]
+						bigArray[index+22] = slights[2]
+						bigArray[index+23] = blights[2]
 
-						barray[index+24] = verts[9] + x2
-						barray[index+25] = verts[10] + y2
-						barray[index+26] = verts[11] + z2
-						barray[index+27] = tx + texShapeVerts[6]
-						barray[index+28] = ty + texShapeVerts[7]
-						barray[index+29] = shadows[3]
-						barray[index+30] = slights[3]
-						barray[index+31] = blights[3]
+						bigArray[index+24] = verts[9] + x2
+						bigArray[index+25] = verts[10] + y2
+						bigArray[index+26] = verts[11] + z2
+						bigArray[index+27] = tx + texShapeVerts[6]
+						bigArray[index+28] = ty + texShapeVerts[7]
+						bigArray[index+29] = shadows[3]
+						bigArray[index+30] = slights[3]
+						bigArray[index+31] = blights[3]
 						index += 32
 					}
 				}
@@ -627,16 +519,7 @@ class Section {
 			}
 		}
 	}
-	getLight(x, y, z, block = 0) {
-		let s = this.size
-		let i = x * s * s + y * s + z
-		return (this.light[i] & 15 << block * 4) >> block * 4
-	}
-	setLight(x, y, z, level, block = 0) {
-		let s = this.size
-		let i = x * s * s + y * s + z
-		this.light[i] = level << block * 4 | this.light[i] & 15 << !block * 4
-	}
+
 	setWorld(world) {
 		this.world = world
 	}

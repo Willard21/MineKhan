@@ -9,7 +9,7 @@ import vertexShaderSrcEntity from './shaders/entityVertexShader.glsl'
 import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
 
 // Import Worker code
-import workerCode from './js/Worker.jsw'
+import workerCode from './workers/Caves.js'
 
 // import css
 import './index.css'
@@ -704,7 +704,7 @@ async function MineKhan() {
 	}
 	let indexOrder = new Uint32Array(bigArray.length / 6 | 0)
 	for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
-		indexOrder[i]     = j
+		indexOrder[i + 0] = 0 + j
 		indexOrder[i + 1] = 1 + j
 		indexOrder[i + 2] = 2 + j
 		indexOrder[i + 3] = 0 + j
@@ -962,22 +962,30 @@ async function MineKhan() {
 			this.frustum[4].set(aux.x, aux.y, aux.z)
 		}
 		canSee(x, y, z, maxY) {
+			// If it's inside the viewing frustum
 			x -= 0.5
 			y -= 0.5
 			z -= 0.5
 			maxY += 0.5
-			let px = 0, py = 0, pz = 0, plane = null
 			let cx = p.x, cy = p.y, cz = p.z
 			for (let i = 0; i < 5; i++) {
-				plane = this.frustum[i]
-				px = x + plane.dx
-				py = plane.dy ? maxY : y
-				pz = z + plane.dz
+				let plane = this.frustum[i]
+				let px = x + plane.dx
+				let py = plane.dy ? maxY : y
+				let pz = z + plane.dz
 				if ((px - cx) * plane.nx + (py - cy) * plane.ny + (pz - cz) * plane.nz < 0) {
 					return false
 				}
 			}
+
 			return true
+
+			// If it's within the range of the fog
+			// const dx = x - this.x
+			// const dy = this.y < maxY ? 0 : maxY - this.y
+			// const dz = z - this.z
+			// const d = settings.renderDistance * 16 + 24
+			// return dx * dx + dy * dy + dz * dz < d * d
 		}
 	}
 
@@ -1336,8 +1344,8 @@ async function MineKhan() {
 
 		let pminX = floor(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
 		let pmaxX = ceil(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
-		let pminY = floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0))
-		let pmaxY = ceil(p.y + p.topH    + (p.velocity.y > 0 ? p.velocity.y : 0))
+		let pminY = max(floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
+		let pmaxY = min(ceil(p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
 		let pminZ = floor(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
 		let pmaxZ = ceil(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 		let block = null
@@ -1438,7 +1446,7 @@ async function MineKhan() {
 				hasCollided = true
 			}
 		}
-		
+
 
 		if (!p.flying) {
 			let drag = p.onGround ? 0.5 : 0.85
@@ -1634,8 +1642,10 @@ async function MineKhan() {
 					world.generateQueue.push(chunk)
 					done = false
 				}
+
 				if (!chunk.populated && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
 					world.populateQueue.push(chunk)
+					chunk.carving = true
 					done = false
 				}
 				if (world.loadFrom.length && !chunk.loaded && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
@@ -1653,13 +1663,11 @@ async function MineKhan() {
 		}
 		return done
 	}
-	function maxDist(x, z, x2, z2) {
-		let ax = abs(x2 - x)
-		let az = abs(z2 - z)
-		return max(ax, az)
-	}
 	function renderFilter(chunk) {
-		return maxDist(chunk.x >> 4, chunk.z >> 4, p.cx, p.cz) <= settings.renderDistance
+		const cx = (chunk.x >> 4) - p.cx
+		const cz = (chunk.z >> 4) - p.cz
+		const d = settings.renderDistance + Math.SQRT1_2
+		return cx * cx + cz * cz <= d * d
 	}
 
 	function debug(message) {
@@ -1731,10 +1739,11 @@ async function MineKhan() {
 		}
 		window.ban(username)
 	})
-	commands.set("online", args => {
+	commands.set("online", () => {
 		if (window.online && multiplayer) {
 			window.online()
-		} else {
+		}
+		else {
 			chat("You're all alone. Sorry.")
 		}
 	})
@@ -1789,7 +1798,7 @@ async function MineKhan() {
 			}
 			multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
 				type: "pos",
-				data: {x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z}
+				data: { x: p.x, y: p.y, z: p.z, vx: p.velocity.x, vy: p.velocity.y, vz: p.velocity.z }
 			})), 500)
 		}
 		let multiplayerError = ""
@@ -1911,6 +1920,9 @@ async function MineKhan() {
 	fullSection.setWorld(world)
 	fullSection.setCaves(caves)
 
+	// const wasm = await WebAssembly.instantiateStreaming("/world.wasm", {})
+	// const { memory } = wasm.instance.exports
+
 	class World {
 		constructor(empty) {
 			if (!empty) {
@@ -1939,6 +1951,13 @@ async function MineKhan() {
 			this.entities = []
 			this.eventQueue = []
 			this.lastChunk = ","
+			this.caves = caves
+			// this.memory = memory
+			// this.freeMemory = []
+		}
+		initMemory() {
+			// Reserve first 256 bytes for settings or whatever
+			this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
 		}
 		genChunk(chunk) {
 			let trueX = chunk.x
@@ -1968,37 +1987,37 @@ async function MineKhan() {
 			}
 			chunk.generated = true
 		}
-		getAdjacentSubchunks(x, y, z, lights) {
-			let minChunkX = x - 16 >> 4
-			let maxChunkX = x + 16 >> 4
-			let minChunkY = y - 16 >> 4
-			let maxChunkY = y + 16 >> 4
-			let minChunkZ = z - 16 >> 4
-			let maxChunkZ = z + 16 >> 4
-			let section = null
-			let ret = []
-			for (x = minChunkX; x <= maxChunkX; x++) {
-				for (let y = minChunkY; y <= maxChunkY; y++) {
-					for (z = minChunkZ; z <= maxChunkZ; z++) {
-						if (y < 0) {
-							ret.push(lights ? fullSection.light : fullSection.blocks)
-						}
-						else if (this.chunks[x] && this.chunks[x][z]) {
-							section = this.chunks[x][z].sections[y] || emptySection
-							ret.push(lights ? section.light : section.blocks)
-						}
-						else {
-							ret.push(lights ? emptySection.light : emptySection.blocks)
-						}
-					}
-				}
-			}
-			return ret
-		}
-		updateBlock(x, y, z, lazy) {
+		// getAdjacentSubchunks(x, y, z, lights) {
+		// 	let minChunkX = x - 16 >> 4
+		// 	let maxChunkX = x + 16 >> 4
+		// 	let minChunkY = y - 16 >> 4
+		// 	let maxChunkY = y + 16 >> 4
+		// 	let minChunkZ = z - 16 >> 4
+		// 	let maxChunkZ = z + 16 >> 4
+		// 	let section = null
+		// 	let ret = []
+		// 	for (x = minChunkX; x <= maxChunkX; x++) {
+		// 		for (let y = minChunkY; y <= maxChunkY; y++) {
+		// 			for (z = minChunkZ; z <= maxChunkZ; z++) {
+		// 				if (y < 0) {
+		// 					ret.push(lights ? fullSection.light : fullSection.blocks)
+		// 				}
+		// 				else if (this.chunks[x] && this.chunks[x][z]) {
+		// 					section = this.chunks[x][z].sections[y] || emptySection
+		// 					ret.push(lights ? section.light : section.blocks)
+		// 				}
+		// 				else {
+		// 					ret.push(lights ? emptySection.light : emptySection.blocks)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// 	return ret
+		// }
+		updateBlock(x, y, z) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
-				chunk.updateBlock(x & 15, y, z & 15, this, lazy, screen)
+				chunk.updateBlock(x & 15, y, z & 15, this)
 			}
 		}
 		getChunk(x, z) {
@@ -2013,18 +2032,24 @@ async function MineKhan() {
 			return this.chunks[x >> 4][z >> 4].getBlock(x & 15, y, z & 15)
 		}
 		getBlock(x, y, z) {
-			let X = (x >> 4) + this.offsetX
-			let Z = (z >> 4) + this.offsetZ
-			if (y > maxHeight) {
-				return blockIds.air
-			}
-			else if (y < 0) {
-				return blockIds.bedrock
-			}
-			else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
-				return this.getWorldBlock(x, y, z)
-			}
-			return this.loaded[X * this.lwidth + Z].getBlock(x & 15, y, z & 15)
+			// let X = (x >> 4) + this.offsetX
+			// let Z = (z >> 4) + this.offsetZ
+			// if (y > maxHeight) {
+			// 	debugger
+			// 	return 0
+			// }
+			// else if (y < 0) {
+			// 	debugger
+			// 	return blockIds.bedrock
+			// }
+			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
+			// 	debugger
+			// 	return this.getWorldBlock(x, y, z)
+			// }
+			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
+		}
+		setWorldBlock(x, y, z, blockID) {
+			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, 1)
 		}
 		setBlock(x, y, z, blockID, lazy, remote) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
@@ -2067,51 +2092,60 @@ async function MineKhan() {
 
 			//Update the 6 adjacent blocks and 1 changed block
 			if (xm && xm !== 15 && zm && zm !== 15) {
-				chunk.updateBlock(xm - 1, y, zm, this, lazy, screen)
-				chunk.updateBlock(xm, y - 1, zm, this, lazy, screen)
-				chunk.updateBlock(xm + 1, y, zm, this, lazy, screen)
-				chunk.updateBlock(xm, y + 1, zm, this, lazy, screen)
-				chunk.updateBlock(xm, y, zm - 1, this, lazy, screen)
-				chunk.updateBlock(xm, y, zm + 1, this, lazy, screen)
+				chunk.updateBlock(xm - 1, y, zm, this)
+				chunk.updateBlock(xm, y - 1, zm, this)
+				chunk.updateBlock(xm + 1, y, zm, this)
+				chunk.updateBlock(xm, y + 1, zm, this)
+				chunk.updateBlock(xm, y, zm - 1, this)
+				chunk.updateBlock(xm, y, zm + 1, this)
 			}
 			else {
-				this.updateBlock(x - 1, y, z, lazy, screen)
-				this.updateBlock(x + 1, y, z, lazy, screen)
-				this.updateBlock(x, y - 1, z, lazy, screen)
-				this.updateBlock(x, y + 1, z, lazy, screen)
-				this.updateBlock(x, y, z - 1, lazy, screen)
-				this.updateBlock(x, y, z + 1, lazy, screen)
+				this.updateBlock(x - 1, y, z)
+				this.updateBlock(x + 1, y, z)
+				this.updateBlock(x, y - 1, z)
+				this.updateBlock(x, y + 1, z)
+				this.updateBlock(x, y, z - 1)
+				this.updateBlock(x, y, z + 1)
 			}
 
-			chunk.updateBlock(xm, y, zm, this, lazy, screen)
+			chunk.updateBlock(xm, y, zm, this)
 
 			// Update the corner chunks so shadows in adjacent chunks update correctly
 			if (xm | zm === 0) {
-				this.updateBlock(x - 1, y, z - 1, lazy, screen)
+				this.updateBlock(x - 1, y, z - 1)
 			}
 			if (xm === 15 && zm === 0) {
-				this.updateBlock(x + 1, y, z - 1, lazy, screen)
+				this.updateBlock(x + 1, y, z - 1)
 			}
 			if (xm === 0 && zm === 15) {
-				this.updateBlock(x - 1, y, z + 1, lazy, screen)
+				this.updateBlock(x - 1, y, z + 1)
 			}
 			if (xm & zm === 15) {
-				this.updateBlock(x + 1, y, z + 1, lazy, screen)
+				this.updateBlock(x + 1, y, z + 1)
 			}
 		}
-		getLight(x, y, z, blockLight = 0) {
+		getLight(x, y, z, blockLight) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
-				return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15, blockLight)
-			}
-			return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15, blockLight)
+			// if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
+			// 	debugger
+			// 	if (y < 0 || y > 255) debugger
+			// 	if (blockLight === 1) return this.chunks[x >> 4][z >> 4].getBlockLight(x & 15, y, z & 15)
+			// 	else if (blockLight === 0) return this.chunks[x >> 4][z >> 4].getSkyLight(x & 15, y, z & 15)
+			// 	else return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
+			// }
+			if (blockLight === 1) return this.loaded[X * this.lwidth + Z].getBlockLight(x & 15, y, z & 15)
+			else if (blockLight === 0) return this.loaded[X * this.lwidth + Z].getSkyLight(x & 15, y, z & 15)
+			else return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15)
 		}
-		setLight(x, y, z, level, block) {
+		setLight(x, y, z, level, blockLight) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
+
 			if (this.loaded[X * this.lwidth + Z]) {
-				return this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level, block)
+				if (blockLight === 1) this.loaded[X * this.lwidth + Z].setBlockLight(x & 15, y, z & 15, level)
+				else if (blockLight === 0) this.loaded[X * this.lwidth + Z].setSkyLight(x & 15, y, z & 15, level)
+				else this.loaded[X * this.lwidth + Z].setLight(x & 15, y, z & 15, level)
 			}
 		}
 		updateLight(x, y, z, place, blockLight = 0) {
@@ -2119,36 +2153,36 @@ async function MineKhan() {
 			if (!chunk) return
 			let cx = x & 15
 			let cz = z & 15
-			let center = chunk.getLight(cx, y, cz, 0)
-			let blight = chunk.getLight(cx, y, cz, 1)
-			let up = this.getLight(x, y+1, z)
-			let down = this.getLight(x, y-1, z)
-			let north = this.getLight(x, y, z+1)
-			let south = this.getLight(x, y, z-1)
-			let east = this.getLight(x+1, y, z)
-			let west = this.getLight(x-1, y, z)
+			let center = chunk.getSkyLight(cx, y, cz)
+			let blight = chunk.getBlockLight(cx, y, cz)
+			let up = this.getLight(x, y+1, z, 0)
+			let down = this.getLight(x, y-1, z, 0)
+			let north = this.getLight(x, y, z+1, 0)
+			let south = this.getLight(x, y, z-1, 0)
+			let east = this.getLight(x+1, y, z, 0)
+			let west = this.getLight(x-1, y, z, 0)
 
 			let spread = []
 			if (!place) { // Block was removed; increase light levels
-				if ((up & 15) === 15) {
+				if (up === 15) { // Removed block was under direct sunlight; fill light downward
 					for (let i = y; i > 0; i--) {
 						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
-							chunk.setLight(cx, i, cz, 15)
+							chunk.setSkyLight(cx, i, cz, 15)
 							spread.push(x, i, z)
 						}
 						else {
 							break
 						}
 					}
-					chunk.spreadLight(spread, 14, true)
+					chunk.spreadLight(spread, 14, true, 0)
 				}
-				else {
+				else { // Block wasn't in direct skylight; subtract 1 from the brightest neighboring tile and use that as the new light level
 					center = max(up, down, north, south, east, west)
 					if (center > 0) center -= 1
-					this.setLight(x, y, z, center)
+					this.setLight(x, y, z, center, 0)
 					if (center > 1) {
 						spread.push(x, y, z)
-						chunk.spreadLight(spread, center - 1, true)
+						chunk.spreadLight(spread, center - 1, true, 0)
 					}
 				}
 
@@ -2172,17 +2206,15 @@ async function MineKhan() {
 			}
 			else if (place && (center !== 0 || blight !== 0)) { // Block was placed; decrease light levels
 				let respread = []
-				// for (let i = 0; i <= center + 1; i++) respread[i] = []
 				for (let i = 0; i <= 15; i++) respread[i] = []
-				chunk.setLight(cx, y, cz, 0, 0)
-				chunk.setLight(cx, y, cz, 0, 1)
+				chunk.setLight(cx, y, cz, 0) // Set both skylight and blocklight to 0
 				spread.push(x, y, z)
 
 				// Sky light
 				if (center === 15) {
 					for (let i = y-1; i > 0; i--) {
 						if (blockData[chunk.getBlock(cx, i, cz)].transparent) {
-							chunk.setLight(cx, i, cz, 0)
+							chunk.setSkyLight(cx, i, cz, 0)
 							spread.push(x, i, z)
 						}
 						else {
@@ -2190,8 +2222,8 @@ async function MineKhan() {
 						}
 					}
 				}
-				chunk.unSpreadLight(spread, center - 1, respread)
-				chunk.reSpreadLight(respread)
+				chunk.unSpreadLight(spread, center - 1, respread, 0)
+				chunk.reSpreadLight(respread, 0)
 
 				// Block light
 				if (blight) {
@@ -2205,14 +2237,13 @@ async function MineKhan() {
 				}
 			}
 			if (place && blockLight) { // Light block was placed
-				this.setLight(x, y, z, blockLight, 1)
+				chunk.setBlockLight(cx, y, cz, blockLight)
 				spread.length = 0
 				spread.push(x, y, z)
 				chunk.spreadLight(spread, blockLight - 1, true, 1)
-
 			}
 			else if (!place && blockLight) { // Light block was removed
-				this.setLight(x, y, z, 0, 1)
+				chunk.setBlockLight(cx, y, cz, 0)
 				spread.push(x, y, z)
 				let respread = []
 				for (let i = 0; i <= blockLight + 1; i++) respread[i] = []
@@ -2289,23 +2320,23 @@ async function MineKhan() {
 
 				if (this.generateQueue.length && !doneWork) {
 					let chunk = this.generateQueue.pop()
+					chunk.getCaveData() // Queue up the multithreaded cave gen
 					this.genChunk(chunk)
 					doneWork = true
 				}
 
+				// Carve caves, then place trees
 				if (this.populateQueue.length && !doneWork) {
 					let chunk = this.populateQueue[this.populateQueue.length - 1]
-					if (!chunk.caves) {
-						await chunk.carveCaves()
-						debug("Carve caves")
-					}
-					else if (!chunk.populated) {
+					if (!chunk.caves) await chunk.carveCaves()
+					else {
 						chunk.populate(trees)
 						this.populateQueue.pop()
 					}
 					doneWork = true
 				}
 
+				// When a player loads a saved chunk
 				if (this.loadQueue.length && !doneWork) {
 					this.loadQueue.pop().load()
 					doneWork = true
@@ -2379,8 +2410,8 @@ async function MineKhan() {
 
 			let c = this.sortedChunks
 			let glob = { renderedChunks }
-			for (let chunk of c) {
-				chunk.render(p, glob)
+			for (let i = 0; i < c.length; i++) {
+				c[i].render(p, glob)
 			}
 			if (this.doubleRenderChunks.length) {
 				gl.depthMask(false)
@@ -2391,7 +2422,7 @@ async function MineKhan() {
 				gl.uniform1i(glCache.uTrans, 0)
 				gl.depthMask(true)
 			}
-			
+
 			renderedChunks = glob.renderedChunks
 
 			gl.uniform3f(glCache.uPos, 0, 0, 0)
@@ -2452,31 +2483,19 @@ async function MineKhan() {
 						this.chunks[x] = []
 					}
 					if (!this.chunks[x][z]) {
-						chunk = new Chunk(x * 16, z * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
-						if (maxDist(cx, cz, x, z) <= settings.renderDistance) {
-							this.chunkGenQueue.push(chunk)
-						}
-						this.chunks[x][z] = chunk
+						this.chunks[x][z] = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, trees)
 					}
 					chunk = this.chunks[x][z]
-					if (!chunk.buffer && !this.chunkGenQueue.includes(chunk) && maxDist(cx, cz, x, z) <= settings.renderDistance) {
+					if (!chunk.buffer && renderFilter(chunk)) {
 						this.chunkGenQueue.push(chunk)
 					}
 					this.loaded[i++] = chunk
 				}
 			}
-			this.sortedChunks.length = 0
-			this.doubleRenderChunks.length = 0
-			for (let chunk of this.loaded) {
-				if (renderFilter(chunk)) {
-					this.sortedChunks.push(chunk)
-				}
-				if (chunk.doubleRender) {
-					this.doubleRenderChunks.push(chunk)
-				}
-			}
+
 			this.sortedChunks = this.loaded.filter(renderFilter)
 			this.sortedChunks.sort(sortChunks)
+			this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 		}
 		getSaveString() {
 			let edited = []
@@ -3107,7 +3126,7 @@ async function MineKhan() {
 	}
 	function hud() {
 		if (p.spectator) {
-			return
+			// return
 		}
 
 		hotbar()
@@ -3151,7 +3170,9 @@ async function MineKhan() {
 
 		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
 
-		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
+		let str = "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
+		+ "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
+		+ "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
 		+ "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
 		+ "Render Time: " + analytics.displayedRenderTime + "ms\n"
 		+ "Tick Time: " + analytics.displayedTickTime + "ms\n"
@@ -3187,7 +3208,7 @@ async function MineKhan() {
 		ctx.textAlign = 'right'
 		text(p2.x + ", " + p2.y + ", " + p2.z, width - 10, 15, 0)
 		ctx.textAlign = 'left'
-		text(str, 5, height - 77, 12)
+		text(str, 5, height - 100, 12)
 	}
 	function drawInv() {
 		let x = 0
@@ -3593,7 +3614,8 @@ async function MineKhan() {
 				e.stopPropagation()
 				if (msg.startsWith("/")) {
 					sendCommand(msg)
-				} else {
+				}
+				else {
 					sendChat(msg)
 				}
 				chatInput.value = ""
