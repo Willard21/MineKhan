@@ -1,3 +1,5 @@
+const randomBetween = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+
 const texturesFunc = function (setPixel, getPixels) {
 	return {
 		grassTop: n => {
@@ -43,6 +45,34 @@ const texturesFunc = function (setPixel, getPixels) {
 					const g = floor(random() * 30 + 100)
 					const b = floor(random() * 30)
 					const a = random() < 0.35 ? 0x0 : 0xff
+
+					setPixel(n, x, y, r, g, b, a)
+				}
+			}
+		},
+		lava: n => {
+			const {floor, random} = Math;
+
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					// const yellow = [255, 255, 51]
+					const r = randomBetween(100, 200)
+					const g = 0.5
+					const b = 0.5
+
+					setPixel(n, x, y, r, g, b)
+				}
+			}
+		},
+		water: n => {
+			const {floor, random} = Math;
+
+			for (let x = 0; x < 16; ++x) {
+				for (let y = 0; y < 16; ++y) {
+					const r = 0.05
+					const g = floor(random() * 0.5)
+					const b = floor(random() * 54 - 60)
+					const a = 75
 
 					setPixel(n, x, y, r, g, b, a)
 				}
@@ -147,7 +177,6 @@ const texturesFunc = function (setPixel, getPixels) {
 		"tntBottom": "0g0g4ĘÂHĿęY÷-ZùęWkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZ",
 		"tntSide": "0g0gaŐ1YĿęYĘÂHùęWZZZĶ;ZņÚY)ļHoÐZĦĲW0i0i0i0ihzhzhzhzhzhzhzhzhzhzhzhzhzhzhzhz?ÓVÓÒÄÓÑ@GðâÆÔäUÖÆVGÅÄãÓ?ÔÓãGVïþ@ÆÄâÆVðUāāāāāāāāyOyOyOyOhzhzhzhzhzhzhzhzhzhzhzhzyzyzyzyz",
 		"tntTop": "0g0g7ĿęYŐ1Y÷-ZĘÂHVVHùęWgTZ4ë]4ë]FNûFNû!ÂĎĸËýÛĮĕÜÓŔ4œ]4Ň]FNěó;û!]ĞŀÇýÛľ+Ĺ[ĕ4òĞłc]!{ĞĹ;û!ÃþĸÖlÛŀĔøÄŔ4ħÝĿį]!NċMOjFÂýFÂýÛĽŔÛĽŔ",
-		"waterStill": "0g0g8Īc%ĖĢŔĎĂÚĺ|%Ķ;ŔľËÚZZŔŢŖĕ4üúAùŌPyPBAJBAJA0ÂFy1A2P]JJ?AP]ĊTAiJ4JPAþŗÞJTAJSŀñĀwë_PAJPAÂFAÂQíPPAJPAúPAJPkJFAPA2óPAúzÕawÿşAiP",
 		"whiteConcrete": "0g0g3ĶËHĺËHĶ|H4?541S4k40ggh50g?À0Àk1wA0l4g04U0kQ?À4l00U01hÁ0044Àl0hÁ1QÀkTg4Á5h",
 		"whiteWool": "0g0gnłêWŊĆHľéZłéZŒĖYŞņHł÷Wņ÷WŚĶWŚņHĺÚYŒĦZľÚYŖĶWZZZŢŖYŎĆYĺËHľÚZŎĖYŖĦZĺËYŞŖY0QNkĮRU*ĔÙÉÊŎĎ1reoįOçĪ,=ì_Ĺÿ.%Æ^ŗXø)uŜïĶÙĳĚýV/Ķyü×J÷ŚU1*RmsÎàĔÂiØçú7.)8ÊŋĉŖpıś*Ŗ^ÑGĈĨ-}ĩSÂ;2šĒdOÊŐčĵçĹÿ<EçĩĞùØpĂķXđp÷ļE%8×ďĢVxÄÿ.Ĕ^sŎčÎĔĹŠĴŕàÿ7ĕčàĵæAzÎćTïŕĀÀŘāŖ",
 		"yellowConcrete": "0g0g4řĨHřęHřĨYŕęHlV01zs@S1àÁá?ħń4S9551ÿOÄúKV14ÁVÁN[lÃÆśÁllħħĬĨRļŗh(0oUVUV{Á{0SľQh",
@@ -298,12 +327,12 @@ const blockData = [
 	{ name: "granite" },
 	{ name: "polishedGranite" },
 	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false },
-	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false}
-	// I swear, if y'all don't stop asking about TNT every 5 minutes!
-	/* {
+	{ name: "water", semiTrans: true, transparent: true, solid: false, shadow: false},
+	{ name: "lava", solid: false, transparent: true},
+	{
         name: "tnt",
         textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
+    }
 ]
 
 const BLOCK_COUNT = blockData.length;
