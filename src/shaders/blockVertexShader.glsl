@@ -10,6 +10,7 @@ uniform mat4 uView;
 uniform float uDist;
 uniform vec3 uPos;
 uniform float uTime;
+uniform float uLantern;
 
 void main() {
     vTexture = aTexture;
@@ -18,8 +19,7 @@ void main() {
 
     gl_Position = uView * vec4(aVertex, 1.0);
     float dist = length(uPos - aVertex);
-    float flashlight = min(1.0 / dist, 0.5);
-    vShadow = aShadow * min(max(max(aSkylight * uTime, aBlocklight), flashlight) * 0.9 + 0.1, 1.0);
+    vShadow = aShadow * min(max(max(aSkylight * uTime, aBlocklight), uLantern - dist / 10.0) * 0.9 + 0.1, 1.0);
 
     float range = max(uDist / 5.0, 8.0);
     vFog = clamp((dist - uDist + range) / range, 0.0, 1.0);

@@ -715,11 +715,17 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
+	let squareVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
 		let s = side
 		let q = s / 2
+
+		squareVerts = new Float32Array([
+			0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1
+		])
+
 		hexagonVerts = new Float32Array([
 			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
 			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
@@ -751,8 +757,24 @@ async function MineKhan() {
 			let data = []
 			let block = blockData[i]
 			if (block.icon) {
-				block = blockData[blockIds[block.icon]]
+				let tex = textureCoords[textureMap[block.icon]]
+				data.push(-scale, -scale, 1/6, tex[0], tex[1], 1)
+				data.push(-scale, scale, 1/6, tex[2], tex[3], 1)
+				data.push(scale, scale, 1/6, tex[4], tex[5], 1)
+				data.push(scale, -scale, 1/6, tex[6], tex[7], 1)
+				let buffer = gl.createBuffer()
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
+				blockIcons[i] = buffer
+				blockIcons.lengths[i] = 6
+				blockIcons[i | SLAB] = buffer
+				blockIcons.lengths[i | SLAB] = 6
+				blockIcons[i | STAIR] = buffer
+				blockIcons.lengths[i | STAIR] = 6
+				continue
 			}
+
+			// Cube icon
 			for (let j = 11; j >= 0; j--) {
 				data.push(-hexagonVerts[j * 3 + 0] * scale)
 				data.push(hexagonVerts[j * 3 + 1] * scale)
@@ -767,6 +789,7 @@ async function MineKhan() {
 			blockIcons[i] = buffer
 			blockIcons.lengths[i] = 6 * 3
 
+			// Slab icon
 			data = []
 			for (let j = 11; j >= 0; j--) {
 				let tex = textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]]
@@ -784,6 +807,7 @@ async function MineKhan() {
 			blockIcons[i | SLAB] = buffer
 			blockIcons.lengths[i | SLAB] = 6 * 3
 
+			// Stair icon
 			data = []
 			let v = stairIconVerts
 			for (let j = 23; j >= 0; j--) {
@@ -3074,6 +3098,8 @@ async function MineKhan() {
 		y = y / (3 * height) - 0.1666
 		initModelView(null, x, y, 0, 0, 0)
 
+		let data = blockData[id]
+
 		let buffer = blockIcons[id]
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
@@ -3084,6 +3110,13 @@ async function MineKhan() {
 		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
 		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
 		gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
+		if (data.semiTrans) {
+			gl.depthMask(false)
+			gl.uniform1i(glCache.uTrans, 1)
+			gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
+			gl.uniform1i(glCache.uTrans, 0)
+			gl.depthMask(true)
+		}
 	}
 
 	function hotbar() {
@@ -3699,6 +3732,7 @@ async function MineKhan() {
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
 		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
 		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
+		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
 		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
 		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
@@ -4306,6 +4340,7 @@ async function MineKhan() {
 				renderChatAlerts()
 				textSize(10)
 				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
+				gl.uniform1f(glCache.uLantern, blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
 			}
 			let renderStart = performance.now()
 			p.setDirection()
