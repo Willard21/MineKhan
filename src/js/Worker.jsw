@@ -177,9 +177,8 @@ function Worker() {
 		// This is extremely slow, and requires generating 2 noise values for every single block in the world.
 		// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
 
-		let cave1 = abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
-		let cave2 = abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize
-		return cave1 && cave2
+		return abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
+			&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize
 	}
 
 	const subChunk = new Int8Array(16 * 16 * 16)
