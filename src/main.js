@@ -3272,8 +3272,10 @@ async function MineKhan() {
 		}
 
 		//Box highlight in inv
+		let drawName = false
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		if (overInv >= 0 && overInv < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.lineWidth = 2
@@ -3294,6 +3296,13 @@ async function MineKhan() {
 		hotbar()
 		//hud()
 		ctx.drawImage(gl.canvas, 0, 0)
+		if (drawName) {
+			let name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			ctx.fillStyle = "black"
+			ctx.fillRect(mouseX - 3, mouseY - 20, name.length * 6 + 6, 15)
+			ctx.fillStyle = "white"
+			ctx.fillText(name, mouseX, mouseY - 10)
+		}
 	}
 	function clickInv() {
 		let s = inventory.size
