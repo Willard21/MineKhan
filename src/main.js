@@ -715,16 +715,11 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
-	let squareVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
 		let s = side
 		let q = s / 2
-
-		squareVerts = new Float32Array([
-			0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1
-		])
 
 		hexagonVerts = new Float32Array([
 			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
@@ -758,10 +753,10 @@ async function MineKhan() {
 			let block = blockData[i]
 			if (block.icon) {
 				let tex = textureCoords[textureMap[block.icon]]
-				data.push(-scale, -scale, 1/6, tex[0], tex[1], 1)
-				data.push(-scale, scale, 1/6, tex[2], tex[3], 1)
-				data.push(scale, scale, 1/6, tex[4], tex[5], 1)
-				data.push(scale, -scale, 1/6, tex[6], tex[7], 1)
+				data.push(-scale * 0.9, scale * 0.9, 1/6, tex[0], tex[1], 1)
+				data.push(scale * 0.9, scale * 0.9, 1/6, tex[2], tex[3], 1)
+				data.push(scale * 0.9, -scale * 0.9, 1/6, tex[4], tex[5], 1)
+				data.push(-scale * 0.9, -scale * 0.9, 1/6, tex[6], tex[7], 1)
 				let buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
