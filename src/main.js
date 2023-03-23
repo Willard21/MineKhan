@@ -1987,33 +1987,6 @@ async function MineKhan() {
 			}
 			chunk.generated = true
 		}
-		// getAdjacentSubchunks(x, y, z, lights) {
-		// 	let minChunkX = x - 16 >> 4
-		// 	let maxChunkX = x + 16 >> 4
-		// 	let minChunkY = y - 16 >> 4
-		// 	let maxChunkY = y + 16 >> 4
-		// 	let minChunkZ = z - 16 >> 4
-		// 	let maxChunkZ = z + 16 >> 4
-		// 	let section = null
-		// 	let ret = []
-		// 	for (x = minChunkX; x <= maxChunkX; x++) {
-		// 		for (let y = minChunkY; y <= maxChunkY; y++) {
-		// 			for (z = minChunkZ; z <= maxChunkZ; z++) {
-		// 				if (y < 0) {
-		// 					ret.push(lights ? fullSection.light : fullSection.blocks)
-		// 				}
-		// 				else if (this.chunks[x] && this.chunks[x][z]) {
-		// 					section = this.chunks[x][z].sections[y] || emptySection
-		// 					ret.push(lights ? section.light : section.blocks)
-		// 				}
-		// 				else {
-		// 					ret.push(lights ? emptySection.light : emptySection.blocks)
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// 	return ret
-		// }
 		updateBlock(x, y, z) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
@@ -2034,14 +2007,14 @@ async function MineKhan() {
 		getBlock(x, y, z) {
 			// let X = (x >> 4) + this.offsetX
 			// let Z = (z >> 4) + this.offsetZ
-			// if (y > maxHeight) {
-			// 	debugger
-			// 	return 0
-			// }
-			// else if (y < 0) {
-			// 	debugger
-			// 	return blockIds.bedrock
-			// }
+			if (y > maxHeight) {
+				debugger
+				return 0
+			}
+			else if (y < 0) {
+				debugger
+				return blockIds.bedrock
+			}
 			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
 			// 	return this.getWorldBlock(x, y, z)

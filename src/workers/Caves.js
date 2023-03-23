@@ -125,23 +125,8 @@ async function Worker() {
 			self.postMessage({
 				jobId: e.data.jobId,
 				caves: arr,
-			})
-			// console.log(sphere)
+			}, [buffer])
 		}
 	}
 }
-/*
-			let i = 1024
-			for (let Y = 4; Y < 80; Y++) {
-				for (let X = 0; X < 16; X++) {
-					for (let Z = 0; Z < 16; Z++) {
-						subChunk[i] = exports.is_cave(X + x, Y + y, Z + z) | 0
-						i++
-					}
-				}
-			}
-
-			for (let i = 1024; i < 20480; i++) {
-				if (subChunk[i] !== subChunk2[i]) debugger
-			}*/
 Worker()
