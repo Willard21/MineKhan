@@ -3737,6 +3737,7 @@ async function MineKhan() {
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
 		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
 		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
+		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
 		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
 		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
@@ -4344,6 +4345,7 @@ async function MineKhan() {
 				renderChatAlerts()
 				textSize(10)
 				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
+				gl.uniform1f(glCache.uLantern, blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
 			}
 			let renderStart = performance.now()
 			p.setDirection()
