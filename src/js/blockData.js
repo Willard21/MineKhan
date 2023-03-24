@@ -319,7 +319,7 @@ const blockData = [
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
 	{ name: "obsidian" },
-	{ name: "cryingObsidian" },
+	{ name: "cryingObsidian", lightLevel: 10 },
 	{ name: "endStone" },
 	{ name: "endStoneBricks" },
 	{ name: "chiseledNetherBricks" },
@@ -329,10 +329,10 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", solid: false, transparent: true, icon: "oakDoorTop" },
-	{ name: "oakDoorBottom", solid: false, transparent: true, icon: "oakDoorBottom" },
-	{ name: "warpedDoorTop", solid: false, transparent: true, icon: "warpedDoorTop" },
-	{ name: "warpedDoorBottom", solid: false, transparent: true, icon: "warpedDoorBottom" },
+	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
+	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
+	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
