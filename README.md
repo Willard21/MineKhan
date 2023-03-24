@@ -3,7 +3,7 @@ Minecraft for Khan Academy
 
 Khan Academy link can be found [here](https://www.khanacademy.org/computer-programming/minekhan/5647155001376768).
 
-GitHub release can be found [here](https://willard21.github.io/MineKhan/index.html).
+GitHub release can be found [here](https://willard21.github.io/MineKhan/dist/).
 
 [Replit post](https://repl.it/talk/share/MineKhan-Minecraft-for-Khan-Academy/87382) and [app](https://replit.com/@Willard21/MineKhan)
 
