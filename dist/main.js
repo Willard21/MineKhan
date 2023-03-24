@@ -9,7 +9,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    // If you are going to change this final lightlevel calculation\r\n    // you have to change line 4487 as well since it calculates lightlevel of entity based on this\r\n\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n    float dist = length(uPos - aVertex);\r\n    float flashlight = min(1.0 / dist, 0.5);\r\n    vShadow = aShadow * min(max(max(aSkylight * uTime, aBlocklight), flashlight) * 0.9 + 0.1, 1.0);\r\n\r\n    float range = max(uDist / 5.0, 8.0);\r\n    vFog = clamp((dist - uDist + range) / range, 0.0, 1.0);\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\nuniform float uLantern;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    // If you are going to change this final lightlevel calculation\r\n    // you have to change line 4487 as well since it calculates lightlevel of entity based on this\r\n\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n    float dist = length(uPos - aVertex);\r\n    vShadow = aShadow * min(max(max(aSkylight * uTime, aBlocklight), uLantern - dist / 10.0) * 0.9 + 0.1, 1.0);\r\n\r\n    float range = max(uDist / 5.0, 8.0);\r\n    vFog = clamp((dist - uDist + range) / range, 0.0, 1.0);\r\n}");
 
 /***/ }),
 /* 2 */
@@ -1528,7 +1528,10 @@ const texturesFunc = function (setPixel, getPixels) {
 		"whiteConcrete": "0g0g3ĶËHĺËHĶ|H4?541S4k40ggh50g?À0Àk1wA0l4g04U0kQ?À4l00U01hÁ0044Àl0hÁ1QÀkTg4Á5h",
 		"whiteWool": "0g0gnłêWŊĆHľéZłéZŒĖYŞņHł÷Wņ÷WŚĶWŚņHĺÚYŒĦZľÚYŖĶWZZZŢŖYŎĆYĺËHľÚZŎĖYŖĦZĺËYŞŖY0QNkĮRU*ĔÙÉÊŎĎ1reoįOçĪ,=ì_Ĺÿ.%Æ^ŗXø)uŜïĶÙĳĚýV/Ķyü×J÷ŚU1*RmsÎàĔÂiØçú7.)8ÊŋĉŖpıś*Ŗ^ÑGĈĨ-}ĩSÂ;2šĒdOÊŐčĵçĹÿ<EçĩĞùØpĂķXđp÷ļE%8×ďĢVxÄÿ.Ĕ^sŎčÎĔĹŠĴŕàÿ7ĕčàĵæAzÎćTïŕĀÀŘāŖ",
 		"yellowConcrete": "0g0g4řĨHřęHřĨYŕęHlV01zs@S1àÁá?ħń4S9551ÿOÄúKV14ÁVÁN[lÃÆśÁllħħĬĨRļŗh(0oUVUV{Á{0SľQh",
-		"yellowWool": "0g0gjŝňZŝŘZŝĸYŝňYŢiHZ>WŢyYŢNZřĨHřĸYZÐZŞ2WŢ2WZÃHZÃYŢyHZNZZ>HŝřW0QNk0MķygPxüĊąØqSĜA$#ÄĮ*Œ:}GEōwKļXö2ŁĹ5ÁO0RĨ890yü]^0ķw122ĜëßÂô2hX!õĝEŖ8Uċāęowĺpę.ĹoĀ1aħJ$RaŋUxÓ1üĎt^ô}â)ōÖÄ>gQgcKXďo2Ñy@8ÀIĠ]x]âEİ.ĄĐĄô>eĽMĒàIĞùķÁSnĄz]yŘïĖK|hëĕ"
+		"yellowWool": "0g0gjŝňZŝŘZŝĸYŝňYŢiHZ>WŢyYŢNZřĨHřĸYZÐZŞ2WŢ2WZÃHZÃYŢyHZNZZ>HŝřW0QNk0MķygPxüĊąØqSĜA$#ÄĮ*Œ:}GEōwKļXö2ŁĹ5ÁO0RĨ890yü]^0ķw122ĜëßÂô2hX!õĝEŖ8Uċāęowĺpę.ĹoĀ1aħJ$RaŋUxÓ1üĎt^ô}â)ōÖÄ>gQgcKXďo2Ñy@8ÀIĠ]x]âEİ.ĄĐĄô>eĽMĒàIĞùķÁSnĄz]yŘïĖK|hëĕ",
+		"light": "0g0g1Zŗ7",
+		"lightIcon": "0g0g1ZŗA",
+		"lavaStill": "0g0g*ńĨZļÀZńęYőîZōÐHńřWįŇHĴgYĸSZŀúHńŉWļìWļÞWŉ2HŀęYĸÁWŉyYŉ2YōÃHŉiYňřHįŗHĸwYļÎWĸ(ZńřHŉNZŢďWŕĻYŀĉYĴwYĴ0YńĸZńęZŕīYŕīHĸÀZōOWŀìHŉiZőČWőüWŕŋZŕĻZĸ(YŉyZįķHőĜHīķHŚ*YōÐYőîYōàY0gRcTToß1Ay^EJĳ)ŉI;Č1MkûÀĹTxVÿK6]5ĎŃÁķÆåŚwïÔĿCDz0ëÆÏ>ÒÑāĀAOÈáî8ù9Ã(İıxĹ^BGP-^0èőÃÆňË%âĨÓĒĴuĪIoí11ď]Îm÷tŞįxVõĝAòäíĽqŌĄĥð5ÖēħęÎĘVŚMĥïĈwĩĳ~#&tñąMVĔ(mnĴħÍKĩIoÏ9ĥ*ńCÒ[(üįKàEĒĉÈMÎýÆî9ĜùÈEÆ)|ķ[éKUPlİ",
 	}
 }
 
@@ -1674,8 +1677,9 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", textures: "nothing", lightLevel: 15, solid: false, icon: "glass", transparent: true, shadow: false },
-	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false}
+	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
+	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
+	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -3131,10 +3135,11 @@ class Chunk {
 		this.glExtensions = glExtensions
 		this.doubleRender = false
 		this.blocks = new Int16Array(16*16*256)
+		this.originalBlocks = new Int16Array(0)
 		this.light = new Uint8Array(16*16*256)
-		this.pallete = [0]
-		this.palleteMap = { "0": 0 }
-		this.palleteSize = 0
+		this.pallete = [0, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.bedrock, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dirt, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass]
+		this.palleteMap = { "0": 0, [_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.bedrock]: 1, [_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone]: 2, [_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dirt]: 3, [_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass]: 4 }
+		this.palleteSize = 2
 		this.renderData = []
 		this.renderLength = 0
 		world = WoRlD
@@ -3144,7 +3149,11 @@ class Chunk {
 		return this.blocks[y * 256 + x * 16 + z]
 	}
 	setBlock(x, y, z, blockID, user) {
-		this.edited |= user
+		if (user && !this.edited) {
+			this.edited = true
+			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+		}
+
 		if (semiTrans[blockID & 255]) {
 			this.doubleRender = true
 			if (!this.world.doubleRenderChunks.includes(this)) {
@@ -3154,7 +3163,7 @@ class Chunk {
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
 	fillLight() {
-		let max = 255 // min(this.maxY + 1, 255)
+		let max = 255 // This is the y-ccordinate of the highest opaque block
 		let blockSpread = []
 
 		// Find top block in chunk, and fill all air blocks above it with light
@@ -3164,16 +3173,18 @@ class Chunk {
 			if (blocks[i] !== 0 && this.maxY === 0) this.maxY = i >>> 8
 			if (!transparent[255 & blocks[i]]) {
 				max = i >>> 8
-				this.light.fill(15, i - 1, blocks.length)
+				// this.light.fill(15, i - 1, blocks.length)
 				break
 			}
+			this.light[i] |= 15
 		}
 
 		// Set vertical columns of light to level 15
+		this.tops.fill(0)
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
 				let stop = false
-				for (let y = max; y > 0; y--) {
+				for (let y = this.maxY; y > 0; y--) {
 					const block = this.getBlock(x, y, z)
 					const light = lightLevels[255 & block]
 					if (light) {
@@ -3191,6 +3202,7 @@ class Chunk {
 				}
 			}
 		}
+
 		// Set vertical columns of light to level 15 in neighboring chunk borders so we won't need to spread into them.
 		for (let x = this.x - 1; x <= this.x + 16; x += 17) {
 			for (let z = this.z - 1; z <= this.z + 16; z++) {
@@ -3212,6 +3224,8 @@ class Chunk {
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
 				for (let y = this.tops[z * 16 + x] + 1; y <= max; y++) {
+					// if (y === 2) debugger
+					// spread.push(x + this.x, y, z + this.z)
 					if (x === 15 || this.tops[z * 16 + x + 1] > y) {
 						spread.push(x + this.x, y, z + this.z)
 						continue
@@ -3283,11 +3297,10 @@ class Chunk {
 	}
 	spreadLight(blocks, level, update = false, blockLight = 0) {
 		let spread = []
-		let x = 0, y = 0, z = 0
 		for (let i = 0; i < blocks.length; i += 3) {
-			x = blocks[i]
-			y = blocks[i+1]
-			z = blocks[i+2]
+			let x = blocks[i]
+			let y = blocks[i+1]
+			let z = blocks[i+2]
 			this.trySpread(x - 1, y, z, level, spread, blockLight, update)
 			this.trySpread(x + 1, y, z, level, spread, blockLight, update)
 			this.trySpread(x, y - 1, z, level, spread, blockLight, update)
@@ -3385,16 +3398,27 @@ class Chunk {
 					}
 
 					visible = blockState
-					&&transparent[world.getBlock(x + i - 1, j, z + k)]
-					| transparent[world.getBlock(x + i + 1, j, z + k)] << 1
-					| transparent[this.getBlock(i, j - 1, k)] << 2
-					| transparent[this.getBlock(i, j + 1, k)] << 3
-					| transparent[world.getBlock(x + i, j, z + k - 1)] << 4
-					| transparent[world.getBlock(x + i, j, z + k + 1)] << 5
+					&& transparent[world.getBlock(x + i - 1, j, z + k)]
+					 | transparent[world.getBlock(x + i + 1, j, z + k)] << 1
+					 | transparent[this.getBlock(i, j - 1, k)] << 2
+					 | transparent[this.getBlock(i, j + 1, k)] << 3
+					 | transparent[world.getBlock(x + i, j, z + k - 1)] << 4
+					 | transparent[world.getBlock(x + i, j, z + k + 1)] << 5
 					if (visible) {
 						pos = (i | j << 4 | k << 12) << 16
 						this.renderData[this.renderLength++] = pos | visible << 10 | palleteIndex
 					}
+				}
+			}
+		}
+
+		// The bottom layer of bedrock is always visible from the bottom, never from the sides, and sometimes on top
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++, index++) {
+				visible =  true && 1 << 2 | transparent[this.getBlock(i, 1, k)] << 3
+				if (visible) {
+					pos = (i | k << 12) << 16
+					this.renderData[this.renderLength++] = pos | visible << 10 | 1
 				}
 			}
 		}
@@ -3467,20 +3491,26 @@ class Chunk {
 		}
 		this.renderData[index] = pos | visible << 10 | this.palleteMap[blockState]
 	}
-	deleteBlock(x, y, z) {
+	deleteBlock(x, y, z, user) {
+		if (user && !this.edited) {
+			this.edited = true
+			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+		}
 		this.blocks[y * 256 + x * 16 + z] = 0
 		this.minY = y < this.minY ? y : this.minY
 	}
 	async getCaveData() {
-		while (!window.workers.length) {
-			await Promise.race(window.pendingWorkers)
-		}
-		this.caveData = window.doWork({
-			caves: true,
-			x: this.x,
-			y: 0,
-			z: this.z
-		}).then(data => data.caves)
+		this.caveData = new Promise(async resolve => {
+			while (!window.workers.length) {
+				await Promise.race(window.pendingWorkers)
+			}
+			window.doWork({
+				caves: true,
+				x: this.x,
+				y: 0,
+				z: this.z
+			}).then(data => resolve(data.caves))
+		})
 	}
 	async carveCaves() {
 		const { world } = this
@@ -3786,14 +3816,25 @@ class Chunk {
 		const { world } = this
 		let chunkX = this.x >> 4
 		let chunkZ = this.z >> 4
-		let load = null
 
 		for (let i = 0; i < world.loadFrom.length; i++) {
-			load = world.loadFrom[i]
+			let load = world.loadFrom[i]
 			if (load.x === chunkX && load.z === chunkZ) {
-				let y = load.y * 16
+				if (!this.edited) {
+					this.edited = true
+					this.originalBlocks = this.blocks.slice()
+				}
+				// let y = load.y * 16 * 16 * 16
 				for (let j in load.blocks) {
-					world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
+					let block = load.blocks[j]
+					this.blocks[+j] = block
+					if (!this.doubleRender && _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[block].semiTrans) {
+						this.doubleRender = true
+						if (!this.world.doubleRenderChunks.includes(this)) {
+							this.world.doubleRenderChunks.push(this)
+						}
+					}
+					// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 				}
 				world.loadFrom.splice(i--, 1)
 			}
@@ -4537,7 +4578,7 @@ async function MineKhan() {
 		await (0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.saveToDB)(world.id, saveObj).catch(e => console.error(e))
 		world.edited = now
 		console.log('Saving to server')
-		await fetch('https://willard.fun/minekhan/saves', {
+		if (location.href.startsWith("https://willard.fun/")) await fetch('https://willard.fun/minekhan/saves', {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -4554,7 +4595,7 @@ async function MineKhan() {
 
 	//globals
 	//{
-	let version = "Alpha 0.7.1"
+	let version = "Alpha 0.8.0"
 	let reach = 5 // Max distance player can place or break blocks
 	let sky = new Float32Array([0.33, 0.54, 0.72]) // 0 to 1 RGB color scale
 	let superflat = false
@@ -5079,11 +5120,17 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
+	let squareVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
 		let s = side
 		let q = s / 2
+
+		squareVerts = new Float32Array([
+			0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1
+		])
+
 		hexagonVerts = new Float32Array([
 			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
 			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
@@ -5115,8 +5162,24 @@ async function MineKhan() {
 			let data = []
 			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i]
 			if (block.icon) {
-				block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockIds[block.icon]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.icon]]
+				data.push(-scale, -scale, 1/6, tex[0], tex[1], 1)
+				data.push(-scale, scale, 1/6, tex[2], tex[3], 1)
+				data.push(scale, scale, 1/6, tex[4], tex[5], 1)
+				data.push(scale, -scale, 1/6, tex[6], tex[7], 1)
+				let buffer = gl.createBuffer()
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
+				blockIcons[i] = buffer
+				blockIcons.lengths[i] = 6
+				blockIcons[i | SLAB] = buffer
+				blockIcons.lengths[i | SLAB] = 6
+				blockIcons[i | STAIR] = buffer
+				blockIcons.lengths[i | STAIR] = 6
+				continue
 			}
+
+			// Cube icon
 			for (let j = 11; j >= 0; j--) {
 				data.push(-hexagonVerts[j * 3 + 0] * scale)
 				data.push(hexagonVerts[j * 3 + 1] * scale)
@@ -5131,6 +5194,7 @@ async function MineKhan() {
 			blockIcons[i] = buffer
 			blockIcons.lengths[i] = 6 * 3
 
+			// Slab icon
 			data = []
 			for (let j = 11; j >= 0; j--) {
 				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
@@ -5148,6 +5212,7 @@ async function MineKhan() {
 			blockIcons[i | SLAB] = buffer
 			blockIcons.lengths[i | SLAB] = 6 * 3
 
+			// Stair icon
 			data = []
 			let v = stairIconVerts
 			for (let j = 23; j >= 0; j--) {
@@ -5907,7 +5972,7 @@ async function MineKhan() {
 				t |= FLIP
 			}
 
-			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t)
+			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t, 0)
 			if (t) {
 				p.lastPlace = now
 			}
@@ -6372,12 +6437,12 @@ async function MineKhan() {
 			// let X = (x >> 4) + this.offsetX
 			// let Z = (z >> 4) + this.offsetZ
 			if (y > maxHeight) {
-				debugger
+				// debugger
 				return 0
 			}
 			else if (y < 0) {
-				debugger
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockIds.bedrock
+				// debugger
+				return 0//blockIds.bedrock
 			}
 			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
@@ -6386,7 +6451,7 @@ async function MineKhan() {
 			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
 		}
 		setWorldBlock(x, y, z, blockID) {
-			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, 1)
+			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
 		setBlock(x, y, z, blockID, lazy, remote) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
@@ -6673,18 +6738,19 @@ async function MineKhan() {
 					doneWork = true
 				}
 
-				// When a player loads a saved chunk
+				// A saved chunk is being loaded
 				if (this.loadQueue.length && !doneWork) {
-					this.loadQueue.pop().load()
+					while (this.loadQueue.length) this.loadQueue.pop().load()
 					doneWork = true
 				}
 
-				if (this.lightingQueue.length && !doneWork) {
+				// All saved chunks are loaded, so spread light
+				if (!this.loadFrom.length && this.lightingQueue.length && !doneWork) {
 					this.lightingQueue.pop().fillLight()
 					doneWork = true
 				}
 
-				if (this.chunkGenQueue.length && !doneWork) {
+				if (this.chunkGenQueue.length && !doneWork && !this.lightingQueue.length) {
 					let chunk = this.chunkGenQueue[0]
 					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
 						// The requirements haven't been filled yet; don't do anything else.
@@ -6705,7 +6771,7 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork) await window.yieldThread()
+				if (doneWork && screen !== "loading") await window.yieldThread()
 			}
 			this.ticking = false
 		}
@@ -6717,6 +6783,7 @@ async function MineKhan() {
 			}
 			else {
 				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 3, 0.1), 1)
+				// skyLight = 0.1 // Night
 			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -6840,31 +6907,29 @@ async function MineKhan() {
 				for (let z in this.chunks[x]) {
 					let chunk = this.chunks[x][z]
 					if (chunk.edited) {
-						for (let y = 0; y < chunk.sections.length; y++) {
-							if (chunk.sections[y].edited) {
-								edited.push([chunk.sections[y], chunk.cleanSections[y]])
-							}
-						}
+						edited.push(chunk)
 					}
 				}
 			}
 
-			let pallete = {}
-			for (let chunks of edited) {
+			let blockSet = new Set()
+			for (let chunk of edited) {
 				let changes = false
-				chunks[0].blocks.forEach((id, i) => {
-					if (id !== chunks[1][i]) {
-						pallete[id] = true
+				let blocks = chunk.blocks
+				let original = chunk.originalBlocks
+				for (let i = 0; i < blocks.length; i++) {
+					if (blocks[i] !== original[i]) {
+						blockSet.add(blocks[i])
 						changes = true
 					}
-				})
+				}
 				if (!changes) {
-					chunks[0].edited = false
+					chunk.edited = false
 				}
 			}
 
-			let blocks = Object.keys(pallete).map(n => Number(n))
-			pallete = {}
+			let blocks = Array.from(blockSet)
+			let pallete = {}
 			blocks.forEach((block, index) => pallete[block] = index)
 
 			let rnd = round
@@ -6877,29 +6942,71 @@ async function MineKhan() {
 				+ blocks.map(b => b.toString(36)).join(",") + ";"
 
 			for (let i = 0; i < edited.length; i++) {
-				if (!edited[i][0].edited) {
+				let chunk = edited[i]
+				if (!chunk.edited) {
 					continue
 				}
-				let real = edited[i][0]
-				let blocks = real.blocks
-				let original = edited[i][1]
-				str += (real.x / 16).toString(36) + "," + (real.y / 16).toString(36) + "," + (real.z / 16).toString(36) + ","
+				let blocks = chunk.blocks
+				let original = chunk.originalBlocks
+				str += (chunk.x / 16).toString(36) + ",0," + (chunk.z / 16).toString(36) + ","
 				for (let j = 0; j < original.length; j++) {
 					if (blocks[j] !== original[j]) {
-						str += (pallete[blocks[j]] << 12 | j).toString(36) + ","
+						str += (pallete[blocks[j]] << 16 | j).toString(36) + ","
 					}
 				}
-				str = str.substr(0, str.length - 1) //Remove trailing comma
+				str = str.slice(0, str.length - 1) //Remove trailing comma
 				str += ";"
 			}
-			if (str.match(/;$/)) str = str.substr(0, str.length - 1)
+			if (str.match(/;$/)) str = str.slice(0, str.length - 1)
 			return str
 		}
 		loadSave(str) {
 			let data = str.split(";")
-			if (!str.includes("Alpha")) {
-				return this.loadOldSave(str)
+
+			this.name = data.shift()
+			setSeed(parseInt(data.shift(), 36))
+
+			let playerData = data.shift().split(",")
+			p.x = parseInt(playerData[0], 36)
+			p.y = parseInt(playerData[1], 36)
+			p.z = parseInt(playerData[2], 36)
+			p.rx = parseInt(playerData[3], 36) / 100
+			p.ry = parseInt(playerData[4], 36) / 100
+			let options = parseInt(playerData[5], 36)
+			p.flying = options & 1
+			p.spectator = options >> 2 & 1
+			superflat = options >> 1 & 1
+			caves = options >> 3 & 1
+			trees = options >> 4 & 1
+
+			let version = data.shift()
+			if (version.split(" ")[1].split(".").join("") < 80) {
+				console.log("Loading old save")
+				return this.loadOldSave(str) // Abort trying to load this with the 0.8.0 algorithm
 			}
+			this.version = version
+
+			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
+			this.loadFrom = []
+
+			for (let i = 0; data.length; i++) {
+				let blocks = data.shift().split(",")
+				this.loadFrom.push({
+					x: parseInt(blocks.shift(), 36),
+					y: parseInt(blocks.shift(), 36),
+					z: parseInt(blocks.shift(), 36),
+					blocks: [],
+				})
+				for (let j = 0; j < blocks.length; j++) {
+					let block = parseInt(blocks[j], 36)
+					let index = block & 0xffff
+					let pid = block >> 16
+					this.loadFrom[i].blocks[index] = pallete[pid]
+				}
+			}
+		}
+		loadOldSave(str) {
+			let data = str.split(";")
 
 			this.name = data.shift()
 			setSeed(parseInt(data.shift(), 36))
@@ -6920,10 +7027,6 @@ async function MineKhan() {
 			let version = data.shift()
 			this.version = version
 
-			// if (version.split(" ")[1].split(".").join("") < 70) {
-			// 	alert("This save code is for an older version. 0.7.0 or later is needed")
-			// }
-
 			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
 			this.loadFrom = []
 
@@ -6937,47 +7040,13 @@ async function MineKhan() {
 				})
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36)
-					let index = block & 0xffffff
+					// Old index was 0xXYZ, new index is 0xYYXZ
+					let x = block >> 8 & 15
+					let y = block >> 4 & 15
+					let z = block & 15
+					let index = (this.loadFrom[i].y * 16 + y) * 256 + x * 16 + z
 					let pid = block >> 12
 					this.loadFrom[i].blocks[index] = pallete[pid]
-				}
-			}
-		}
-		loadOldSave(str) {
-			let data = str.split(";")
-			setSeed(parseInt(data.shift(), 36))
-			this.id = now
-			this.name = "Old World " + (Math.random() * 1000 | 0)
-			let playerData = data.shift().split(",")
-			p.x = parseInt(playerData[0], 36)
-			p.y = parseInt(playerData[1], 36)
-			p.z = parseInt(playerData[2], 36)
-			p.rx = parseInt(playerData[3], 36) / 100
-			p.ry = parseInt(playerData[4], 36) / 100
-			// let editCount = parseInt(data.shift(), 36)
-			data.shift()
-
-			this.loadFrom = []
-
-			let coords = data.shift().split(",").map(function(n) {
-				return parseInt(n, 36)
-			})
-			for (let j = 0; j < coords.length; j += 3) {
-				this.loadFrom.push({
-					x: coords[j],
-					y: coords[j + 1],
-					z: coords[j + 2],
-					blocks: [],
-				})
-			}
-
-			for (let i = 0; data.length > 0; i++) {
-				let blocks = data.shift().split(",")
-				for (let j = 0; j < blocks.length; j++) {
-					let block = parseInt(blocks[j], 36)
-					let index = block >> 8
-					let id = block & 0x7f | (block & 0x80) << 1
-					this.loadFrom[i].blocks[index] = id
 				}
 			}
 		}
@@ -7326,7 +7395,7 @@ async function MineKhan() {
 				(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.deleteFromDB)(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
-				fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
+				if (location.href.startsWith("https://willard.fun/")) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
 				selectedWorld = 0
 			}
 		}, () => selected() || !worlds[selectedWorld].edited, "Delete the world forever.")
@@ -7438,6 +7507,8 @@ async function MineKhan() {
 		y = y / (3 * height) - 0.1666
 		initModelView(null, x, y, 0, 0, 0)
 
+		let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[id]
+
 		let buffer = blockIcons[id]
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
@@ -7448,6 +7519,13 @@ async function MineKhan() {
 		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
 		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
 		gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
+		if (data.semiTrans) {
+			gl.depthMask(false)
+			gl.uniform1i(glCache.uTrans, 1)
+			gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
+			gl.uniform1i(glCache.uTrans, 0)
+			gl.depthMask(true)
+		}
 	}
 
 	function hotbar() {
@@ -7768,10 +7846,11 @@ async function MineKhan() {
 					freezeFrame = true
 				}
 
-				if (name === controlMap.dropItem.key) {
-					let d = p.direction
-					world.entities.push(new _js_item_js__WEBPACK_IMPORTED_MODULE_18__.Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
-				}
+				// Drop held item; this just crashes since I broke Item entities.
+				// if (name === controlMap.dropItem.key) {
+				// 	let d = p.direction
+				// 	world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
+				// }
 			}
 		}
 		else if (screen === "pause" && name === controlMap.pause.key) {
@@ -8012,9 +8091,13 @@ async function MineKhan() {
 			canv.style.top = "0px"
 			canv.style.left = "0px"
 			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
+			if (!gl) {
+				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
+				throw "Error: Cannot play a WebGL game without WebGL."
+			}
 			let ext = gl.getExtension('OES_element_index_uint')
 			if (!ext) {
-				alert("Please use a supported browser, or update your current browser.")
+				alert("Unable to load WebGL extension. Please use a supported browser, or update your current browser.")
 			}
 			gl.viewport(0, 0, canv.width, canv.height)
 			gl.enable(gl.DEPTH_TEST)
@@ -8063,6 +8146,7 @@ async function MineKhan() {
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
 		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
 		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
+		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
 		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
 		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
@@ -8513,14 +8597,16 @@ async function MineKhan() {
 				}
 			}
 
-			let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
-			if (Array.isArray(cloudSaves) && cloudSaves.length) {
-				for (let data of cloudSaves) {
-					if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
+			if (location.href.startsWith("https://willard.fun/")) {
+				let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
+				if (Array.isArray(cloudSaves) && cloudSaves.length) {
+					for (let data of cloudSaves) {
+						if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
 
-					addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
-					data.cloud = true
-					worlds[data.id] = data
+						addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
+						data.cloud = true
+						worlds[data.id] = data
+					}
 				}
 			}
 
@@ -8670,6 +8756,7 @@ async function MineKhan() {
 				renderChatAlerts()
 				textSize(10)
 				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
+				gl.uniform1f(glCache.uLantern, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
 			}
 			let renderStart = performance.now()
 			p.setDirection()

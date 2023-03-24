@@ -382,10 +382,11 @@ class Chunk {
 		this.glExtensions = glExtensions
 		this.doubleRender = false
 		this.blocks = new Int16Array(16*16*256)
+		this.originalBlocks = new Int16Array(0)
 		this.light = new Uint8Array(16*16*256)
-		this.pallete = [0]
-		this.palleteMap = { "0": 0 }
-		this.palleteSize = 0
+		this.pallete = [0, blockIds.bedrock, blockIds.stone, blockIds.dirt, blockIds.grass]
+		this.palleteMap = { "0": 0, [blockIds.bedrock]: 1, [blockIds.stone]: 2, [blockIds.dirt]: 3, [blockIds.grass]: 4 }
+		this.palleteSize = 2
 		this.renderData = []
 		this.renderLength = 0
 		world = WoRlD
@@ -395,7 +396,11 @@ class Chunk {
 		return this.blocks[y * 256 + x * 16 + z]
 	}
 	setBlock(x, y, z, blockID, user) {
-		this.edited |= user
+		if (user && !this.edited) {
+			this.edited = true
+			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+		}
+
 		if (semiTrans[blockID & 255]) {
 			this.doubleRender = true
 			if (!this.world.doubleRenderChunks.includes(this)) {
@@ -405,7 +410,7 @@ class Chunk {
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
 	fillLight() {
-		let max = 255 // min(this.maxY + 1, 255)
+		let max = 255 // This is the y-ccordinate of the highest opaque block
 		let blockSpread = []
 
 		// Find top block in chunk, and fill all air blocks above it with light
@@ -415,16 +420,18 @@ class Chunk {
 			if (blocks[i] !== 0 && this.maxY === 0) this.maxY = i >>> 8
 			if (!transparent[255 & blocks[i]]) {
 				max = i >>> 8
-				this.light.fill(15, i - 1, blocks.length)
+				// this.light.fill(15, i - 1, blocks.length)
 				break
 			}
+			this.light[i] |= 15
 		}
 
 		// Set vertical columns of light to level 15
+		this.tops.fill(0)
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
 				let stop = false
-				for (let y = max; y > 0; y--) {
+				for (let y = this.maxY; y > 0; y--) {
 					const block = this.getBlock(x, y, z)
 					const light = lightLevels[255 & block]
 					if (light) {
@@ -442,6 +449,7 @@ class Chunk {
 				}
 			}
 		}
+
 		// Set vertical columns of light to level 15 in neighboring chunk borders so we won't need to spread into them.
 		for (let x = this.x - 1; x <= this.x + 16; x += 17) {
 			for (let z = this.z - 1; z <= this.z + 16; z++) {
@@ -463,6 +471,8 @@ class Chunk {
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
 				for (let y = this.tops[z * 16 + x] + 1; y <= max; y++) {
+					// if (y === 2) debugger
+					// spread.push(x + this.x, y, z + this.z)
 					if (x === 15 || this.tops[z * 16 + x + 1] > y) {
 						spread.push(x + this.x, y, z + this.z)
 						continue
@@ -534,11 +544,10 @@ class Chunk {
 	}
 	spreadLight(blocks, level, update = false, blockLight = 0) {
 		let spread = []
-		let x = 0, y = 0, z = 0
 		for (let i = 0; i < blocks.length; i += 3) {
-			x = blocks[i]
-			y = blocks[i+1]
-			z = blocks[i+2]
+			let x = blocks[i]
+			let y = blocks[i+1]
+			let z = blocks[i+2]
 			this.trySpread(x - 1, y, z, level, spread, blockLight, update)
 			this.trySpread(x + 1, y, z, level, spread, blockLight, update)
 			this.trySpread(x, y - 1, z, level, spread, blockLight, update)
@@ -636,16 +645,27 @@ class Chunk {
 					}
 
 					visible = blockState
-					&&transparent[world.getBlock(x + i - 1, j, z + k)]
-					| transparent[world.getBlock(x + i + 1, j, z + k)] << 1
-					| transparent[this.getBlock(i, j - 1, k)] << 2
-					| transparent[this.getBlock(i, j + 1, k)] << 3
-					| transparent[world.getBlock(x + i, j, z + k - 1)] << 4
-					| transparent[world.getBlock(x + i, j, z + k + 1)] << 5
+					&& transparent[world.getBlock(x + i - 1, j, z + k)]
+					 | transparent[world.getBlock(x + i + 1, j, z + k)] << 1
+					 | transparent[this.getBlock(i, j - 1, k)] << 2
+					 | transparent[this.getBlock(i, j + 1, k)] << 3
+					 | transparent[world.getBlock(x + i, j, z + k - 1)] << 4
+					 | transparent[world.getBlock(x + i, j, z + k + 1)] << 5
 					if (visible) {
 						pos = (i | j << 4 | k << 12) << 16
 						this.renderData[this.renderLength++] = pos | visible << 10 | palleteIndex
 					}
+				}
+			}
+		}
+
+		// The bottom layer of bedrock is always visible from the bottom, never from the sides, and sometimes on top
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++, index++) {
+				visible = 4 && 1 << 2 | transparent[this.getBlock(i, 1, k)] << 3
+				if (visible) {
+					pos = (i | k << 12) << 16
+					this.renderData[this.renderLength++] = pos | visible << 10 | 1
 				}
 			}
 		}
@@ -718,20 +738,26 @@ class Chunk {
 		}
 		this.renderData[index] = pos | visible << 10 | this.palleteMap[blockState]
 	}
-	deleteBlock(x, y, z) {
+	deleteBlock(x, y, z, user) {
+		if (user && !this.edited) {
+			this.edited = true
+			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+		}
 		this.blocks[y * 256 + x * 16 + z] = 0
 		this.minY = y < this.minY ? y : this.minY
 	}
 	async getCaveData() {
-		while (!window.workers.length) {
-			await Promise.race(window.pendingWorkers)
-		}
-		this.caveData = window.doWork({
-			caves: true,
-			x: this.x,
-			y: 0,
-			z: this.z
-		}).then(data => data.caves)
+		this.caveData = new Promise(async resolve => {
+			while (!window.workers.length) {
+				await Promise.race(window.pendingWorkers)
+			}
+			window.doWork({
+				caves: true,
+				x: this.x,
+				y: 0,
+				z: this.z
+			}).then(data => resolve(data.caves))
+		})
 	}
 	async carveCaves() {
 		const { world } = this
@@ -1037,14 +1063,25 @@ class Chunk {
 		const { world } = this
 		let chunkX = this.x >> 4
 		let chunkZ = this.z >> 4
-		let load = null
 
 		for (let i = 0; i < world.loadFrom.length; i++) {
-			load = world.loadFrom[i]
+			let load = world.loadFrom[i]
 			if (load.x === chunkX && load.z === chunkZ) {
-				let y = load.y * 16
+				if (!this.edited) {
+					this.edited = true
+					this.originalBlocks = this.blocks.slice()
+				}
+				// let y = load.y * 16 * 16 * 16
 				for (let j in load.blocks) {
-					world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
+					let block = load.blocks[j]
+					this.blocks[+j] = block
+					if (!this.doubleRender && blockData[block].semiTrans) {
+						this.doubleRender = true
+						if (!this.world.doubleRenderChunks.includes(this)) {
+							this.world.doubleRenderChunks.push(this)
+						}
+					}
+					// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 				}
 				world.loadFrom.splice(i--, 1)
 			}

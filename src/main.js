@@ -173,7 +173,7 @@ async function MineKhan() {
 		await saveToDB(world.id, saveObj).catch(e => console.error(e))
 		world.edited = now
 		console.log('Saving to server')
-		await fetch('https://willard.fun/minekhan/saves', {
+		if (location.href.startsWith("https://willard.fun/")) await fetch('https://willard.fun/minekhan/saves', {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -190,7 +190,7 @@ async function MineKhan() {
 
 	//globals
 	//{
-	let version = "Alpha 0.7.1"
+	let version = "Alpha 0.8.0"
 	let reach = 5 // Max distance player can place or break blocks
 	let sky = new Float32Array([0.33, 0.54, 0.72]) // 0 to 1 RGB color scale
 	let superflat = false
@@ -1567,7 +1567,7 @@ async function MineKhan() {
 				t |= FLIP
 			}
 
-			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t)
+			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t, 0)
 			if (t) {
 				p.lastPlace = now
 			}
@@ -2032,12 +2032,12 @@ async function MineKhan() {
 			// let X = (x >> 4) + this.offsetX
 			// let Z = (z >> 4) + this.offsetZ
 			if (y > maxHeight) {
-				debugger
+				// debugger
 				return 0
 			}
 			else if (y < 0) {
-				debugger
-				return blockIds.bedrock
+				// debugger
+				return 0//blockIds.bedrock
 			}
 			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
@@ -2046,7 +2046,7 @@ async function MineKhan() {
 			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
 		}
 		setWorldBlock(x, y, z, blockID) {
-			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, 1)
+			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
 		setBlock(x, y, z, blockID, lazy, remote) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
@@ -2333,18 +2333,19 @@ async function MineKhan() {
 					doneWork = true
 				}
 
-				// When a player loads a saved chunk
+				// A saved chunk is being loaded
 				if (this.loadQueue.length && !doneWork) {
-					this.loadQueue.pop().load()
+					while (this.loadQueue.length) this.loadQueue.pop().load()
 					doneWork = true
 				}
 
-				if (this.lightingQueue.length && !doneWork) {
+				// All saved chunks are loaded, so spread light
+				if (!this.loadFrom.length && this.lightingQueue.length && !doneWork) {
 					this.lightingQueue.pop().fillLight()
 					doneWork = true
 				}
 
-				if (this.chunkGenQueue.length && !doneWork) {
+				if (this.chunkGenQueue.length && !doneWork && !this.lightingQueue.length) {
 					let chunk = this.chunkGenQueue[0]
 					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
 						// The requirements haven't been filled yet; don't do anything else.
@@ -2365,7 +2366,7 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork) await window.yieldThread()
+				if (doneWork && screen !== "loading") await window.yieldThread()
 			}
 			this.ticking = false
 		}
@@ -2377,6 +2378,7 @@ async function MineKhan() {
 			}
 			else {
 				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 3, 0.1), 1)
+				// skyLight = 0.1 // Night
 			}
 			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -2500,31 +2502,29 @@ async function MineKhan() {
 				for (let z in this.chunks[x]) {
 					let chunk = this.chunks[x][z]
 					if (chunk.edited) {
-						for (let y = 0; y < chunk.sections.length; y++) {
-							if (chunk.sections[y].edited) {
-								edited.push([chunk.sections[y], chunk.cleanSections[y]])
-							}
-						}
+						edited.push(chunk)
 					}
 				}
 			}
 
-			let pallete = {}
-			for (let chunks of edited) {
+			let blockSet = new Set()
+			for (let chunk of edited) {
 				let changes = false
-				chunks[0].blocks.forEach((id, i) => {
-					if (id !== chunks[1][i]) {
-						pallete[id] = true
+				let blocks = chunk.blocks
+				let original = chunk.originalBlocks
+				for (let i = 0; i < blocks.length; i++) {
+					if (blocks[i] !== original[i]) {
+						blockSet.add(blocks[i])
 						changes = true
 					}
-				})
+				}
 				if (!changes) {
-					chunks[0].edited = false
+					chunk.edited = false
 				}
 			}
 
-			let blocks = Object.keys(pallete).map(n => Number(n))
-			pallete = {}
+			let blocks = Array.from(blockSet)
+			let pallete = {}
 			blocks.forEach((block, index) => pallete[block] = index)
 
 			let rnd = round
@@ -2537,29 +2537,71 @@ async function MineKhan() {
 				+ blocks.map(b => b.toString(36)).join(",") + ";"
 
 			for (let i = 0; i < edited.length; i++) {
-				if (!edited[i][0].edited) {
+				let chunk = edited[i]
+				if (!chunk.edited) {
 					continue
 				}
-				let real = edited[i][0]
-				let blocks = real.blocks
-				let original = edited[i][1]
-				str += (real.x / 16).toString(36) + "," + (real.y / 16).toString(36) + "," + (real.z / 16).toString(36) + ","
+				let blocks = chunk.blocks
+				let original = chunk.originalBlocks
+				str += (chunk.x / 16).toString(36) + ",0," + (chunk.z / 16).toString(36) + ","
 				for (let j = 0; j < original.length; j++) {
 					if (blocks[j] !== original[j]) {
-						str += (pallete[blocks[j]] << 12 | j).toString(36) + ","
+						str += (pallete[blocks[j]] << 16 | j).toString(36) + ","
 					}
 				}
-				str = str.substr(0, str.length - 1) //Remove trailing comma
+				str = str.slice(0, str.length - 1) //Remove trailing comma
 				str += ";"
 			}
-			if (str.match(/;$/)) str = str.substr(0, str.length - 1)
+			if (str.match(/;$/)) str = str.slice(0, str.length - 1)
 			return str
 		}
 		loadSave(str) {
 			let data = str.split(";")
-			if (!str.includes("Alpha")) {
-				return this.loadOldSave(str)
+
+			this.name = data.shift()
+			setSeed(parseInt(data.shift(), 36))
+
+			let playerData = data.shift().split(",")
+			p.x = parseInt(playerData[0], 36)
+			p.y = parseInt(playerData[1], 36)
+			p.z = parseInt(playerData[2], 36)
+			p.rx = parseInt(playerData[3], 36) / 100
+			p.ry = parseInt(playerData[4], 36) / 100
+			let options = parseInt(playerData[5], 36)
+			p.flying = options & 1
+			p.spectator = options >> 2 & 1
+			superflat = options >> 1 & 1
+			caves = options >> 3 & 1
+			trees = options >> 4 & 1
+
+			let version = data.shift()
+			if (version.split(" ")[1].split(".").join("") < 80) {
+				console.log("Loading old save")
+				return this.loadOldSave(str) // Abort trying to load this with the 0.8.0 algorithm
 			}
+			this.version = version
+
+			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
+			this.loadFrom = []
+
+			for (let i = 0; data.length; i++) {
+				let blocks = data.shift().split(",")
+				this.loadFrom.push({
+					x: parseInt(blocks.shift(), 36),
+					y: parseInt(blocks.shift(), 36),
+					z: parseInt(blocks.shift(), 36),
+					blocks: [],
+				})
+				for (let j = 0; j < blocks.length; j++) {
+					let block = parseInt(blocks[j], 36)
+					let index = block & 0xffff
+					let pid = block >> 16
+					this.loadFrom[i].blocks[index] = pallete[pid]
+				}
+			}
+		}
+		loadOldSave(str) {
+			let data = str.split(";")
 
 			this.name = data.shift()
 			setSeed(parseInt(data.shift(), 36))
@@ -2580,10 +2622,6 @@ async function MineKhan() {
 			let version = data.shift()
 			this.version = version
 
-			// if (version.split(" ")[1].split(".").join("") < 70) {
-			// 	alert("This save code is for an older version. 0.7.0 or later is needed")
-			// }
-
 			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
 			this.loadFrom = []
 
@@ -2597,47 +2635,13 @@ async function MineKhan() {
 				})
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36)
-					let index = block & 0xffffff
+					// Old index was 0xXYZ, new index is 0xYYXZ
+					let x = block >> 8 & 15
+					let y = block >> 4 & 15
+					let z = block & 15
+					let index = (this.loadFrom[i].y * 16 + y) * 256 + x * 16 + z
 					let pid = block >> 12
 					this.loadFrom[i].blocks[index] = pallete[pid]
-				}
-			}
-		}
-		loadOldSave(str) {
-			let data = str.split(";")
-			setSeed(parseInt(data.shift(), 36))
-			this.id = now
-			this.name = "Old World " + (Math.random() * 1000 | 0)
-			let playerData = data.shift().split(",")
-			p.x = parseInt(playerData[0], 36)
-			p.y = parseInt(playerData[1], 36)
-			p.z = parseInt(playerData[2], 36)
-			p.rx = parseInt(playerData[3], 36) / 100
-			p.ry = parseInt(playerData[4], 36) / 100
-			// let editCount = parseInt(data.shift(), 36)
-			data.shift()
-
-			this.loadFrom = []
-
-			let coords = data.shift().split(",").map(function(n) {
-				return parseInt(n, 36)
-			})
-			for (let j = 0; j < coords.length; j += 3) {
-				this.loadFrom.push({
-					x: coords[j],
-					y: coords[j + 1],
-					z: coords[j + 2],
-					blocks: [],
-				})
-			}
-
-			for (let i = 0; data.length > 0; i++) {
-				let blocks = data.shift().split(",")
-				for (let j = 0; j < blocks.length; j++) {
-					let block = parseInt(blocks[j], 36)
-					let index = block >> 8
-					let id = block & 0x7f | (block & 0x80) << 1
-					this.loadFrom[i].blocks[index] = id
 				}
 			}
 		}
@@ -2986,7 +2990,7 @@ async function MineKhan() {
 				deleteFromDB(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
-				fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
+				if (location.href.startsWith("https://willard.fun/")) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
 				selectedWorld = 0
 			}
 		}, () => selected() || !worlds[selectedWorld].edited, "Delete the world forever.")
@@ -3437,10 +3441,11 @@ async function MineKhan() {
 					freezeFrame = true
 				}
 
-				if (name === controlMap.dropItem.key) {
-					let d = p.direction
-					world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
-				}
+				// Drop held item; this just crashes since I broke Item entities.
+				// if (name === controlMap.dropItem.key) {
+				// 	let d = p.direction
+				// 	world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
+				// }
 			}
 		}
 		else if (screen === "pause" && name === controlMap.pause.key) {
@@ -3681,9 +3686,13 @@ async function MineKhan() {
 			canv.style.top = "0px"
 			canv.style.left = "0px"
 			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
+			if (!gl) {
+				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
+				throw "Error: Cannot play a WebGL game without WebGL."
+			}
 			let ext = gl.getExtension('OES_element_index_uint')
 			if (!ext) {
-				alert("Please use a supported browser, or update your current browser.")
+				alert("Unable to load WebGL extension. Please use a supported browser, or update your current browser.")
 			}
 			gl.viewport(0, 0, canv.width, canv.height)
 			gl.enable(gl.DEPTH_TEST)
@@ -4183,14 +4192,16 @@ async function MineKhan() {
 				}
 			}
 
-			let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
-			if (Array.isArray(cloudSaves) && cloudSaves.length) {
-				for (let data of cloudSaves) {
-					if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
+			if (location.href.startsWith("https://willard.fun/")) {
+				let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
+				if (Array.isArray(cloudSaves) && cloudSaves.length) {
+					for (let data of cloudSaves) {
+						if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
 
-					addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
-					data.cloud = true
-					worlds[data.id] = data
+						addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
+						data.cloud = true
+						worlds[data.id] = data
+					}
 				}
 			}
 
