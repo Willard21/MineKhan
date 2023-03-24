@@ -384,7 +384,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n\tpadding-right: 20px;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.5);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n    width: 100vw;\r\n    height: 100vh;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n\tpadding-right: 20px;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.8);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.8);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n    width: 100vw;\r\n    height: 100vh;\r\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1532,6 +1532,21 @@ const texturesFunc = function (setPixel, getPixels) {
 		"light": "0g0g1Zŗ7",
 		"lightIcon": "0g0g1ZŗA",
 		"lavaStill": "0g0g*ńĨZļÀZńęYőîZōÐHńřWįŇHĴgYĸSZŀúHńŉWļìWļÞWŉ2HŀęYĸÁWŉyYŉ2YōÃHŉiYňřHįŗHĸwYļÎWĸ(ZńřHŉNZŢďWŕĻYŀĉYĴwYĴ0YńĸZńęZŕīYŕīHĸÀZōOWŀìHŉiZőČWőüWŕŋZŕĻZĸ(YŉyZįķHőĜHīķHŚ*YōÐYőîYōàY0gRcTToß1Ay^EJĳ)ŉI;Č1MkûÀĹTxVÿK6]5ĎŃÁķÆåŚwïÔĿCDz0ëÆÏ>ÒÑāĀAOÈáî8ù9Ã(İıxĹ^BGP-^0èőÃÆňË%âĨÓĒĴuĪIoí11ď]Îm÷tŞįxVõĝAòäíĽqŌĄĥð5ÖēħęÎĘVŚMĥïĈwĩĳ~#&tñąMVĔ(mnĴħÍKĩIoÏ9ĥ*ńCÒ[(üįKàEĒĉÈMÎýÆî9ĜùÈEÆ)|ķ[éKUPlİ",
+		"obsidian": "0g0g540Y00WgMZ-ýHAàZ4Jg&1s4yìÕ8ķBĠQòl8&B28ùìMAPAë8Pië1ħ9]EŃ6g]5)óAJňBīüëĀJIüASĈëSg20ücE4RdīJdĊJö4ķú0a]0K(4w9g]SĊkQ00",
+		"cryingObsidian": "0g0g840Y00WE7YgMZ-ýHAàZKqYë&H4üoNìÒ4NúõØoC^?ĕŞ]Âğàfúú*)Ğţë(ÜŉħqÀhŃ:y6Ą^5ĭťQŊFCVńēqł~nŜÐ(řÖÛ20ÿö$DîiÄĹiNăě6ĀĝõbÜAÕ)ÓEpü]KŉtÕ0ë",
+		"chiseledNetherBricks": "0g0g7QJY(ÎZ;ßH-ÎZEÁYoMWwTH0229238EpAĐýgĠòAĐd{łÚĞŁd,UĂ?ĕĕQķjPcąQĹóBsdcĻÂScĴ:VĚÉ#Úcķh]õdQĹŝŀĂdQķòSaĴ:ØĞĞłĝTĤħ0ctQĂİ%ĂËçØĞłØĝ",
+		"crackedNetherBricks": "0g0g8oMW;ßHQJYwTHEÁY(ÎZ-ÎZ8gH000000BmÂXþđĚňĐĽŇ?Ġ[ÕĞĮÕ0+ħ0+ħÒzśÔs}7ÁÚałAæņÑæİAÙ00c03ŀŜîŘĖuĜb[ĿÎ@ýŖÌĝŢÌdĘłdĘłĴÔJĽÄťĖĸĕþĨļĝĨÙJÁĕ",
+		"crackedPolishedBlackstoneBricks": "0g0g6(ěH|BHkMW;ŋHAìZsTY4ĊÇ(þĩcwÉeëqcīŇöĸÈ×6îÎēR{0o192ìę0óPÏúXAóôÏĝ#Â^łÚ$ĉyĘyÇ1ĉyìmÉìĂyÀþĿK/2A+îÖëJÒXy8]2Ù_$þĲ!2_Ú^ŁJ^ēÂ",
+		"crackedStoneBricks": "0g0g7ÎðWéŞZĆÖZåľYóEYÇÒYÖĞY5CJFFBīùÑÝĪdQ6{-ù|Ï!PA0ń?ĀpÒíŜöĞĵïĨËçÙŝĶ<?2ķ%Ĉ00P8ĬNīJCÏâõOcùħËÎįTAĂE@i9AŌBQĀpÜRËõġÉŀōĴç<Û00%Ĝ00",
+		"endStoneBricks": "0g0g8ĩŏYŒłWŖŃYŖőZĒñHņĂHĶ.HľÇH4ČJÚCQčJÉČJÛÓJŀAě},ł|ĕĞÛĜĞÚ)ěÕĦûÜŝłÕvZZğZīî0AùcA|ČIëĜJAĚ|kJPAĂŀcJŀ)ĞÚĭĽĴĔņŖĽĆÚŝš~mŢHğZşîZZëÙ4J1A",
+		"polishedBlackstoneBricks": "0g0g6(ěH|BH;ŋHkMWAìZsTY4ĊÁEüî8wÂi0j8ČĈúEûT42T9Ð]0g0_Ðì#0þ_3ú8AþI3ĝģÉÛłÚEüûęiÁ14j8AÂìkûëüùSwċ]A2T8z?8wgPØ]_$þĲ#2_ÚÛŁłÛģÉ",
+		"prismarineBricks": "0g0g8ÛőZÿ;HîrZ@DHÈĢHR6YÂÕWÏāY4J]QJî(0BwSz(86wå5g~ōST<2x<S9:y1Bĩ8jÂ1őĊPĪuTùÿĶŢÊ{SiZ3;ÏA2Ñ3ÌÐ4jŉ<ÍŋDûÐŌjŊWťÃŊiÒZJÒBăŀWłņŚÛĽŔâģÉ",
+		"quartzBricks": "0g0g6ŚĦZŒöYŖĖHŖąZŊéWņÙY0000019ĞİAČüdJP%AąQJÉP+ń?Ğİ%J{dJPÙJ{dĜJAþńĚ_ÙþłÑ0S0TÀë%SJPķŀPÀāAħJPķPBÀJÙĻÉPÀJBķJPķłÚUûÚīÇĚÇAĞŀ%",
+		"oakDoorBottom": "0g0g9ÖğYýĻWÒRZéîHĞ*WÀřHĎ4ZĢVZíFH1xj)xlUjÎ+Q@+Q@iÎÓhOhjMiÞÂyxÂyClÞxhmxhmjÞxh)xh)iÞxj)xj)iÞ+Q@+Q@*ÎÓÎOmÎOOÞÂyxNyCiìxhmxhmi1xh)xh)lÎxj)xj)jÎ+Q@+Q@NàMÓjMÓjNBVVVVVVV",
+		"oakDoorTop": "0g0gbĢVZĎ4ZýĻWÒRZÀřH000íFHĞ*WéîHÚĞZÖğY1g0100g2iyyyyyyz2>ON>ONz2*VÁ*VÁAÏ*VÅ*VÅEJ*VÁ*VÁziìGhìGhz2>ON>ONA2*VÁ*VÁEi*VÅ*VÅz2*VÁ*VÁz2ìGhìGhA2hiIhiIE2>ON>ONziNyxNC×zÕ-Iì-ó]X",
+		"warpedDoorBottom": "0g0gb]ŜW/8WyŀZCĂZtVWFĭHCÖH%âWgŊH/-ZËÓY1z?ÔV]IáJVÓGhU?kBV[nāUÇüBhTnāUÇÿxā?ÅāUÁnMāTnhUylMlPÿhßVMýOPÿVAá[NlBnÅ)VllGBVGÑÁlďVRBãQß,5VQ>ÑáBàúh[áâU,V.hTllÐâk.āTlmUÁkU??Q?ááQ",
+		"warpedDoorTop": "0g0gcyŀZCĂZ/8WtVWFĭHCÖH/-Z%âWËÓY]ŜWt4WgŊH0gg11102iyNy4>ÂAg4)TQ>?gÔÞVnRzà,í[Å[R>yzJAk>y>ÓÐÏwNzÓ>ÓÑw4+ÔÓzÏwÑ[+ÑÏzÞ7nQ+Ñy>ná4y+ÏS3á?2yNAlSQU2Ó+K[à1>ÏÓ+KGO,àßÓNxáĈÓċíÏN?QĞAğ",
+		"endStone": "0g0g6ņĂHľÖHŖłHĭşYĶoYŞŒZ4XI}iĉAEÂùíg9n8?wRÝĊňa^üXĻTÁûÉ(!IÀħĉxoV]XIPİaĉnhČĠTÏNR]Rjïo]&wÁA2RÑüĐ9ħhB4Ï}gSS#zwíýòÂŀwAb(yT5ħĄ",
 	}
 }
 
@@ -1680,6 +1695,21 @@ const blockData = [
 	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
+	{ name: "obsidian" },
+	{ name: "cryingObsidian", lightLevel: 10 },
+	{ name: "endStone" },
+	{ name: "endStoneBricks" },
+	{ name: "chiseledNetherBricks" },
+	{ name: "crackedNetherBricks" },
+	{ name: "crackedPolishedBlackstoneBricks" },
+	{ name: "crackedStoneBricks" },
+	{ name: "polishedBlackstoneBricks" },
+	{ name: "prismarineBricks" },
+	{ name: "quartzBricks" },
+	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
+	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
+	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -5120,16 +5150,11 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
-	let squareVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
 		let s = side
 		let q = s / 2
-
-		squareVerts = new Float32Array([
-			0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1
-		])
 
 		hexagonVerts = new Float32Array([
 			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
@@ -5163,10 +5188,10 @@ async function MineKhan() {
 			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i]
 			if (block.icon) {
 				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.icon]]
-				data.push(-scale, -scale, 1/6, tex[0], tex[1], 1)
-				data.push(-scale, scale, 1/6, tex[2], tex[3], 1)
-				data.push(scale, scale, 1/6, tex[4], tex[5], 1)
-				data.push(scale, -scale, 1/6, tex[6], tex[7], 1)
+				data.push(-scale * 0.9, scale * 0.9, 1/6, tex[0], tex[1], 1)
+				data.push(scale * 0.9, scale * 0.9, 1/6, tex[2], tex[3], 1)
+				data.push(scale * 0.9, -scale * 0.9, 1/6, tex[4], tex[5], 1)
+				data.push(-scale * 0.9, -scale * 0.9, 1/6, tex[6], tex[7], 1)
 				let buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
@@ -7675,8 +7700,10 @@ async function MineKhan() {
 		}
 
 		//Box highlight in inv
+		let drawName = false
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.lineWidth = 2
@@ -7697,6 +7724,13 @@ async function MineKhan() {
 		hotbar()
 		//hud()
 		ctx.drawImage(gl.canvas, 0, 0)
+		if (drawName) {
+			let name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			ctx.fillStyle = "black"
+			ctx.fillRect(mouseX - 3, mouseY - 20, name.length * 6 + 6, 15)
+			ctx.fillStyle = "white"
+			ctx.fillText(name, mouseX, mouseY - 10)
+		}
 	}
 	function clickInv() {
 		let s = inventory.size
