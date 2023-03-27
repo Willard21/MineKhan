@@ -35,7 +35,7 @@ const texturesFunc = function (setPixel, getPixels) {
 			}
 		},
 		leaves: n => {
-			const { floor, random } = Math;
+			const { floor, random } = Math
 
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
@@ -170,6 +170,7 @@ const texturesFunc = function (setPixel, getPixels) {
 		"warpedDoorBottom": "0g0gb]ŜW/8WyŀZCĂZtVWFĭHCÖH%âWgŊH/-ZËÓY1z?ÔV]IáJVÓGhU?kBV[nāUÇüBhTnāUÇÿxā?ÅāUÁnMāTnhUylMlPÿhßVMýOPÿVAá[NlBnÅ)VllGBVGÑÁlďVRBãQß,5VQ>ÑáBàúh[áâU,V.hTllÐâk.āTlmUÁkU??Q?ááQ",
 		"warpedDoorTop": "0g0gcyŀZCĂZ/8WtVWFĭHCÖH/-Z%âWËÓY]ŜWt4WgŊH0gg11102iyNy4>ÂAg4)TQ>?gÔÞVnRzà,í[Å[R>yzJAk>y>ÓÐÏwNzÓ>ÓÑw4+ÔÓzÏwÑ[+ÑÏzÞ7nQ+Ñy>ná4y+ÏS3á?2yNAlSQU2Ó+K[à1>ÏÓ+KGO,àßÓNxáĈÓċíÏN?QĞAğ",
 		"endStone": "0g0g6ņĂHľÖHŖłHĭşYĶoYŞŒZ4XI}iĉAEÂùíg9n8?wRÝĊňa^üXĻTÁûÉ(!IÀħĉxoV]XIPİaĉnhČĠTÏNR]Rjïo]&wÁA2RÑüĐ9ħhB4Ï}gSS#zwíýòÂŀwAb(yT5ħĄ",
+		"ironTrapdoor": "0g0g8ĚĲWĢŒYĪcWĺ;ZľËH000ņéZŎĆH4üJPi]%ĞŃöĞŀ$ČċÒBp%ÉÐ×łp|ÉÐ×łq|Éà×łĂ|İĤ÷ÜŁÁĞŋúĞŉÁĞŋúĞŉ{ČČïBq|ÉÐ×łq%ÉÐ×łq%Éà×łā%ĴŢÛ|ŀ%ĞŃöĞŀ4JJPi]",
 	}
 }
 
@@ -194,6 +195,7 @@ const blockData = [
 	{
 		name: "leaves",
 		transparent: true,
+		hideInterior: false
 	},
 	{
 		name: "glass",
@@ -333,6 +335,7 @@ const blockData = [
 	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
+	{ name: "ironTrapdoor", solid: false, transparent: true }
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -340,47 +343,44 @@ const blockData = [
     },*/
 ]
 
-const BLOCK_COUNT = blockData.length;
+const BLOCK_COUNT = blockData.length
 
 // Set defaults on blockData
 for (let i = 1; i < BLOCK_COUNT; ++i) {
-	const data = blockData[i];
-	data.id = i;
+	const data = blockData[i]
+	data.id = i
 
 	if ( !("textures" in data) ) {
-		data.textures = new Array(6).fill(data.name);
+		data.textures = new Array(6).fill(data.name)
 	}
 	else if (typeof data.textures === "string") {
-		data.textures = new Array(6).fill(data.textures);
+		data.textures = new Array(6).fill(data.textures)
 	}
 	else {
-		const { textures } = data;
+		const { textures } = data
 
 		if (textures.length === 3) {
-			textures[3] = textures[2];
-			textures[4] = textures[2];
-			textures[5] = textures[2];
+			textures[3] = textures[2]
+			textures[4] = textures[2]
+			textures[5] = textures[2]
 		}
 		else if (textures.length === 2) {
 			// Top and bottom are the first texture, sides are the second.
-			textures[2] = textures[1];
-			textures[3] = textures[2];
-			textures[4] = textures[2];
-			textures[5] = textures[2];
-			textures[1] = textures[0];
+			textures[2] = textures[1]
+			textures[3] = textures[2]
+			textures[4] = textures[2]
+			textures[5] = textures[2]
+			textures[1] = textures[0]
 		}
 	}
 
-	data.transparent = data.transparent || false;
-
-	data.shadow = data.shadow !== undefined
-		? data.shadow
-		: true;
-
-	data.lightLevel = data.lightLevel || 0;
-	data.solid = data.solid !== undefined ? data.solid : true
-	data.icon = data.icon || false
-	data.semiTrans = data.semiTrans || false
+	data.transparent ??= false
+	data.shadow ??= true
+	data.lightLevel ??= 0
+	data.solid ??= true
+	data.icon ??= false
+	data.semiTrans ??= false
+	data.hideInterior ??= data.transparent
 }
 
 const blockIds = {}
@@ -394,13 +394,5 @@ let Block = {
 	east: 0x2,
 	west: 0x1,
 }
-let Sides = {
-	top: 0,
-	bottom: 1,
-	north: 2,
-	south: 3,
-	east: 4,
-	west: 5,
-}
 
-export { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block, Sides };
+export { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block }

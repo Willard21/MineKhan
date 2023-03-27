@@ -1,4 +1,4 @@
-import { blockData, Block, Sides } from "./blockData.js"
+import { blockData } from "./blockData.js"
 import { shapes } from "./shapes.js"
 import { textureCoords, textureMap, textureAtlas } from "./texture.js"
 import { Entity } from "./entity.js"
@@ -12,13 +12,11 @@ class Player extends Entity {
 		const shapeVerts = shape.verts
 		const shapeTexVerts = shape.texVerts
 		const size = shape.size
-		let blockSides = Object.keys(Block)
 		let texNum = 0
 		let texture = []
 		let index = 0
 		for (let n = 0; n < 6; n++) {
-			let side = blockSides[n]
-			let directionalFaces = shapeVerts[Sides[side]]
+			let directionalFaces = shapeVerts[n]
 			for (let facei = 0; facei < directionalFaces.length; facei++) {
 				let texVerts = textureCoords[textureMap[tex[texNum]]]
 				let tx = texVerts[0]
@@ -41,7 +39,7 @@ class Player extends Entity {
 	}
 	render() {
 		const { gl, glCache, glExtensions, p } = this
-		const modelMatrix = new Matrix();
+		const modelMatrix = new Matrix()
 		modelMatrix.identity()
 		modelMatrix.translate(this.x, this.y, this.z)
 		modelMatrix.rotX(this.pitch)

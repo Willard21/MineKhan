@@ -94,4 +94,4 @@ let shapes = {
 	},
 }
 
-export { shapes };
+export { shapes }

@@ -1,4 +1,4 @@
-import { blockData, blockIds, Block, Sides } from "./blockData.js"
+import { blockData, blockIds, Block } from "./blockData.js"
 import { textureMap, textureCoords } from "./texture.js"
 const { abs, max } = Math
 
@@ -8,10 +8,10 @@ function getBlock(x, y, z, blocks) {
 
 // this will be modified once exported to be
 // open simplex noise
-let noiseSettings = {};
+let noiseSettings = {}
 
 // Save the coords for a small sphere used to carve out caves
-let sphere;
+let sphere
 {
 	let blocks = []
 	let radius = 3.5
@@ -410,7 +410,7 @@ class Section {
 					shadows = getShadows[side](x, y, z, blocks)
 					slights = getLight[side](x, y, z, lightChunks, slights, 0)
 					blights = getLight[side](x, y, z, lightChunks, blights, 1)
-					let directionalFaces = shapeVerts[Sides[side]]
+					let directionalFaces = shapeVerts[n]
 					for (let facei = 0; facei < directionalFaces.length; facei++) {
 						verts = directionalFaces[facei]
 						texVerts = textureCoords[textureMap[tex[texNum]]]
@@ -534,4 +534,4 @@ let fullSection = new Section(0, 0, 0, 16, null, null)
 fullSection.blocks.fill(blockIds.bedrock)
 emptySection.light.fill(15)
 
-export { Section, noiseSettings, emptySection, fullSection };
+export { Section, noiseSettings, emptySection, fullSection }

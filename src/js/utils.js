@@ -1,4 +1,4 @@
-const { floor } = Math;
+const { floor } = Math
 
 function timeString(millis) {
 	if (millis > 300000000000 || !millis) {
@@ -69,4 +69,60 @@ function compareArr(arr, out) {
 	return out
 }
 
-export { timeString, roundBits, compareArr };
+class BitArrayBuilder {
+	constructor() {
+		this.bitLength = 0
+		this.data = [] // Byte array
+	}
+	add(num, bits) {
+		num &= -1 >>> 32 - bits
+		let index = this.bitLength >>> 3
+		let openBits = 8 - (this.bitLength & 7)
+		this.bitLength += bits
+		while (bits > 0) {
+			this.data[index] |= openBits >= bits ? num << openBits - bits : num >>> bits - openBits
+			bits -= openBits
+			index++
+			openBits = 8
+		}
+		return this // allow chaining like arr.add(x, 16).add(y, 8).add(z, 16)
+	}
+	get array() {
+		return new Uint8Array(this.data)
+	}
+	/**
+	 * @param {Number} num
+	 * @returns The number of bits required to hold num
+	 */
+	static bits(num) {
+		return Math.ceil(Math.log2(num))
+	}
+}
+class BitArrayReader {
+	/**
+	 * @param {Uint8Array} array An array of values from 0 to 255
+	 */
+	constructor(array) {
+		this.data = array // Byte array; values are assumed to be under 256
+		this.bit = 0
+	}
+	read(bits, pos = this.bit) {
+		let { data, bit } = this
+		this.bit = pos + bits // Move pointer
+		if (pos > data.length * 8) return 0
+
+		let unread = 8 - (bit & 7)
+		let index = pos >>> 3
+		let ret = 0
+		while (bits > 0) {
+			let n = data[index] & -1 >>> 32 - unread
+			ret |= bits >= unread ? n << bits - unread : n >> unread - bits
+			bits -= unread
+			unread = 8
+			index++
+		}
+		return ret
+	}
+}
+
+export { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader }

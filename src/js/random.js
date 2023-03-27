@@ -1,4 +1,4 @@
-const { imul, floor } = Math;
+const { imul, floor } = Math
 
 // implementation of xxHash
 const {
@@ -7,66 +7,66 @@ const {
 } = (() => {
 	// closure around mutable `seed`; updated via calls to `seedHash`
 
-	let seed = Math.random() * 2100000000 | 0;
+	let seed = Math.random() * 2100000000 | 0
 
-	const PRIME32_2 = 1883677709;
-	const PRIME32_3 = 2034071983;
-	const PRIME32_4 = 668265263;
-	const PRIME32_5 = 374761393;
+	const PRIME32_2 = 1883677709
+	const PRIME32_3 = 2034071983
+	const PRIME32_4 = 668265263
+	const PRIME32_5 = 374761393
 
 	const seedHash = s => {
-		seed = s | 0;
+		seed = s | 0
 	}
 
 	const hash = (x, y) => {
-		let h32 = 0;
+		let h32 = 0
 
-		h32 = seed + PRIME32_5 | 0;
-		h32 += 8;
+		h32 = seed + PRIME32_5 | 0
+		h32 += 8
 
-		h32 += imul(x, PRIME32_3);
-		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4);
-		h32 += imul(y, PRIME32_3);
-		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4);
+		h32 += imul(x, PRIME32_3)
+		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
+		h32 += imul(y, PRIME32_3)
+		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
 
-		h32 ^= h32 >> 15;
-		h32 *= PRIME32_2;
-		h32 ^= h32 >> 13;
-		h32 *= PRIME32_3;
-		h32 ^= h32 >> 16;
+		h32 ^= h32 >> 15
+		h32 *= PRIME32_2
+		h32 ^= h32 >> 13
+		h32 *= PRIME32_3
+		h32 ^= h32 >> 16
 
-		return h32 / 2147483647;
-	};
+		return h32 / 2147483647
+	}
 
 	return {
 		seedHash,
 		hash
-	};
-})();
+	}
+})()
 
 class Marsaglia {
 	// from http://www.math.uni-bielefeld.de/~sillke/ALGORITHMS/random/marsaglia-c
 
 	nextInt() {
-		const { z, w } = this;
+		const { z, w } = this
 
-		this.z = 36969 * (z & 65535) + (z >>> 16) & 0xFFFFFFFF;
-		this.w = 18000 * (w & 65535) + (w >>> 16) & 0xFFFFFFFF;
+		this.z = 36969 * (z & 65535) + (z >>> 16) & 0xFFFFFFFF
+		this.w = 18000 * (w & 65535) + (w >>> 16) & 0xFFFFFFFF
 
-		return ((this.z & 0xFFFF) << 16 | this.w & 0xFFFF) & 0xFFFFFFFF;
+		return ((this.z & 0xFFFF) << 16 | this.w & 0xFFFF) & 0xFFFFFFFF
 	}
 
 	nextDouble() {
-		const i = this.nextInt() / 4294967296;
+		const i = this.nextInt() / 4294967296
 
-		const isNegative = i < 0 | 0; // cast to 1 or 0
+		const isNegative = i < 0 | 0 // cast to 1 or 0
 
-		return isNegative + i;
+		return isNegative + i
 	}
 
 	constructor(i1, i2) { // better param names
-		this.z = i1 | 0 || 362436069;
-		this.w = i2 || hash(521288629, this.z) * 2147483647 | 0;
+		this.z = i1 | 0 || 362436069
+		this.w = i2 || hash(521288629, this.z) * 2147483647 | 0
 	}
 }
 
@@ -78,49 +78,49 @@ const {
 } = (() => {
 	// closure around mut `currentRandom`
 
-	let currentRandom = null;
+	let currentRandom = null
 
 	const randomSeed = seed => {
-		currentRandom = new Marsaglia(seed);
-	};
+		currentRandom = new Marsaglia(seed)
+	}
 
 	const random = (min, max) => {
 		if (!max) {
 			if (min) {
-				max = min;
-				min = 0;
+				max = min
+				min = 0
 			}
 			else {
-				min = 0;
-				max = 1;
+				min = 0
+				max = 1
 			}
 		}
 
-		return currentRandom.nextDouble() * (max - min) + min;
-	};
+		return currentRandom.nextDouble() * (max - min) + min
+	}
 
 	return {
 		randomSeed,
 		random
-	};
-})();
+	}
+})()
 
 class PerlinNoise {
 	// http://www.noisemachine.com/talk1/17b.html
 	// http://mrl.nyu.edu/~perlin/noise/
 
 	static grad3d(i, x, y, z) {
-		const h = i & 15; // convert into 12 gradient directions
+		const h = i & 15 // convert into 12 gradient directions
 
 		const u = h < 8
 			? x
-			: y;
+			: y
 
 		const v = h < 4
 			? y
 			: h === 12 || h === 14
 				? x
-				: z;
+				: z
 
 		return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v)
 	}
@@ -128,49 +128,49 @@ class PerlinNoise {
 	static grad2d(i, x, y) {
 		const v = (i & 1) === 0
 			? x
-			: y;
+			: y
 
 		return (i & 2) === 0
 			? -v
-			: v;
+			: v
 	}
 
 	static grad1d(i, x) {
 		return (i & 1) === 0
 			? -x
-			: x;
+			: x
 	}
 
 	static lerp(t, a, b) {
-		return a + t * (b - a);
+		return a + t * (b - a)
 	}
 
 	// end of statics
 
 	// prototype functions:
 	noise3d(x, y, z) {
-		const X = floor(x) & 0xff;
-		const Y = floor(y) & 0xff;
-		const Z = floor(z) & 0xff;
+		const X = floor(x) & 0xff
+		const Y = floor(y) & 0xff
+		const Z = floor(z) & 0xff
 
-		x -= floor(x);
-		y -= floor(y);
-		z -= floor(z);
+		x -= floor(x)
+		y -= floor(y)
+		z -= floor(z)
 
-		const fx = (3 - 2 * x) * x * x;
-		const fy = (3 - 2 * y) * y * y;
-		const fz = (3 - 2 * z) * z * z;
+		const fx = (3 - 2 * x) * x * x
+		const fy = (3 - 2 * y) * y * y
+		const fz = (3 - 2 * z) * z * z
 
-		const { perm } = this;
+		const { perm } = this
 
-		const p0 = perm[X] + Y;
-		const p00 = perm[p0] + Z;
-		const p01 = perm[p0 + 1] + Z;
-		const p1 = perm[X + 1] + Y;
-		const p10 = perm[p1] + Z;
-		const p11 = perm[p1 + 1] + Z;
+		const p0 = perm[X] + Y
+		const p00 = perm[p0] + Z
+		const p01 = perm[p0 + 1] + Z
+		const p1 = perm[X + 1] + Y
+		const p10 = perm[p1] + Z
+		const p11 = perm[p1 + 1] + Z
 
-		const { lerp, grad3d } = PerlinNoise;
+		const { lerp, grad3d } = PerlinNoise
 
 		return lerp(
 			fz,
@@ -200,23 +200,23 @@ class PerlinNoise {
 					grad3d(perm[p11 + 1], x - 1, y - 1, z - 1)
 				)
 			)
-		);
+		)
 	}
 
 	noise2d(x, y) {
-		const X = floor(x) & 0xff;
-		const Y = floor(y) & 0xff;
+		const X = floor(x) & 0xff
+		const Y = floor(y) & 0xff
 
-		x -= floor(x);
-		y -= floor(y);
+		x -= floor(x)
+		y -= floor(y)
 
-		const { perm } = this;
-		const fx = (3 - 2 * x) * x * x;
-		const fy = (3 - 2 * y) * y * y;
-		const p0 = perm[X] + Y;
-		const p1 = perm[X + 1] + Y;
+		const { perm } = this
+		const fx = (3 - 2 * x) * x * x
+		const fy = (3 - 2 * y) * y * y
+		const p0 = perm[X] + Y
+		const p1 = perm[X + 1] + Y
 
-		const { lerp, grad2d } = PerlinNoise;
+		const { lerp, grad2d } = PerlinNoise
 
 		return lerp(
 			fy,
@@ -246,12 +246,12 @@ class PerlinNoise {
 					y - 1
 				)
 			)
-		);
+		)
 	}
 
 	constructor(seed) {
 		if (seed === undefined) {
-			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`");
+			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`")
 		}
 		// console.log("New noise generator with seed", seed)
 
@@ -285,40 +285,40 @@ const noiseProfile = {
 	fallout: 0.5,
 	seed: undefined,
 	noiseSeed(seed) {
-		this.seed = seed;
-		this.generator = new PerlinNoise(noiseProfile.seed);
+		this.seed = seed
+		this.generator = new PerlinNoise(noiseProfile.seed)
 	},
 	noise(x, y, z) {
-		const { generator, octaves, fallout } = this;
+		const { generator, octaves, fallout } = this
 
 		let effect = 1,
-			sum = 0;
+			sum = 0
 
 		for (let i = 0; i < octaves; ++i) {
-			effect *= fallout;
+			effect *= fallout
 
-			const k = 1 << i;
+			const k = 1 << i
 
-			let temp;
+			let temp
 			switch (arguments.length) {
 				case 1: {
-					temp = generator.noise1d(k * x);
-					break;
+					temp = generator.noise1d(k * x)
+					break
 				} case 2: {
-					temp = generator.noise2d(k * x, k * y);
-					break;
+					temp = generator.noise2d(k * x, k * y)
+					break
 				} case 3: {
-					temp = generator.noise3d(k * x, k * y, k * z);
-					break;
+					temp = generator.noise3d(k * x, k * y, k * z)
+					break
 				}
 			}
 
-			sum += effect * (1 + temp) / 2;
+			sum += effect * (1 + temp) / 2
 		}
 
-		return sum;
+		return sum
 	}
-};
+}
 
 // Copied and modified from https://github.com/blindman67/SimplexNoiseJS
 function openSimplexNoise(clientSeed) {
@@ -349,14 +349,14 @@ function openSimplexNoise(clientSeed) {
 	}
 	var p3D = decode(-1, 5, "112011210110211120110121102132212220132122202131222022243214231243124213241324123222113311221213131221123113311112202311112022311112220342223113342223311342223131322023113322023311320223113320223131322203311322203131")
 	const setOf = function(count) {
-		var a = [], i = 0;
+		var a = [], i = 0
 		while (i < count) {
 			a.push(i++)
 		}
 		return a
 	}
 	const doFor = function(count, cb) {
-		var i = 0;
+		var i = 0
 		while (i < count && cb(i++) !== true);
 	}
 
@@ -392,7 +392,7 @@ function openSimplexNoise(clientSeed) {
 		const a = lookupArray()
 		const res = new Map()
 		for (i = 0; i < a.length; i += 2) {
-			res.set(a[i], contributions[a[i + 1]]);
+			res.set(a[i], contributions[a[i + 1]])
 		}
 		return res
 	}
@@ -409,10 +409,10 @@ function openSimplexNoise(clientSeed) {
 			do {
 				current = createContribution(type, baseSet, k)
 				if (!previous) {
-					conts[i / baseStep] = current;
+					conts[i / baseStep] = current
 				}
 				else {
-					previous.next = current;
+					previous.next = current
 				}
 				previous = current
 				k += d + 1
@@ -487,4 +487,4 @@ function openSimplexNoise(clientSeed) {
 	}
 }
 
-export { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile };
+export { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile }

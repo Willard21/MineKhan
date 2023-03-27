@@ -40,7 +40,7 @@ class PVector {
 	}
 }
 
-const { cos, sin } = Math;
+const { cos, sin } = Math
 
 class Matrix {
 	constructor(arr) {
@@ -89,18 +89,18 @@ class Matrix {
 	}
 	scale(x, y, z) {
 		let a = this.elements
-		a[0] *= x;
-		a[1] *= y;
-		a[2] *= z;
-		a[4] *= x;
-		a[5] *= y;
-		a[6] *= z;
-		a[8] *= x;
-		a[9] *= y;
-		a[10] *= z;
-		a[12] *= x;
-		a[13] *= y;
-		a[14] *= z;
+		a[0] *= x
+		a[1] *= y
+		a[2] *= z
+		a[4] *= x
+		a[5] *= y
+		a[6] *= z
+		a[8] *= x
+		a[9] *= y
+		a[10] *= z
+		a[12] *= x
+		a[13] *= y
+		a[14] *= z
 	}
 	identity() {
 		let a = this.elements
@@ -129,7 +129,7 @@ class Matrix {
 		let e = 0
 		for (let row = 0; row < 4; row++) {
 			for (let col = 0; col < 4; col++) {
-				out[e++] = a[row * 4 + 0] * b[col + 0] + a[row * 4 + 1] * b[col + 4] + a[row * 4 + 2] * b[col + 8] + a[row * 4 + 3] * b[col + 12];
+				out[e++] = a[row * 4 + 0] * b[col + 0] + a[row * 4 + 1] * b[col + 4] + a[row * 4 + 2] * b[col + 8] + a[row * 4 + 3] * b[col + 12]
 			}
 		}
 	}
@@ -140,7 +140,7 @@ class Matrix {
 		let e = 0
 		for (let row = 0; row < 4; row++) {
 			for (let col = 0; col < 4; col++) {
-				out[e++] = a[row * 4 + 0] * b[col + 0] + a[row * 4 + 1] * b[col + 4] + a[row * 4 + 2] * b[col + 8] + a[row * 4 + 3] * b[col + 12];
+				out[e++] = a[row * 4 + 0] * b[col + 0] + a[row * 4 + 1] * b[col + 4] + a[row * 4 + 2] * b[col + 8] + a[row * 4 + 3] * b[col + 12]
 			}
 		}
 	}
@@ -295,4 +295,4 @@ function copyArr(a, b) {
 	}
 }
 
-export { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr };
+export { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr }

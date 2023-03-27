@@ -43,7 +43,8 @@
 		"operator-linebreak": ["error", "before"],
 		"array-bracket-spacing": ["error", "never", { "singleValue": false }],
 		"object-curly-spacing": ["error", "always"],
-		"no-import-assign": 0
+		"no-import-assign": 0,
+		"no-async-promise-executor": 0
 	},
 	"overrides": [
 		{

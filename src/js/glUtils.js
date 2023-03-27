@@ -33,6 +33,16 @@ function uniformMatrix(gl, glCache, cacheId, programObj, vrName, transpose, matr
 	gl.uniformMatrix4fv(vrLocation, transpose, matrix)
 }
 
+/**
+ *
+ * @param {WebGLRenderingContext} gl
+ * @param {{}} glCache
+ * @param {String} cacheId
+ * @param {WebGLProgram} programObj
+ * @param {String} vrName
+ * @param {Number} size
+ * @param {WebGLBuffer} VBO
+ */
 function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO) {
 	let vrLocation = glCache[cacheId]
 	if(vrLocation === undefined) {
@@ -47,4 +57,4 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 	}
 }
 
-export { createProgramObject, uniformMatrix, vertexAttribPointer };
+export { createProgramObject, uniformMatrix, vertexAttribPointer }

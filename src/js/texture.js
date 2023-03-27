@@ -42,24 +42,24 @@ function initTextures(gl, glCache) {
 		const colors = []
 		const pixels = new Uint8ClampedArray(width * height * 4)
 		let pixi = 0
-	
+
 		for (let i = 0; i < colorCount; i++) {
 			const num = decodeByte(str.substr(5 + i * 3, 3))
-	
+
 			let alpha = (num & 63) << 2
 			let blue  = (num >>> 6 & 63) << 2
 			let green = (num >>> 12 & 63) << 2
 			let red   = (num >>> 18 & 63) << 2
 			if (alpha >= 240) alpha = 255 // Make sure we didn't accidentally make the texture transparent
-	
+
 			if (red === blue && red === green) {
 				red = red / 252 * r | 0
 				green = green / 252 * g | 0
 				blue = blue / 252 * b | 0
 			}
-			colors.push([ red, green, blue, alpha ])
+			colors.push([red, green, blue, alpha])
 		}
-	
+
 		// Special case for a texture filled with 1 pixel color
 		if (colorCount === 1) {
 			while (pixi < pixels.length) {
@@ -71,13 +71,13 @@ function initTextures(gl, glCache) {
 			}
 			return pixels
 		}
-	
+
 		let bytes = []
 		for (let i = 5 + colorCount * 3; i < str.length; i++) { // Load the bit-packed index array
 			const byte = decodeByte(str[i])
 			bytes.push(byte)
 		}
-	
+
 		const bits = Math.ceil(Math.log2(colorCount))
 		const bitMask = (1 << bits) - 1
 		let filledBits = 8
@@ -85,7 +85,7 @@ function initTextures(gl, glCache) {
 		while (bytes.length || filledBits) {
 			let num = 0
 			if (filledBits >= bits) { // The entire number is inside the byte
-				num = byte >> (filledBits - bits) & bitMask
+				num = byte >> filledBits - bits & bitMask
 				if (filledBits === bits && bytes.length) {
 					byte = bytes.shift()
 					filledBits = 8
@@ -93,12 +93,12 @@ function initTextures(gl, glCache) {
 				else filledBits -= bits
 			}
 			else {
-				num = byte << (bits - filledBits) & bitMask // Only part of the number is in the byte
+				num = byte << bits - filledBits & bitMask // Only part of the number is in the byte
 				byte = bytes.shift() // Load in the next byte
-				num |= byte >> (8 - bits + filledBits) // Apply the rest of the number from this byte
+				num |= byte >> 8 - bits + filledBits // Apply the rest of the number from this byte
 				filledBits += 8 - bits
 			}
-	
+
 			pixels[pixi + 0] = colors[num][0]
 			pixels[pixi + 1] = colors[num][1]
 			pixels[pixi + 2] = colors[num][2]
@@ -108,7 +108,7 @@ function initTextures(gl, glCache) {
 		return pixels
 	}
 
-	const textures = texturesFunc(setPixel, getPixels);
+	const textures = texturesFunc(setPixel, getPixels)
 
 	{
 		// Specify the texture coords for each index
@@ -128,9 +128,9 @@ function initTextures(gl, glCache) {
 				textures[name](n)
 			}
 			else if (typeof textures[name] === "string") {
-				let pix = name.includes("water") ?
-				getPixels(textures[name], 40, 100, 220) :
-				getPixels(textures[name])
+				let pix = name.includes("water")
+					? getPixels(textures[name], 40, 100, 220)
+					: getPixels(textures[name])
 				for (let j = 0; j < pix.length; j += 4) {
 					setPixel(n, j >> 2 & 15, j >> 6, pix[j], pix[j+1], pix[j+2], pix[j+3])
 				}
@@ -173,4 +173,4 @@ function initTextures(gl, glCache) {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 }
 
-export { initTextures, textureMap, textureCoords, textureAtlas };
+export { initTextures, textureMap, textureCoords, textureAtlas }

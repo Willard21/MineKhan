@@ -4,8 +4,15 @@ const path = require("path")
 
 // Build straight into production if building on my VPS
 let output = "./dist"
+let plugins = [
+	new HtmlWebpackPlugin({
+		template: './src/index.html',
+		inject: "body",
+	})
+]
 if (__dirname.includes("willard/server/dev")) {
 	output = "../../public/minekhan"
+	plugins.push(new InlinePlugin()) // This breaks the auto build thing, so only do it in production
 }
 
 module.exports = {
@@ -27,12 +34,7 @@ module.exports = {
 			},
 		],
 	},
-	plugins: [
-		new HtmlWebpackPlugin({
-			template: './src/index.html',
-		}),
-		// new InlinePlugin(),
-	],
+	plugins,
 	watch: true,
 	watchOptions: {
 		aggregateTimeout: 100,

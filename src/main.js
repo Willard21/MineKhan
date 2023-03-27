@@ -18,14 +18,15 @@ import './index.css'
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
 import { timeString, roundBits, compareArr } from "./js/utils.js"
-import { blockData, BLOCK_COUNT, blockIds, Block, Sides } from "./js/blockData.js"
+import { blockData, BLOCK_COUNT, blockIds, Block } from "./js/blockData.js"
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes } from "./js/shapes.js"
 import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
 import { initTextures, textureMap, textureCoords } from './js/texture.js'
 import { fullSection, emptySection } from "./js/section.js"
+import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
-import { Item } from './js/item.js'
+// import { Item } from './js/item.js'
 import { Player } from "./js/player.js"
 
 window.blockData = blockData
@@ -192,7 +193,6 @@ async function MineKhan() {
 	//{
 	let version = "Alpha 0.8.0"
 	let reach = 5 // Max distance player can place or break blocks
-	let sky = new Float32Array([0.33, 0.54, 0.72]) // 0 to 1 RGB color scale
 	let superflat = false
 	let trees = true
 	let caves = true
@@ -426,7 +426,6 @@ async function MineKhan() {
 		holding = inventory.hotbar[inventory.hotbarSlot]
 		updateHUD = true
 		use3d()
-		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 		getPointer()
 		fill(255, 255, 255)
 		textSize(10)
@@ -434,7 +433,11 @@ async function MineKhan() {
 		changeScene("play")
 	}
 
+	/**
+	 * @type {WebGLRenderingContext}*/
 	let gl
+	/**
+	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
 	let glExtensions
 	function getPointer() {
 		if (canvas.requestPointerLock) {
@@ -1045,10 +1048,12 @@ async function MineKhan() {
 
 	function initModelView(camera, x, y, z, rx, ry) {
 		if (camera) {
+			// Inside the game
 			camera.transform()
 			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
 		}
 		else {
+			// On the home screen
 			copyArr(defaultModelView, modelView)
 			rotX(modelView, rx)
 			rotY(modelView, ry)
@@ -1240,7 +1245,7 @@ async function MineKhan() {
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id
 	}
 	function collided(x, y, z, vx, vy, vz, block) {
-		if(p.spectator) {
+		if(p.spectator && block !== blockIds.bedrock) {
 			return false
 		}
 		let verts = blockData[block].shape.verts
@@ -1508,8 +1513,14 @@ async function MineKhan() {
 			let i = 0
 			for (let side in Block) {
 				if (sides & Block[side]) {
-					vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[Sides[side]])
-					vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
+					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
+					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+
+					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap[tex[i]]])
+					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+
+					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
+					// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
 					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
 				}
 				i++
@@ -1518,6 +1529,12 @@ async function MineKhan() {
 		if (blockOutlines) {
 			vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
 			vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
+			// gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
+			// gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+
+			// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
+			// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 			}
@@ -1720,7 +1737,7 @@ async function MineKhan() {
 		}
 	}
 
-	function chat(msg) {
+	function chat(msg, color) {
 		let lockScroll = false
 		if (chatOutput.scrollTop + chatOutput.clientHeight + 50 > chatOutput.scrollHeight) {
 			lockScroll = true
@@ -1728,6 +1745,7 @@ async function MineKhan() {
 		let div = document.createElement("div")
 		div.className = "message"
 		div.textContent = msg
+		if (color) div.style.color = color
 		chatOutput.append(div)
 		chatAlert(msg)
 		if (lockScroll) {
@@ -1887,14 +1905,17 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				alert(`Connection lost! ${multiplayerError}`)
+				if (multiplayerError) alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
-			else {
+			else if (multiplayerError) {
 				alert(`Connection lost! ${multiplayerError || "Willard probably restarted the server. You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
+			playerEntities = {}
+			playerPositions = {}
+			playerDistances.length = 0
 		}
 		multiplayer.onerror = multiplayer.onclose
 
@@ -1909,6 +1930,10 @@ async function MineKhan() {
 			}
 			if (!host) {
 				chat("You don't have permission to do that.")
+				return
+			}
+			if (username.trim().toLowerCase() === "willard") {
+				chat("You cannot ban Willard. He created this game and is paying for this server.")
 				return
 			}
 			multiplayer.send(JSON.stringify({
@@ -1932,7 +1957,6 @@ async function MineKhan() {
 	}
 
 	let fogDist = 16
-	let frameCount = -3600
 
 	emptySection.setWorld(world)
 	emptySection.setCaves(caves)
@@ -1971,6 +1995,10 @@ async function MineKhan() {
 			this.eventQueue = []
 			this.lastChunk = ","
 			this.caves = caves
+			this.initTime = Date.now()
+			this.tickCount = 0
+			this.lastTick = performance.now()
+			this.skybox = getSkybox(gl, glCache)
 			// this.memory = memory
 			// this.freeMemory = []
 		}
@@ -1981,6 +2009,8 @@ async function MineKhan() {
 		genChunk(chunk) {
 			let trueX = chunk.x
 			let trueZ = chunk.z
+
+			const { grass, dirt, stone, bedrock } = blockIds
 
 			if (chunk.generated) {
 				return false
@@ -1994,14 +2024,25 @@ async function MineKhan() {
 					gen = superflat ? 4 : round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
 					chunk.tops[k * 16 + i] = gen
 
-					chunk.setBlock(i, gen, k, blockIds.grass)
-					chunk.setBlock(i, gen - 1, k, blockIds.dirt)
-					chunk.setBlock(i, gen - 2, k, blockIds.dirt)
-					chunk.setBlock(i, gen - 3, k, blockIds.dirt)
-					for (let j = 1; j < gen - 3; j++) {
-						chunk.setBlock(i, j, k, blockIds.stone)
+					let index = i * 16 + k
+					chunk.blocks[index] = bedrock
+					index += 256
+					for (let max = (gen - 3) * 256; index < max; index += 256) {
+						chunk.blocks[index] = stone
 					}
-					chunk.setBlock(i, 0, k, blockIds.bedrock)
+					chunk.blocks[index] = dirt
+					chunk.blocks[index + 256] = dirt
+					chunk.blocks[index + 512] = dirt
+					chunk.blocks[index + 768] = grass
+
+					// chunk.setBlock(i, gen, k, grass)
+					// chunk.setBlock(i, gen - 1, k, dirt)
+					// chunk.setBlock(i, gen - 2, k, dirt)
+					// chunk.setBlock(i, gen - 3, k, dirt)
+					// for (let j = 1; j < gen - 3; j++) {
+					// 	chunk.setBlock(i, j, k, stone)
+					// }
+					// chunk.setBlock(i, 0, k, bedrock)
 				}
 			}
 			chunk.generated = true
@@ -2030,10 +2071,10 @@ async function MineKhan() {
 				// debugger
 				return 0
 			}
-			else if (y < 0) {
-				// debugger
-				return 0//blockIds.bedrock
-			}
+			// else if (y < 0) {
+			// 	debugger
+			// 	return blockIds.bedrock
+			// }
 			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
 			// 	return this.getWorldBlock(x, y, z)
@@ -2265,6 +2306,9 @@ async function MineKhan() {
 			}
 		}
 		async tick() {
+			this.lastTick = performance.now()
+			this.tickCount++
+
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
 			let maxChunkZ = (p.z >> 4) + settings.renderDistance
 			let chunk = maxChunkX + "," + maxChunkZ
@@ -2296,6 +2340,7 @@ async function MineKhan() {
 			// Make sure there's only 1 "world gen" loop running at a time
 			if (this.ticking) return
 			this.ticking = true
+			console.log("Beginning world gen")
 
 			let doneWork = true
 			while(doneWork && (screen === "play" || screen === "loading")) {
@@ -2356,27 +2401,32 @@ async function MineKhan() {
 					else {
 						this.chunkGenQueue.shift()
 						generatedChunks++
+						if (generatedChunks === 3000) {
+							let ms = Date.now() - this.initTime
+							console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
+						}
 					}
 					doneWork = true
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork && screen !== "loading") await window.yieldThread()
+				if (doneWork && (screen !== "loading" || !this.loadQueue.length)) await window.yieldThread()
 			}
 			this.ticking = false
 		}
 		render() {
 			initModelView(p)
-			let skyLight
-			if (multiplayer) {
-				skyLight = min(max(abs(now % 1200000 - 600000) / 60000 - 3, 0.1), 1)
-			}
-			else {
-				skyLight = min(max(abs(++frameCount % 7200 - 3600) / 360 - 3, 0.1), 1)
-				// skyLight = 0.1 // Night
-			}
-			gl.clearColor(sky[0] * skyLight, sky[1] * skyLight, sky[2] * skyLight, 1)
+
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
+
+			// These need to be disabled, but they're already disabled at this point, so it's fine
+			// gl.disableVertexAttribArray(glCache.aSkylight)
+			// gl.disableVertexAttribArray(glCache.aBlocklight)
+			let time = 0
+			if (multiplayer) time = Date.now()
+			else time = this.tickCount * 50 + (performance.now() - this.lastTick) % 50
+			this.skybox(time / 1000 + 150, matrix)
+			use3d()
 
 			p2.x = round(p.x)
 			p2.y = round(p.y)
@@ -2397,10 +2447,6 @@ async function MineKhan() {
 			}
 			gl.uniform3f(glCache.uPos, p.x, p.y, p.z)
 			gl.uniform1f(glCache.uDist, fogDist)
-			// this is interesting because uTime is not actually based on time
-			// if you are going to change this to use actual time change line 4487 as well
-			// since it depends on it
-			gl.uniform1f(glCache.uTime, skyLight)
 
 			let c = this.sortedChunks
 			let glob = { renderedChunks }
@@ -2416,10 +2462,20 @@ async function MineKhan() {
 				gl.uniform1i(glCache.uTrans, 0)
 				gl.depthMask(true)
 			}
+			gl.disableVertexAttribArray(glCache.aSkylight)
+			gl.disableVertexAttribArray(glCache.aBlocklight)
 
 			renderedChunks = glob.renderedChunks
 
 			gl.uniform3f(glCache.uPos, 0, 0, 0)
+
+			if (hitBox.pos) {
+				blockOutlines = true
+				blockFill = false
+				block2(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], 0, p)
+				blockOutlines = false
+				blockFill = true
+			}
 
 			gl.useProgram(programEntity)
 
@@ -2435,16 +2491,7 @@ async function MineKhan() {
 					entity.render()
 				}
 			}
-
 			gl.useProgram(program3D)
-
-			if(hitBox.pos) {
-				blockOutlines = true
-				blockFill = false
-				block2(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], 0, p)
-				blockOutlines = false
-				blockFill = true
-			}
 		}
 		loadChunks() {
 			let renderDistance = settings.renderDistance + 3
@@ -2492,6 +2539,7 @@ async function MineKhan() {
 			this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 		}
 		getSaveString() {
+			console.log(inventory)
 			let edited = []
 			for (let x in this.chunks) {
 				for (let z in this.chunks[x]) {
@@ -3131,7 +3179,7 @@ async function MineKhan() {
 	}
 	function hud() {
 		if (p.spectator) {
-			// return
+			return
 		}
 
 		hotbar()
@@ -3141,16 +3189,14 @@ async function MineKhan() {
 		let y = height / 2 + 0.5
 
 		// Crosshair
-		if (!p.spectator) {
-			ctx.lineWidth = 1
-			ctx.strokeStyle = "white"
-			ctx.beginPath()
-			ctx.moveTo(x - 10, y)
-			ctx.lineTo(x + 10, y)
-			ctx.moveTo(x, y - 10)
-			ctx.lineTo(x, y + 10)
-			ctx.stroke()
-		}
+		ctx.lineWidth = 1
+		ctx.strokeStyle = "white"
+		ctx.beginPath()
+		ctx.moveTo(x - 10, y)
+		ctx.lineTo(x + 10, y)
+		ctx.moveTo(x, y - 10)
+		ctx.lineTo(x, y + 10)
+		ctx.stroke()
 
 		//Hotbar
 		x = width / 2 - 9 / 2 * s + 0.5 + 25
@@ -3175,9 +3221,9 @@ async function MineKhan() {
 
 		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
 
-		let str = "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
-		+ "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
-		+ "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
+		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
+		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
+		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
 		+ "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
 		+ "Render Time: " + analytics.displayedRenderTime + "ms\n"
 		+ "Tick Time: " + analytics.displayedTickTime + "ms\n"
@@ -3648,28 +3694,19 @@ async function MineKhan() {
 	}
 
 	function use2d() {
-		gl.disableVertexAttribArray(glCache.aTexture)
-		gl.disableVertexAttribArray(glCache.aShadow)
-		gl.disableVertexAttribArray(glCache.aVertex)
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.useProgram(program2D)
-
-		gl.enableVertexAttribArray(glCache.aVertex2)
-		gl.enableVertexAttribArray(glCache.aTexture2)
-		gl.enableVertexAttribArray(glCache.aShadow2)
+		// gl.depthFunc(gl.ALWAYS)
 	}
 	function use3d() {
-		gl.disableVertexAttribArray(glCache.aTexture2)
-		gl.disableVertexAttribArray(glCache.aShadow2)
-		gl.disableVertexAttribArray(glCache.aVertex2)
 		gl.useProgram(program3D)
-
 		gl.enableVertexAttribArray(glCache.aVertex)
 		gl.enableVertexAttribArray(glCache.aTexture)
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
+		// gl.depthFunc(gl.LESS)
 	}
 
 	let maxLoad = 1
@@ -3703,7 +3740,7 @@ async function MineKhan() {
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 			win.gl = gl
-			glExtensions = []
+			glExtensions = {}
 			const availableExtensions = gl.getSupportedExtensions()
 			for (let i = 0; i < availableExtensions.length; i++) {
 				const extensionName = availableExtensions[i]
@@ -3753,7 +3790,6 @@ async function MineKhan() {
 		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 		gl.uniform1f(glCache.uDist, 1000)
-		gl.uniform3f(glCache.uSky, sky[0], sky[1], sky[2])
 		gl.uniform1i(glCache.uTrans, 0)
 
 		//Send the block textures to the GPU
@@ -3790,13 +3826,12 @@ async function MineKhan() {
 		blockOutlines = false
 		gl.enable(gl.POLYGON_OFFSET_FILL)
 		gl.polygonOffset(1, 1)
-		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
 	function initBackgrounds() {
 		// Home screen background
 		use3d()
-		gl.clearColor(sky[0], sky[1], sky[2], 1.0)
+		gl.clearColor(0.25, 0.45, 0.7, 1.0)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 		FOV(100)
 		const HALF_PI = Math.PI / 2
@@ -4354,7 +4389,6 @@ async function MineKhan() {
 				freezeFrame = false
 				renderChatAlerts()
 				textSize(10)
-				gl.clearColor(sky[0], sky[1], sky[2], 1.0)
 				gl.uniform1f(glCache.uLantern, blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
 			}
 			let renderStart = performance.now()
