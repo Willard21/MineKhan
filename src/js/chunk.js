@@ -1,4 +1,4 @@
-import { random, randomSeed, hash } from "./random.js"
+import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { textureMap, textureCoords } from "./texture.js"
 let world
@@ -223,7 +223,6 @@ let getLight = {
 		ret[1] = average(blocks, 4, 1, 2, 5)
 		ret[2] = average(blocks, 4, 5, 7, 8)
 		ret[3] = average(blocks, 4, 3, 6, 7)
-		// debugger
 		return ret
 	},
 	bottom: function(x, y, z, ret, blockLight, world) { // Actually the top
@@ -402,11 +401,11 @@ class Chunk {
 		this.blocks = new Int16Array(16*16*256)
 		this.originalBlocks = new Int16Array(0)
 		this.light = new Uint8Array(16*16*256)
-		this.pallete = [0, blockIds.grass, blockIds.dirt, blockIds.stone, blockIds.bedrock]
-		this.palleteMap = []
-		for (let i = 0; i < 256; i++) this.palleteMap[i] = 0
-		for (let i = 0; i < this.pallete.length; i++) this.palleteMap[this.pallete[i]] = i
-		this.palleteSize = 2
+		this.palette = [0, blockIds.grass, blockIds.dirt, blockIds.stone, blockIds.bedrock]
+		this.paletteMap = []
+		for (let i = 0; i < 256; i++) this.paletteMap[i] = 0
+		for (let i = 0; i < this.palette.length; i++) this.paletteMap[this.palette[i]] = i
+		this.paletteSize = 2
 		this.renderData = []
 		this.renderLength = 0
 		this.hasBlockLight = false
@@ -419,7 +418,7 @@ class Chunk {
 	setBlock(x, y, z, blockID, user) {
 		if (user && !this.edited) {
 			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+			this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 
 		if (semiTrans[blockID & 255]) {
@@ -460,7 +459,7 @@ class Chunk {
 						}
 					}
 
-					if (!stop && block && !transparent[255 & block]) {
+					if (!stop && block && !transparent[block]) {
 						this.tops[z * 16 + x] = y
 						stop = true
 					}
@@ -504,25 +503,14 @@ class Chunk {
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
 				for (let y = this.tops[z * 16 + x] + 1; y <= this.maxY; y++) {
-					// if (y === 2) debugger
-					// spread.push(x + this.x, y, z + this.z)
-					if (x === 15 || this.tops[z * 16 + x + 1] > y) {
+					if (   x === 15 || this.tops[z * 16 + x + 1 ] > y
+						|| x === 0  || this.tops[z * 16 + x - 1 ] > y
+						|| z === 15 || this.tops[z * 16 + x + 16] > y
+						|| z === 0  || this.tops[z * 16 + x - 16] > y
+					) {
 						spread.push(x + this.x, y, z + this.z)
-						continue
 					}
-					if (x === 0 || this.tops[z * 16 + x - 1] > y) {
-						spread.push(x + this.x, y, z + this.z)
-						continue
-					}
-					if (z === 15 || this.tops[(z + 1) * 16 + x] > y) {
-						spread.push(x + this.x, y, z + this.z)
-						continue
-					}
-					if (z === 0 || this.tops[(z - 1) * 16 + x] > y) {
-						spread.push(x + this.x, y, z + this.z)
-						continue
-					}
-					break
+					else break
 				}
 			}
 		}
@@ -651,6 +639,42 @@ class Chunk {
 			}
 		}
 	}
+	generate() {
+		let trueX = this.x
+		let trueZ = this.z
+
+		const { grass, dirt, stone, bedrock } = blockIds
+
+		if (this.generated) {
+			// throw "Wot? Why?"
+			return false
+		}
+
+		const smoothness = 0.01 // How close hills and valleys are together
+		const hilliness = 80 // Height of the hills
+		const extra = 30 // Extra blocks stacked onto the terrain
+		const superflat = this.populated
+		let gen = 0
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				gen = superflat ? 4 : Math.round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + extra
+				this.tops[k * 16 + i] = gen
+
+				let index = i * 16 + k
+				this.blocks[index] = bedrock
+				index += 256
+				for (let max = (gen - 3) * 256; index < max; index += 256) {
+					this.blocks[index] = stone
+				}
+				this.blocks[index] = dirt
+				this.blocks[index + 256] = dirt
+				this.blocks[index + 512] = dirt
+				this.blocks[index + 768] = grass
+			}
+		}
+		this.generated = true
+		this.getCaveData() // Queue up the multithreaded cave gen
+	}
 	optimize() {
 		const { world, x, z, blocks, maxY } = this
 		let index = 256
@@ -663,9 +687,9 @@ class Chunk {
 					let blockState = blocks[index]
 					if (!blockState) continue
 
-					if (!this.palleteMap[blockState]) {
-						this.palleteMap[blockState] = this.pallete.length
-						this.pallete.push(blockState)
+					if (!this.paletteMap[blockState]) {
+						this.paletteMap[blockState] = this.palette.length
+						this.palette.push(blockState)
 					}
 
 					let s = i      ? blocks[index - 16] : world.getBlock(x + i - 1, j, z + k)
@@ -693,7 +717,7 @@ class Chunk {
 
 					if (visible) {
 						let pos = (i | j << 4 | k << 12) << 16
-						this.renderData[this.renderLength++] = pos | visible << 10 | this.palleteMap[blockState]
+						this.renderData[this.renderLength++] = pos | visible << 10 | this.paletteMap[blockState]
 					}
 				}
 			}
@@ -772,10 +796,10 @@ class Chunk {
 			}
 		}
 
-		// Update pallete
-		if (!this.palleteMap[blockState]) {
-			this.palleteMap[blockState] = this.pallete.length
-			this.pallete.push(blockState)
+		// Update palette
+		if (!this.paletteMap[blockState]) {
+			this.paletteMap[blockState] = this.palette.length
+			this.palette.push(blockState)
 		}
 
 		if (index < 0 && !visible) {
@@ -792,17 +816,18 @@ class Chunk {
 			// Wasn't visible before, is visible after.
 			index = this.renderLength++
 		}
-		this.renderData[index] = pos | visible << 10 | this.palleteMap[blockState]
+		this.renderData[index] = pos | visible << 10 | this.paletteMap[blockState]
 	}
 	deleteBlock(x, y, z, user) {
 		if (user && !this.edited) {
 			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generate chunk
+			this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 		this.blocks[y * 256 + x * 16 + z] = 0
 		this.minY = y < this.minY ? y : this.minY
 	}
 	async getCaveData() {
+		if (this.caves) return
 		this.caveData = new Promise(async resolve => {
 			while (!window.workers.length) {
 				await Promise.race(window.pendingWorkers)
@@ -817,6 +842,7 @@ class Chunk {
 	}
 	async carveCaves() {
 		const { world } = this
+		this.caves = true
 
 		const caves = await this.caveData
 
@@ -838,8 +864,6 @@ class Chunk {
 			}
 		}
 		this.caveData = null
-
-		this.caves = true
 	}
 	populate(trees) {
 		const { world } = this
@@ -988,7 +1012,7 @@ class Chunk {
 		this.populated = true
 	}
 	genMesh(indexBuffer, bigArray) {
-		const { glExtensions, gl, glCache, renderLength, renderData, pallete } = this
+		const { glExtensions, gl, glCache, renderLength, renderData, palette } = this
 		let index = 0
 		if (!this.renderLength) {
 			return index
@@ -1002,7 +1026,7 @@ class Chunk {
 
 		for (let i = 0; i < renderLength; i++) {
 			const data = renderData[i]
-			const block = blockData[pallete[data & 0x3ff]]
+			const block = blockData[palette[data & 0x3ff]]
 			const tex = block.textures
 			const sides = data >> 10 & 0x3f // 6 bit flags indicating which faces should be rendered
 			const loc = data >>> 16 // #zzyyyyxx
@@ -1124,31 +1148,32 @@ class Chunk {
 		}
 	}
 	load() {
+		if (this.loaded) {
+			return
+		}
 		const { world } = this
 		let chunkX = this.x >> 4
 		let chunkZ = this.z >> 4
+		let str = `${chunkX},${chunkZ}`
+		let load = world.loadFrom[str]
+		if (load) {
+			this.edited = true
+			this.originalBlocks = this.blocks.slice()
 
-		for (let i = 0; i < world.loadFrom.length; i++) {
-			let load = world.loadFrom[i]
-			if (load.x === chunkX && load.z === chunkZ) {
-				if (!this.edited) {
-					this.edited = true
-					this.originalBlocks = this.blocks.slice()
-				}
-				// let y = load.y * 16 * 16 * 16
-				for (let j in load.blocks) {
-					let block = load.blocks[j]
-					this.blocks[+j] = block
-					if (!this.doubleRender && blockData[block].semiTrans) {
-						this.doubleRender = true
-						if (!this.world.doubleRenderChunks.includes(this)) {
-							this.world.doubleRenderChunks.push(this)
-						}
+			for (let j in load) {
+				let block = load[j]
+				this.blocks[+j] = block
+				if (!this.doubleRender && blockData[block].semiTrans) {
+					this.doubleRender = true
+					if (!this.world.doubleRenderChunks.includes(this)) {
+						this.world.doubleRenderChunks.push(this)
 					}
-					// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 				}
-				world.loadFrom.splice(i--, 1)
+				// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 			}
+
+			delete world.loadFrom[str]
+			// world.loadKeys.splice(world.loadKeys.indexOf(str), 1)
 		}
 		this.loaded = true
 	}

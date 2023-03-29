@@ -57,8 +57,8 @@ class Player extends Entity {
 		modelViewProjectionMatrix.transpose()
 
 		const lightLevel = 1 // min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
-		gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 		gl.uniform1i(glCache.uSamplerEntity, 0)
+		// gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 		gl.uniform1f(glCache.uLightLevelEntity, lightLevel)
 		gl.uniformMatrix4fv(glCache.uViewEntity, false, modelViewProjectionMatrix.elements)
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)

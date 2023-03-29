@@ -61,6 +61,11 @@ function getSkybox(gl, glCache) {
 	const dayLength = 600 // seconds
 	const horizonDay = [0.65, 0.7, 0.8]
 	const horizonDawn = [0.95, 0.35, 0.2]
+
+	const smoothstep = (edge0, edge1, x) => {
+		let t = Math.min(Math.max((x - edge0) / (edge1 - edge0), 0.0), 1.0)
+		return t * t * (3.0 - 2.0 * t)
+	}
 	return function renderSkybox(time, view) {
 		time %= dayLength
 		const cos = Math.cos(time * Math.PI * 2 / dayLength)
@@ -75,13 +80,16 @@ function getSkybox(gl, glCache) {
 			(horizonDawn[2] - horizonDay[2]) * sunset + horizonDay[2],
 		]
 
+		const sun = [sin/mag, cos/mag, sin/mag]
+
 		// Setting these uniforms in program3D
 		gl.uniform3f(glCache.uSky, horizonColor[0], horizonColor[1], horizonColor[2])
-		gl.uniform1f(glCache.uTime, Math.min(1, Math.max(0.9 * (-cos/mag + 0.2) + 0.1, 0.1)))
+		gl.uniform3f(glCache.uSun, sun[0], sun[1], sun[2])
+		gl.uniform1f(glCache.uTime, Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.3))
 
 		gl.useProgram(skyboxProgram)
 		gl.uniform1f(uTime, time)
-		gl.uniform3f(uSun, sin/mag, cos/mag, sin/mag)
+		gl.uniform3f(uSun, sun[0], sun[1], sun[2])
 		gl.uniform3f(uHorizon, horizonColor[0], horizonColor[1], horizonColor[2])
 		gl.uniformMatrix4fv(uView, false, view)
 

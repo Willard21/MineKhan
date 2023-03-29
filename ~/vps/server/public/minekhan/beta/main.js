@@ -6800,6 +6800,7 @@ async function MineKhan() {
 				if (data.includes("Ballz")) {
 					let arr = new Uint8Array(data.length)
 					for (let i = 0; i < arr.length; i++) arr[i] = data.charCodeAt(i)
+					console.log(arr)
 					return this.loadSave(arr)
 				}
 				try {

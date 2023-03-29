@@ -179,6 +179,12 @@ class Entity {
 		}
 	}
 	move(now) {
+		let dx = this.p.x - this.x
+		let dy = this.p.y - this.y
+		let dz = this.p.z - this.z
+		const dist = this.world.settings.renderDistance * 16 - 32
+		if (dx * dx + dy * dy + dz * dz >= dist * dist) return
+
 		const { world } = this
 		let pminX = floor(this.x - this.width / 2)
 		let pmaxX = ceil(this.x + this.width / 2)

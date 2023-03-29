@@ -17,13 +17,12 @@ import './index.css'
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
-import { timeString, roundBits, compareArr } from "./js/utils.js"
+import { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
 import { blockData, BLOCK_COUNT, blockIds, Block } from "./js/blockData.js"
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes } from "./js/shapes.js"
 import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
 import { initTextures, textureMap, textureCoords } from './js/texture.js'
-import { fullSection, emptySection } from "./js/section.js"
 import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
 // import { Item } from './js/item.js'
@@ -65,6 +64,13 @@ async function MineKhan() {
 			hash |= 0 // Convert to 32bit integer
 		}
 		return hash
+	}
+	Uint8Array.prototype.toString = function() {
+		let str = ""
+		for (let i = 0; i < this.length; i++) {
+			str += String.fromCharCode(this[i])
+		}
+		return btoa(str)
 	}
 
 	{
@@ -173,14 +179,16 @@ async function MineKhan() {
 		}
 		await saveToDB(world.id, saveObj).catch(e => console.error(e))
 		world.edited = now
-		console.log('Saving to server')
-		if (location.href.startsWith("https://willard.fun/")) await fetch('https://willard.fun/minekhan/saves', {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(saveObj)
-		})
+		if (location.href.startsWith("https://willard.fun/")) {
+			console.log('Saving to server')
+			await fetch(`https://willard.fun/minekhan/saves?id=${world.id}&edited=${saveObj.edited}&name=${encodeURIComponent(world.name)}&version=${encodeURIComponent(version)}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/octet-stream"
+				},
+				body: saveObj.code.buffer
+			})
+		}
 	}
 
 	// Expose these functions to the global scope for debugging
@@ -192,7 +200,6 @@ async function MineKhan() {
 	//globals
 	//{
 	let version = "Alpha 0.8.0"
-	let reach = 5 // Max distance player can place or break blocks
 	let superflat = false
 	let trees = true
 	let caves = true
@@ -204,7 +211,8 @@ async function MineKhan() {
 	let settings = {
 		renderDistance: 4,
 		fov: 70, // Field of view in degrees
-		mouseSense: 100 // Mouse sensitivity as a percentage of the default
+		mouseSense: 100, // Mouse sensitivity as a percentage of the default
+		reach: 5
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
@@ -213,12 +221,6 @@ async function MineKhan() {
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
-	let generator = {
-		height: 80, // Height of the hills
-		smooth: 0.01, // Smoothness of the terrain
-		extra: 30, // Extra height added to the world.
-		caveSize: 0.00 // Redefined right above where it's used
-	}
 	let maxHeight = 255
 	let blockOutlines = false
 	let blockFill = true
@@ -439,6 +441,12 @@ async function MineKhan() {
 	/**
 	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
 	let glExtensions
+
+	/**
+	 * @type {(time: Number, view: Matrix) => {}}
+	 */
+	let skybox
+
 	function getPointer() {
 		if (canvas.requestPointerLock) {
 			canvas.requestPointerLock()
@@ -1187,9 +1195,9 @@ async function MineKhan() {
 		let minZ = p2.z
 		let maxZ = 0
 
-		for (let i = 0; i < reach + 1; i++) {
-			if (i > reach) {
-				i = reach
+		for (let i = 0; i < settings.reach + 1; i++) {
+			if (i > settings.reach) {
+				i = settings.reach
 			}
 			maxX = round(p.x + pd.x * i)
 			maxY = round(p.y + pd.y * i)
@@ -1339,6 +1347,7 @@ async function MineKhan() {
 			}
 			return col
 		}
+		throw "Test"
 	}
 	let contacts = {
 		array: [],
@@ -1366,13 +1375,12 @@ async function MineKhan() {
 		const VY = p.velocity.y / steps
 		const VZ = p.velocity.z / steps
 
-		let pminX = floor(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
-		let pmaxX = ceil(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
-		let pminY = max(floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
-		let pmaxY = min(ceil(p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
-		let pminZ = floor(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
-		let pmaxZ = ceil(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
-		let block = null
+		let pminX = floor(0.5 + p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
+		let pmaxX = ceil(-0.5 + p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
+		let pminY = max(floor(0.5 + p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
+		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
+		let pminZ = floor(0.5 + p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
+		let pmaxZ = ceil(-0.5 + p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 
 		for (let y = pmaxY; y >= pminY; y--) {
 			for (let x = pminX; x <= pmaxX; x++) {
@@ -1385,11 +1393,11 @@ async function MineKhan() {
 			}
 		}
 
-		let hasCollided = false
+		// let hasCollided = false
 		p.px = p.x
 		p.py = p.y
 		p.pz = p.z
-		for (let j = 1; j <= steps && !hasCollided; j++) {
+		for (let j = 1; j <= steps; j++) {
 			let px = p.x
 			let pz = p.z
 
@@ -1399,13 +1407,20 @@ async function MineKhan() {
 			p.canStepZ = false
 			p.y += VY
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], 0, VY, 0, block[3])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, 0, VY, 0, block)) {
 					p.velocity.y = 0
-					hasCollided = true
-					break
+					// hasCollided = true
+					// It doesn't matter that it checked the top blocks first.
+					// Slabs are technically level with cubes, but they're shorter.
+					// So if it checks a slab before checking a cube, exiting early
+					// could prevent the player from colliding with the cube.
+					// break <-- In other words, don't do this.
 				}
 			}
+
+			// Stepping works by letting you walk inside short hitboxes that you collide with in the x or z directions.
+			// Since collisions in the Y direction are checked first, you won't step until the next frame.
 			if (p.onGround) {
 				p.canStepX = true
 				p.canStepZ = true
@@ -1414,8 +1429,8 @@ async function MineKhan() {
 			var sneakLock = false, sneakSafe = false
 			if (p.sneaking) {
 				for (let i = 0; i < contacts.size; i++) {
-					block = contacts.array[i]
-					if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					let [x, y, z] = contacts.array[i]
+					if (onBox(x, y, z, 1, 1, 1)) {
 						sneakLock = true
 						break
 					}
@@ -1425,16 +1440,17 @@ async function MineKhan() {
 			//Check collisions in the X direction
 			p.x += VX
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], VX, 0, 0, block[3])) {
-					if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, VX, 0, 0, block)) {
+					if (p.canStepX && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
 						continue
 					}
+					if (p.canStepX) p.x -= VX // Wasn't handled in `collided` since it thought it could step.
 					p.velocity.x = 0
-					hasCollided = true
+					// hasCollided = true
 					break
 				}
-				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
 					sneakSafe = true
 				}
 			}
@@ -1442,24 +1458,25 @@ async function MineKhan() {
 			if (sneakLock && !sneakSafe) {
 				p.x = px
 				p.velocity.x = 0
-				hasCollided = true
+				// hasCollided = true
 			}
 			sneakSafe = false
 
 			//Check collisions in the Z direction
 			p.z += VZ
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], 0, 0, VZ, block[3])) {
-					if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, 0, 0, VZ, block)) {
+					if (p.canStepZ && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
 						continue
 					}
 					// p.z = p.pz
+					if (p.canStepZ) p.z -= VZ // Wasn't handled in `collided` since it thought it could step.
 					p.velocity.z = 0
-					hasCollided = true
+					// hasCollided = true
 					break
 				}
-				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
 					sneakSafe = true
 				}
 			}
@@ -1467,7 +1484,7 @@ async function MineKhan() {
 			if (sneakLock && !sneakSafe) {
 				p.z = pz
 				p.velocity.z = 0
-				hasCollided = true
+				// hasCollided = true
 			}
 		}
 
@@ -1544,6 +1561,7 @@ async function MineKhan() {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
 			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.transformation.translate(-x, -y, -z)
 		}
 		else {
 			//copyArr(modelView, matrix)
@@ -1670,7 +1688,7 @@ async function MineKhan() {
 	}
 	function fillReqs(x, z) {
 		// Chunks must all be loaded first.
-		var done = true
+		let done = true
 		for (let i = x - 3; i <= x + 3; i++) {
 			for (let j = z - 3; j <= z + 3; j++) {
 				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
@@ -1681,22 +1699,16 @@ async function MineKhan() {
 
 				if (!chunk.populated && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
 					world.populateQueue.push(chunk)
-					chunk.carving = true
 					done = false
 				}
-				if (world.loadFrom.length && !chunk.loaded && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
-					world.loadQueue.push(chunk)
-					done = false
-				}
-				else if (!world.loadFrom.length && !chunk.loaded) {
-					chunk.loaded = true
-				}
+
 				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
 					world.lightingQueue.push(chunk)
 					done = false
 				}
 			}
 		}
+
 		return done
 	}
 	function renderFilter(chunk) {
@@ -1737,15 +1749,30 @@ async function MineKhan() {
 		}
 	}
 
-	function chat(msg, color) {
+	function chat(msg, color, author) {
 		let lockScroll = false
 		if (chatOutput.scrollTop + chatOutput.clientHeight + 50 > chatOutput.scrollHeight) {
 			lockScroll = true
 		}
 		let div = document.createElement("div")
 		div.className = "message"
-		div.textContent = msg
-		if (color) div.style.color = color
+
+		let content = document.createElement('span')
+		if (color) content.style.color = color
+		content.textContent = msg
+
+		if (author) {
+			let name = document.createElement('span')
+			name.textContent = author + ": "
+			if (author === "Willard") {
+				name.style.color = "cyan"
+			}
+			div.append(name)
+			msg = `${author}: ${msg}` // For the chatAlert
+		}
+
+		div.append(content)
+
 		chatOutput.append(div)
 		chatAlert(msg)
 		if (lockScroll) {
@@ -1760,18 +1787,18 @@ async function MineKhan() {
 				data: msg
 			}))
 		}
-		chat(`${currentUser.username}: ${msg}`)
+		chat(`${currentUser.username}: ${msg}`, "lightgray")
 	}
 
 	let commands = new Map()
 	commands.set("ban", args => {
 		let username = args.join(" ")
 		if (!username) {
-			chat(`Please provide a username. Like /ban Willard`)
+			chat(`Please provide a username. Like /ban Willard`, "tomato")
 			return
 		}
 		if (!window.ban) {
-			chat("This is a singleplayer world. There's nobody to ban.")
+			chat("This is a singleplayer world. There's nobody to ban.", "tomato")
 			return
 		}
 		window.ban(username)
@@ -1781,7 +1808,7 @@ async function MineKhan() {
 			window.online()
 		}
 		else {
-			chat("You're all alone. Sorry.")
+			chat("You're all alone. Sorry.", "tomato")
 		}
 	})
 
@@ -1823,14 +1850,21 @@ async function MineKhan() {
 			host = true
 		}
 		multiplayer = new WebSocket("wss://willard.fun/ws?target=" + target)
+		multiplayer.binaryType = "arraybuffer"
 		multiplayer.onopen = () => {
+			let password = ""
+			if (!host && !worlds[target].public) password = prompt(`What's the password for ${worlds[target].name}?`) || ""
 			multiplayer.send(JSON.stringify({
-				type: "connect"
+				type: "connect",
+				password
 			}))
 			if (host) {
+				let password = prompt("Enter a password to make this a private world, or leave it blank for a public world.") || ""
 				multiplayer.send(JSON.stringify({
 					type: "init",
-					name: world.name
+					name: world.name,
+					version,
+					password
 				}))
 			}
 			multiplayer.pos = setInterval(() => multiplayer.send(JSON.stringify({
@@ -1840,6 +1874,12 @@ async function MineKhan() {
 		}
 		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
+			if (typeof msg.data !== "string" && screen === "multiplayer menu") {
+				world = new World(true)
+				world.loadSave(new Uint8Array(msg.data))
+				changeScene("loading")
+				return
+			}
 			let packet = JSON.parse(msg.data)
 			if (packet.type === "setBlock") {
 				let a = packet.data
@@ -1850,23 +1890,15 @@ async function MineKhan() {
 			}
 			else if (packet.type === "connect") {
 				if (host) {
-					multiplayer.send(JSON.stringify({
-						type: "save",
-						data: world.getSaveString()
-					}))
+					multiplayer.send(world.getSaveString())
 				}
-				chat(`${packet.author} has joined.`)
-			}
-			else if (packet.type === "save" && screen === "multiplayer menu") {
-				world = new World(true)
-				world.loadSave(packet.data)
-				changeScene("loading")
+				chat(`${packet.author} has joined.`, "#6F6FFB")
 			}
 			else if (packet.type === "users") {
-				chat(packet.data.join(", "))
+				chat(packet.data.join(", "), "lightgreen")
 			}
 			else if (packet.type === "ban") {
-				chat(packet.data)
+				chat(packet.data, "lightgreen")
 			}
 			else if (packet.type === "pos") {
 				let pos = packet.data
@@ -1885,8 +1917,11 @@ async function MineKhan() {
 			else if (packet.type === "error") {
 				multiplayerError = packet.data
 			}
+			else if (packet.type === "debug") {
+				chat(packet.data, "pink", "Server")
+			}
 			else if (packet.type === "dc") {
-				chat(`${packet.author} has disconnected.`)
+				chat(`${packet.author} has disconnected.`, "tomato")
 				delete playerPositions[packet.author]
 				delete playerEntities[packet.author]
 			}
@@ -1899,17 +1934,17 @@ async function MineKhan() {
 				}
 			}
 			else if (packet.type === "chat") {
-				chat(`${packet.author}: ${packet.data}`)
+				chat(packet.data, "white", packet.author)
 			}
 		}
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				if (multiplayerError) alert(`Connection lost! ${multiplayerError}`)
+				if (screen === "play") alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
-			else if (multiplayerError) {
-				alert(`Connection lost! ${multiplayerError || "Willard probably restarted the server. You can re-open your world from the pause menu."}`)
+			else if (screen === "play") {
+				alert(`Connection lost! ${multiplayerError || "You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -1925,15 +1960,15 @@ async function MineKhan() {
 
 		window.ban = function(username) {
 			if (!multiplayer) {
-				chat("Not in a multiplayer world.")
+				chat("Not in a multiplayer world.", "tomato")
 				return
 			}
 			if (!host) {
-				chat("You don't have permission to do that.")
+				chat("You don't have permission to do that.", "tomato")
 				return
 			}
 			if (username.trim().toLowerCase() === "willard") {
-				chat("You cannot ban Willard. He created this game and is paying for this server.")
+				chat("You cannot ban Willard. He created this game and is paying for this server.", "tomato")
 				return
 			}
 			multiplayer.send(JSON.stringify({
@@ -1958,11 +1993,6 @@ async function MineKhan() {
 
 	let fogDist = 16
 
-	emptySection.setWorld(world)
-	emptySection.setCaves(caves)
-	fullSection.setWorld(world)
-	fullSection.setCaves(caves)
-
 	// const wasm = await WebAssembly.instantiateStreaming("/world.wasm", {})
 	// const { memory } = wasm.instance.exports
 
@@ -1970,7 +2000,6 @@ async function MineKhan() {
 		constructor(empty) {
 			if (!empty) {
 				setSeed(Math.random() * 2000000000 | 0)
-				p.y = superflat ? 6 : round(noiseProfile.noise(8 * generator.smooth, 8 * generator.smooth) * generator.height) + 2 + generator.extra
 			}
 
 			generatedChunks = 0
@@ -1988,64 +2017,24 @@ async function MineKhan() {
 			this.populateQueue = []
 			this.generateQueue = []
 			this.lightingQueue = []
-			this.loadQueue = []
 			this.meshQueue = []
-			this.loadFrom = []
+			this.loadFrom = {}
+			this.loadKeys = []
+			this.loading = false
 			this.entities = []
 			this.eventQueue = []
 			this.lastChunk = ","
 			this.caves = caves
 			this.initTime = Date.now()
 			this.tickCount = 0
+			this.settings = settings
 			this.lastTick = performance.now()
-			this.skybox = getSkybox(gl, glCache)
 			// this.memory = memory
 			// this.freeMemory = []
 		}
 		initMemory() {
 			// Reserve first 256 bytes for settings or whatever
 			this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
-		}
-		genChunk(chunk) {
-			let trueX = chunk.x
-			let trueZ = chunk.z
-
-			const { grass, dirt, stone, bedrock } = blockIds
-
-			if (chunk.generated) {
-				return false
-			}
-
-			let smoothness = generator.smooth
-			let hilliness = generator.height
-			let gen = 0
-			for (let i = 0; i < 16; i++) {
-				for (let k = 0; k < 16; k++) {
-					gen = superflat ? 4 : round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + generator.extra
-					chunk.tops[k * 16 + i] = gen
-
-					let index = i * 16 + k
-					chunk.blocks[index] = bedrock
-					index += 256
-					for (let max = (gen - 3) * 256; index < max; index += 256) {
-						chunk.blocks[index] = stone
-					}
-					chunk.blocks[index] = dirt
-					chunk.blocks[index + 256] = dirt
-					chunk.blocks[index + 512] = dirt
-					chunk.blocks[index + 768] = grass
-
-					// chunk.setBlock(i, gen, k, grass)
-					// chunk.setBlock(i, gen - 1, k, dirt)
-					// chunk.setBlock(i, gen - 2, k, dirt)
-					// chunk.setBlock(i, gen - 3, k, dirt)
-					// for (let j = 1; j < gen - 3; j++) {
-					// 	chunk.setBlock(i, j, k, stone)
-					// }
-					// chunk.setBlock(i, 0, k, bedrock)
-				}
-			}
-			chunk.generated = true
 		}
 		updateBlock(x, y, z) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
@@ -2321,9 +2310,6 @@ async function MineKhan() {
 			if (controlMap.breakBlock.pressed && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
 				changeWorldBlock(0)
 			}
-			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
-				newWorldBlock()
-			}
 
 			for (let i = 0; i < this.sortedChunks.length; i++) {
 				this.sortedChunks[i].tick()
@@ -2340,10 +2326,9 @@ async function MineKhan() {
 			// Make sure there's only 1 "world gen" loop running at a time
 			if (this.ticking) return
 			this.ticking = true
-			console.log("Beginning world gen")
 
 			let doneWork = true
-			while(doneWork && (screen === "play" || screen === "loading")) {
+			while (doneWork && (screen === "play" || screen === "loading")) {
 				doneWork = false
 				debug.start = performance.now()
 				if (this.meshQueue.length) {
@@ -2357,8 +2342,7 @@ async function MineKhan() {
 
 				if (this.generateQueue.length && !doneWork) {
 					let chunk = this.generateQueue.pop()
-					chunk.getCaveData() // Queue up the multithreaded cave gen
-					this.genChunk(chunk)
+					chunk.generate()
 					doneWork = true
 				}
 
@@ -2373,19 +2357,14 @@ async function MineKhan() {
 					doneWork = true
 				}
 
-				// A saved chunk is being loaded
-				if (this.loadQueue.length && !doneWork) {
-					while (this.loadQueue.length) this.loadQueue.pop().load()
-					doneWork = true
-				}
-
 				// All saved chunks are loaded, so spread light
-				if (!this.loadFrom.length && this.lightingQueue.length && !doneWork) {
-					this.lightingQueue.pop().fillLight()
+				if (!doneWork && this.lightingQueue.length) {
+					let chunk = this.lightingQueue.pop()
+					chunk.fillLight()
 					doneWork = true
 				}
 
-				if (this.chunkGenQueue.length && !doneWork && !this.lightingQueue.length) {
+				if (!doneWork && this.chunkGenQueue.length && !this.lightingQueue.length) {
 					let chunk = this.chunkGenQueue[0]
 					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
 						// The requirements haven't been filled yet; don't do anything else.
@@ -2410,11 +2389,64 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork && (screen !== "loading" || !this.loadQueue.length)) await window.yieldThread()
+				if (doneWork/* && screen !== "loading"*/) await window.yieldThread()
 			}
 			this.ticking = false
 		}
+		async load() {
+			if (this.loading) return false
+			if (!this.loadKeys.length) return true
+			this.loading = true
+
+			let startTime = Date.now()
+
+			do {
+				let [cx, cz] = this.loadKeys.pop().split(",")
+				cx = +cx
+				cz = +cz
+
+				this.loadChunks(cx, cz, false, 4)
+
+				// Fill chunks with blocks
+				for (let x = cx - 2; x <= cx + 2; x++) {
+					for (let z = cz - 2; z <= cz + 2; z++) {
+						let chunk = this.chunks[x][z]
+						if (!chunk.generated) chunk.generate()
+					}
+				}
+
+				// Fill them with caves
+				if (caves) {
+					let promises = []
+					for (let x = cx - 1; x <= cx + 1; x++) {
+						for (let z = cz - 1; z <= cz + 1; z++) {
+							let chunk = this.chunks[x][z]
+							if (!chunk.caves) promises.push(chunk.carveCaves())
+						}
+					}
+					await Promise.all(promises)
+				}
+
+				// Fill them with trees and ores
+				for (let x = cx - 1; x <= cx + 1; x++) {
+					for (let z = cz - 1; z <= cz + 1; z++) {
+						let chunk = this.chunks[x][z]
+						if (!chunk.populated) chunk.populate(trees)
+					}
+				}
+
+				// Load blocks
+				this.chunks[cx][cz].load()
+			} while(Date.now() - startTime < 50 && this.loadKeys.length)
+			this.loading = false
+		}
 		render() {
+			// Was in tick; moved here just for joseph lol
+			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
+				lookingAt()
+				newWorldBlock()
+			}
+
 			initModelView(p)
 
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -2425,7 +2457,7 @@ async function MineKhan() {
 			let time = 0
 			if (multiplayer) time = Date.now()
 			else time = this.tickCount * 50 + (performance.now() - this.lastTick) % 50
-			this.skybox(time / 1000 + 150, matrix)
+			skybox(time / 1000 + 150, matrix)
 			use3d()
 
 			p2.x = round(p.x)
@@ -2487,16 +2519,16 @@ async function MineKhan() {
 			if (multiplayer) {
 				for (let name in playerEntities) {
 					const entity = playerEntities[name]
-					entity.update()
+					// entity.update()
 					entity.render()
 				}
 			}
 			gl.useProgram(program3D)
 		}
-		loadChunks() {
-			let renderDistance = settings.renderDistance + 3
-			let cx = p.x >> 4
-			let cz = p.z >> 4
+		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 3) {
+			// let renderDistance = settings.renderDistance + 3
+			cx ??= p.x >> 4
+			cz ??= p.z >> 4
 			p.cx = cx
 			p.cz = cz
 			let minChunkX = cx - renderDistance
@@ -2534,12 +2566,13 @@ async function MineKhan() {
 				}
 			}
 
-			this.sortedChunks = this.loaded.filter(renderFilter)
-			this.sortedChunks.sort(sortChunks)
-			this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
+			if (sort) {
+				this.sortedChunks = this.loaded.filter(renderFilter)
+				this.sortedChunks.sort(sortChunks)
+				this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
+			}
 		}
 		getSaveString() {
-			console.log(inventory)
 			let edited = []
 			for (let x in this.chunks) {
 				for (let z in this.chunks[x]) {
@@ -2551,6 +2584,7 @@ async function MineKhan() {
 			}
 
 			let blockSet = new Set()
+			let sectionMap = {}
 			for (let chunk of edited) {
 				let changes = false
 				let blocks = chunk.blocks
@@ -2559,6 +2593,22 @@ async function MineKhan() {
 					if (blocks[i] !== original[i]) {
 						blockSet.add(blocks[i])
 						changes = true
+						let y = i >> 8
+						let x = (i >> 4 & 15) + chunk.x
+						let z = (i & 15) + chunk.z
+						let str = `${x>>3},${y>>3},${z>>3}` // 8x8x8 sections
+						if (!sectionMap[str]) {
+							sectionMap[str] = []
+							for (let i = 0; i < 6; i++) sectionMap[str].push(new Int16Array(8*8*8).fill(-1))
+						}
+
+						// 6 copies of the chunk, all oriented in different directions so we can see which one compresses the most
+						sectionMap[str][0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+						sectionMap[str][1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
+						sectionMap[str][2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
+						sectionMap[str][3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
+						sectionMap[str][4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
+						sectionMap[str][5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
 					}
 				}
 				if (!changes) {
@@ -2567,81 +2617,201 @@ async function MineKhan() {
 			}
 
 			let blocks = Array.from(blockSet)
-			let pallete = {}
-			blocks.forEach((block, index) => pallete[block] = index)
+			let palette = {}
+			blocks.forEach((block, index) => palette[block] = index)
+			let paletteBits = BitArrayBuilder.bits(blocks.length)
 
-			let rnd = round
-			let options = p.flying | superflat << 1 | p.spectator << 2 | caves << 3 | trees << 4
+			let ver = version.split(" ")[1].split(".").map(Number)
 
-			let str = world.name + ";" + worldSeed.toString(36) + ";"
-				+ rnd(p.x).toString(36) + "," + rnd(p.y).toString(36) + "," + rnd(p.z).toString(36) + ","
-				+ (p.rx * 100 | 0).toString(36) + "," + (p.ry * 100 | 0).toString(36) + "," + options.toString(36) + ";"
-				+ version + ";"
-				+ blocks.map(b => b.toString(36)).join(",") + ";"
+			let bab = new BitArrayBuilder()
+			bab.add(this.name.length, 8)
+			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
+			bab.add(worldSeed, 32)
+			bab.add(this.tickCount, 32)
+			bab.add(p.x, 20).add(Math.min(p.y, 255), 8).add(p.z, 20)
+			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
+			for (let block of inventory.hotbar) bab.add(block, 16)
+			bab.add(inventory.hotbarSlot, 4)
+			bab.add(p.flying, 1).add(p.spectator, 1)
+			bab.add(superflat, 1).add(caves, 1).add(trees, 1)
+			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
+			bab.add(blocks.length, 16)
+			for (let block of blocks) bab.add(block, 16)
 
-			for (let i = 0; i < edited.length; i++) {
-				let chunk = edited[i]
-				if (!chunk.edited) {
-					continue
-				}
-				let blocks = chunk.blocks
-				let original = chunk.originalBlocks
-				str += (chunk.x / 16).toString(36) + ",0," + (chunk.z / 16).toString(36) + ","
-				for (let j = 0; j < original.length; j++) {
-					if (blocks[j] !== original[j]) {
-						str += (pallete[blocks[j]] << 16 | j).toString(36) + ","
+			let sections = Object.entries(sectionMap)
+			bab.add(sections.length, 32)
+			for (let [coords, section] of sections) {
+				let [sx, sy, sz] = coords.split(",").map(Number)
+				bab.add(sx, 16).add(sy, 5).add(sz, 16)
+
+				// Determine the most compact orientation by checking all 6!
+				let bestBAB = null
+				for (let i = 0; i < 6; i++) {
+					let bab = new BitArrayBuilder()
+
+					let blocks = section[i]
+					bab.add(i, 3)
+
+					let run = null
+					let runs = []
+					let singles = []
+					for (let i = 0; i < blocks.length; i++) {
+						const block = blocks[i]
+						if (block >= 0) {
+							if (!run && i < blocks.length - 2 && blocks[i + 1] >= 0 && blocks[i + 2] >= 0) {
+								run = [i, []]
+								runs.push(run)
+							}
+							if (run) {
+								if (run[1].length && block === run[1].at(-1)[1]) run[1].at(-1)[0]++
+								else run[1].push([1, block])
+							}
+							else singles.push([i, blocks[i]])
+						}
+						else run = null
+					}
+
+					bab.add(runs.length, 8)
+					bab.add(singles.length, 9)
+					for (let [start, blocks] of runs) {
+						// Determine the number of bits needed to store the lengths of each block type
+						let maxBlocks = 0
+						for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
+						let lenBits = BitArrayBuilder.bits(maxBlocks)
+
+						bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
+						for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
+					}
+					for (let [index, block] of singles) {
+						bab.add(index, 9).add(palette[block], paletteBits)
+					}
+					if (!bestBAB || bab.bitLength < bestBAB.bitLength) {
+						bestBAB = bab
 					}
 				}
-				str = str.slice(0, str.length - 1) //Remove trailing comma
-				str += ";"
+				bab.append(bestBAB)
 			}
-			if (str.match(/;$/)) str = str.slice(0, str.length - 1)
-			return str
+			return bab.array
 		}
-		loadSave(str) {
-			let data = str.split(";")
-
-			this.name = data.shift()
-			setSeed(parseInt(data.shift(), 36))
-
-			let playerData = data.shift().split(",")
-			p.x = parseInt(playerData[0], 36)
-			p.y = parseInt(playerData[1], 36)
-			p.z = parseInt(playerData[2], 36)
-			p.rx = parseInt(playerData[3], 36) / 100
-			p.ry = parseInt(playerData[4], 36) / 100
-			let options = parseInt(playerData[5], 36)
-			p.flying = options & 1
-			p.spectator = options >> 2 & 1
-			superflat = options >> 1 & 1
-			caves = options >> 3 & 1
-			trees = options >> 4 & 1
-
-			let version = data.shift()
-			if (version.split(" ")[1].split(".").join("") < 80) {
-				console.log("Loading old save")
-				return this.loadOldSave(str) // Abort trying to load this with the 0.8.0 algorithm
-			}
-			this.version = version
-
-			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
-			this.loadFrom = []
-
-			for (let i = 0; data.length; i++) {
-				let blocks = data.shift().split(",")
-				this.loadFrom.push({
-					x: parseInt(blocks.shift(), 36),
-					y: parseInt(blocks.shift(), 36),
-					z: parseInt(blocks.shift(), 36),
-					blocks: [],
-				})
-				for (let j = 0; j < blocks.length; j++) {
-					let block = parseInt(blocks[j], 36)
-					let index = block & 0xffff
-					let pid = block >> 16
-					this.loadFrom[i].blocks[index] = pallete[pid]
+		loadSave(data) {
+			if (typeof data === "string") {
+				if (data.includes("Alpha")) {
+					try {
+						return this.loadOldSave(data)
+					}
+					catch(e) {
+						alert("Unable to load save string.")
+					}
+				}
+				try {
+					let bytes = atob(data)
+					let arr = new Uint8Array(bytes.length)
+					for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+					data = arr
+				}
+				catch(e) {
+					alert("Malformatted save string. Unable to load")
+					throw e
 				}
 			}
+
+			let reader = new BitArrayReader(data)
+
+			let nameLen = reader.read(8)
+			this.name = ""
+			for (let i = 0; i < nameLen; i++) this.name += String.fromCharCode(reader.read(8))
+			setSeed(reader.read(32))
+			this.tickCount = reader.read(32)
+
+			p.x = reader.read(20, true)
+			p.y = reader.read(8)
+			p.z = reader.read(20, true)
+			p.rx = reader.read(11, true) / 100
+			p.ry = reader.read(11, true) / 100
+			for (let i = 0; i < 9; i++) inventory.hotbar[i] = reader.read(16)
+			inventory.hotbarSlot = reader.read(4)
+			p.flying = reader.read(1)
+			p.spectator = reader.read(1)
+
+			superflat = reader.read(1)
+			caves = reader.read(1)
+			trees = reader.read(1)
+			this.version = "Alpha " + [reader.read(8), reader.read(8), reader.read(8)].join(".")
+
+			let paletteLen = reader.read(16)
+			let palette = []
+			let paletteBits = BitArrayBuilder.bits(paletteLen)
+			for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+
+			// sectionMap[str][0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+			// sectionMap[str][1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
+			// sectionMap[str][2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
+			// sectionMap[str][3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
+			// sectionMap[str][4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
+			// sectionMap[str][5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
+			const getIndex = [
+				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
+				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 3 & 7),
+				(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 0 & 7),
+				(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 3 & 7),
+				(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 6 & 7),
+				(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
+			]
+
+			let sectionCount = reader.read(32)
+			let chunks = {}
+			for (let i = 0; i < sectionCount; i++) {
+				let x = reader.read(16, true) * 8
+				let y = reader.read(5, false) * 8
+				let z = reader.read(16, true) * 8
+				let orientation = reader.read(3)
+
+				let cx = x >> 4
+				let cz = z >> 4
+
+				// Make them into local chunk coords
+				x = x !== cx * 16 ? 8 : 0
+				z = z !== cz * 16 ? 8 : 0
+
+				let ckey = `${cx},${cz}`
+				let chunk = chunks[ckey]
+				if (!chunk) {
+					chunk = []//new Int16Array(16*256*16).fill(-1)
+					chunks[ckey] = chunk
+				}
+				let runs = reader.read(8)
+				let singles = reader.read(9)
+				for (let j = 0; j < runs; j++) {
+					let index = reader.read(9)
+					let types = reader.read(9)
+					let lenSize = reader.read(4)
+					for (let k = 0; k < types; k++) {
+						let chain = reader.read(lenSize) + 1
+						let block = reader.read(paletteBits)
+						for (let l = 0; l < chain; l++) {
+							chunk[getIndex[orientation](index, x, y, z)] = palette[block]
+							index++
+						}
+					}
+				}
+				for (let j = 0; j < singles; j++) {
+					let index = reader.read(9)
+					let block = reader.read(paletteBits)
+					chunk[getIndex[orientation](index, x, y, z)] = palette[block]
+				}
+			}
+
+			this.loadFrom = chunks
+			this.loadKeys = Object.keys(chunks)
+			// for (let pos in chunks) {
+			// 	let [x, z] = pos.split(",")
+			// 	this.loadFrom.push({
+			// 		x: +x,
+			// 		y: 0,
+			// 		z: +z,
+			// 		blocks: chunks[pos]
+			// 	})
+			// }
 		}
 		loadOldSave(str) {
 			let data = str.split(";")
@@ -2665,28 +2835,32 @@ async function MineKhan() {
 			let version = data.shift()
 			this.version = version
 
-			let pallete = data.shift().split(",").map(n => parseInt(n, 36))
-			this.loadFrom = []
+			let palette = data.shift().split(",").map(n => parseInt(n, 36))
+			let chunks = {}
 
 			for (let i = 0; data.length; i++) {
 				let blocks = data.shift().split(",")
-				this.loadFrom.push({
-					x: parseInt(blocks.shift(), 36),
-					y: parseInt(blocks.shift(), 36),
-					z: parseInt(blocks.shift(), 36),
-					blocks: [],
-				})
+				let cx = parseInt(blocks.shift(), 36)
+				let cy = parseInt(blocks.shift(), 36)
+				let cz = parseInt(blocks.shift(), 36)
+				let str = `${cx},${cz}`
+				if (!chunks[str]) chunks[str] = []
+				let chunk = chunks[str]
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36)
 					// Old index was 0xXYZ, new index is 0xYYXZ
 					let x = block >> 8 & 15
 					let y = block >> 4 & 15
 					let z = block & 15
-					let index = (this.loadFrom[i].y * 16 + y) * 256 + x * 16 + z
+					let index = (cy * 16 + y) * 256 + x * 16 + z
 					let pid = block >> 12
-					this.loadFrom[i].blocks[index] = pallete[pid]
+
+					chunk[index] = palette[pid]
 				}
 			}
+
+			this.loadFrom = chunks
+			this.loadKeys = Object.keys(chunks)
 		}
 	}
 
@@ -3056,8 +3230,11 @@ async function MineKhan() {
 					world.edited = data.edited
 					if (data.code) code = data.code
 					else {
-						let cloudWorld = await fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`).then(res => res.json())
-						code = cloudWorld.code
+						let cloudWorld = await fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`).then(res => {
+							if (res.headers.get("content-type") === "application/octet-stream") return res.arrayBuffer().then(a => new Uint8Array(a))
+							else return res.text()
+						})
+						code = cloudWorld
 					}
 				}
 			}
@@ -3102,7 +3279,7 @@ async function MineKhan() {
 			initMultiplayer()
 		}, () => !!multiplayer || !location.href.startsWith("https://willard.fun"))
 		Button.add(width / 2, 475, 300, 40, "Exit Without Saving", "pause", () => {
-			savebox.value = world.getSaveString()
+			// savebox.value = world.getSaveString()
 			if (multiplayer) {
 				multiplayer.close()
 			}
@@ -3111,7 +3288,7 @@ async function MineKhan() {
 		})
 
 		// Options buttons
-		Button.add(width / 2, 455, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
+		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
 
 		// Comingsoon menu buttons
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
@@ -3137,6 +3314,7 @@ async function MineKhan() {
 			}
 		})
 		Slider.add(width/2, 365, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
+		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
 	}
 
 	function drawIcon(x, y, id) {
@@ -3712,10 +3890,10 @@ async function MineKhan() {
 	let maxLoad = 1
 	function startLoad() {
 		// Runs when the loading screen is opened; cache the player's position
-		p2.x = p.x
-		p2.y = p.y
-		p2.z = p.z
-		maxLoad = world.loadFrom.length + 9
+		// p2.x = p.x
+		// p2.y = p.y
+		// p2.z = p.z
+		maxLoad = world.loadKeys.length + 9
 	}
 	function initWebgl() {
 		if (!win.gl) {
@@ -3761,6 +3939,7 @@ async function MineKhan() {
 		program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
 		program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
 		programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
+		skybox = getSkybox(gl, glCache)
 
 		gl.useProgram(program2D)
 		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
@@ -3781,6 +3960,7 @@ async function MineKhan() {
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
 		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
 		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
+		glCache.uSun = gl.getUniformLocation(program3D, "uSun")
 		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
 		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
 		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
@@ -4269,7 +4449,7 @@ async function MineKhan() {
 
 		let servers = await getWorlds()
 
-		function addWorld(name, host, online, id) {
+		function addWorld(name, host, online, id, version, password) {
 			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = () => {
@@ -4283,6 +4463,8 @@ async function MineKhan() {
 
 			div.innerHTML += "Hosted by " + sanitize(host) + br
 			div.innerHTML += online + " players online" + br
+			div.innerHTML += version + br
+			if (password) div.innerHTML += "Password-protected" + br
 
 			window.worlds.appendChild(div)
 		}
@@ -4290,7 +4472,7 @@ async function MineKhan() {
 		worlds = {}
 
 		for (let data of servers) {
-			addWorld(data.name, data.host, data.online, data.target)
+			addWorld(data.name, data.host, data.online, data.target, data.version, !data.public)
 			worlds[data.target] = data
 		}
 		window.worlds.onclick = Button.draw
@@ -4401,41 +4583,37 @@ async function MineKhan() {
 			// This is really stupid, but it basically works by teleporting the player around to each chunk I'd like to load.
 			// If chunks loaded from a save aren't generated, they're deleted from the save, so this loads them all.
 
-			let sub = maxLoad - world.loadFrom.length - 9
+			let sub = maxLoad - world.loadKeys.length - 9
 			let standing = true
-			if (world.loadFrom.length) {
-				let load = world.loadFrom[0]
-				p.x = load.x * 16
-				p.y = load.y * 16
-				p.z = load.z * 16
-				standing = false
-			}
-			else {
-				p.x = p2.x
-				p.y = p2.y
-				p.z = p2.z
 
-				let cx = p.x >> 4
-				let cz = p.z >> 4
+			let cx = p.x >> 4
+			let cz = p.z >> 4
 
-				for (let x = cx - 1; x <= cx + 1; x++) {
-					for (let z = cz - 1; z <= cz + 1; z++) {
-						if (!world.chunks[x] || !world.chunks[x][z] || !world.chunks[x][z].buffer) {
-							standing = false
-						}
-						else {
-							sub++
-						}
+			for (let x = cx - 1; x <= cx + 1; x++) {
+				for (let z = cz - 1; z <= cz + 1; z++) {
+					if (!world.chunks[x] || !world.chunks[x][z] || !world.chunks[x][z].buffer) {
+						standing = false
+					}
+					else {
+						sub++
 					}
 				}
+			}
+			if (world.loadKeys.length) {
+				world.load()
+				standing = false
+			}
+			else if (!standing) {
+				world.tick()
 			}
 
 			if (standing) {
 				play()
+				if (maxLoad === 9 && !p.flying && !p.spectator) {
+					p.y = world.chunks[cx][cz].tops[(p.z & 15) * 16 + (p.x & 15)] + 2
+				}
 				return
 			}
-
-			world.tick()
 
 			let progress = round(100 * sub / maxLoad)
 			dirt()

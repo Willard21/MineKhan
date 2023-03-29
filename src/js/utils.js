@@ -75,6 +75,7 @@ class BitArrayBuilder {
 		this.data = [] // Byte array
 	}
 	add(num, bits) {
+		if (+num !== +num || +bits !== +bits || +bits < 0) throw "Broken"
 		num &= -1 >>> 32 - bits
 		let index = this.bitLength >>> 3
 		let openBits = 8 - (this.bitLength & 7)
@@ -86,6 +87,29 @@ class BitArrayBuilder {
 			openBits = 8
 		}
 		return this // allow chaining like arr.add(x, 16).add(y, 8).add(z, 16)
+	}
+	/**
+	 * Takes all the bits from another BAB and adds them to this one.
+	 * @param {BitArrayBuilder} bab The BAB to append
+	 */
+	append(bab) {
+		// If our bits are already aligned, just add them directly
+		if ((this.bitLength & 7) === 0) {
+			this.data.push(...bab.data)
+			this.bitLength += bab.bitLength
+			return
+		}
+
+		// Add them 1 at a time, except for the last one
+		let bits = bab.bitLength
+		let i = 0
+		while (bits > 7) {
+			this.add(bab.data[i++], 8)
+			bits -= 8
+		}
+		if (bits) {
+			this.add(bab.data[i] >>> 8 - bits, bits)
+		}
 	}
 	get array() {
 		return new Uint8Array(this.data)
@@ -106,13 +130,16 @@ class BitArrayReader {
 		this.data = array // Byte array; values are assumed to be under 256
 		this.bit = 0
 	}
-	read(bits, pos = this.bit) {
+	read(bits, negative = false) {
+		let openBits = 32 - bits
 		let { data, bit } = this
-		this.bit = pos + bits // Move pointer
-		if (pos > data.length * 8) return 0
+		this.bit += bits // Move pointer
+		if (bit > data.length * 8) {
+			throw "You done messed up A-A-Ron"
+		}
 
 		let unread = 8 - (bit & 7)
-		let index = pos >>> 3
+		let index = bit >>> 3
 		let ret = 0
 		while (bits > 0) {
 			let n = data[index] & -1 >>> 32 - unread
@@ -120,6 +147,10 @@ class BitArrayReader {
 			bits -= unread
 			unread = 8
 			index++
+		}
+		if (negative) {
+			// console.log("Negative", ret, ret << openBits >> openBits)
+			return ret << openBits >> openBits
 		}
 		return ret
 	}

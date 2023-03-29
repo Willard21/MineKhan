@@ -11,9 +11,11 @@ let plugins = [
 	})
 ]
 if (__dirname.includes("willard/server/dev")) {
-	output = "../../public/minekhan"
-	plugins.push(new InlinePlugin()) // This breaks the auto build thing, so only do it in production
+	output = "../../public/minekhan/beta"
+	// plugins.push(new InlinePlugin()) // This breaks the auto build thing, so only do it in production
 }
+// else plugins.push(new InlinePlugin())
+output = "/home/willard/vps/server/public/minekhan/beta"
 
 module.exports = {
 	mode: "none",

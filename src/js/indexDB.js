@@ -66,4 +66,4 @@ async function deleteFromDB(id) {
 	})
 }
 
-export { createDatabase, loadFromDB, saveToDB, deleteFromDB };
+export { createDatabase, loadFromDB, saveToDB, deleteFromDB }
