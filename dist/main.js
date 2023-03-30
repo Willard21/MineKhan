@@ -3713,8 +3713,8 @@ class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__.Entity {
 		modelViewProjectionMatrix.transpose()
 
 		const lightLevel = 1 // min(max(skyLight, blockLight) * 0.9 + 0.1, 1.0)
-		gl.bindTexture(gl.TEXTURE_2D, _texture_js__WEBPACK_IMPORTED_MODULE_2__.textureAtlas)
 		gl.uniform1i(glCache.uSamplerEntity, 0)
+		// gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 		gl.uniform1f(glCache.uLightLevelEntity, lightLevel)
 		gl.uniformMatrix4fv(glCache.uViewEntity, false, modelViewProjectionMatrix.elements)
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
@@ -4292,7 +4292,7 @@ async function MineKhan() {
 		world.edited = now
 		if (location.href.startsWith("https://willard.fun/")) {
 			console.log('Saving to server')
-			await fetch(`https://willard.fun/minekhan/saves?id=${world.id}&edited=${now}&name=${encodeURIComponent(world.name)}&version=${encodeURIComponent(version)}`, {
+			await fetch(`https://willard.fun/minekhan/saves?id=${world.id}&edited=${saveObj.edited}&name=${encodeURIComponent(world.name)}&version=${encodeURIComponent(version)}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/octet-stream"
@@ -5458,6 +5458,7 @@ async function MineKhan() {
 			}
 			return col
 		}
+		throw "Test"
 	}
 	let contacts = {
 		array: [],
@@ -5485,13 +5486,12 @@ async function MineKhan() {
 		const VY = p.velocity.y / steps
 		const VZ = p.velocity.z / steps
 
-		let pminX = floor(p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
-		let pmaxX = ceil(p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
-		let pminY = max(floor(p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
-		let pmaxY = min(ceil(p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
-		let pminZ = floor(p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
-		let pmaxZ = ceil(p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
-		let block = null
+		let pminX = floor(0.5 + p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
+		let pmaxX = ceil(-0.5 + p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
+		let pminY = max(floor(0.5 + p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
+		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
+		let pminZ = floor(0.5 + p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
+		let pmaxZ = ceil(-0.5 + p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 
 		for (let y = pmaxY; y >= pminY; y--) {
 			for (let x = pminX; x <= pmaxX; x++) {
@@ -5504,11 +5504,11 @@ async function MineKhan() {
 			}
 		}
 
-		let hasCollided = false
+		// let hasCollided = false
 		p.px = p.x
 		p.py = p.y
 		p.pz = p.z
-		for (let j = 1; j <= steps && !hasCollided; j++) {
+		for (let j = 1; j <= steps; j++) {
 			let px = p.x
 			let pz = p.z
 
@@ -5518,13 +5518,20 @@ async function MineKhan() {
 			p.canStepZ = false
 			p.y += VY
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], 0, VY, 0, block[3])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, 0, VY, 0, block)) {
 					p.velocity.y = 0
-					hasCollided = true
-					break
+					// hasCollided = true
+					// It doesn't matter that it checked the top blocks first.
+					// Slabs are technically level with cubes, but they're shorter.
+					// So if it checks a slab before checking a cube, exiting early
+					// could prevent the player from colliding with the cube.
+					// break <-- In other words, don't do this.
 				}
 			}
+
+			// Stepping works by letting you walk inside short hitboxes that you collide with in the x or z directions.
+			// Since collisions in the Y direction are checked first, you won't step until the next frame.
 			if (p.onGround) {
 				p.canStepX = true
 				p.canStepZ = true
@@ -5533,8 +5540,8 @@ async function MineKhan() {
 			var sneakLock = false, sneakSafe = false
 			if (p.sneaking) {
 				for (let i = 0; i < contacts.size; i++) {
-					block = contacts.array[i]
-					if (onBox(block[0], block[1], block[2], 1, 1, 1)) {
+					let [x, y, z] = contacts.array[i]
+					if (onBox(x, y, z, 1, 1, 1)) {
 						sneakLock = true
 						break
 					}
@@ -5544,16 +5551,17 @@ async function MineKhan() {
 			//Check collisions in the X direction
 			p.x += VX
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], VX, 0, 0, block[3])) {
-					if (p.canStepX && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, VX, 0, 0, block)) {
+					if (p.canStepX && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
 						continue
 					}
+					if (p.canStepX) p.x -= VX // Wasn't handled in `collided` since it thought it could step.
 					p.velocity.x = 0
-					hasCollided = true
+					// hasCollided = true
 					break
 				}
-				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
 					sneakSafe = true
 				}
 			}
@@ -5561,24 +5569,25 @@ async function MineKhan() {
 			if (sneakLock && !sneakSafe) {
 				p.x = px
 				p.velocity.x = 0
-				hasCollided = true
+				// hasCollided = true
 			}
 			sneakSafe = false
 
 			//Check collisions in the Z direction
 			p.z += VZ
 			for (let i = 0; i < contacts.size; i++) {
-				block = contacts.array[i]
-				if (collided(block[0], block[1], block[2], 0, 0, VZ, block[3])) {
-					if (p.canStepZ && !world.getBlock(block[0], block[1] + 1, block[2]) && !world.getBlock(block[0], block[1] + 2, block[2])) {
+				let [x, y, z, block] = contacts.array[i]
+				if (collided(x, y, z, 0, 0, VZ, block)) {
+					if (p.canStepZ && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
 						continue
 					}
 					// p.z = p.pz
+					if (p.canStepZ) p.z -= VZ // Wasn't handled in `collided` since it thought it could step.
 					p.velocity.z = 0
-					hasCollided = true
+					// hasCollided = true
 					break
 				}
-				if (sneakLock && onBox(block[0], block[1], block[2], 1, 1, 1)) {
+				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
 					sneakSafe = true
 				}
 			}
@@ -5586,7 +5595,7 @@ async function MineKhan() {
 			if (sneakLock && !sneakSafe) {
 				p.z = pz
 				p.velocity.z = 0
-				hasCollided = true
+				// hasCollided = true
 			}
 		}
 
@@ -5663,6 +5672,7 @@ async function MineKhan() {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
 			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.uniformMatrix)(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.transformation.translate(-x, -y, -z)
 		}
 		else {
 			//copyArr(modelView, matrix)
@@ -6041,11 +6051,11 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				if (multiplayerError) alert(`Connection lost! ${multiplayerError}`)
+				if (screen === "play") alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
-			else if (multiplayerError) {
-				alert(`Connection lost! ${multiplayerError || "Willard probably restarted the server. You can re-open your world from the pause menu."}`)
+			else if (screen === "play") {
+				alert(`Connection lost! ${multiplayerError || "You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
 			multiplayer = null
@@ -6796,11 +6806,13 @@ async function MineKhan() {
 		}
 		loadSave(data) {
 			if (typeof data === "string") {
-				if (data.includes("Alpha 0.7.1")) return this.loadOldSave(data)
-				if (data.includes("Ballz")) {
-					let arr = new Uint8Array(data.length)
-					for (let i = 0; i < arr.length; i++) arr[i] = data.charCodeAt(i)
-					return this.loadSave(arr)
+				if (data.includes("Alpha")) {
+					try {
+						return this.loadOldSave(data)
+					}
+					catch(e) {
+						alert("Unable to load save string.")
+					}
 				}
 				try {
 					let bytes = atob(data)
@@ -7329,9 +7341,11 @@ async function MineKhan() {
 					world.edited = data.edited
 					if (data.code) code = data.code
 					else {
-						let cloudWorld = await fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`).then(res => res.json())
-						code = new Uint8Array(cloudWorld.size)
-						for (let i = 0; i < code.length; i++) code[i] = cloudWorld.code.charCodeAt(i)
+						let cloudWorld = await fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`).then(res => {
+							if (res.headers.get("content-type") === "application/octet-stream") return res.arrayBuffer().then(a => new Uint8Array(a))
+							else return res.text()
+						})
+						code = cloudWorld
 					}
 				}
 			}
