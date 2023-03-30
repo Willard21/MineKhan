@@ -1,0 +1,22 @@
+{
+	"name": "MineKhan Desktop",
+	"short_name": "MineKhan",
+	"start_url": ".",
+	"display": "standalone",
+	"background_color": "#fff",
+	"description": "A minecraft clone programmed in JavaScript.",
+	"icons": [
+	  {
+		"src": "favicon.ico",
+		"sizes": "48x48",
+		"type": "image/png"
+	  }
+	],
+	"related_applications": [
+	  {
+		"platform": "web",
+		"url": "https://willard.fun"
+	  }
+	]
+  }
+  
