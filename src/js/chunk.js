@@ -950,6 +950,59 @@ class Chunk {
 					world.spawnBlock(wx - 1, top + 1, wz, blockIds.leaves)
 				}
 
+				const FLOWER   = 0x300
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+				}
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+				}
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+				}
+
 				// Blocks of each per chunk in Minecraft
 				// Coal: 185.5
 				// Iron: 111.5

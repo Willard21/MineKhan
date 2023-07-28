@@ -1470,9 +1470,9 @@ const texturesFunc = function (setPixel, getPixels) {
 				for (let y = 0; y < 16; ++y) {
 					const d = Math.random() * 0.25 + 0.65
 
-					const r = 0x54 * d
-					const g = 0xa0 * d
-					const b = 0x48 * d
+					const r = 0x4B * d
+					const g = 0x7D * d
+					const b = 0x40 * d
 
 					setPixel(n, x, y, r, g, b)
 				}
@@ -1492,9 +1492,9 @@ const texturesFunc = function (setPixel, getPixels) {
 				const m = random() * 4 + 1
 				for (let y = 0; y < m; ++y) {
 					const d = random() * 0.25 + 0.65
-					const r = 0x54 * d
-					const g = 0xa0 * d
-					const b = 0x48 * d
+					const r = 0x4B * d
+					const g = 0x7D * d
+					const b = 0x40 * d
 					setPixel(n, x, y, r, g, b)
 				}
 			}
@@ -1505,7 +1505,7 @@ const texturesFunc = function (setPixel, getPixels) {
 			for (let x = 0; x < 16; ++x) {
 				for (let y = 0; y < 16; ++y) {
 					const r = 0
-					const g = floor(random() * 30 + 100)
+					const g = floor(random() * 30 + 75)
 					const b = floor(random() * 30)
 					const a = random() < 0.35 ? 0x0 : 0xff
 
@@ -1535,7 +1535,7 @@ const texturesFunc = function (setPixel, getPixels) {
 		"chiseledQuartzBlockTop": "0g0g5ņÙYŖĖHŚĦZŊéWŖąZ4ĊĻMJĈhĘ4ë6ŇgB1ìEŇgD2ì-zg+Tí0biiR÷RK002öĘ0(ĊÂJiJJPAJPA00põ039kÈöpz8,2ö+wÑ@RëĚwÝRìík8hĞ1ìĘgiRĻúJĈ",
 		"chiseledStoneBricks": "0g0g7ĆÖZóEYÖĞYéŞZÇÒYÎðWåľY00]0ëRdĜłÖ+Ń&ŀAĞļü!090óáe2ŅÚĒÊe7JŀőÊ!nČïĒ)&cČìŏk!nČñE)aÿIBĐ)eðĲLEáeõĚİ!ÊdÉÑJÈáA2S0Jś:;ěç$üÂPAJPA",
 		"coalBlock": "0g0g5sÞZkÁHc(Z4gHEĊY0ü_ÑĎĸAĊăÒ)SFĞòÚĚP|ċ1AĚÃÚg9FĚă$J^ÚĞòÕiûÖiPÑüĸy2ÃÒCI4üłÚkTF(ÉEĊ^ÚJú5NúFĜ]ÚüX5g9ÚĊxÙíÃÚgÃÕJăQJòQüł",
-		"coalOre": "0g0g7÷-ZéŞZâľHÖĎY;ŚZ)ĺH?kH4íú|y0Bm04ĞıFĠôÖp90g{ČiiQČŁ5gòwÿĉ#QķQŐB6ÂP|J0ÚČ0igÃķĊRAmUĞù1ÒoăS+ÂAJ0d^1F+2ĂP^0ıPmüPFg1wkúAJÀAJS",
+		"coalOre": "0g0ga÷-ZéŞZâľHÖĎYËâZAJH-ŚH)ĺH$ĚZPzZ00ixzyhhhxxQTj)iiOAÄáxñhkyoÔĀÁiyBßy]VRyhg1x02A>wwiRyiÕÑhAAÄXh@ú02lÖäiiyigAñRw1kTM2Qiiy?ÐhQAhxQyykÇâÀ4þÂO2@UyAâRxiyhähTh0hyx2g1ih",
 		"cobblestone": "0g0g6ÚĞZÎðWĎĂHÁ?WĞłHóoY5C^óăl!ÈŋÄě?!ĈVĐmÕCíÕĈļ_KĿöCAđì_TãĬ?UļÕA!cĜbTęh|6wdþĹÆMÁSĜîÁĊó_wmüĈi$QģBmwÏĐr?MÈVmíÕ^ó8ĜlP)úT4ĿĐ",
 		"cyanConcrete": "0g0g3lĿYlŏYlĿH1IÀpE?SmkÀw6PÁB?S4k299úkÄRPÒÎwĊ?A2ÑIĀ8püUiSÒgý95Eòak?ý?1RÀFÀKSÒù",
 		"cyanWool": "0g0gelşYm8ZmFWmPHlşZm.WlŏYmÖZmÇHmoZlĿYmÇYmÖYm.H10zTÃKy6BGîā6pĎpôāĲF:ńĮ*x:ú#PģxçÇROÓimO6Ó_@1@pÎ1GîyJñÇGNhG*ģ1:Vģ<ÎĝTpmF6poÓý?GąGģOç*ĠJÂ24Vh<4lÓlhÓĤÓz%GÄļĮěFÖłāğĳFĚÃäh%gÑĚ1ĤúÉ4ô",
@@ -1543,15 +1543,15 @@ const texturesFunc = function (setPixel, getPixels) {
 		"darkOakLogTop": "0g0gb;ĨZ)ĉYAÞWsKZ{ĨY]ęHÀňY(ÝZ-úW;ĉW(úH1xizNj1g4Q??ÒUQTAGIĀāāIÏkãÑQ?Q]>čXVVVVPÂ)üÆòĀï]Á*ïÅVVïÆTBüÆÇýýPÀ5üÆÇïï]À5üÆVVýÆÁlXÆñòýPÂBüVVVV]Â)ü?QQ@]Ã)ĀĀIIII>ČQV?ÄVQTgNxg0iz(",
 		"darkOakPlanks": "0g0g7{ĨY]ęHÀňY-úW;ĉW(ÝZEKZ4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
 		"diamondBlock": "0g0g9_ĦHW÷HncHľZHZZZćťYÔŅWàŖWeŒZ00h01hg23QVO*ÄÐN4ÓàVKh7N4Ô*ÅK0GÂlâVã0ÔãÂlVÅK6VKo3VGãÒÄ1o3ÅGÓGK18lGãÔãK0ÏlGÓGÓÓ7ÏmãÒÄÓÓÅ8gÓVK65Ä8gÒÄ1gGKÏhGKh6Ó0ßgg1gÓ0ÔÆyíEIyIyI",
-		"diamondOre": "0g0g8÷-ZéŞZâľHÖĎYÔŅWćťYW÷HľZH4íú|y0Bm04ĞıFĠôÖr90g|īiiQČŁ5gòwÿŐ#ĻķQŢC6ÏP|J0ÚČ0mgÃśĊRAmVłg1ÒoăS+ÂAJ0dÊ1F+2Ħİó0ŃPrkPFg1wkúAJÀAJS",
+		"diamondOre": "0g0ga÷-ZéŞZâľHÒþHv|HGąWyÇY÷ģWľZHĊóW1gixzyg0hx(01iOxiOSjNzÄh01Ý*Ô1Ýyxhz(Þx2hgi-Ãiïzwy8U@Þ@hh3(åGO7gā*[1zïxh2nÞMB@Ô9úMxR(G3Nyhhg02*K1i3M2ÆU@20âÐxþ[ÝhiD01gÞyxhhhwhhh0",
 		"diorite": "0g0g6óEYĎóWĦţWŒĖYĶ;ZåŎY4üİPĀă)yR×,gÎ+E?ĠóÒĜbÕX_{oî|iŀö+Ň]ČıÖoŀhĠFM2óöĞTQĻÉúpbĉĚjKĐŇNxRò+lÚóAA(Ã&njÝü^wĐìÞīĸX6įöĊcÒ+ŇNgÉ",
 		"dirt": "0g0g7ĢlZýĜYåÃYÆřYðoHÚĞZâÑH4Č9PČg?ČÐSĈÉ9(J9Cĩ)yķBkaEðÂ%UÈ{üÉÖ)ù9Eù84Á]2Â$üòFkÃQČĂ?ČŁPwh?0ìKNÏFihČĎÃ{ĊRPAë?$ò{)9FXĺ1kòEiĊByÃ",
 		"emeraldBlock": "0g0g6nkHqěHîŁZ>įHnãWuÏY0000019AĂÖ]ń800w0Ëc)ûJ@Ë8w00mV8wJÚoÒcwăúĀ?c(ĂúĀ?8(ŋ4gÒc(ŋCgÒcħĄim?gĩPAþ?cB01ĠÒgJPAJËg]4ù8ļ+łÚĞłÖ",
-		"emeraldOre": "0g0g7÷-ZéŞZâľHÖĎYłťYnãW1ňY4íă|y0BiB4ĜóFĜĖPmİ06ħ0pÂQđÃwbòwăčÒ(gQë&4ĊPPĜħÖČ00gÒBĚRAJÛaÀŀÒkă^Ō!AJ4Ĉ1Þ%Ċ5İ+2ßČ]4üP,g1wkúwiÀAJS",
+		"emeraldOre": "0g0gc÷-ZéŞZâľHÖĎYÁčWłťYnãW1ňY*ÐZ>įHuÏYnkH00ixzyhhhQg01QNikÄyhAÄhhhÔhT0Ô2yxh4ìg02hgg9ĂRzzwx-ýæìxkTA]ÿēXy?Î?ÎĢ0yhmßmÝ0h1Q(1(xgjpĀNyhhh1åÅĉgiyQiçæĚN0kÄiEĈ2wixÔ1(1g0hh0yg0ih",
 		"glass": "0g0g5ĺĖYē|Y000æģHôcZ0000019AJPAú9wJPAû94JPAû8ČJPAû9AJPAü9AJPAû9AJPAü9AJPAü9AJPAü9AJPAü9AJPAüFAJPAk9AJPwüFAJPAúCpAJP9",
 		"glowstone": "0g0g8ŢÔHĵlHïRYÚiWZZZZĴYòċYÞNH5+T%^ÄĈYĸäŁb?ŋćŢĘÌĶgÃŗãŝèĲ_mćĐÕÈ2wĕKŔùb~ŋ>rĜÍä$āĉÓĦÂñīČĒe+ÿĘFùÂÑDŚÜDïĳĦğşnœ5őjĩÈŗ#ò_ĭíćÜyćŃlŏÍĞť",
 		"goldBlock": "0g0g9ŞNHšřWĹÃWZŠWZŢZZĜZZÐZZXYĵNH00h01hg23QVO*ÄÐN4ÓàVKh7N4Ô*ÅK0GÂlâVã0ÔãÂlVÅK6VKo3VGãÒÄ1o3ÅGÓGK18lGãÔãK0ÏlGÓGÓÓ7ÏmãÒÄÓÓÅ8gÓVK65Ä8gÒÄ1gGKÏhGKh6Ó0ßgg1gÓ0ÔÆyíEIyIyI",
-		"goldOre": "0g0g8÷-ZéŞZâľHÖĎYZĜYZŢHšĚYZZZ4íú|y0Bm04ĞıFĠôÖr90g|īiiQČŁ5gòwÿŐ#ĻķQŢC6ÏP|J0ÚČ0mgÃśĊRAmVłg1ÒoăS+ÂAJ0dÊ1F+2Ħİó0ŃPrkPFg1wkúAJÀAJS",
+		"goldOre": "0g0ga÷-ZâľHéŞZÖĎYąĩWËâZőÝZZĜYĊóWZŢH00hijhyyyiRzyz*xxO3UMlURw2*@TB@TizUÔ>0ÓíwzÔåÎjIgiwðã]hyyhOoÕíhmR3@8]0yNxxÔíë2VÃ2(I1OlQÐMyO(2)Óÿ>xQÎAoÔäì4Ôÿ8i@ìgxðÝyyI0Kywíhw2xy",
 		"granite": "0g0gaĞÖWąčYúïWéUH{ĹZĞDHđĽHË3HıÆWŊaZ1xMihTÁmiãoMjMjNnhiCMûnlnihÅmÏNhNjzGwÎyjh+ÏjÞygMMmÐhjÓÏOjh1A,ÓMylxjÓÐNhMÓCM+ÐljmÓ2ÞMEh,+ÓnÎj>h+RRNMhMzhFiÓMDNÓxhoÓzãiÓgMÓh2yMMh+",
 		"gravel": "0g0g8ÒÒYó7Zþ-ZÞĎYþÇHìŞZĚóWĚĢZ5,$âł#þģ_ĔÂ{ĝíİþĀĳĜĺÊĞ/ÚÓŋńĝôdlĈİÿİØ$#èßgŔùĿÒčģÎðÅÖ$ÇńčY#üŁĴáįÆĚěKĞj<Ùł#ĔłÙ..$BôFĒŁŌ(ĹÉĐþcGDÚ)ľË",
 		"grayConcrete": "0g0g2)ŊZ-ŊZ00000000090000000000000000S100gg",
@@ -1559,12 +1559,12 @@ const texturesFunc = function (setPixel, getPixels) {
 		"greenConcrete": "0g0g2PÏHPßHh;ĒÉÙŐßÆðM!ľĈÇylĖ|aŗÈëÀļĸŚđøcKæÙ",
 		"greenWool": "0g0gh|íWÁúZÁĉYÇĸH|úZVĨYÇĨYPßWVęYÓhYÁĉZPÏHËňHËŘHÇňHPßH|ßW0S1c4F÷4w7TÂúā^1įčĄ!rkĎMaOcÓČĬS@Ĭ4{2Āī5&!ëìõŖy91õ7.ħħ;13ĩċù1^@M9]q^ČČį8Âûl÷16ĩý÷M÷[k1yIÞEgyí,ą]1ÂýpFàcÑĘĬKĻíI80gëXÓ08ÃĄB8ÌGNfgķÑČďMÈÿpaæõĬFòÐgĎwċ]įQow-së5öÀ^Ň0Ù",
 		"ironBlock": "0g0gbĺ;ZĪcWŚĶWŖĦZŒĖYŎĆHĢŒYĚĲWņéZŊ÷WľËH1g0001hgiyyO)VVÁlVVVVVVÄäIIIāĂĒďiyyzOVVÄlVVVVVVÄäIIāāĒĒďizOOVVVÄlVVVVVVÄäIIIòāĒďiyyzO*VÄlVVVVVVÄäIIòāĂĒďiyzO*VVÄlVVVVVVÄhhhmÎÓÓÓ",
-		"ironOre": "0g0g8÷-ZéŞZâľHÖĎYĦÕWŁġWĖ,HŊaY4íú|y0Bm04ĞıFĠôÖr90g|īiiQČŁ5gòwÿŐ#īķQŢC6ÏP|J0ÚČ0mgÃśĊRAmVłg1ÒoăS+ÂAJ0dÊ1F+2Ħłó0ĳPrkPFg1wkúAJÀAJS",
+		"ironOre": "0g0g9÷-ZéŞZâľHÖĎYâüZòļHĖ,HŁġWŊaY1hixzyy0hzMg1?UiiÄÂjylÎhlÔ1zOxiyw0z*ÄÒOxghÄGñÎBKxg0ÔÝig1yjN01zMh0*ÐNkÄRig@ÔÝgÔ01M0ä3x0iyhh0ghkÀgiNÄ2?ÔãÂ5Ïgi6äK1gUxhg01hh0hyh0ih",
 		"jungleLog": "0g0g9ÇhYÖNWéßHÀŘHSĸW;ĨWVMYâJHÎÏW1y3OOhg004S404VQQ@ä?US4xh0hy33O(Sh04Q6ñK03OÕÑ??Vh10OO02x??V1g>O(0iwQÁy00QOñðQO)Väë0hhgÕñ4?U>(>UhQ0xh6KQQjÕÓ3)Q010Q?ÀhTg01g>O00OO",
 		"jungleLogTop": "0g0g9éßHÎÏWSĸW;ĨWĢmHđŌHĦ+YýČHąīY1xiOyi1g4Q??ÒUQTAGGñIIGÏkãÑQ?Q[>BáVVVV]Â)XÅäñâ[Á*âÅVVâÅTBXÅÆïï]À5XÅÆââ[À5XÅVVïÅÁláÅGäï]Â*XVVVV[Ã)X?QQ@[ÃAññGGGGRAQV?ÄVQTgzxg0izw",
 		"junglePlanks": "0g0g7ĢmHđŌHĦ+YýČHąīYåÃHÖiZ4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
 		"lapisBlock": "0g0gdB×YxPZ*āWMIYtFHxEYsŐWt8HoĿHoĿYt7ZFÆZkĮW100gzkkkljÁÄâÓâÆ5MnVâåÒæ7ÁVÒÁãÔæ5ÞÅGÒrãÈbVVGÔĝÄä5ĝââåÔÅ×7ÅÔGğþÔĂDÔããÅãýÈDÓÞÄãÓþÆ7ÖÒlÔÅÖÆnâāÔÓlãä5ãÇþÖâÅÙlÅÓÓþÔGÆ@ÅGÓãÓâÊoIIñõāĳĳ",
-		"lapisOre": "0g0ga÷-ZéŞZâľHÖĎYpÉZxÕYloZgłZhqZgŀZ1gixzyg0hO(01jOii?@jyxãh1g8+ë10yxizN1N2hgj)ìjïzwx,Xð1ðhhEÐw2iNw06Þ1E)ÓjNg1MEIð-ÁMOíOäÏEÂhÖJ0Oh6Áiw9OäÐ+K0iāÎåKw1ixÓKg1yxhhg1hhh0",
+		"lapisOre": "0g0ge÷-ZéŞZâľHÖĎYËâZpÉZxÕYloZgłZĊóWhqZ?ĥZ×ÍHgŀZ1gixzyg0h)>w1jQiiÄÅ)Rwñh19aDĘhùyxiAR1Q2hgj?ĉjÕzwx]Ĥğ1Ĥ0h!ġā4Opw1bİ1/?GkRpúM/Éğ/OMOĊzôħ#Îhéĸgā1cęiādOçěĀĘ0iĤÁĤòFúixÉåpúyxhh9úhhh0",
 		"lightBlueConcrete": "0g0g3C$Yy$HysHiVUS1kklk?ÀgVKk4ÂlVTVlÁhS5UhhlxTTÁkVÁ9ÁhVgFSÀ1ì5Ò5VÎkh??TlV4VlSl",
 		"lightBlueWool": "0g0gq&ÙZNąW!ÊZ/ĴY@ťW&éW&öW=ŔZRŤZC;Y!ÙZC{Y~uH[eW+ĕHy$H!{Y+ĥH_eH/ńYRŔZRťWNąHC$YNöW=ńZ0Q1ùĎ/iĉö_pĿĭĉĵ2ĳŎħMÙąm^ÛQđ@M7oØDÆß#čxïJ;^NV,ħĳyhPí_yŃ1%ĩŌĀmÐ9Á÷zØeōMj8ÆīuÂ1ēzĆÂ?xòsĞĪõęĠRĪĔĻčŀFĿįĸõüùðP7ûÊOö>ÁàùĿü1ÝáĎĮĘÂā(Åp7@(ŒĉĿİwÛ{ÖEĭ{ÑðŐcŜÐ|òĹħÇÒ(È{I~wlĚ",
 		"lightGrayConcrete": "0g0g2éŞHéŞWàĝGşąŁÊļņZÍŕYŜGHņ<Ŏŉ:|ĞćŠĞľŢŤÔŤŝ",
@@ -1599,7 +1599,7 @@ const texturesFunc = function (setPixel, getPixels) {
 		"redConcrete": "0g0g1õíW",
 		"redNetherBricks": "0g0g7$0WÕTHÝÁY)0WQgH-gHUMW000000BmÂQþòþÎČJKÑĂÅBĚÅA0+ħ0+ħÒAãÑĄ}7PAbPAæP%æ_čÙ03Ù03ŀčĂŀĕĆùÖ2ùÖ6ęŐuýİudĘłdĘłĲÔJ_ÓþJTČăTAJĸAJTA",
 		"redstoneBlock": "0g0g5ŋëYĤëYČKYÝ(WüÀW0000004íÂQí]4XĂPyI4ċzßCI0đs}Q05@łÚĘI5ĐłÚİ8a@łÚĠù9ołÚİ859q÷]I5]łdīë4đsÛ]į5BAJAù0īköyI4ù9]J]000000",
-		"redstoneOre": "0g0g9÷-ZéŞZâľHÖĎYü0Wţ0Wõ0WĐgHĠgH1gixzyg0hx(01jOiiORjNxUh011lÎ1gyxizN1x2hgh*ÞiÅzwxoá@1@hhzMg0ONw05T1zÅih2h1MDÓÎ01MxROw3Myhhg03BK1iz(2âá@i0lÎh6Îxhix01g1yxhhhwhhh0",
+		"redstoneOre": "0g0geJ-ZéŞZâľHÖĎYÖâZügHįgHţ0WŤâZīgHü0WťEYĦPWśÞZ00ixzyhhhxxhhjNiiOzQyxhhhi*VOyiyxCÄäĂiRhgwÿğħhÚwxhcĳ2ighA>zyhAQh%ï1g5ÒÕĹlĸh01įĥĨMxyOx$ĳyhj)Qhh0giBĽļTmķN0gôħyg2wixc1hh00hhhyg1ih",
 		"redWool": "0g0gdüíWĀJWùíWĄJWĐĊWČĊWĈJWĠĹZĐĊHõíWĔĚHĔĊHĀíW1w)0VwÓ2*GïM21JjójĒÎÈVďVM^h/3ĒMçÃ3QFĭ2Q2ya919hw1GQO+ñÃGÄhGVē0^VēV$ĝ1Ĩ2OyĪoJ+5G*GĢVæVĐmÃ30Óh?0ĬylhJĢF)ÒGÂVďĝÎûÈOďĒOĎUäcÒgwĞ1ĒMÉ0ó",
 		"sand": "0g0g6ŎăYł/WŊØWľpHĹŏYŖĔY4Ċĸ?ĊĂÑĚŁõr8@+9AĚŀFNĺPĊİÓþóEþ^$üúÒNÇKğÇÛiĲ$þ_%ĚbÒiĄÖüÇ5JÉ(ĚÃ(ĊıBoıÙüÇPĞÇÒĎôlmı?laEĊÇEĒú?oò?kó$üÁ",
 		"smoothStone": "0g0g7éŞZâľH÷-ZĒĒYĊóWĚĲWĆåZ42ÂByg&,ÚĕŐqOÖsJ+ŀmĿłĞğy|İsãłp*ĞłÛÖĈ|łÒĕĭŀÃÖČĺPÕmĢŊÚĭő%ĞŊĞģÕ&.+úįŉdğÚĝģ×Â[ÙßÚqlįłĕĠĿN:Øãġx5wiSJg",
@@ -1607,6 +1607,9 @@ const texturesFunc = function (setPixel, getPixels) {
 		"spruceLog": "0g0g6-úW(ÝY{ĨH$ÀY$ÝYUňZ50ķcyX6ħœcy4eSœ4i4{SQgNkQSīĘSÀSXTęgÀëïwT0ÀìXy1Tg5ķyh?g0ķwhko0x3gko4x3Ĉ/8Č5jĘ(wĈX1Àg0SĈj4iëSĊh42X",
 		"spruceLogTop": "0g0g8UňZQĩWÇiHìîYåÐHòûYÎyZÞRZ4wSQ20%ğsĚ+ŀd%ĦZŤĐdÈłÞğĀj.AJ[ŇLġğŢ[ĉj]ČûPĀjġĎĺĮŇjġĎĺ[ĈOġČûİĉj.ĚņĮŇjġAJ[ĈLğrÚľĉfŖĞłÚĀdġsþ@Ŀ40SQ2ë",
 		"sprucePlanks": "0g0g7ìîYåÐHòûYÎyZÞRZÇiHUňZ4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
+		"cherryLog": "0g0g5(ßY-íZQěYAÂWUĻW5yS4ë]w0JA+ħÙiUúwĿAðĿAČIw0]ÚĞħPi0díÂQ0łFy20ioA+ħÚFi0irÙ2ùÚðĿ1ĞħKgĨ?í]FFywly]ë9dë1Pi00JĿ0JÂPy>×QP",
+		"cherryLogTop": "0g0g9AÂW-íZ(ßYōŢHōŁZŎrYĵoWŅåHŉĒW0ix0xh0h3O))U>O(jÓGñIIÓÁjÒÃO)O+MkàQQQQ-T3à[äñá+Ská@QQá@Mkî[]XX-Rkî[]áá+T4î[QQX@Skà[ãäX-TAîQQQQ,T3î)OO*+SjññGãÓÓÀjOQ)?OVÁgh0hwh2h",
+		"cherryPlanks": "0g0g7ŎbYōŒHŎ$HŉĒWōıZŅåHĵoW4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
 		"stone": "0g0g4÷-ZéŞZâľHÖĎY0ÖĢVÇýÅōÜēđVÀ?5×þĎSB?VØĠü8!VėĢÈý1k5ÄÁÀk1ŀėā×VTV4×@ÿŕ6þčĐÖVV0VÈTÒ",
 		"stoneBricks": "0g0g7óEYĆÖZÇÒYéŞZåľYÖĞYÎðW4JPAù2$(0dĞĩxðłÙ8Ł&(sÎĮyNįĪß.ÈiğAõ^ŉĞłÚĞł×ŀ%JÉÚĞAJR4JPë0Łxë3dðŉ&8rK,!MĭĿÚĠŉi(ŋJĲÏdįŃĞł×ĞłÚłÚJ_ÚĞ",
 		"tntBottom": "0g0g4ĘÂHĿęY÷-ZùęWkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZkkkkØØØØØØØØZZZZ",
@@ -1628,7 +1631,10 @@ const texturesFunc = function (setPixel, getPixels) {
 		"crackedStoneBricks": "0g0g7ÎðWéŞZĆÖZåľYóEYÇÒYÖĞY5CJFFBīùÑÝĪdQ6{-ù|Ï!PA0ń?ĀpÒíŜöĞĵïĨËçÙŝĶ<?2ķ%Ĉ00P8ĬNīJCÏâõOcùħËÎįTAĂE@i9AŌBQĀpÜRËõġÉŀōĴç<Û00%Ĝ00",
 		"endStoneBricks": "0g0g8ĩŏYŒłWŖŃYŖőZĒñHņĂHĶ.HľÇH4ČJÚCQčJÉČJÛÓJŀAě},ł|ĕĞÛĜĞÚ)ěÕĦûÜŝłÕvZZğZīî0AùcA|ČIëĜJAĚ|kJPAĂŀcJŀ)ĞÚĭĽĴĔņŖĽĆÚŝš~mŢHğZşîZZëÙ4J1A",
 		"polishedBlackstoneBricks": "0g0g6(ěH|BH;ŋHkMWAìZsTY4ĊÁEüî8wÂi0j8ČĈúEûT42T9Ð]0g0_Ðì#0þ_3ú8AþI3ĝģÉÛłÚEüûęiÁ14j8AÂìkûëüùSwċ]A2T8z?8wgPØ]_$þĲ#2_ÚÛŁłÛģÉ",
+		"prismarine": "0g0g5ÌāH@DHă#ZæŁYR6Y5({ÕIăgiú|Āoí)Ĩc?8^m0wĎAÙRSïĘ^KmAwkāëębÓ)ĳiiÈ}6R5Cj0új9íĿ5F0$8SFíň(Qį$2ûÓCĳÑīħ2(zPþ00þ4{NcúĐ1X1i",
 		"prismarineBricks": "0g0g8ÛőZÿ;HîrZ@DHÈĢHR6YÂÕWÏāY4J]QJî(0BwSz(86wå5g~ōST<2x<S9:y1Bĩ8jÂ1őĊPĪuTùÿĶŢÊ{SiZ3;ÏA2Ñ3ÌÐ4jŉ<ÍŋDûÐŌjŊWťÃŊiÒZJÒBăŀWłņŚÛĽŔâģÉ",
+		"darkPrismarine": "0g0g6<ĝZ/6YMQW*UYAŚH.ïW4Ĉa4Ĉ^xĩsxĩsd^ŃdwĻÂAJÂByKĊĩ0Ċ×CħÙčıcdĨÊdSőÂBiÂBy4Ĉ^ĈĈ^yĩsCĩsdħĻĈxÊÁByÁByĈĈ^4ĈRxĩ$xĩsdSŃeħĻÂByÂBy",
+		"seaLantern": "0g0g_ÂDYÂnYÈ,ZÂnHÂDZÈDZÄDZÌEWÈ-WÄDY}nHßĢW÷šZðőZěÊYē$WĮéYĪÚHė;HěÊZûbHãġZ÷ŢWĮéHĺöZľĆWľąZĶöYJŢW}7HĶöZņĖWņĖHŊĖHłĆWĲöYPŞWė$WņĕZņąYĺöYğÊZė{YŎĖHŎĦHŊĖWŊĕZē;H^7HĮöYŊĦWÄEWŊĦHYËWņĕY^7WłąZłĖWłĖHJŢHĪËWĮÚHßġZ÷őZľöZĺąZYÚWPŞHãđZíıHðŁYė{HãĢWÂnZ}nY048wÎ01ag8KK>IiEÆĨċñùy]úNïSó6Uęà6cĂNÕĸěÔaî/ÝġŊ[ķxRXšzÕĵAcüĨČ9ûC{ā.Ś!kągĐĸśİýĔÈęNÑ6òt6]ĸśĲmxRęÏŋ6ÿĘcīĸśĲgĕÈïJÑCôXÓõĹkĲÀĎÈĸJŋCĂX2ČĸśĲmĉRęÏá6P0eüŘśİþ$ÈęĚÑ67,ÓPrñFûCÊāMŞ@ò(2ŔňàDķĉ=ëš3f_A/ŠŠmCöS*29Đ}ıĪ/6zĠęñnwĎ/JĹ01JúzÞ|Ŀ>ÛâwgöĪ^",
 		"quartzBricks": "0g0g6ŚĦZŒöYŖĖHŖąZŊéWņÙY0000019ĞİAČüdJP%AąQJÉP+ń?Ğİ%J{dJPÙJ{dĜJAþńĚ_ÙþłÑ0S0TÀë%SJPķŀPÀāAħJPķPBÀJÙĻÉPÀJBķJPķłÚUûÚīÇĚÇAĞŀ%",
 		"oakDoorBottom": "0g0g9ÖğYýĻWÒRZéîHĞ*WÀřHĎ4ZĢVZíFH1xj)xlUjÎ+Q@+Q@iÎÓhOhjMiÞÂyxÂyClÞxhmxhmjÞxh)xh)iÞxj)xj)iÞ+Q@+Q@*ÎÓÎOmÎOOÞÂyxNyCiìxhmxhmi1xh)xh)lÎxj)xj)jÎ+Q@+Q@NàMÓjMÓjNBVVVVVVV",
 		"oakDoorTop": "0g0gbĢVZĎ4ZýĻWÒRZÀřH000íFHĞ*WéîHÚĞZÖğY1g0100g2iyyyyyyz2>ON>ONz2*VÁ*VÁAÏ*VÅ*VÅEJ*VÁ*VÁziìGhìGhz2>ON>ONA2*VÁ*VÁEi*VÅ*VÅz2*VÁ*VÁz2ìGhìGhA2hiIhiIE2>ON>ONziNyxNC×zÕ-Iì-ó]X",
@@ -1636,6 +1642,55 @@ const texturesFunc = function (setPixel, getPixels) {
 		"warpedDoorTop": "0g0gcyŀZCĂZ/8WtVWFĭHCÖH/-Z%âWËÓY]ŜWt4WgŊH0gg11102iyNy4>ÂAg4)TQ>?gÔÞVnRzà,í[Å[R>yzJAk>y>ÓÐÏwNzÓ>ÓÑw4+ÔÓzÏwÑ[+ÑÏzÞ7nQ+Ñy>ná4y+ÏS3á?2yNAlSQU2Ó+K[à1>ÏÓ+KGO,àßÓNxáĈÓċíÏN?QĞAğ",
 		"endStone": "0g0g6ņĂHľÖHŖłHĭşYĶoYŞŒZ4XI}iĉAEÂùíg9n8?wRÝĊňa^üXĻTÁûÉ(!IÀħĉxoV]XIPİaĉnhČĠTÏNR]Rjïo]&wÁA2RÑüĐ9ħhB4Ï}gSS#zwíýòÂŀwAb(yT5ħĄ",
 		"ironTrapdoor": "0g0g8ĚĲWĢŒYĪcWĺ;ZľËH000ņéZŎĆH4üJPi]%ĞŃöĞŀ$ČċÒBp%ÉÐ×łp|ÉÐ×łq|Éà×łĂ|İĤ÷ÜŁÁĞŋúĞŉÁĞŋúĞŉ{ČČïBq|ÉÐ×łq%ÉÐ×łq%Éà×łā%ĴŢÛ|ŀ%ĞŃöĞŀ4JJPi]",
+		"amethystBlock": "0g0g7ÒpZåØHöĔZı~WZ&HčŖWÊŐY5ibJĈÄ!ĈÁÅÏù8ëđna]5dI4ÄòFĄ0EkMÄy9ĕjëßÈ]Eg2!ëÖQĊg6ïÈwgĐAĒÀĿċÈBÄ÷5UÀ!ľÀ!ĢIlİÖ0ŃF5DëīùÈwĒ8$íŌħkPÞsÌ",
+		"ancientDebrisSide": "0g0g7ÊĹZÒkW]ĚWSÞH(ÎWéïYþnZ4ĎüQíĨArēSùI0×|w0ëSù0ctđS4î÷Ĺ0Ï#ĞÝ0g}Â|ļwí}iPCAJ|ùTzÚĕęë9kJPÝŃ0SJ]Þrę]ùPÚëdÕiSŁĈ0I2&,U2ò09AXXÅÙò",
+		"ancientDebrisTop": "0g0g7SÞHéïYþnZÒkW]ĚW(ÎWÊĹZ0ČôíõęčbÕÒAàEĚČ2ķûıĸi&.2ěS5ĈĢ×ĢnÈ(qĒġöÀ6Ăìgļ|aĐXìVsCĒKx2%0×ĈUħÂÔ]čVŁ40ÈÒÅÙı?<÷EìÚĈ]ļoüúÙÀðdÓÉïkT",
+		"netheriteBlock": "0g0ga;ĪW(ĊYAÞZPkYÇVY|AZ-ŊYT4W|4W$ĊY1000010ijQQQQ?QÂ4Ð*VàIOÂ4àIV*ÆãÂ4,ïïVÃÝN4àä*?VÝM4GàVUO+N4,ÒVV,+Â4*VÃ*àãM4V?GàG+MlVïGGÓ0Â4ÆÆ+ÔÓ9ÂlÐOãÔKāÂlKÓKāāùÁlO*V*VVNiyxiyhyy",
+		"copperOre": "0g0ge÷-ZéŞZâľHÖĎY.ĽWËâZňīZĨüHĊóWí5Yř6Y.čYÈÆW}ŐY00g1zyhxhxyhhjNhiQ*ÃOCÝyh2U?(gìxyBPÔùhyhg.ãĐ2BÃwxh8ëzÇýxzBÃxrĴĮM0)ýM0Ĥþßsńİgi4I1w{ëlMgìih8j,Ãh1yiy)þďzzM0PëP]1)ĹgI18ëh0ghiighhg1",
+		"copperBlock": "0g0g8ŉ6ZļŌYİļHĨČZčÑWęXHā>YúzW0g]02Ą9+ú4þŕ8UIAęÛeŋT?ģėdy^|İÍ9iÂÛÕŖ8íûà[Ü4kăĂ,Å0ČœĸĢÿ5DÙöĜ÷9:ÒÚČ@9łØâyecÇÉđhÅmőŔ]ăćjÅ×QüŅ/ÚŞJÚŝ",
+		"cutCopper": "0g0g6ŉ6ZļŌYčÑWęXHİļHā>Y42a4ëR&1tFIńg8ýc@ĂgQči)Ōe*2Mč5%Ď2dĐ2%-B%SyÄļÚVÉV0íR4ë^Mğ2(8Ĺd-yw@J9Ĩly)ą&0ąMĜĩ(6ŌdĎ5w,y%-Bđ#VP#Â",
+		"exposedCopper": "0g0g8ĵ-WĢ7HýĽWđĽWĂ+YéĬHåýHæÓY0g]02^dįňÛpÛg=^ÑħŕhĿÂOĮÌeãāJAōdĭ_ÚUÒdNÉ×ċd9OrViÌ9ĀĺĒäŅcĭĂÂRĴeQłÑğljįł%ĠBk/ŊÙħōlľxÑĮĖaŐcMBÚ+łĖĞłĕ",
+		"exposedCutCopper": "0g0g8ĵ-WĢ7HéĬHĂ+YýĽWđĽWÞïWæÓY42^42ıMăm!OCsĿĊgĀĊeļ&mĬ&m?È6ÇÌ&]æ+ıæLıťMÂő_BĞÇÚþ0íR0g^mÆ^hămM^ÏLŀÄaÃmuĲCNĀĊe?ÏáăÓM!Ûœł!FÅıİ%þŀ%J",
+		"weatheredCopper": "0g0g8æŀYÓďHÓñHÛVZ÷nWã*HÖīHPĭH0g]02Ą9+PÀþŕ8Â^ùęÛeŋRïłėmJa|łÍ9iÂÚ#L8JJÖ.L4üăPġÍ0Čŋ|Aņ5DzQíĆ9ĎłÑAÌ9Ļû?AĵcÈĉÂxÅmŋ^úrćmĻÂúüŅ/ŔŞZŔŝ",
+		"weatheredCutCopper": "0g0g8æŀYÓďHÖīHã*H÷nWÛVZÓñHPĭH02a40R%İGi.De_ğhŀ!qĴğfÅ,rÈő:Ôğ:Ôqr|Ě,ÖD+įřÍŜZËHľ0íR40^O.y+ÚĚdĥ!NÖßlŔćNĿŞmœņ+Ğő:ËvnÅv/ġyOÖDŐLľPLĹ",
+		"oxidizedCopper": "0g0g8ÜpZÈİW}đWÂñY=6Y}ÆH.ĝY.ýH0g802Ą4üŔAĎŕ4ÂĒEęÛ6ĩÇFģv9ĜÁ|ÄņdĎPBĎć5ĊPB)Ŗ5kò|čÍ4üú%iņ5ióAċÌ9ĊúB/ĆdĜİ{Łĵ$ÄĸVMÅ+ĮÇâăn9Å×Ğüþ:ÚŞZŔŝ",
+		"oxidizedCutCopper": "0g0g8ÜpZÈİW<ōHÂĀY}ÆH*ýWÂñYÌĐW42a0ùRdġBe]ŌdŖBdĴšfHtf,ńrèŁ:,ĝ/ÓŁhĥy&@ŌN.yÄļÚVÉV0íR02aq{ŉi|qeèŉqÚŁdŝń%Ŗń.œń%ĤřpŐąhŔBMİNNÖBđ#VP#Â",
+		"deepslate": "0g0g5åŎYÒþHÁ?W;śW$ěH5AăAČĹ}@ł?CĺAiüJ,rÕČłQ2^öCŁAíÃ1kĊBkú4črPġqFĞįB-Ĺ|+ķEĎŁÛQúPďzEĎûß)ëBN0|+ìFĜ9FĞòÚįò}.r0üŃKČ]0ĊüSüò",
+		"deepslateTop": "0g0g5ÒþHÇÒYPBWâľH;śW5yS1čgiAôdħňQñi^6ŋúhxw0ňÝEóúgëÝ0P]Ċ3ÂRú!QòdIJ0,1xĠaA78düÂQĐú1Č>Igr@S3ú2ĪIýA]JüÀðsxñhQ0ŃA,0AđyBiÂ",
+		"cobbledDeepslate": "0g0g6PAZ)ĺYÖĎY;śHåŎYÇÒY0ĎqùÀĕcķĳTðĐAĞ^cěÉÏ#?5JĲúÀbÑăwV0įę9#U+^íĜ3cþÈĈq1úM?cmŀÄĘ%ÎJÚSmoeī5ĉJ_Û0SĔ+U÷ë>ÒóŌSiŀÑ]ļknSčı]Ùły",
+		"polishedDeepslate": "0g0g7ÚĞZÇÒY$ĚZP)ZT4W-ĺHAJH00S42a4ÿ#AþŁ4ġjÑJÈhğAĝUĖcþİAĚÏlFzCBmNÆŃöĞŉBĭPCiÏe@ŀ&JŁl#AđÇmhJPýJŅii_úJŁaıĒĞ]JAJŋÑJÈcJĹÙJ}FÑĞĲÒĞ",
+		"deepslateBricks": "0g0g7ÇÒYÚĞZT4WAJHP)Z-ĺH$ĚZ4JPAùjw00ë0ēw1w08û!8ùi5j)!ĊúFÃiļÂóčàĞłÚğÉēŀĥăçÓŅA2>4JP20ēw10i1jw40iS#y8ëýE#h10ĞČēaIĊĞłØĞłÚłÚăÜÚĞ",
+		"crackedDeepslateBricks": "0g0g8ÇÒYÚĞZP)ZT4W-ĺH$ĚZAJHoÎY4ĊPAñ&wS0S0ŕw8ùJ8Ņ%5A9@Ć(;ĺPĥuaÔuĶÔĖJÖ$ĂİĎğçYťńŜA>nÀJì1(ōX0ă×IĆw40lxCRĜħVĜ&ýóëĂ+ōe5ÃĂİCJPAģÉãŁłÚ",
+		"deepslateTiles": "0g0g6$ĚZAJHT4W-ĺHÇÒYP)Z0ù90J1Pā$JVÀÙpÚPAĿKp×đAĀ0qJÚĞŀAù1wgPJĲ×%ðĿĝUăc0oĒČădĘ1wg0w2PdîÑĚ^û$3ÂPAĿw2J|ĞħAù10ù9ÖAùÚíûP+ĿÙ2ă",
+		"crackedDeepslateTiles": "0g0g6$ĚZAJHT4W-ĺHÇÒYP)Z4ù9wJ19ā$únÀKpÚ]AĿÑr×ĉAĀ0ùĹÒĞŀAJ1AgPJıĀ%íĿĝUŀc2oÄĎĨdĘTwg0w2PdîÑę^û$jÂ]AĿw2J|þħAù10ù9ÕAĀÑNûT+ħxĘă",
+		"deepslateCoalOre": "0g0g9åŎYÒþHÁ?W;śW$ěH8wYEĊYsÞZPzZ1yyOhizyzQOQTyOzh1iÄÑ>ãONiDÓñÀhi?ÏMnV0hz0hyT0ARx1iQ>yÔÑNiOÄáhCëyzBÕÔig2NOTã0yN)>ii0z)>?Kh)QhzQM1iÆÒÁiðÂhOmÀ1zÒ4O0g3ÔM0xg0iiAwhyh",
+		"deepslateCopperOre": "0g0gdåŎYÒþHÁ?W;śW$ěH.ĽWňīZĨüHí5Yř6Y.čYÈÆW}ŐY1yyOhizyzQOOxA>zkV3QO@ÝONgBÃx01i>yÆÔìghz0Eãùh)>x1i03z]XNi)>gqĤğyz?îwiēðÝ:ĳĠ1y*03iÉ0z)Sygh0g7zzN1iOBðÿONhOÆRÆÀ>?Ī0hz(1iw00iiAwhyh",
+		"deepslateDiamondOre": "0g0gcåŎYÒþHÁ?W;śW$ěHM4Wv|HGąWm.WÓEZľZHÎŎH1yyOhizyzQÃOxyOzh1ÏBU>äûNiû,ò0āi>yO.úghz0x!ßhďĚx1ĂãÕĚÕüNiÇăăVă>yDØOVďiON:ĜyDÕô)>iiÏzġýÂ0hzg0BÅí1i*ÀhæãÕęOğòhEÖăO0pû):Jxg0iiAwhyh",
+		"deepslateEmeraldOre": "0g0gcåŎYÒþHÁ?W;śW$ěHłťYnãW1ňY*ÐZ>įHuÏYnkH1yyOhizyzQOOxQOzkÄiAQÄ)ONÔ3OxÔ1i>0kíh0hz0zPĂhxyx1oýæíOQNj]ÿēìz?Ï*ÐĢ0ii+Ý+Ý0xA>(1g2NzPĀM0hzg0åÅĊ1iOQhçæĚhO)ÄhEĈ4O0hÔ4(2xg0i0Awhyh",
+		"deepslateGoldOre": "0g0g9åŎYÒþHÁ?W;śW$ěHąJWőÝZZĜYZŢH1yyNhizyzQÀzxy)>h12?Q>?ÃNiAÄÁ0ÄÂ>y*ÔÁgÓ30xÔäÎx0x1i6ãÂOQNiO(K1zCÀzÄzÀii(1OÔ21yQM>i0hz)VÏ0hQ(3BÓñÁkVKlgÔÝ1*ÔñgzÄ1O0mÝ)(0yK0g2Awhy1",
+		"deepslateIronOre": "0g0gaåŎYÒþHÁ?W;śW$ěHâüZòļHĖ,HŁġWŊaY1yyOhizyzQOOxÄÒzhÔÐQ>6ÝO+ä2zxg1i>0O+Ôãhz0xÔIĀÝCÞ1i0äë3QNiOO01z>yzCàwlÔÃNOÅäìyä4>igò3)0y0hz00zBÏ1iOÔ1ÄäñÎ+á0hDòÝ30Òz)M01gh0iAxhyh",
+		"deepslateLapisOre": "0g0gdåŎYÒþHÁ?W;śW$ěHpÉZxÕYloZgłZhqZ?ĥZ×ÍHgŀZ1yyOhizyz>QOxy>zhÄÅA)>ñ3N1p7Ĉg0i>y((1hhz0z*úhÕyx1-ēďyē1Npĉ00h0jy!ĚOFlGkN(0ypÈďp>giJwóĘ!Khèħ1w1rĉi(chæĊoĈO)ēÁēëw30hÈÝw2xg0ig2(hyh",
+		"deepslateRedstoneOre": "0g0ggåŎYÒþHÁ?W;śW$ěH{ĺH-ĚZügHįgHţ0WŤâZīgHü0WťEYïÒYśÞZ1yyOhizyzQOOxyOzh1lÄQ>)ONlÅGÎ0hi>EäĂĤghz0xġŀňxøň1i&ŕyOŕNlÄOghV>yÍďÐwnñóř,ťyxy/ņŊuŉNz)>ŕ0hCVKzzN1iÔşŞi-řhO=ĕhz>QO0hŕ)(ixg0iiAwhyh",
+		"blackstone": "0g0g6(ěHAìZwTZkMW;ŋH|BH4ČĩÑSÀwgi0]qÕJú2]ÃQ0ÀJÂôwPamüôJ^9^CÉiķıEĞh0Ďį4Iú0ČQ9ČÁByú|gaS4ŁNP3ySÃyĿ92]aE2úJÀŀF4ùþXŁÒkõACŀ{J]",
+		"blackstoneTop": "0g0g5AìZ(ěH;ŋHsTYkMW5yÆEëÑòirKñaIĈa%ĚìKI^TČÀ2]iik_0xpJR>ÎyõÎįrÒk_]8İ0ĉ2AĀa2+2QòrÂ2I]-ĨQiJiNíÀč1e4ùÎyoÛ2IÑĈTQSSxĚTP]õ",
+		"polishedBlackstone": "0g0g6|BH;ŋH(ěHkMWAìZsTY0ë840^5ih]ĊûEiJIíV1iúFkÒ0ĐĊEĐĊ82^IíÂBiúFkÏx2U4ĬB0XÑB?bBk9ÂAö4iÏüĀ{8ĊúÀđU5AóM^ý8ăiFq|EĐČþČUÂP$JP$",
+		"polishedBlackstoneBricks": "0g0g6(ěH|BH;ŋHwÁZAìZkMW4ĊÁEüî8wÂi0j8ČĈùAýT4iT55Â0kÁA5ù9wi8zöįŇ÷[tÛĽłÛĽŔEüûìiÁh4jIAÀìký9kë]wïAAiS85?1g2]z]8Ň÷+łöğAâłÉãŁł",
+		"crackedPolishedBlackstoneBricks": "0g0g6(ěH|BHkMW;ŋHwÁZAìZ4ĊÇ$þĩcSÉm0qcāEĜ[qÞírKB2Äëtâ+2ĜbÕiô!ĚVEĚÇyúFi^Eügw!ìĹÇlĨ×ĖĞÆĉĀ!|þħÙ-2A,rañiÒIÈĒŁ!Ù4węPyĚ?AP]J^Fi",
+		"gildedBlackstone": "0g0ga(ěHAìZwTZkMW;ŋHQKWŁSZégZZĜY|BH1iz2M45ÀgÔÀy04SÂ+hix6XTzÞ01wQäijg4Qi9úßlQQùhyRÁ*4ā3lijÀx0i*Ý1gRx0ix42ÔÁxhyixBx0lxgãN4QQ7gQ1î0āSm0QSÏi0iÞQP3,iwBÀPùz*Mxykh2OMzhÁg",
+		"basaltSide": "0g0g5|AZoûW-ŋYËâZ(ĪZ50ĪÙ(wðSĪÙ(iN0łÙ(ëA6łc-ëQ(ĩ1waÂ+icxaJ)ķÙxgùQëÎĨ2ë(ĀÚĩëë6rÚĠăù6rdírù+rTĚs0+2ìXkëQgëwĹì6ăgAħ46rÎXo",
+		"basaltTop": "0g0g7ËâZâľH|AZ)ĻWóEY;śZoûW0üÉA636mĹKÈŁč+ëeĪÀ{qì{ĀqĭhSÙJ&ħìØ5ìSĿdĀ0Ģý%ŋĐ4Ĥđ1Č5DÙįĞĈ?ġJħSKocëÈ0ĄĨwëO4ăTPëŝī(×~Ó6ĴëeÑĘ]Kwe(wS",
+		"polishedBasaltSide": "0g0g6(ĪZ-ŋY|AZâľHËâZoûW5.júF8č-ĺ÷B9č-Ŋ÷*99+łöġ95@ŊöĠúB]ŊöĠú5QłòįI1AłÖįIĉ)ŊÞĎIĉ)ŊÚĭöĊ-ŊÚįï6]ŊÚĠïa-ĺÛ)I!-ĺÛ-ù!-ĺ÷-ù!.j÷Ph",
+		"polishedBasaltTop": "0g0g7(ĪZ;śZâľH|AZ)ĻWËâZóEY5Cŋ^ĠįańØĽďÇ#$ýİÒÚâ/ŔÚĞû+ĥĞPCŀ.ËËĖĎĕ*ĤřİēĝÉ;ŚĒĎĕĞĜŜÖŎû#*ÂPŒĚâ*ËÛōĕĝ)JÉÓúÖÄńâğû,ÑŜÈĻúFÒÂÈĒđ6ēÈ^ĢI",
+		"shroomlight": "0g0g8ļSYĜĘYŌħHťjYťĞZZåZZnZZłH4wŁ4ĲÆFAAÕØOdİĜìġĜ9ĲÛó[zRÍOjÕŉaÇoăŢqcdĈăŠq×ķûqįċßŎÛØÓAØ[èİìz|<Čĵ]JÚÑĞòÉK×Őj2Íir]Ğí@ķ})ĜÎAì]AgAw9",
+		"crimsonPlanks": "0g0g7èŌHÕĻYXŜY]ûHÊīWQîW;ßZ4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
+		"crimsonStem": "0g0g8QîWÀÎWĘJH]ûHä0WüÁHI(ZUěZ0ĎňČMI0ķňčě8/iĵĪíÞTĩ1ĮĠÚLĀÇïŚđvĀç(ĘÞOŚvōjôĶě3ţįÉħgÎdĀW)ÓĳX]ç!úş(ĩĿčíZis1Ĵĩv(óT$Ŋ3īN÷7h8)ĞÖ2þw!úI",
+		"crimsonStemTop": "0g0gbQîWÀÎWä0W]ûHüÎYĔíWXŜYèŌHú6WÊīWÕĻY0iOTÁ34gmÓÔÔñãÓÎ@OāđĒĒāX6-ðÓÔÓÖK,þGGGG×à6ĎåĂđÿÖÝnÿàGGÿåÎÅĎåæďď×ânĎåæÿÿÖÞ[ĎåGGďåá,þåûĂď×à,ĎGGGGÖàCĎÔÓÓÕÖßmđđāāāāÎ6ÓGÔäGÓK0iOTÁ34g",
+		"warpedPlanks": "0g0g7/8WFĭH/-ZtVW%âWt4WgŊH4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂPAX40cùĪzSāAAā4ŁğãļłĞÀA4PQiA9cëgPNgÐ0İAĽŔÉGËĞ",
+		"warpedStem": "0g0g8QîWQĝZmÄZ]ûHlïYi6HhĞYUěZ0ĎňČMI0ķňčě8/iĵĪíÞTĩ1ĮĠÚLĀÇïŚđvĀç(ĘÞOŚvōjôĶě3ţįÉħgÎdĀW)ÓĳX]ç!úş(ĩĿčíZis1Ĵĩv(óT$Ŋ3īN÷7h8)ĞÖ2þw!úI",
+		"warpedStemTop": "0g0gcQîWQĝZlïY]ûHlşHiÕH/-Z/8W+åWtVW%âWFĭH0iOTÁ34gmÓÔÔñãÓÎ@āĒĢģģĒX6ĀðÓÔÓ×K,ĎGGGGØà6ĞæēĢď×ÝnďåGGďæÎÅĞæçğğØânĞæçďď×Þ[ĞæGGğæá,ĎæđēğØà,ĞGGGG×àCĞÔÓÓÕ×ßmĢĢĒĒĒĒÎ6ÓGÔäGÓK0iOTÁ34g",
+		"poppy": "0g0g9000œĩZĀìYĤJYáëWxiHBÏH^NYFĩY00000000000000000000000000000000000000000000i000000jx(00001)Mw00001hi000000*K0000000Ý0000000Ý0000000Ý000005KëÓ00000ÀV0000005Ò000",
+		"cornflower": "0g0gb000ßWW?ĖYÏeYF;HSġY%ĊHöĤWÄ)ZÈâW<ŊH000000000000000000000000000000000011z00000xiNw00003QÂS000006Ý0000008ë0000000K00000ë0ë0000080ù00000aëù000000Đù0000006ù0000000K000",
+		"dandelion": "0g0g8000ZĜZZÃYřßHĥĊWlŗH^NYÄĊZ000000000000000000000000000000000000000000001w0000aÑ0000ÇIë000cQ00005Ĉ0001Għ0000LŁë0007Ĝ00006Ĉ00",
 	}
 }
 
@@ -1716,6 +1771,11 @@ const blockData = [
 		name: "spruceLog",
 		textures: ["spruceLogTop", "spruceLog"],
 	},
+	{ name: "cherryPlanks" },
+	{
+		name: "cherryLog",
+		textures: ["cherryLogTop", "cherryLog"],
+	},
 	{ name: "whiteWool" },
 	{ name: "orangeWool" },
 	{ name: "magentaWool" },
@@ -1794,18 +1854,113 @@ const blockData = [
 	{ name: "crackedPolishedBlackstoneBricks" },
 	{ name: "crackedStoneBricks" },
 	{ name: "polishedBlackstoneBricks" },
+	{ name: "prismarine" },
 	{ name: "prismarineBricks" },
+	{ name: "darkPrismarine" },
+	{
+		name: "seaLantern",
+		lightLevel: 15
+	},
 	{ name: "quartzBricks" },
 	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
 	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	/* Doors/trapdoors will hopefully get proper models one day...
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
-	{ name: "ironTrapdoor", solid: false, transparent: true }
+	*/
+	{ name: "ironTrapdoor", solid: false, transparent: true },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
         textures: ["tntBottom", "tntTop", "tntSide"]
     },*/
+	{ name: "amethystBlock" },
+	{
+		name: "ancientDebris",
+		textures: ["ancientDebrisTop", "ancientDebrisSide"],
+	},
+	{ name: "netheriteBlock" },
+	{ name: "copperOre" },
+	{ name: "copperBlock" },
+	{ name: "cutCopper" },
+	{ name: "exposedCopper" },
+	{ name: "exposedCutCopper" },
+	{ name: "weatheredCopper" },
+	{ name: "weatheredCutCopper" },
+	{ name: "oxidizedCopper" },
+	{ name: "oxidizedCutCopper" },
+	{
+		name: "deepslate",
+		textures: ["deepslateTop", "deepslate"],
+	},
+	{ name: "cobbledDeepslate" },
+	{ name: "polishedDeepslate" },
+	{ name: "deepslateBricks" },
+	{ name: "crackedDeepslateBricks" },
+	{ name: "deepslateTiles" },
+	{ name: "crackedDeepslateTiles" },
+	{ name: "deepslateCoalOre" },
+	{ name: "deepslateCopperOre" },
+	{ name: "deepslateDiamondOre" },
+	{ name: "deepslateEmeraldOre" },
+	{ name: "deepslateGoldOre" },
+	{ name: "deepslateIronOre" },
+	{ name: "deepslateLapisOre" },
+	{ name: "deepslateRedstoneOre" },
+	{
+		name: "blackstone",
+		textures: ["blackstoneTop", "blackstone"],
+	},
+	{ name: "polishedBlackstone" },
+	{ name: "polishedBlackstoneBricks" },
+	{ name: "crackedPolishedBlackstoneBricks" },
+	{ name: "gildedBlackstone" },
+	{
+		name: "basalt",
+		textures: ["basaltTop", "basaltSide"],
+	},
+	{
+		name: "polishedBasalt",
+		textures: ["polishedBasaltTop", "polishedBasaltSide"],
+	},
+	{
+		name: "shroomlight",
+		lightLevel: 15
+	},
+	{ name: "crimsonPlanks" },
+	{
+		name: "crimsonStem",
+		textures: ["crimsonStemTop", "crimsonStem"],
+	},
+	{ name: "warpedPlanks" },
+	{
+		name: "warpedStem",
+		textures: ["warpedStemTop", "warpedStem"],
+	},
+	{
+		name: "poppy",
+		textures: ["nothing", "poppy"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "poppy"
+	},
+	{
+		name: "cornflower",
+		textures: ["nothing", "cornflower"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "cornflower"
+	},
+	{
+		name: "dandelion",
+		textures: ["nothing", "dandelion"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "dandelion"
+	},
 ]
 
 const BLOCK_COUNT = blockData.length
@@ -2020,6 +2175,28 @@ let shapes = {
 		varients: [],
 		flip: true,
 		rotate: false
+	},
+	flower: {
+		verts: [
+			[objectify(8, 0, 8, 1, 1, 0, 0)],
+			[objectify(8, 16, 8, 1, 1, 0, 0)],
+			[objectify(16, 16, 8, 16, 16, 0, 0)],
+			[objectify(0, 16, 8, 16, 16, 0, 0)],
+			[objectify(8, 16, 0, 16, 16, 0, 0)],
+			[objectify(8, 16, 16, 16, 16, 0, 0)]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		varients: [],
+		buffer: null,
+		size: 6
 	},
 	stair: {
 		verts: [
@@ -2909,7 +3086,7 @@ class Chunk {
 				let stop = false
 				for (let y = this.maxY; y > 0; y--) {
 					const block = this.getBlock(x, y, z)
-					if (block > 74) { // 75 (glowstone) is the first light-emitting block
+					if (block > 76) { // 77 (glowstone) is the first light-emitting block
 						// Spread block light
 						const light = lightLevels[255 & block]
 						if (light) {
@@ -3408,6 +3585,59 @@ class Chunk {
 					world.spawnBlock(wx, top + 1, wz - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.leaves)
 					world.spawnBlock(wx, top + 1, wz + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.leaves)
 					world.spawnBlock(wx - 1, top + 1, wz, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.leaves)
+				}
+
+				const FLOWER   = 0x300
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
+				}
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
+				}
+				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0025 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
 				}
 
 				// Blocks of each per chunk in Minecraft
@@ -4340,6 +4570,7 @@ async function MineKhan() {
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
 	const FLIP     = 0x400 // 11th bit
+	const FLOWER   = 0x300
 	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
 	const SOUTH    = 0x800
 	const EAST     = 0x1000
@@ -4799,11 +5030,15 @@ async function MineKhan() {
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
+			let flowerBlock = Object.create(baseBlock)
+			flowerBlock.transparent = true
 			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.slab
 			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.cube
 			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.stair
+			flowerBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.flower
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | SLAB] = slabBlock
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | STAIR] = stairBlock
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | FLOWER] = flowerBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -4822,6 +5057,15 @@ async function MineKhan() {
 					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | STAIR | j << 10] = block
 				}
 			}
+			v = flowerBlock.shape.varients
+			for (let j = 0; j < v.length; j++) {
+				if (v[j]) {
+					let block = Object.create(baseBlock)
+					block.transparent = true
+					block.shape = v[j]
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | FLOWER | j << 10] = block
+				}
+			}
 		}
 	}
 	let indexOrder = new Uint32Array(bigArray.length / 6 | 0)
@@ -4837,6 +5081,7 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
+	let flowerIconVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
@@ -4863,13 +5108,19 @@ async function MineKhan() {
 			-s,0.5,0,0,0.8,      -q,0.25,0.5,0,0.8, -q,-0.75,0.5,1,0.8, -s,-0.5,0,1,0.8,    // side of the top step
 			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
 		]
+
+		flowerIconVerts = new Float32Array([
+			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
+			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
+			-side, 0.5, 1, 0, 0, 1, 0, -1, 1, -side, -0.5, 1,
+		])
 	}
 	function genIcons() {
 		blockIcons = [null]
 		blockIcons.lengths = []
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scale = 0.16 / height * inventory.size
+		let scale = 0.16 / height * (inventory.size - 5)
 		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT; i++) {
 			let data = []
 			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i]
@@ -4888,6 +5139,8 @@ async function MineKhan() {
 				blockIcons.lengths[i | SLAB] = 6
 				blockIcons[i | STAIR] = buffer
 				blockIcons.lengths[i | STAIR] = 6
+				blockIcons[i | FLOWER] = buffer
+				blockIcons.lengths[i | FLOWER] = 6
 				continue
 			}
 
@@ -4944,6 +5197,24 @@ async function MineKhan() {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i | STAIR] = buffer
 			blockIcons.lengths[i | STAIR] = 6 * 6
+			
+			// Flower icon
+			data = []
+			for (let j = 11; j >= 0; j--) {
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
+
+				data.push(-flowerIconVerts[j * 3 + 0] * scale)
+				data.push(flowerIconVerts[j * 3 + 1] * scale)
+				data.push(0.1666666)
+				data.push(tex[(j * 2 + 0) % 8])
+				data.push(tex[(j * 2 + 1) % 8])
+				data.push(shadows[Math.floor(j / 2)])
+			}
+			buffer = gl.createBuffer()
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
+			blockIcons[i | FLOWER] = buffer
+			blockIcons.lengths[i | FLOWER] = 6 * 2
 		}
 	}
 
@@ -5747,6 +6018,38 @@ async function MineKhan() {
 			pos[1] = y
 			pos[2] = z
 			changeWorldBlock(holding < 0xff ? holding | blockMode : holding)
+		}
+	}
+	function specialNewWorldBlock(block) {
+		if(!hitBox.pos || !holding) {
+			return
+		}
+		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
+		switch(hitBox.face) {
+			case "top":
+				y += 1
+				break
+			case "bottom":
+				y -= 1
+				break
+			case "south":
+				z -= 1
+				break
+			case "north":
+				z += 1
+				break
+			case "west":
+				x -= 1
+				break
+			case "east":
+				x += 1
+				break
+		}
+		if (!inBox(x, y, z, 1, 1, 1) && !world.getBlock(x, y, z)) {
+			pos[0] = x
+			pos[1] = y
+			pos[2] = z
+			changeWorldBlock(holding | block)
 		}
 	}
 
@@ -7491,25 +7794,30 @@ async function MineKhan() {
 		x = width / 2 - 9 / 2 * s + 0.5 + 25
 		y = height - s * 1.5 + 0.5
 
-		ctx.strokeStyle = "black"
-		ctx.lineWidth = 2
+		ctx.strokeStyle = "rgb(100, 100, 100)"
+		ctx.lineWidth = 5
 		ctx.beginPath()
 		ctx.moveTo(x, y)
 		ctx.lineTo(x + s * 9, y)
 		ctx.moveTo(x, y + s)
 		ctx.lineTo(x + s * 9, y + s)
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
 		for(let i = 0; i <= 9; i++) {
 			ctx.moveTo(x + i * s, y)
 			ctx.lineTo(x + i * s, y + s)
 		}
+		for(let i = 0; i < 9; i++) {
+			ctx.fillRect(width / 2 - 9 / 2 * s + i * s + 25, height - s * 1.5, s, s)
+		}
 		ctx.stroke()
 
-		ctx.strokeStyle = "white"
-		ctx.lineWidth = 2
+		ctx.strokeStyle = "rgb(150, 150, 150)"
+		ctx.lineWidth = 6
 		ctx.beginPath()
 
 		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
 
+		ctx.fillStyle = "white"
 		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
 		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
 		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
@@ -7555,19 +7863,18 @@ async function MineKhan() {
 		let y = 0
 		let s = inventory.size
 		let s2 = s / 2
-		let perRow = 13
+		let perRow = 14
 
 		gl.clearColor(0, 0, 0, 0)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		ctx.fillStyle = "rgb(127, 127, 127)"
-		ctx.fillRect(0, 0, canvas.width, canvas.height)
 		FOV(90)
 
 		// Draw the grid
-		ctx.lineWidth = 1
-		ctx.strokeStyle = "black"
+		ctx.lineWidth = 5
+		ctx.strokeStyle = "rgb(100, 100, 100)"
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
 		ctx.beginPath()
-		for (y = 0; y < 10; y++) {
+		for (y = 0; y < 12; y++) {
 			ctx.moveTo(50.5 - s2, 50.5 - s2 + y * s)
 			ctx.lineTo(50.5 - s2 + s * perRow, 50.5 - s2 + y * s)
 		}
@@ -7575,6 +7882,10 @@ async function MineKhan() {
 		for (x = 0; x < perRow + 1; x++) {
 			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
 			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
+		}
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT; i++) {
+			ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
+			ctx.fillRect((i - 1) % perRow * s + 50 - s / 2, ((i - 1) / perRow | 0) * s + 50 - s / 2, s, s)
 		}
 
 		// Hotbar
@@ -7584,18 +7895,24 @@ async function MineKhan() {
 		ctx.lineTo(x + s * 9, y)
 		ctx.moveTo(x, y + s)
 		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= inventory.hotbar.length; i ++) {
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
+		for(let i = 0; i <= inventory.hotbar.length; i++) {
 			ctx.moveTo(x + i * s, y)
 			ctx.lineTo(x + i * s, y + s)
+		}
+		for(let i = 0; i < inventory.hotbar.length; i++) {
+			ctx.fillRect(width / 2 - 9 / 2 * s + i * s + 25, height - s * 1.5, s, s)
 		}
 		ctx.stroke()
 
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
 			x += s * overHot
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
+			ctx.fillStyle = "rgba(250, 250, 250, 0.3)"
+			ctx.strokeStyle = "rgb(150, 150, 150)"
+			ctx.lineWidth = 6
 			ctx.beginPath()
+			ctx.fillRect(x, y, s, s)
 			ctx.strokeRect(x, y, s, s)
 		}
 
@@ -7606,9 +7923,11 @@ async function MineKhan() {
 			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
+			ctx.fillStyle = "rgba(250, 250, 250, 0.3)"
+			ctx.strokeStyle = "rgb(150, 150, 150)"
+			ctx.lineWidth = 6
 			ctx.beginPath()
+			ctx.fillRect(x, y, s, s)
 			ctx.strokeRect(x, y, s, s)
 		}
 
@@ -7627,15 +7946,16 @@ async function MineKhan() {
 		if (drawName) {
 			let name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
-			ctx.fillRect(mouseX - 3, mouseY - 20, name.length * 6 + 6, 15)
+			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
+			ctx.font = "bold 16px VT323, monospace"
 			ctx.fillStyle = "white"
-			ctx.fillText(name, mouseX, mouseY - 10)
+			ctx.fillText(name, mouseX + 3, mouseY)
 		}
 	}
 	function clickInv() {
 		let s = inventory.size
 		let s2 = s / 2
-		let perRow = 13
+		let perRow = 14
 		let over = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		let x = width / 2 - 9 / 2 * s + 25
 		let y = height - s * 1.5
@@ -7704,8 +8024,12 @@ async function MineKhan() {
 				}
 
 				// holding = inventory.hotbar[inventory.hotbarSlot]
-				if(name === controlMap.placeBlock.key && holding) {
-					newWorldBlock()
+				if (name === controlMap.placeBlock.key && holding) {
+					if (holding === 152 || holding === 153 || holding === 154) {
+						specialNewWorldBlock(FLOWER)
+					} else {
+						newWorldBlock()
+					}
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
@@ -7942,7 +8266,7 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
-		inventory.size = 40 * min(width, height) / 600
+		inventory.size = 5 + 40 * min(width, height) / 600
 		genIcons()
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
@@ -8633,31 +8957,27 @@ async function MineKhan() {
 			strokeWeight(1)
 			ctx.textAlign = 'center'
 
-			ctx.font = "bold 120px " + font
-			fill(30)
-			text(title, width / 2, 158)
-			fill(40)
-			text(title, width / 2, 155)
-			ctx.font = "bold 121px " + font
-			fill(50)
-			text(title, width / 2, 152)
-			fill(70)
-			text(title, width / 2, 150)
-			fill(90)
-			ctx.font = "bold 122px " + font
-			text(title, width / 2, 148)
-			fill(110)
-			text(title, width / 2, 145)
+			for (let i = 0; i < 15; i++) {
+				if (i < 12) {
+					fill(i * 10)
+				} else if (i > 11) {
+					fill(125)
+				}
 
-			ctx.font = "bold 32px " + font
-			fill(50)
-			text(subtext, width / 2-1, 180)
-			text(subtext, width / 2+1, 180)
-			text(subtext, width / 2, 179)
-			text(subtext, width / 2, 181)
-			ctx.font = "bold 32px " + font
-			fill(150)
-			text(subtext, width / 2, 180)
+				if (i < 10) {
+					ctx.font = "bold 12" + i.toString() + "px " + font
+				} else if (i > 9) {
+					ctx.font = "bold 1" + (20 + i).toString() + "px " + font
+				}
+				text(title, width / 2, 158 - i)
+
+				if (i < 8) {
+					ctx.font = "bold 3" + (2 + i / 4).toString() + "px " + font
+				} else if (i > 7) {
+					ctx.font = "bold " + (32 + i / 4).toString() + "px " + font
+				}
+				text(subtext, width / 2, 190 - i / 2)
+			}
 		}
 		const clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height)
 		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
@@ -8666,9 +8986,9 @@ async function MineKhan() {
 			ctx.putImageData(mainbg, 0, 0)
 			title()
 			fill(220)
-			ctx.font = "20px VT323"
+			ctx.font = "20px VT323, monospace"
 			ctx.textAlign = 'left'
-			text("Minecraft " + version, width - (width - 2), height - 2)
+			text("MineKhan " + version, width - (width - 2), height - 2)
 		}
 
 		drawScreens.play = () => {
@@ -8734,17 +9054,15 @@ async function MineKhan() {
 			text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
 
-		drawScreens.inventory = drawInv
+		drawScreens.inventory = () => {
+			dirt()
+			drawInv()
+		}
 
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
 			ctx.drawImage(gl.canvas, 0, 0)
-
-			textSize(60)
-			fill(0, 0, 0)
-			ctx.textAlign = 'center'
-			text("Paused", width / 2, 60)
 		}
 
 		drawScreens.options = () => {
