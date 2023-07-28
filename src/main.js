@@ -229,6 +229,7 @@ async function MineKhan() {
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
 	const FLIP     = 0x400 // 11th bit
+	const FLOWER   = 0x300
 	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
 	const SOUTH    = 0x800
 	const EAST     = 0x1000
@@ -688,11 +689,15 @@ async function MineKhan() {
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
+			let flowerBlock = Object.create(baseBlock)
+			flowerBlock.transparent = true
 			slabBlock.shape = shapes.slab
 			baseBlock.shape = shapes.cube
 			stairBlock.shape = shapes.stair
+			flowerBlock.shape = shapes.flower
 			blockData[i | SLAB] = slabBlock
 			blockData[i | STAIR] = stairBlock
+			blockData[i | FLOWER] = flowerBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -709,6 +714,15 @@ async function MineKhan() {
 					block.transparent = true
 					block.shape = v[j]
 					blockData[i | STAIR | j << 10] = block
+				}
+			}
+			v = flowerBlock.shape.varients
+			for (let j = 0; j < v.length; j++) {
+				if (v[j]) {
+					let block = Object.create(baseBlock)
+					block.transparent = true
+					block.shape = v[j]
+					blockData[i | FLOWER | j << 10] = block
 				}
 			}
 		}
@@ -758,7 +772,7 @@ async function MineKhan() {
 		blockIcons.lengths = []
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scale = 0.16 / height * inventory.size
+		let scale = 0.16 / height * (inventory.size - 5)
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
 			let block = blockData[i]
@@ -1606,7 +1620,7 @@ async function MineKhan() {
 			}
 		}
 	}
-	function newWorldBlock() {
+	function newWorldBlock(block) {
 		if(!hitBox.pos || !holding) {
 			return
 		}
@@ -1635,7 +1649,7 @@ async function MineKhan() {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff ? holding | blockMode : holding)
+			changeWorldBlock(holding < 0xff ? holding | block : holding)
 		}
 	}
 
@@ -2444,7 +2458,7 @@ async function MineKhan() {
 			// Was in tick; moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
-				newWorldBlock()
+				newWorldBlock(blockMode)
 			}
 
 			initModelView(p)
@@ -3380,25 +3394,30 @@ async function MineKhan() {
 		x = width / 2 - 9 / 2 * s + 0.5 + 25
 		y = height - s * 1.5 + 0.5
 
-		ctx.strokeStyle = "black"
-		ctx.lineWidth = 2
+		ctx.strokeStyle = "rgb(100, 100, 100)"
+		ctx.lineWidth = 5
 		ctx.beginPath()
 		ctx.moveTo(x, y)
 		ctx.lineTo(x + s * 9, y)
 		ctx.moveTo(x, y + s)
 		ctx.lineTo(x + s * 9, y + s)
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
 		for(let i = 0; i <= 9; i++) {
 			ctx.moveTo(x + i * s, y)
 			ctx.lineTo(x + i * s, y + s)
 		}
+		for(let i = 0; i < 9; i++) {
+			ctx.fillRect(width / 2 - 9 / 2 * s + i * s + 25, height - s * 1.5, s, s)
+		}
 		ctx.stroke()
 
-		ctx.strokeStyle = "white"
-		ctx.lineWidth = 2
+		ctx.strokeStyle = "rgb(150, 150, 150)"
+		ctx.lineWidth = 6
 		ctx.beginPath()
 
 		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
 
+		ctx.fillStyle = "white"
 		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
 		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
 		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
@@ -3444,19 +3463,18 @@ async function MineKhan() {
 		let y = 0
 		let s = inventory.size
 		let s2 = s / 2
-		let perRow = 13
+		let perRow = 14
 
 		gl.clearColor(0, 0, 0, 0)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		ctx.fillStyle = "rgb(127, 127, 127)"
-		ctx.fillRect(0, 0, canvas.width, canvas.height)
 		FOV(90)
 
 		// Draw the grid
-		ctx.lineWidth = 1
-		ctx.strokeStyle = "black"
+		ctx.lineWidth = 5
+		ctx.strokeStyle = "rgb(100, 100, 100)"
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
 		ctx.beginPath()
-		for (y = 0; y < 10; y++) {
+		for (y = 0; y < 12; y++) {
 			ctx.moveTo(50.5 - s2, 50.5 - s2 + y * s)
 			ctx.lineTo(50.5 - s2 + s * perRow, 50.5 - s2 + y * s)
 		}
@@ -3464,6 +3482,10 @@ async function MineKhan() {
 		for (x = 0; x < perRow + 1; x++) {
 			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
 			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
+		}
+		for (let i = 1; i < BLOCK_COUNT; i++) {
+			ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
+			ctx.fillRect((i - 1) % perRow * s + 50 - s / 2, ((i - 1) / perRow | 0) * s + 50 - s / 2, s, s)
 		}
 
 		// Hotbar
@@ -3473,18 +3495,24 @@ async function MineKhan() {
 		ctx.lineTo(x + s * 9, y)
 		ctx.moveTo(x, y + s)
 		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= inventory.hotbar.length; i ++) {
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
+		for(let i = 0; i <= inventory.hotbar.length; i++) {
 			ctx.moveTo(x + i * s, y)
 			ctx.lineTo(x + i * s, y + s)
+		}
+		for(let i = 0; i < inventory.hotbar.length; i++) {
+			ctx.fillRect(width / 2 - 9 / 2 * s + i * s + 25, height - s * 1.5, s, s)
 		}
 		ctx.stroke()
 
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
 			x += s * overHot
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
+			ctx.fillStyle = "rgba(250, 250, 250, 0.3)"
+			ctx.strokeStyle = "rgb(150, 150, 150)"
+			ctx.lineWidth = 6
 			ctx.beginPath()
+			ctx.fillRect(x, y, s, s)
 			ctx.strokeRect(x, y, s, s)
 		}
 
@@ -3495,9 +3523,11 @@ async function MineKhan() {
 			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
+			ctx.fillStyle = "rgba(250, 250, 250, 0.3)"
+			ctx.strokeStyle = "rgb(150, 150, 150)"
+			ctx.lineWidth = 6
 			ctx.beginPath()
+			ctx.fillRect(x, y, s, s)
 			ctx.strokeRect(x, y, s, s)
 		}
 
@@ -3516,15 +3546,16 @@ async function MineKhan() {
 		if (drawName) {
 			let name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
-			ctx.fillRect(mouseX - 3, mouseY - 20, name.length * 6 + 6, 15)
+			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
+			ctx.font = "bold 16px VT323, monospace"
 			ctx.fillStyle = "white"
-			ctx.fillText(name, mouseX, mouseY - 10)
+			ctx.fillText(name, mouseX + 3, mouseY)
 		}
 	}
 	function clickInv() {
 		let s = inventory.size
 		let s2 = s / 2
-		let perRow = 13
+		let perRow = 14
 		let over = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		let x = width / 2 - 9 / 2 * s + 25
 		let y = height - s * 1.5
@@ -3594,7 +3625,11 @@ async function MineKhan() {
 
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
-					newWorldBlock()
+					if (holding === 152 || holding === 153 || holding === 154) {
+						newWorldBlock(FLOWER)
+					} else {
+						newWorldBlock(blockMode)
+					}
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
@@ -3831,7 +3866,7 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
-		inventory.size = 40 * min(width, height) / 600
+		inventory.size = 5 + 40 * min(width, height) / 600
 		genIcons()
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
@@ -4522,31 +4557,27 @@ async function MineKhan() {
 			strokeWeight(1)
 			ctx.textAlign = 'center'
 
-			ctx.font = "bold 120px " + font
-			fill(30)
-			text(title, width / 2, 158)
-			fill(40)
-			text(title, width / 2, 155)
-			ctx.font = "bold 121px " + font
-			fill(50)
-			text(title, width / 2, 152)
-			fill(70)
-			text(title, width / 2, 150)
-			fill(90)
-			ctx.font = "bold 122px " + font
-			text(title, width / 2, 148)
-			fill(110)
-			text(title, width / 2, 145)
+			for (let i = 0; i < 15; i++) {
+				if (i < 12) {
+					fill(i * 10)
+				} else if (i > 11) {
+					fill(125)
+				}
 
-			ctx.font = "bold 32px " + font
-			fill(50)
-			text(subtext, width / 2-1, 180)
-			text(subtext, width / 2+1, 180)
-			text(subtext, width / 2, 179)
-			text(subtext, width / 2, 181)
-			ctx.font = "bold 32px " + font
-			fill(150)
-			text(subtext, width / 2, 180)
+				if (i < 10) {
+					ctx.font = "bold 12" + i.toString() + "px " + font
+				} else if (i > 9) {
+					ctx.font = "bold 1" + (20 + i).toString() + "px " + font
+				}
+				text(title, width / 2, 158 - i)
+
+				if (i < 8) {
+					ctx.font = "bold 3" + (2 + i / 4).toString() + "px " + font
+				} else if (i > 7) {
+					ctx.font = "bold " + (32 + i / 4).toString() + "px " + font
+				}
+				text(subtext, width / 2, 190 - i / 2)
+			}
 		}
 		const clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height)
 		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
@@ -4555,9 +4586,9 @@ async function MineKhan() {
 			ctx.putImageData(mainbg, 0, 0)
 			title()
 			fill(220)
-			ctx.font = "20px VT323"
+			ctx.font = "20px VT323, monospace"
 			ctx.textAlign = 'left'
-			text("Minecraft " + version, width - (width - 2), height - 2)
+			text("MineKhan " + version, width - (width - 2), height - 2)
 		}
 
 		drawScreens.play = () => {
@@ -4623,17 +4654,15 @@ async function MineKhan() {
 			text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
 
-		drawScreens.inventory = drawInv
+		drawScreens.inventory = () => {
+			dirt()
+			drawInv()
+		}
 
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
 			ctx.drawImage(gl.canvas, 0, 0)
-
-			textSize(60)
-			fill(0, 0, 0)
-			ctx.textAlign = 'center'
-			text("Paused", width / 2, 60)
 		}
 
 		drawScreens.options = () => {

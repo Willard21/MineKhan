@@ -5081,7 +5081,6 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
-	let flowerIconVerts
 	let blockIcons
 	{
 		let side = Math.sqrt(3) / 2
@@ -5108,12 +5107,6 @@ async function MineKhan() {
 			-s,0.5,0,0,0.8,      -q,0.25,0.5,0,0.8, -q,-0.75,0.5,1,0.8, -s,-0.5,0,1,0.8,    // side of the top step
 			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
 		]
-
-		flowerIconVerts = new Float32Array([
-			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
-			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
-			-side, 0.5, 1, 0, 0, 1, 0, -1, 1, -side, -0.5, 1,
-		])
 	}
 	function genIcons() {
 		blockIcons = [null]
@@ -5139,8 +5132,6 @@ async function MineKhan() {
 				blockIcons.lengths[i | SLAB] = 6
 				blockIcons[i | STAIR] = buffer
 				blockIcons.lengths[i | STAIR] = 6
-				blockIcons[i | FLOWER] = buffer
-				blockIcons.lengths[i | FLOWER] = 6
 				continue
 			}
 
@@ -5197,24 +5188,6 @@ async function MineKhan() {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i | STAIR] = buffer
 			blockIcons.lengths[i | STAIR] = 6 * 6
-			
-			// Flower icon
-			data = []
-			for (let j = 11; j >= 0; j--) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
-
-				data.push(-flowerIconVerts[j * 3 + 0] * scale)
-				data.push(flowerIconVerts[j * 3 + 1] * scale)
-				data.push(0.1666666)
-				data.push(tex[(j * 2 + 0) % 8])
-				data.push(tex[(j * 2 + 1) % 8])
-				data.push(shadows[Math.floor(j / 2)])
-			}
-			buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | FLOWER] = buffer
-			blockIcons.lengths[i | FLOWER] = 6 * 2
 		}
 	}
 
@@ -5988,7 +5961,7 @@ async function MineKhan() {
 			}
 		}
 	}
-	function newWorldBlock() {
+	function newWorldBlock(block) {
 		if(!hitBox.pos || !holding) {
 			return
 		}
@@ -6017,39 +5990,7 @@ async function MineKhan() {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff ? holding | blockMode : holding)
-		}
-	}
-	function specialNewWorldBlock(block) {
-		if(!hitBox.pos || !holding) {
-			return
-		}
-		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
-		switch(hitBox.face) {
-			case "top":
-				y += 1
-				break
-			case "bottom":
-				y -= 1
-				break
-			case "south":
-				z -= 1
-				break
-			case "north":
-				z += 1
-				break
-			case "west":
-				x -= 1
-				break
-			case "east":
-				x += 1
-				break
-		}
-		if (!inBox(x, y, z, 1, 1, 1) && !world.getBlock(x, y, z)) {
-			pos[0] = x
-			pos[1] = y
-			pos[2] = z
-			changeWorldBlock(holding | block)
+			changeWorldBlock(holding < 0xff ? holding | block : holding)
 		}
 	}
 
@@ -6858,7 +6799,7 @@ async function MineKhan() {
 			// Was in tick; moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
-				newWorldBlock()
+				newWorldBlock(blockMode)
 			}
 
 			initModelView(p)
@@ -8026,9 +7967,9 @@ async function MineKhan() {
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if (name === controlMap.placeBlock.key && holding) {
 					if (holding === 152 || holding === 153 || holding === 154) {
-						specialNewWorldBlock(FLOWER)
+						newWorldBlock(FLOWER)
 					} else {
-						newWorldBlock()
+						newWorldBlock(blockMode)
 					}
 				}
 
