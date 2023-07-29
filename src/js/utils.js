@@ -10,10 +10,6 @@ function timeString(millis) {
 	const DAY = HOUR * 24
 	const YEAR = DAY * 365
 
-	if (millis < MINUTE) {
-		return "just now"
-	}
-
 	let years = floor(millis / YEAR)
 	millis -= years * YEAR
 
@@ -24,6 +20,9 @@ function timeString(millis) {
 	millis -= hours * HOUR
 
 	let minutes = floor(millis / MINUTE)
+	millis -= minutes * MINUTE
+
+	let seconds = floor(millis / SECOND)
 
 	if (years) {
 		return `${years} year${years > 1 ? "s" : ""} and ${days} day${days !== 1 ? "s" : ""} ago`
@@ -34,7 +33,10 @@ function timeString(millis) {
 	if (hours) {
 		return `${hours} hour${hours > 1 ? "s" : ""} and ${minutes} minute${minutes !== 1 ? "s" : ""} ago`
 	}
-	return `${minutes} minute${minutes > 1 ? "s" : ""} ago`
+	if (minutes) {
+		return `${minutes} minute${minutes > 1 ? "s" : ""} and ${seconds} second${seconds !== 1 ? "s" : ""} ago`
+	}
+	return `${seconds} second${seconds !== 1 ? "s" : ""} ago`
 }
 
 function roundBits(number) {

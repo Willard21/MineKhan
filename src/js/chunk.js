@@ -1,7 +1,7 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { textureMap, textureCoords } from "./texture.js"
-let world
+// let world
 
 const { floor, max, abs } = Math
 const semiTrans = new Uint8Array(blockData.filter((data, i) => data && i < 256).map(data => data.semiTrans ? 1 : 0))
@@ -17,6 +17,7 @@ const lightLevels = new Uint8Array(blockData.map(data => data.lightLevel || 0))
 
 // Save the coords for a small sphere used to carve out caves
 let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,-1,-2,1,0,-2,1,1,-1,-2,-1,-1,-2,0,-1,-2,1,-1,-1,-2,-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,2,-1,0,-2,-1,0,-1,-1,0,0,-1,0,1,-1,0,2,-1,1,-2,-1,1,-1,-1,1,0,-1,1,1,-1,1,2,-1,2,-1,-1,2,0,-1,2,1,0,-2,-1,0,-2,0,0,-2,1,0,-1,-2,0,-1,-1,0,-1,0,0,-1,1,0,-1,2,0,0,-2,0,0,-1,0,0,0,0,0,1,0,0,2,0,1,-2,0,1,-1,0,1,0,0,1,1,0,1,2,0,2,-1,0,2,0,0,2,1,1,-2,-1,1,-2,0,1,-2,1,1,-1,-2,1,-1,-1,1,-1,0,1,-1,1,1,-1,2,1,0,-2,1,0,-1,1,0,0,1,0,1,1,0,2,1,1,-2,1,1,-1,1,1,0,1,1,1,1,1,2,1,2,-1,1,2,0,1,2,1,2,-1,-1,2,-1,0,2,-1,1,2,0,-1,2,0,0,2,0,1,2,1,-1,2,1,0,2,1,1])
+
 // {
 // 	let blocks = []
 // 	let radius = 3.5
@@ -42,123 +43,54 @@ function carveSphere(x, y, z, world) {
 	}
 }
 
-let getShadows = {
-	shade: [1, 0.85, 0.7, 0.6, 0.3],
-	ret: [],
-	blocks: [],
-	top: function(x, y, z, world) { // Actually the bottom... How did these get flipped?
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x, y-1, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x, y-1, z)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y-1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x, y-1, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-
-		ret[0] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75
-		ret[1] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75
-		ret[2] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.75
-		ret[3] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.75
-		return ret
-	},
-	bottom: function(x, y, z, world) { // Actually the top
-		let ret = this.ret
-		let b0 = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		let b1 = shadow[255 & world.getBlock(x, y+1, z-1)]
-		let b2 = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-		let b3 = shadow[255 & world.getBlock(x-1, y+1, z)]
-		let b4 = shadow[255 & world.getBlock(x, y+1, z)]
-		let b5 = shadow[255 & world.getBlock(x+1, y+1, z)]
-		let b6 = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-		let b7 = shadow[255 & world.getBlock(x, y+1, z+1)]
-		let b8 = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[b6 + b3 + b7 + b4]
-		ret[1] = this.shade[b8 + b5 + b7 + b4]
-		ret[2] = this.shade[b2 + b1 + b5 + b4]
-		ret[3] = this.shade[b0 + b1 + b3 + b4]
-		return ret
-	},
-	north: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[1] = shadow[255 & world.getBlock(x, y-1, z+1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y, z+1)]
-		blocks[4] = shadow[255 & world.getBlock(x, y, z+1)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y, z+1)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x, y+1, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-		ret[1] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-		ret[2] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-		ret[3] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-		return ret
-	},
-	south: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x-1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x, y-1, z-1)]
-		blocks[4] = shadow[255 & world.getBlock(x, y, z-1)]
-		blocks[5] = shadow[255 & world.getBlock(x, y+1, z-1)]
-		blocks[6] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[7] = shadow[255 & world.getBlock(x+1, y, z-1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-
-		ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-		ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-		return ret
-	},
-	east: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x+1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x+1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x+1, y, z)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y+1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x+1, y, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.8
-		ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.8
-		return ret
-	},
-	west: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x-1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x-1, y, z)]
-		blocks[5] = shadow[255 & world.getBlock(x-1, y+1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x-1, y, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[1] + blocks[0]]*0.8
-		ret[3] = this.shade[blocks[6] + blocks[7] + blocks[3] + blocks[4]]*0.8
-		return ret
-	},
+let getShadows
+{
+	const shade = [1, 0.85, 0.7, 0.6, 0.3]
+	const ret = []
+	getShadows = [
+		b => { // Bottom
+			ret[0] = shade[b[0] + b[3] + b[1] + b[4]]*0.75
+			ret[1] = shade[b[3] + b[6] + b[4] + b[7]]*0.75
+			ret[2] = shade[b[7] + b[4] + b[8] + b[5]]*0.75
+			ret[3] = shade[b[4] + b[1] + b[5] + b[2]]*0.75
+			return ret
+		},
+		b => { // Top
+			ret[0] = shade[b[20] + b[19] + b[23] + b[22]]
+			ret[1] = shade[b[26] + b[25] + b[23] + b[22]]
+			ret[2] = shade[b[24] + b[21] + b[25] + b[22]]
+			ret[3] = shade[b[18] + b[21] + b[19] + b[22]]
+			return ret
+		},
+		b => { // North
+			ret[0] = shade[b[17] + b[26] + b[23] + b[14]]*0.95
+			ret[1] = shade[b[11] + b[20] + b[23] + b[14]]*0.95
+			ret[2] = shade[b[11] + b[2]  + b[5]  + b[14]]*0.95
+			ret[3] = shade[b[17] + b[8]  + b[5]  + b[14]]*0.95
+			return ret
+		},
+		b => { // South
+			ret[0] = shade[b[9]  + b[18] + b[12] + b[21]]*0.95
+			ret[1] = shade[b[21] + b[12] + b[24] + b[15]]*0.95
+			ret[2] = shade[b[12] + b[3]  + b[15] + b[6]]*0.95
+			ret[3] = shade[b[0]  + b[9]  + b[3]  + b[12]]*0.95
+			return ret
+		},
+		b => { // East
+			ret[0] = shade[b[15] + b[24] + b[16] + b[25]]*0.8
+			ret[1] = shade[b[25] + b[16] + b[26] + b[17]]*0.8
+			ret[2] = shade[b[16] + b[7] + b[17] + b[8]]*0.8
+			ret[3] = shade[b[6] + b[15] + b[7] + b[16]]*0.8
+			return ret
+		},
+		b => { // West
+			ret[0] = shade[b[11] + b[20] + b[10] + b[19]]*0.8
+			ret[1] = shade[b[19] + b[10] + b[18] + b[9]]*0.8
+			ret[2] = shade[b[10] + b[1]  + b[9]  + b[0]]*0.8
+			ret[3] = shade[b[2]  + b[11] + b[1]  + b[10]]*0.8
+			return ret
+		},
+	]
 }
 
 function average(l, a, b, c, d) {
@@ -195,190 +127,181 @@ function average(l, a, b, c, d) {
 	return total / 60
 }
 
-let getLight = {
-	blocks: [],
-	top: function(x, y, z, ret, blockLight, world) { // Actually the bottom... How did these get flipped?
-		const face = world.getLight(x, y-1, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
+let getLight
+{
+	const blocks = []
+	getLight = [
+		(lights27, ret, blockMask, blockShift) => { // Bottom
+			const face = (lights27[4] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[3] & blockMask) >> blockShift
+			blocks[2] = (lights27[6] & blockMask) >> blockShift
+			blocks[3] = (lights27[1] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[7] & blockMask) >> blockShift
+			blocks[6] = (lights27[2] & blockMask) >> blockShift
+			blocks[7] = (lights27[5] & blockMask) >> blockShift
+			blocks[8] = (lights27[8] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 0, 1, 3)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 5, 7, 8)
+			ret[3] = average(blocks, 4, 3, 6, 7)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // Top
+			const face = (lights27[22] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[18] & blockMask) >> blockShift
+			blocks[1] = (lights27[21] & blockMask) >> blockShift
+			blocks[2] = (lights27[24] & blockMask) >> blockShift
+			blocks[3] = (lights27[19] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[25] & blockMask) >> blockShift
+			blocks[6] = (lights27[20] & blockMask) >> blockShift
+			blocks[7] = (lights27[23] & blockMask) >> blockShift
+			blocks[8] = (lights27[26] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 3, 6, 7)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 1, 2, 5)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // North
+			const face = (lights27[14] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[2] & blockMask) >> blockShift
+			blocks[1] = (lights27[5] & blockMask) >> blockShift
+			blocks[2] = (lights27[8] & blockMask) >> blockShift
+			blocks[3] = (lights27[11] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[17] & blockMask) >> blockShift
+			blocks[6] = (lights27[20] & blockMask) >> blockShift
+			blocks[7] = (lights27[23] & blockMask) >> blockShift
+			blocks[8] = (lights27[26] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 3, 6, 7)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 1, 2, 5)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // South
+			const face = (lights27[12] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[9] & blockMask) >> blockShift
+			blocks[2] = (lights27[18] & blockMask) >> blockShift
+			blocks[3] = (lights27[3] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[21] & blockMask) >> blockShift
+			blocks[6] = (lights27[6] & blockMask) >> blockShift
+			blocks[7] = (lights27[15] & blockMask) >> blockShift
+			blocks[8] = (lights27[24] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // East
+			const face = (lights27[16] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[6] & blockMask) >> blockShift
+			blocks[1] = (lights27[15] & blockMask) >> blockShift
+			blocks[2] = (lights27[24] & blockMask) >> blockShift
+			blocks[3] = (lights27[7] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[25] & blockMask) >> blockShift
+			blocks[6] = (lights27[8] & blockMask) >> blockShift
+			blocks[7] = (lights27[17] & blockMask) >> blockShift
+			blocks[8] = (lights27[27] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // West
+			const face = (lights27[10] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[9] & blockMask) >> blockShift
+			blocks[2] = (lights27[18] & blockMask) >> blockShift
+			blocks[3] = (lights27[1] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[19] & blockMask) >> blockShift
+			blocks[6] = (lights27[2] & blockMask) >> blockShift
+			blocks[7] = (lights27[11] & blockMask) >> blockShift
+			blocks[8] = (lights27[20] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 3, 6, 7)
 			return ret
 		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 0, 1, 3)
-		ret[1] = average(blocks, 4, 1, 2, 5)
-		ret[2] = average(blocks, 4, 5, 7, 8)
-		ret[3] = average(blocks, 4, 3, 6, 7)
-		return ret
-	},
-	bottom: function(x, y, z, ret, blockLight, world) { // Actually the top
-		const face = world.getLight(x, y+1, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 3, 6, 7)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 1, 2, 5)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	north: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x, y, z+1, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 5, 7, 8)
-		ret[1] = average(blocks, 4, 3, 6, 7)
-		ret[2] = average(blocks, 4, 0, 1, 3)
-		ret[3] = average(blocks, 4, 1, 2, 5)
-		return ret
-	},
-	south: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x, y, z-1, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x-1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x,   y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x,   y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x+1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 1, 2, 5)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 3, 6, 7)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	east: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x+1, y, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x+1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x+1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x+1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 1, 2, 5)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 3, 6, 7)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	west: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x-1, y, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x-1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x-1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x-1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 5, 7, 8)
-		ret[1] = average(blocks, 4, 1, 2, 5)
-		ret[2] = average(blocks, 4, 0, 1, 3)
-		ret[3] = average(blocks, 4, 3, 6, 7)
-		return ret
-	},
+	]
 }
 
 class Chunk {
 	/**
 	 * @param {Number} x
 	 * @param {Number} z
-	 * @param {*} WoRlD
+	 * @param {World} world
 	 * @param {{vertex_array_object: OES_vertex_array_object}} glExtensions
 	 * @param {WebGLRenderingContext} gl
 	 * @param {Object} glCache
 	 * @param {Boolean} superflat
 	 * @param {Boolean} caves
 	 */
-	constructor(x, z, WoRlD, glExtensions, gl, glCache, superflat, caves) {
+	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
@@ -388,12 +311,13 @@ class Chunk {
 		this.generated = false // Terrain
 		this.populated = superflat // Trees and ores
 		this.lit = false
+		this.lightDropped = false
 		this.edited = false
 		this.loaded = false
 		// vao for this chunk
 		this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
 		this.caves = !caves
-		this.world = WoRlD
+		this.world = world
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
@@ -401,15 +325,14 @@ class Chunk {
 		this.blocks = new Int16Array(16*16*256)
 		this.originalBlocks = new Int16Array(0)
 		this.light = new Uint8Array(16*16*256)
-		this.palette = [0, blockIds.grass, blockIds.dirt, blockIds.stone, blockIds.bedrock]
-		this.paletteMap = []
-		for (let i = 0; i < 256; i++) this.paletteMap[i] = 0
-		for (let i = 0; i < this.palette.length; i++) this.paletteMap[this.palette[i]] = i
-		this.paletteSize = 2
 		this.renderData = []
 		this.renderLength = 0
 		this.hasBlockLight = false
-		world = WoRlD
+
+		// These are temporary and will be removed after the chunk is generated.
+		this.blockSpread = []
+		this.visFlags = new Int8Array(0)
+		this.shadowFlags = new Int8Array(0)
 	}
 	getBlock(x, y, z) {
 		// if (y < 0 || y > 255) debugger
@@ -429,84 +352,113 @@ class Chunk {
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
-	fillLight() {
-		let blockSpread = []
 
-		this.maxY = 0
+	processBlocks() {
+		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
+		const { blocks, maxY, blockSpread, world } = this
+		const trans = transparent
+
+		const chunkN = world.getChunk(this.x, this.z + 16).blocks
+		const chunkS = world.getChunk(this.x, this.z - 16).blocks
+		const chunkE = world.getChunk(this.x + 16, this.z).blocks
+		const chunkW = world.getChunk(this.x - 16, this.z).blocks
+
+		const flags = new Int8Array((maxY + 1) * 256)
+		this.visFlags = flags
+		// this.shadowFlags = new Int32Array(flags.length >> 5)
+		for (let i = flags.length - 256; i < flags.length; i++) {
+			flags[i] = 8 // Up is Air
+		}
+		for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
+		for (let i = 256; i < flags.length; i++) {
+			const x = i >> 4 & 15
+			const z = i & 15
+			const b = blocks[i]
+
+			// Set bit flags on adjacent blocks
+			if (trans[b] === 1) {
+				if (b === 0) flags[i] ^= 128 // This is an air block, so it can't be rendered
+				else if (hideInterior[b] === 1) {
+					flags[i] ^= (b === (i >> 4 & 15 ? blocks[i - 16] : chunkW[i + 240])) << 0
+					| (b === (~i >> 4 & 15 ? blocks[i + 16] : chunkE[i - 240])) << 1
+					| (b === blocks[i - 256]) << 2
+					| (b === blocks[i + 256]) << 3
+					| (b === (i & 15 ? blocks[i - 1] : chunkS[i + 15])) << 4
+					| (b === (~i & 15 ? blocks[i + 1] : chunkN[i - 15])) << 5
+				}
+
+				flags[i - 256] ^= 8 // Top face of block below is visible
+				if (i < flags.length - 256) flags[i + 256] ^= 4 // Bottom face of block above is visible
+				if (z)      flags[i - 1] ^= 32 // South face of North block is visible
+				if (z < 15) flags[i + 1] ^= 16 // North face of South block is visible
+				if (x)      flags[i - 16] ^= 2 // West face of East block is visible
+				if (x < 15) flags[i + 16] ^= 1 // East face of West block is visible
+			}
+
+			// Some lighting stuff
+			const light = lightLevels[255 & b]
+			if (light) {
+				if (!blockSpread[light]) blockSpread[light] = []
+				blockSpread[light].push(this.x + x, i >> 8, this.z + z)
+				this.light[i] |= light * 16
+			}
+		}
+	}
+
+	dropLight() {
+		// Drop light from the sky without spreading it.
+		if (this.lightDropped) return
 		const { blocks, hasBlockLight } = this
 
-		// Find top block in chunk, and fill all air blocks above it with light
-		for (let i = blocks.length - 1; !this.maxY && i > 255; i--) {
-			if (blocks[i]) this.maxY = i >>> 8
+		if (!hasBlockLight) this.light.fill(15, (this.maxY + 1) * 256)
+		else {
+			// May introduce a subtle lighting glitch, but it's worth it for the time savings.
+			let end = Math.min((this.maxY + 14) * 256, blocks.length)
+			this.light.fill(15, end)
+			for (let i = this.maxY * 256; i < end; i++) this.light[i] |= 15
 		}
-		if (!hasBlockLight) this.light.fill(15, this.maxY * 256)
-		else for (let i = this.maxY * 256; i < blocks.length; i++) this.light[i] |= 15
 
 		// Set vertical columns of light to level 15
 		this.tops.fill(0)
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
-				let stop = false
 				for (let y = this.maxY; y > 0; y--) {
-					const block = this.getBlock(x, y, z)
-					if (block > 74) { // 75 (glowstone) is the first light-emitting block
-						// Spread block light
-						const light = lightLevels[255 & block]
-						if (light) {
-							if (!blockSpread[light]) blockSpread[light] = []
-							blockSpread[light].push(x + this.x, y, z + this.z)
-							this.setBlockLight(x, y, z, light)
-						}
-					}
+					const block = blocks[y * 256 + x * 16 + z]
 
-					if (!stop && block && !transparent[block]) {
-						this.tops[z * 16 + x] = y
-						stop = true
+					if (block && !transparent[block]) {
+					// if ((visFlags[y*256 + x*16 + z - 256] & 8) === 0) {
+						this.tops[x * 16 + z] = y
+						break
 					}
-					else if (!stop) {
-						this.light[y * 256 + x * 16 + z] |= 15
-						// this.setSkyLight(x, y, z, 15)
-					}
+					this.light[y * 256 + x * 16 + z] |= 15
 				}
 			}
 		}
 
-		// Set vertical columns of light to level 15 in neighboring chunk borders so we won't need to spread into them.
-		for (let x = this.x - 1; x <= this.x + 16; x += 17) {
-			for (let z = this.z - 1; z <= this.z + 16; z++) {
-				if (world.getLight(x, 255, z) === 0) {
-					let chunk = world.getChunk(x, z)
-					let index = 255 * 256 + (x - chunk.x) * 16 + z - chunk.z
-					let block = chunk.blocks[index]
-					while (!block || transparent[block]) {
-						chunk.light[index] |= 15
-						index -= 256
-						block = chunk.blocks[index]
-					}
-				}
-			}
-		}
-		for (let x = this.x; x < this.x + 16; x++) {
-			for (let z = this.z - 1; z <= this.z + 16; z += 17) {
-				if (world.getLight(x, 255, z) === 0) {
-					let chunk = world.getChunk(x, z)
-					let index = 255 * 256 + (x - chunk.x) * 16 + z - chunk.z
-					for (; transparent[255 & chunk.blocks[index]]; index -= 256) {
-						chunk.light[index] |= 15
-					}
-				}
-			}
-		}
+		this.lightDropped = true
+	}
+	fillLight() {
+		const { world } = this
+		this.processBlocks()
+		this.dropLight()
+		let blockSpread = this.blockSpread
+		this.blockSpread = null
+
+		// Drop light in neighboring chunk borders so we won't need to spread into them as much.
+		world.getChunk(this.x - 1, this.z).dropLight()
+		world.getChunk(this.x + 17, this.z).dropLight()
+		world.getChunk(this.x, this.z - 1).dropLight()
+		world.getChunk(this.x, this.z + 17).dropLight()
 
 		// Spread the light to places where the vertical columns stopped earlier, plus chunk borders
 		let spread = []
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
-				for (let y = this.tops[z * 16 + x] + 1; y <= this.maxY; y++) {
-					if (   x === 15 || this.tops[z * 16 + x + 1 ] > y
-						|| x === 0  || this.tops[z * 16 + x - 1 ] > y
-						|| z === 15 || this.tops[z * 16 + x + 16] > y
-						|| z === 0  || this.tops[z * 16 + x - 16] > y
+				for (let y = this.tops[x * 16 + z] + 1; y <= this.maxY; y++) {
+					if (   x === 15 || this.tops[x * 16 + z + 1 ] > y
+						|| x === 0  || this.tops[x * 16 + z - 1 ] > y
+						|| z === 15 || this.tops[x * 16 + z + 16] > y
+						|| z === 0  || this.tops[x * 16 + z - 16] > y
 					) {
 						spread.push(x + this.x, y, z + this.z)
 					}
@@ -646,8 +598,7 @@ class Chunk {
 		const { grass, dirt, stone, bedrock } = blockIds
 
 		if (this.generated) {
-			// throw "Wot? Why?"
-			return false
+			return
 		}
 
 		const smoothness = 0.01 // How close hills and valleys are together
@@ -658,7 +609,8 @@ class Chunk {
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
 				gen = superflat ? 4 : Math.round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + extra
-				this.tops[k * 16 + i] = gen
+				this.tops[i * 16 + k] = gen
+				if (gen > this.maxY) this.maxY = gen
 
 				let index = i * 16 + k
 				this.blocks[index] = bedrock
@@ -676,61 +628,53 @@ class Chunk {
 		this.getCaveData() // Queue up the multithreaded cave gen
 	}
 	optimize() {
-		const { world, x, z, blocks, maxY } = this
-		let index = 256
-		this.renderLength = 0
+		const { blocks, renderData, world, x, z, maxY } = this
+		const trans = transparent
+		const flags = this.visFlags // Computed in this.processBlocks()
+		this.visFlags = null
 
-		//Check all the blocks in the chunk to see if they're visible.
-		for (let j = 1; j <= maxY; j++) {
+		// Load adjacent chunks blocks
+		const chunkN = world.getChunk(x, z + 17).blocks
+		const chunkS = world.getChunk(x, z - 1).blocks
+		const chunkE = world.getChunk(x + 17, z).blocks
+		const chunkW = world.getChunk(x - 1, z).blocks
+		// let max = (maxY - 1) * 256
+		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
+		for (let y = 1; y <= maxY; y++) {
+			let indexN = y * 256
+			let indexS = indexN + 15
+			let indexE = indexN
+			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				for (let k = 0; k < 16; k++, index++) {
-					let blockState = blocks[index]
-					if (!blockState) continue
-
-					if (!this.paletteMap[blockState]) {
-						this.paletteMap[blockState] = this.palette.length
-						this.palette.push(blockState)
-					}
-
-					let s = i      ? blocks[index - 16] : world.getBlock(x + i - 1, j, z + k)
-					let n = i < 15 ? blocks[index + 16] : world.getBlock(x + i + 1, j, z + k)
-					let d = blocks[index - 256]
-					let u = blocks[index + 256]
-					let w = k      ? blocks[index - 1] : world.getBlock(x + i, j, z + k - 1)
-					let e = k < 15 ? blocks[index + 1] : world.getBlock(x + i, j, z + k + 1)
-
-					let visible = transparent[s]
-					+ transparent[n] * 2
-					+ transparent[d] * 4
-					+ transparent[u] * 8
-					+ transparent[w] * 16
-					+ transparent[e] * 32
-
-					if (blockState > 6 && blockState < 256 && hideInterior[blockState]) {
-						visible ^= s === blockState
-						| (n === blockState) << 1
-						| (d === blockState) << 2
-						| (u === blockState) << 3
-						| (w === blockState) << 4
-						| (e === blockState) << 5
-					}
-
-					if (visible) {
-						let pos = (i | j << 4 | k << 12) << 16
-						this.renderData[this.renderLength++] = pos | visible << 10 | this.paletteMap[blockState]
-					}
-				}
+				if (trans[chunkN[indexN]]) flags[indexN + 15] ^= 32
+				if (trans[chunkS[indexS]]) flags[indexS - 15] ^= 16
+				if (trans[chunkE[indexE]]) flags[indexE + 240] ^= 2
+				if (trans[chunkW[indexW]]) flags[indexW - 240] ^= 1
+				indexN += 16
+				indexS += 16
+				indexE++
+				indexW++
 			}
 		}
+
+		//Check all the blocks in the chunk to see if they're visible.
+		for (let index = 256; index < flags.length; index++) {
+			if (flags[index] > 0) {
+				renderData[this.renderLength++] = index << 16 | flags[index] << 10
+			}
+		}
+		this.minY = renderData[0] >>> 24
 
 		// The bottom layer of bedrock is only ever visible on top
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				let visible = transparent[this.blocks[256 + i*16 + k]] << 3
-				let pos = (i | k << 12) << 16
-				this.renderData[this.renderLength++] = pos | visible << 10 | 4
+				if (transparent[blocks[256 + i*16 + k]]) {
+					this.minY = 0
+					renderData.push(i*16 + k << 16 | 1 << 13)
+				}
 			}
 		}
+		this.renderLength = renderData.length
 
 		if (!world.meshQueue.includes(this)) {
 			world.meshQueue.push(this)
@@ -762,30 +706,30 @@ class Chunk {
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
 
-		let s = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
-		let n = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
+		let w = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
+		let e = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
 		let d = y      ? this.blocks[index - 256]: 4
 		let u =          this.blocks[index + 256]
-		let w = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
-		let e = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
+		let s = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
+		let n = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
 
-		let visible = blockState && transparent[s]
-		+ transparent[n] * 2
+		let visible = blockState && transparent[w]
+		+ transparent[e] * 2
 		+ transparent[d] * 4
 		+ transparent[u] * 8
-		+ transparent[w] * 16
-		+ transparent[e] * 32
+		+ transparent[s] * 16
+		+ transparent[n] * 32
 
 		if (blockState < 256 && hideInterior[blockState]) {
-			visible ^= s === blockState
-			| (n === blockState) << 1
+			visible ^= w === blockState
+			| (e === blockState) << 1
 			| (d === blockState) << 2
 			| (u === blockState) << 3
-			| (w === blockState) << 4
-			| (e === blockState) << 5
+			| (s === blockState) << 4
+			| (n === blockState) << 5
 		}
 
-		let pos = (i | j << 4 | k << 12) << 16
+		let pos = index << 16
 		index = -1
 
 		// Find index of current block in this.renderData
@@ -797,10 +741,10 @@ class Chunk {
 		}
 
 		// Update palette
-		if (!this.paletteMap[blockState]) {
-			this.paletteMap[blockState] = this.palette.length
-			this.palette.push(blockState)
-		}
+		// if (!this.paletteMap[blockState]) {
+		// 	this.paletteMap[blockState] = this.palette.length
+		// 	this.palette.push(blockState)
+		// }
 
 		if (index < 0 && !visible) {
 			// Wasn't visible before, isn't visible after.
@@ -813,10 +757,12 @@ class Chunk {
 			return
 		}
 		if (visible && index < 0) {
+			if (y <= this.minY) this.minY = y - 1
+			if (y > this.maxY) this.maxY = y
 			// Wasn't visible before, is visible after.
 			index = this.renderLength++
 		}
-		this.renderData[index] = pos | visible << 10 | this.paletteMap[blockState]
+		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
 	}
 	deleteBlock(x, y, z, user) {
 		if (user && !this.edited) {
@@ -826,46 +772,72 @@ class Chunk {
 		this.blocks[y * 256 + x * 16 + z] = 0
 		this.minY = y < this.minY ? y : this.minY
 	}
-	async getCaveData() {
-		if (this.caves) return
-		this.caveData = new Promise(async resolve => {
-			while (!window.workers.length) {
-				await Promise.race(window.pendingWorkers)
-			}
+	getCaveData() {
+		if (this.caves || this.caveData) return
+		this.caveData = new Promise(resolve => {
 			window.doWork({
 				caves: true,
 				x: this.x,
 				y: 0,
 				z: this.z
-			}).then(data => resolve(data.caves))
+			}, resolve)
 		})
 	}
 	async carveCaves() {
 		const { world } = this
 		this.caves = true
 
-		const caves = await this.caveData
+		const { carve, air } = await this.caveData
 
-		let sx = this.x, sy = 0, sz = this.z
-		let cy = 0
-		for (let x = 0; x < 16; x++) {
-			for (let z = 0; z < 16; z++) {
-				cy = this.tops[z * 16 + x]
-				cy = cy > 82 ? 82 : cy
-				for (let y = 2; y <= cy; y++) {
-					let i = y * 256 + x * 16 + z
-					if (caves[i] === 1) {
-						carveSphere(sx + x, sy + y, sz + z, world)
-					}
-					else if (caves[i] === 2) {
-						this.blocks[i] = 0
-					}
-				}
+		// Find the lowest point we need to check.
+		let lowest = 255
+		for (let i = 0; i < 256; i++) {
+			let n = this.tops[i]
+			lowest = lowest < n ? lowest : n
+		}
+		lowest = (lowest - 1) * 256
+
+		// Set air blocks
+		for (let i = 0; i < air.length; i++) {
+			let index = air[i]
+			// if (index === 20030) debugger
+			if (index < lowest || index >> 8 <= this.tops[index & 255]) {
+				this.blocks[index] = 0
 			}
 		}
+
+		// // Carve spheres
+		for (let i = 0; i < carve.length; i++) {
+			let index = carve[i]
+			// if (index === 20030) debugger
+			if (index < lowest || index >> 8 <= this.tops[index & 255]) {
+				let x = index >> 4 & 15
+				let y = index >> 8
+				let z = index & 15
+				carveSphere(x + this.x, y, z + this.z, world)
+			}
+		}
+
+		// let sx = this.x, sy = 0, sz = this.z
+		// let cy = 0
+		// for (let xz = 0; xz < 256; xz++) {
+		// 	cy = this.tops[xz]
+		// 	cy = cy > 82 ? 82 : cy
+		// 	for (let y = 2; y <= cy; y++) {
+		// 		let i = y * 256 + xz
+		// 		let c = caves[i]
+		// 		if (c === 1) {
+		// 			carveSphere(sx + (xz >> 4), sy + y, sz + (xz & 15), world)
+		// 		}
+		// 		else if (c === 2) {
+		// 			this.blocks[i] = 0
+		// 		}
+		// 	}
+		// }
 		this.caveData = null
 	}
 	populate(trees) {
+		if (this.populated) return
 		const { world } = this
 		randomSeed(hash(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
@@ -875,8 +847,9 @@ class Chunk {
 				wx = this.x + i
 				wz = this.z + k
 
-				ground = this.tops[k * 16 + i]
-				if (trees && random() < 0.005 && this.getBlock(i, ground, k) === blockIds.grass) {
+				ground = this.tops[i * 16 + k]
+				let topBlock = this.getBlock(i, ground, k)
+				if (trees && random() < 0.005 && topBlock === blockIds.grass) {
 
 					top = ground + floor(4.5 + random(2.5))
 					rand = floor(random(4096))
@@ -892,7 +865,7 @@ class Chunk {
 					//Bottom leaves
 					for (let x = -2; x <= 2; x++) {
 						for (let z = -2; z <= 2; z++) {
-							if (x || z) {
+							if (x || z) { // Not center
 								if ((x * z & 7) === 4) {
 									place = rand & 1
 									rand >>>= 1
@@ -958,11 +931,12 @@ class Chunk {
 				// Diamond: 3.7
 				// Lapis: 4.1
 				ground -= 4
+				while (this.getBlock(i, ground, k) !== blockIds.stone) ground--
 
 				if (random() < 3.7 / 256) {
 					let y = random() * 16 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.diamondOre)
 					}
 				}
@@ -970,7 +944,7 @@ class Chunk {
 				if (random() < 111.5 / 256) {
 					let y = random() * 64 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.ironOre)
 					}
 				}
@@ -978,7 +952,7 @@ class Chunk {
 				if (random() < 185.5 / 256) {
 					let y = random() * ground | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.coalOre)
 					}
 				}
@@ -986,7 +960,7 @@ class Chunk {
 				if (random() < 10.4 / 256) {
 					let y = random() * 32 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.goldOre)
 					}
 				}
@@ -994,7 +968,7 @@ class Chunk {
 				if (random() < 29.1 / 256) {
 					let y = random() * 16 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.redstoneOre)
 					}
 				}
@@ -1002,7 +976,7 @@ class Chunk {
 				if (random() < 4.1 / 256) {
 					let y = random() * 32 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre)
 					}
 				}
@@ -1011,8 +985,148 @@ class Chunk {
 
 		this.populated = true
 	}
+	getSurroundingBlocks(loc, sides, blocks27, lights27) {
+		// Used in this.genMesh()
+		// Note that, while this *does* do more work than simply loading the blocks/lights as they're needed,
+		// the improved cache efficiency nearly doubled the overall speed of genMesh (on Chrome).
+		const chunkX = loc >> 4 & 15
+		const chunkY = loc >> 8
+		const chunkZ = loc & 15
+
+		const worldX = chunkX + this.x
+		const worldY = chunkY
+		const worldZ = chunkZ + this.z
+
+		// Preload any blocks that will be used for the shadows/lighting.
+		if (chunkX && chunkZ && chunkX < 15 && chunkZ < 15) {
+			const index = loc
+			let topLight = this.light[index + 256]
+			lights27[22] = topLight
+			if (topLight !== 15 || sides !== 8) {
+				// Bottom layer
+				lights27[0] = this.light[index - 273]
+				lights27[1] = this.light[index - 272]
+				lights27[2] = this.light[index - 271]
+				lights27[3] = this.light[index - 257]
+				lights27[4] = this.light[index - 256]
+				lights27[5] = this.light[index - 255]
+				lights27[6] = this.light[index - 241]
+				lights27[7] = this.light[index - 240]
+				lights27[8] = this.light[index - 239]
+
+				// Middle layer
+				lights27[9] = this.light[index - 17]
+				lights27[10] = this.light[index - 16]
+				lights27[11] = this.light[index - 15]
+				lights27[12] = this.light[index - 1]
+				lights27[14] = this.light[index + 1]
+				lights27[15] = this.light[index + 15]
+				lights27[16] = this.light[index + 16]
+				lights27[17] = this.light[index + 17]
+
+				// Top layer
+				lights27[18] = this.light[index + 239]
+				lights27[19] = this.light[index + 240]
+				lights27[20] = this.light[index + 241]
+				lights27[21] = this.light[index + 255]
+				lights27[23] = this.light[index + 257]
+				lights27[24] = this.light[index + 271]
+				lights27[25] = this.light[index + 272]
+				lights27[26] = this.light[index + 273]
+			}
+			if (sides !== 8) {
+				// Bottom layer
+				blocks27[0] = shadow[255 & this.blocks[index - 273]]
+				blocks27[1] = shadow[255 & this.blocks[index - 272]]
+				blocks27[2] = shadow[255 & this.blocks[index - 271]]
+				blocks27[3] = shadow[255 & this.blocks[index - 257]]
+				blocks27[4] = shadow[255 & this.blocks[index - 256]]
+				blocks27[5] = shadow[255 & this.blocks[index - 255]]
+				blocks27[6] = shadow[255 & this.blocks[index - 241]]
+				blocks27[7] = shadow[255 & this.blocks[index - 240]]
+				blocks27[8] = shadow[255 & this.blocks[index - 239]]
+
+				// Middle layer
+				blocks27[9] = shadow[255 & this.blocks[index - 17]]
+				blocks27[10] = shadow[255 & this.blocks[index - 16]]
+				blocks27[11] = shadow[255 & this.blocks[index - 15]]
+				blocks27[12] = shadow[255 & this.blocks[index - 1]]
+				blocks27[14] = shadow[255 & this.blocks[index + 1]]
+				blocks27[15] = shadow[255 & this.blocks[index + 15]]
+				blocks27[16] = shadow[255 & this.blocks[index + 16]]
+				blocks27[17] = shadow[255 & this.blocks[index + 17]]
+			}
+
+			// Top layer
+			blocks27[18] = shadow[255 & this.blocks[index + 239]]
+			blocks27[19] = shadow[255 & this.blocks[index + 240]]
+			blocks27[20] = shadow[255 & this.blocks[index + 241]]
+			blocks27[21] = shadow[255 & this.blocks[index + 255]]
+			blocks27[22] = shadow[255 & this.blocks[index + 256]]
+			blocks27[23] = shadow[255 & this.blocks[index + 257]]
+			blocks27[24] = shadow[255 & this.blocks[index + 271]]
+			blocks27[25] = shadow[255 & this.blocks[index + 272]]
+			blocks27[26] = shadow[255 & this.blocks[index + 273]]
+		}
+		else {
+			// Lights
+			let topLight = this.light[loc + 256]
+			lights27[22] = topLight
+			if (topLight !== 15 || sides !== 8) {
+				// Lights in this chunk
+				for (let x = -1, i = 0; x <= 1; x++) {
+					for (let z = -1; z <= 1; z++, i++) {
+						if (chunkX + x >= 0 && chunkZ + z >= 0 && chunkX + x < 16 && chunkZ + z < 16) {
+							const index = loc + x * 16 + z
+							lights27[i] = this.light[index - 256]
+							lights27[i+9] = this.light[index]
+							lights27[i+18] = this.light[index + 256]
+						}
+					}
+				}
+
+				// Lights in the other chunks
+				for (let x = -1, i = 0; x <= 1; x++) {
+					for (let z = -1; z <= 1; z++, i++) {
+						if (chunkX + x < 0 || chunkZ + z < 0 || chunkX + x > 15 || chunkZ + z > 15) {
+							let chunk = this.world.getChunk(worldX + x, worldZ + z)
+							let index = worldY * 256 + (worldX + x & 15) * 16 + (worldZ + z & 15)
+							lights27[i] = chunk.light[index - 256]
+							lights27[i+9] = chunk.light[index]
+							lights27[i+18] = chunk.light[index + 256]
+						}
+					}
+				}
+			}
+
+			// Blocks in this chunk
+			for (let x = -1, i = 0; x <= 1; x++) {
+				for (let z = -1; z <= 1; z++, i++) {
+					if (chunkX + x >= 0 && chunkZ + z >= 0 && chunkX + x < 16 && chunkZ + z < 16) {
+						const index = loc + x * 16 + z
+						blocks27[i] = shadow[255 & this.blocks[index - 256]]
+						blocks27[i+9] = shadow[255 & this.blocks[index]]
+						blocks27[i+18] = shadow[255 & this.blocks[index + 256]]
+					}
+				}
+			}
+
+			// Blocks in the other chunks
+			for (let x = -1, i = 0; x <= 1; x++) {
+				for (let z = -1; z <= 1; z++, i++) {
+					if (chunkX + x < 0 || chunkZ + z < 0 || chunkX + x > 15 || chunkZ + z > 15) {
+						const chunk = this.world.getChunk(worldX + x, worldZ + z)
+						const index = worldY * 256 + (worldX + x & 15) * 16 + (worldZ + z & 15)
+						blocks27[i] = shadow[255 & chunk.blocks[index - 256]]
+						blocks27[i+9] = shadow[255 & chunk.blocks[index]]
+						blocks27[i+18] = shadow[255 & chunk.blocks[index + 256]]
+					}
+				}
+			}
+		}
+	}
 	genMesh(indexBuffer, bigArray) {
-		const { glExtensions, gl, glCache, renderLength, renderData, palette } = this
+		const { glExtensions, gl, glCache, renderLength, renderData } = this
 		let index = 0
 		if (!this.renderLength) {
 			return index
@@ -1020,27 +1134,27 @@ class Chunk {
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
 
-		let shadows = null, slights = [0, 0, 0, 0], blights = [0, 0, 0, 0]
-		let blockSides = Object.keys(Block)
+		let shadows = [1, 1, 1, 1], slights = [1, 1, 1, 1], blights = [1, 1, 1, 1]
 		let blockMasks = Object.values(Block)
+		const blocks27 = new Uint8Array(27)
+		const lights27 = new Uint8Array(27)
 
 		for (let i = 0; i < renderLength; i++) {
 			const data = renderData[i]
-			const block = blockData[palette[data & 0x3ff]]
-			const tex = block.textures
 			const sides = data >> 10 & 0x3f // 6 bit flags indicating which faces should be rendered
-			const loc = data >>> 16 // #zzyyyyxx
-			const chunkX = loc & 15
-			const chunkY = loc >> 4 & 255
-			const chunkZ = loc >> 12 & 15
+			const loc = data >>> 16 // #yyyyxxzz
+			const block = blockData[this.blocks[loc]]
+			const tex = block.textures
+			const chunkX = loc >> 4 & 15
+			const chunkY = loc >> 8
+			const chunkZ = loc & 15
 
 			const worldX = chunkX + this.x
 			const worldY = chunkY
 			const worldZ = chunkZ + this.z
-			// console.log(worldY)
-			// debugger
 
-			const corner = !chunkX || !chunkZ || !chunkY || chunkX === 15 || chunkZ === 15
+			// Preload any blocks that will be used for the shadows/lighting.
+			this.getSurroundingBlocks(loc, sides, blocks27, lights27)
 
 			const shapeVerts = block.shape.verts
 			const shapeTexVerts = block.shape.texVerts
@@ -1048,15 +1162,9 @@ class Chunk {
 			let texNum = 0
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
-					let side = blockSides[n]
-					if (corner) {
-						shadows = getShadows[side](worldX, worldY, worldZ, this.world)
-					}
-					else {
-						shadows = getShadows[side](chunkX, chunkY, chunkZ, this)
-					}
-					slights = getLight[side](worldX, worldY, worldZ, slights, 0, this.world)
-					blights = getLight[side](worldX, worldY, worldZ, blights, 1, this.world)
+					shadows = getShadows[n](blocks27)
+					slights = getLight[n](lights27, slights, 0x0f, 0)
+					blights = getLight[n](lights27, blights, 0xf0, 4)
 
 					let directionalFaces = shapeVerts[n]
 
@@ -1115,15 +1223,15 @@ class Chunk {
 		}
 		let data = new Float32Array(bigArray.buffer, 0, index)
 
-		let maxY = 0
-		let minY = 255
-		for (let i = 1; i < data.length; i += 6) {
-			const y = data[i]
-			maxY = y > maxY ? y : maxY
-			minY = y < minY ? y : minY
-		}
-		this.maxY = maxY
-		this.minY = minY
+		// let maxY = 0
+		// let minY = 255
+		// for (let i = 1; i < data.length; i += 6) {
+		// 	const y = data[i]
+		// 	maxY = y > maxY ? y : maxY
+		// 	minY = y < minY ? y : minY
+		// }
+		// this.maxY = maxY
+		// this.minY = minY
 
 		this.faces = data.length / 32
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
@@ -1159,21 +1267,21 @@ class Chunk {
 		if (load) {
 			this.edited = true
 			this.originalBlocks = this.blocks.slice()
-
+			let last = 0
 			for (let j in load) {
-				let block = load[j]
-				this.blocks[+j] = block
+				last = +j
+				let block = load[last]
+				this.blocks[last] = block
 				if (!this.doubleRender && blockData[block].semiTrans) {
 					this.doubleRender = true
 					if (!this.world.doubleRenderChunks.includes(this)) {
 						this.world.doubleRenderChunks.push(this)
 					}
 				}
-				// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 			}
+			if (last >> 8 > this.maxY) this.maxY = last >> 8
 
 			delete world.loadFrom[str]
-			// world.loadKeys.splice(world.loadKeys.indexOf(str), 1)
 		}
 		this.loaded = true
 	}

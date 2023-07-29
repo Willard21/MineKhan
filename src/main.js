@@ -1,12 +1,14 @@
 "use strict"
 
 // GLSL Shader code
-import vertexShaderSrc3D from './shaders/blockVertexShader.glsl'
-import fragmentShaderSrc3D from './shaders/blockFragmentShader.glsl'
-import vertexShaderSrc2D from './shaders/2dVertexShader.glsl'
-import fragmentShaderSrc2D from './shaders/2dFragmentShader.glsl'
-import vertexShaderSrcEntity from './shaders/entityVertexShader.glsl'
-import fragmentShaderSrcEntity from './shaders/entityFragmentShader.glsl'
+import vertexShaderSrc3D from './shaders/blockVert.glsl'
+import fragmentShaderSrc3D from './shaders/blockFrag.glsl'
+import foglessVertexShaderSrc3D from './shaders/blockVertFogless.glsl'
+import foglessFragmentShaderSrc3D from './shaders/blockFragFogless.glsl'
+import vertexShaderSrc2D from './shaders/2dVert.glsl'
+import fragmentShaderSrc2D from './shaders/2dFrag.glsl'
+import vertexShaderSrcEntity from './shaders/entityVert.glsl'
+import fragmentShaderSrcEntity from './shaders/entityFrag.glsl'
 
 // Import Worker code
 import workerCode from './workers/Caves.js'
@@ -21,7 +23,7 @@ import { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader } fr
 import { blockData, BLOCK_COUNT, blockIds, Block } from "./js/blockData.js"
 import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes } from "./js/shapes.js"
-import { createProgramObject, uniformMatrix, vertexAttribPointer } from "./js/glUtils.js"
+import { createProgramObject } from "./js/glUtils.js"
 import { initTextures, textureMap, textureCoords } from './js/texture.js'
 import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
@@ -31,6 +33,7 @@ import { Player } from "./js/player.js"
 window.blockData = blockData
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
+window.ctx.suppressWarnings = true
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -41,10 +44,15 @@ window.hoverbox = document.getElementById("onhover")
 window.canvas.width  = window.innerWidth
 window.canvas.height = window.innerHeight
 window.controlMap = {}
+window.sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function MineKhan() {
 	// Cache user-defined globals
-	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
+	const { canvas, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap, sleep } = window
+	/**
+	 * @type {CanvasRenderingContext2D}
+	 */
+	const ctx = window.ctx
 
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
@@ -77,40 +85,37 @@ async function MineKhan() {
 		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
 		const workerURL = window.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
 		window.workers = []
-		window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
-		let jobId = 1
-		const pendingJobs = new Map()
-		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1 || 1; i < count; i++) { // Generate between 1 and (processors - 1) workers.
-			let worker = new Worker(workerURL)
+		const jobQueue = []
+		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
+		for (let i = 0; i < workerCount; i++) { // Generate between 1 and (processors - 1) workers.
+			let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
 			worker.onmessage = e => {
-				let [promise, resolve] = pendingJobs.get(e.data.jobId)
-				resolve(e.data)
-				pendingJobs.delete(e.data.jobId)
-				window.workers.push(worker)
-				window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
+				if (worker.resolve) worker.resolve(e.data)
+				worker.resolve = null
+				if (jobQueue.length) {
+					let [data, resolve] = jobQueue.shift()
+					worker.resolve = resolve
+					worker.postMessage(data)
+				}
+				else window.workers.push(worker)
 			}
 			window.workers.push(worker)
 		}
 
-		window.doWork = function(data) {
-			let job = []
-			let promise = new Promise(resolve => {
-				let id = jobId++
-				data.jobId = id
-				job[1] = resolve
-				pendingJobs.set(id, job)
-				window.workers.shift().postMessage(data)
-			})
-			job[0] = promise
-			window.pendingWorkers.push(promise)
-			return promise
+		window.doWork = (data, resolve) => {
+			if (window.workers.length) {
+				let worker = window.workers.pop()
+				worker.resolve = resolve
+				worker.postMessage(data)
+			}
+			else jobQueue.push([data, resolve])
 		}
 
 		// await window.yieldThread() will pause the current task until the event loop is cleared
 		const channel = new MessageChannel()
 		let res
 		channel.port1.onmessage = () => res()
-		window.yieldThread = function() {
+		window.yieldThread = () => {
 			return new Promise(resolve => {
 				res = resolve
 				channel.port2.postMessage("")
@@ -197,7 +202,7 @@ async function MineKhan() {
 	win.createDatabase = createDatabase
 	win.deleteFromDB = deleteFromDB
 
-	//globals
+	// Globals
 	//{
 	let version = "Alpha 0.8.0"
 	let superflat = false
@@ -212,7 +217,8 @@ async function MineKhan() {
 		renderDistance: 4,
 		fov: 70, // Field of view in degrees
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
-		reach: 5
+		reach: 5,
+		showDebug: 3
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
@@ -224,7 +230,6 @@ async function MineKhan() {
 	let maxHeight = 255
 	let blockOutlines = false
 	let blockFill = true
-	let updateHUD = true
 	const CUBE     = 0
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
@@ -292,6 +297,8 @@ async function MineKhan() {
 			}
 		},
 		loading: {
+			enter: [document.getElementById("loading-text")],
+			exit: [document.getElementById("loading-text")],
 			onenter: startLoad
 		},
 		editworld: {
@@ -426,13 +433,19 @@ async function MineKhan() {
 		canvas.onblur()
 		p.lastBreak = now
 		holding = inventory.hotbar[inventory.hotbarSlot]
-		updateHUD = true
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
 		textSize(10)
 		canvas.focus()
 		changeScene("play")
+
+		ctx.clearRect(0, 0, width, height)
+
+		crosshair()
+		hud(true)
+		hotbar()
+
 	}
 
 	/**
@@ -458,7 +471,7 @@ async function MineKhan() {
 		}
 	}
 
-	let program3D, program2D, programEntity
+	let program3D, program2D, programEntity, program3DFogless
 
 	win.shapes = shapes
 
@@ -728,20 +741,19 @@ async function MineKhan() {
 	let stairIconVerts
 	let blockIcons
 	{
-		let side = Math.sqrt(3) / 2
-		let s = side
+		let s = Math.sqrt(3) / 2
 		let q = s / 2
 
 		hexagonVerts = new Float32Array([
-			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
-			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
-			-side, 0.5, 1, 0, 0, 1, 0, -1, 1, -side, -0.5, 1,
+			0, 1, s, 0.5, 0, 0, -s, 0.5,
+			-s, 0.5, 0, 0, 0, -1, -s, -0.5,
+			0, 0, s, 0.5, s, -0.5, 0, -1,
 		])
 
 		slabIconVerts = new Float32Array([
-			0, 0.5, 1, side, 0, 1, 0, -0.5, 1, -side, 0, 1,
-			0, -0.5, 1, side, 0, 1, side, -0.5, 1, 0, -1, 1,
-			-side, 0, 1, 0, -0.5, 1, 0, -1, 1, -side, -0.5, 1,
+			0,  0.5, s,  0,   0, -0.5, -s,  0,
+			-s, 0,   0, -0.5, 0, -1,   -s, -0.5,
+			0, -0.5, s,  0,   s, -0.5,  0, -1,
 		])
 
 		stairIconVerts = [
@@ -753,21 +765,54 @@ async function MineKhan() {
 			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
 		]
 	}
+
+	/**
+	 * Draws the block icon for the given ID
+	 * @param {*} x X coordinate in pixels
+	 * @param {*} y Y coordinate in pixels (from the top)
+	 * @param {*} id Block ID for the icon to draw
+	 * @returns {void}
+	 */
+	let drawIcon = (x, y, id) => ctx.putImageData(blockIcons[id], x, y)
+	function renderIcon(x, y, id) {
+		x = x * 2 / width - 1
+		y = y * 2 / height - 1
+		gl.uniform2f(glCache.uOffset, x, y)
+
+		let buffer = blockIcons[id]
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+
+		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
+		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
+		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
+		gl.drawArrays(gl.TRIANGLES, 0, blockIcons.lengths[id])
+	}
 	function genIcons() {
+		let firstTime = false
+		if (!blockIcons) firstTime = true
+
 		blockIcons = [null]
-		blockIcons.lengths = []
+		blockIcons.lengths = [0]
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scale = 0.16 / height * inventory.size
+		let scaleY = inventory.size / height
+		let scaleX = inventory.size / width
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
 			let block = blockData[i]
+
+			// Square icon
 			if (block.icon) {
 				let tex = textureCoords[textureMap[block.icon]]
-				data.push(-scale * 0.9, scale * 0.9, 1/6, tex[0], tex[1], 1)
-				data.push(scale * 0.9, scale * 0.9, 1/6, tex[2], tex[3], 1)
-				data.push(scale * 0.9, -scale * 0.9, 1/6, tex[4], tex[5], 1)
-				data.push(-scale * 0.9, -scale * 0.9, 1/6, tex[6], tex[7], 1)
+				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
+				data.push(scaleX * 0.9, scaleY * 0.9, tex[2], tex[3], 1) // 2
+				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
+
+				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
+				data.push(-scaleX * 0.9, -scaleY * 0.9, tex[6], tex[7], 1) // 4
+				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
+
 				let buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
@@ -781,13 +826,15 @@ async function MineKhan() {
 			}
 
 			// Cube icon
-			for (let j = 11; j >= 0; j--) {
-				data.push(-hexagonVerts[j * 3 + 0] * scale)
-				data.push(hexagonVerts[j * 3 + 1] * scale)
-				data.push(0.1666666)
+			for (let j = 0; j <= 11; j++) {
+				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
+				data.push(hexagonVerts[j * 2 + 1] * scaleY)
 				data.push(textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
 				data.push(textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
+
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			let buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -797,15 +844,16 @@ async function MineKhan() {
 
 			// Slab icon
 			data = []
-			for (let j = 11; j >= 0; j--) {
+			for (let j = 0; j <= 11; j++) {
 				let tex = textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]]
 
-				data.push(-slabIconVerts[j * 3 + 0] * scale)
-				data.push(slabIconVerts[j * 3 + 1] * scale)
-				data.push(0.1666666)
+				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
+				data.push(slabIconVerts[j * 2 + 1] * scaleY)
 				data.push(tex[(j * 2 + 0) % 8])
 				data.push(tex[(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -816,17 +864,19 @@ async function MineKhan() {
 			// Stair icon
 			data = []
 			let v = stairIconVerts
-			for (let j = 23; j >= 0; j--) {
+			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
 				let tex = textureCoords[textureMap[block.textures[texOrder[num]]]]
 				let tx = tex[0]
 				let ty = tex[1]
-				data.push(-v[j * 5 + 0] * scale)
-				data.push(v[j * 5 + 1] * scale)
-				data.push(0.1666666)
+				data.push(-v[j * 5 + 0] * scaleX)
+				data.push(v[j * 5 + 1] * scaleY)
+				// data.push(0.1666666)
 				data.push(tx + v[j * 5 + 2] / 16)
 				data.push(ty + v[j * 5 + 3] / 16)
 				data.push(shadows[num])
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -834,6 +884,65 @@ async function MineKhan() {
 			blockIcons[i | STAIR] = buffer
 			blockIcons.lengths[i | STAIR] = 6 * 6
 		}
+
+		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
+		// Now we draw them all on the canvas at once.
+		gl.useProgram(program2D)
+		gl.uniform1i(glCache.uSampler2, 0)
+		gl.disableVertexAttribArray(3)
+		gl.disableVertexAttribArray(4)
+		gl.enableVertexAttribArray(0)
+		gl.enableVertexAttribArray(1)
+		gl.enableVertexAttribArray(2)
+
+		const s = inventory.size | 0
+		const limitX = gl.canvas.width / s | 0
+		const limitY = gl.canvas.height / s | 0
+		const limit = limitX * limitY
+		const total = (BLOCK_COUNT - 1) * 3
+		const pages = Math.ceil(total / limit)
+		const blocksPerPage = (limit / 3 | 0) * 3
+		const imageIcons = []
+
+		let masks = [CUBE, SLAB, STAIR]
+		let drawn = 1 // 0 = air
+
+		let start = Date.now()
+		for (let i = 0; i < pages; i++) {
+			gl.clearColor(0, 0, 0, 0)
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			let pageStart = drawn
+			for (let j = 0; j < blocksPerPage; j += 3) {
+				for (let k = 0; k < 3; k++) {
+					let x = (j + k) % limitX
+					let y = (j + k) / limitX | 0
+					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k])
+				}
+				drawn++
+				if (drawn === BLOCK_COUNT) break
+			}
+
+			// Page is full, now copy it onto the 2D canvas
+			ctx.clearRect(0, 0, width, height)
+			ctx.drawImage(gl.canvas, 0, 0)
+
+			// Now load all the icons off the canvas.
+			for (let j = 0; j < blocksPerPage; j += 3) {
+				for (let k = 0; k < 3; k++) {
+					let x = (j + k) % limitX
+					let y = (j + k) / limitX | 0
+					let id = pageStart + j/3 | masks[k]
+					imageIcons[id] = ctx.getImageData(x * s, y * s, s, s)
+				}
+			}
+		}
+		if (firstTime) console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
+		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
+
+		// Yeet the buffers
+		delete blockIcons.lengths
+		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
+		blockIcons = imageIcons
 	}
 
 	//Generate buffers for every block face and store them
@@ -959,7 +1068,7 @@ async function MineKhan() {
 			Y.mult(-1)
 			cross(Y, X, Y)
 
-			//Near plane
+			// Near plane
 			this.frustum[0].set(dir.x, dir.y, dir.z)
 
 			let aux = vec3
@@ -997,7 +1106,10 @@ async function MineKhan() {
 			y -= 0.5
 			z -= 0.5
 			maxY += 0.5
-			let cx = p.x, cy = p.y, cz = p.z
+
+			// Player's position is only updated once per tick (20 TPS), but the camera is interpolated between ticks.
+			// Add the velocity here to make sure the chunks don't become invisible in those interpolated areas.
+			let cx = p.x - p.velocity.x, cy = p.y - p.velocity.y, cz = p.z - p.velocity.z
 			for (let i = 0; i < 5; i++) {
 				let plane = this.frustum[i]
 				let px = x + plane.dx
@@ -1020,7 +1132,7 @@ async function MineKhan() {
 	}
 
 	function matMult() {
-		//Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
+		// Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
 		let proj = projection
 		let view = modelView
 		matrix[0] = proj[0] * view[0]
@@ -1058,7 +1170,13 @@ async function MineKhan() {
 		if (camera) {
 			// Inside the game
 			camera.transform()
-			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.getMatrix()
+
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
 		else {
 			// On the home screen
@@ -1068,14 +1186,19 @@ async function MineKhan() {
 			trans(modelView, -x, -y, -z)
 			matMult()
 			transpose(matrix)
-			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, matrix)
+
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
 	}
 
 	function rayTrace(x, y, z, shape) {
-		let cf, cd = 1e9 //Closest face and distance
-		let m //Absolute distance to intersection point
-		let ix, iy, iz //Intersection coords
+		let cf, cd = 1e9 // Closest face and distance
+		let m // Absolute distance to intersection point
+		let ix, iy, iz // Intersection coords
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max //Bounds of face coordinates
 		let east = p.direction.x < 0
 		let top = p.direction.y < 0
@@ -1083,7 +1206,7 @@ async function MineKhan() {
 		let verts = shape.verts
 		let faces = verts[0]
 
-		//Top and bottom faces
+		// Top and bottom faces
 
 		if (top) {
 			faces = verts[1]
@@ -1100,13 +1223,13 @@ async function MineKhan() {
 				ix = m * p.direction.x + p.x
 				iz = m * p.direction.z + p.z
 				if (m > 0 && m < cd && ix >= x + minX && ix <= x + maxX && iz >= z + minZ && iz <= z + maxZ) {
-					cd = m //Ray crosses bottom face
+					cd = m // Ray crosses bottom face
 					cf = top ? "top" : "bottom"
 				}
 			}
 		}
 
-		//West and East faces
+		// West and East faces
 		if (east) {
 			faces = verts[4]
 		}
@@ -1131,7 +1254,7 @@ async function MineKhan() {
 			}
 		}
 
-		//South and North faces
+		// South and North faces
 		if (north) {
 			faces = verts[2]
 		}
@@ -1227,7 +1350,7 @@ async function MineKhan() {
 				runRayTrace(minX, minY, maxZ)
 			}
 			if (hitBox.pos) {
-				return //The ray has collided; it can't possibly find a closer collision now
+				return // The ray has collided; it can't possibly find a closer collision now
 			}
 			minZ = maxZ
 			minY = maxY
@@ -1235,13 +1358,13 @@ async function MineKhan() {
 		}
 	}
 	let inBox = function(x, y, z, w, h, d) {
-		let iy = y - h/2 - p.topH
-		let ih = h + p.bottomH + p.topH
+		let iy = roundBits(y - h/2 - p.topH)
+		let ih = roundBits(h + p.bottomH + p.topH)
 		let ix = x - w/2 - p.w
 		let iw = w + p.w*2
 		let iz = z - d/2 - p.w
 		let id = d + p.w*2
-		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id
+		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < roundBits(iy + ih) && p.z < iz + id
 	}
 	let onBox = function(x, y, z, w, h, d) {
 		let iy = roundBits(y - h/2 - p.topH)
@@ -1265,7 +1388,7 @@ async function MineKhan() {
 		let pzz = roundBits(p.z + p.w - z)
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max
 
-		//Top and bottom faces
+		// Top and bottom faces
 		let faces = verts[0]
 		if (vy <= 0) {
 			faces = verts[1]
@@ -1294,7 +1417,7 @@ async function MineKhan() {
 			return col
 		}
 
-		//West and East faces
+		// West and East faces
 		if (vx < 0) {
 			faces = verts[4]
 		}
@@ -1321,7 +1444,7 @@ async function MineKhan() {
 			return col
 		}
 
-		//South and North faces
+		// South and North faces
 		if (vz < 0) {
 			faces = verts[2]
 		}
@@ -1369,8 +1492,9 @@ async function MineKhan() {
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
+		if (p.y < 0) p.y = 70
 		let mag = p.velocity.mag()
-		let steps = Math.ceil(mag)
+		let steps = Math.ceil(mag / p.w)
 		const VX = p.velocity.x / steps
 		const VY = p.velocity.y / steps
 		const VZ = p.velocity.z / steps
@@ -1401,7 +1525,7 @@ async function MineKhan() {
 			let px = p.x
 			let pz = p.z
 
-			//Check collisions in the Y direction
+			// Check collisions in the Y direction
 			p.onGround = false
 			p.canStepX = false
 			p.canStepZ = false
@@ -1437,7 +1561,7 @@ async function MineKhan() {
 				}
 			}
 
-			//Check collisions in the X direction
+			// Check collisions in the X direction
 			p.x += VX
 			for (let i = 0; i < contacts.size; i++) {
 				let [x, y, z, block] = contacts.array[i]
@@ -1462,7 +1586,7 @@ async function MineKhan() {
 			}
 			sneakSafe = false
 
-			//Check collisions in the Z direction
+			// Check collisions in the Z direction
 			p.z += VZ
 			for (let i = 0; i < contacts.size; i++) {
 				let [x, y, z, block] = contacts.array[i]
@@ -1544,13 +1668,14 @@ async function MineKhan() {
 			}
 		}
 		if (blockOutlines) {
-			vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
-			// gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
-			// gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
+			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
 
-			// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
-			// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
@@ -1560,16 +1685,24 @@ async function MineKhan() {
 	function block2(x, y, z, t, camera) {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
-			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.getMatrix()
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			// gl.useProgram(program3D)
+			// gl.uniformMatrix4fv(glCache.uView, false, matrix)
 			camera.transformation.translate(-x, -y, -z)
 		}
 		else {
-			//copyArr(modelView, matrix)
 			trans(modelView, x, y, z)
 			matMult()
 			trans(modelView, -x, -y, -z)
 			transpose(matrix)
-			uniformMatrix(gl, glCache, "view3d", program3D, "uView", false, matrix)
+			// gl.useProgram(program3DFogless)
+			// gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
 		box2(0xff, blockData[t].textures)
 	}
@@ -1607,9 +1740,7 @@ async function MineKhan() {
 		}
 	}
 	function newWorldBlock() {
-		if(!hitBox.pos || !holding) {
-			return
-		}
+		if(!hitBox.pos || !holding) return
 		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
 		switch(hitBox.face) {
 			case "top":
@@ -1641,14 +1772,6 @@ async function MineKhan() {
 
 	let renderedChunks = 0
 
-	/*
-	function interpolateShadows(shadows, x, y) {
-		let sx = (shadows[1] - shadows[0]) * x + shadows[0]
-		let sx2 = (shadows[3] - shadows[2]) * x + shadows[2]
-		return (sx2 - sx) * y + sx
-	}
-	*/
-
 	let analytics = {
 		totalTickTime: 0,
 		worstFrameTime: 0,
@@ -1659,8 +1782,10 @@ async function MineKhan() {
 		displayedTickTime: "0",
 		displayedRenderTime: "0",
 		displayedFrameTime: "0",
-		displayedwFrameTime: 0,
+		displayedwFrameTime: "0",
+		displayedwFps: 0,
 		fps: 0,
+		worstFps: 60,
 	}
 	function chunkDist(c) {
 		let dx = p.x - c.x
@@ -1679,7 +1804,7 @@ async function MineKhan() {
 		}
 		return Math.sqrt(dx * dx + dz * dz)
 	}
-	function sortChunks(c1, c2) { //Sort the list of chunks based on distance from the player
+	function sortChunks(c1, c2) { // Sort the list of chunks based on distance from the player
 		let dx1 = p.x - c1.x - 8
 		let dy1 = p.z - c1.z - 8
 		let dx2 = p.x - c2.x - 8
@@ -1712,10 +1837,8 @@ async function MineKhan() {
 		return done
 	}
 	function renderFilter(chunk) {
-		const cx = (chunk.x >> 4) - p.cx
-		const cz = (chunk.z >> 4) - p.cz
 		const d = settings.renderDistance + Math.SQRT1_2
-		return cx * cx + cz * cz <= d * d
+		return chunk.distSq <= d * d
 	}
 
 	function debug(message) {
@@ -1727,25 +1850,46 @@ async function MineKhan() {
 
 	let alerts = []
 	function chatAlert(msg) {
+		if (screen !== "play") return
 		alerts.push({
 			msg: msg.substr(0, 50),
-			born: now
+			created: now,
+			rendered: false
 		})
 		if (alerts.length > 5) alerts.shift()
-		updateHUD = true
+		renderChatAlerts()
+	}
+	let charWidth = 6
+	{
+		// Determine the width of the user's system monospace font.
+		let span = document.createElement('span')
+		span.style.fontFamily = "monospace"
+		span.style.fontSize = "20px"
+		span.textContent = "a"
+		document.body.append(span)
+		charWidth = span.offsetWidth
+		span.remove()
 	}
 	function renderChatAlerts() {
-		if (!alerts.length) return
-		textSize(20)
+		if (!alerts.length || screen !== "play") return
 		let y = height - 150
+		if (now - alerts[0].created > 10000 || !alerts.at(-1).rendered) {
+			// Clear old alerts
+			let x = 50
+			let y2 = y - 50 * (alerts.length - 1) - 20
+			let w = charWidth * alerts.reduce((mx, al) => max(mx, al.msg.length), 0)
+			let h = 50 * (alerts.length - 1) + 24
+			ctx.clearRect(x, y2, w, h)
+		}
+		else return
+		while(alerts.length && now - alerts[0].created > 10000) {
+			alerts.shift()
+		}
+		textSize(20)
 		for (let i = alerts.length - 1; i >= 0; i--) {
 			let alert = alerts[i]
 			text(alert.msg, 50, y)
 			y -= 50
-		}
-		while(alerts.length && now - alerts[0].born > 10000) {
-			alerts.shift()
-			updateHUD = true
 		}
 	}
 
@@ -1790,11 +1934,60 @@ async function MineKhan() {
 		chat(`${currentUser.username}: ${msg}`, "lightgray")
 	}
 
+	let currentUser = { username: "Player" }
+	let blockLog = { Player: [] }
 	let commands = new Map()
-	commands.set("ban", args => {
+	let autocompleteList = []
+	let commandList = []
+	var multiplayer = null
+	let playerPositions = {}
+	let playerEntities = {}
+	let playerDistances = []
+	function setAutocomplete(list) {
+		if (list === autocompleteList) return
+		if (list.length === autocompleteList.length) {
+			let i = 0
+			for (; i < list.length; i++) {
+				if (list[i] !== autocompleteList[i]) break
+			}
+			if (i === list.length) return
+		}
+
+		let element = document.getElementById("commands")
+		while (element.childElementCount) element.removeChild(element.lastChild)
+
+		for (let string of list) {
+			let option = document.createElement("option")
+			option.value = string
+			element.append(option)
+		}
+		autocompleteList = list
+	}
+	function addCommand(name, callback, usage, description, autocomplete) {
+		if (!autocomplete) autocomplete = () => {}
+		commands.set(name, {
+			name,
+			callback,
+			usage,
+			description,
+			autocomplete
+		})
+		commandList.push("/" + name)
+	}
+	addCommand("help", args => {
+		let commandName = args[0]
+		if (commands.has(commandName)) {
+			const command = commands.get(commandName)
+			chat(`Usage: ${command.usage}\nDescription: ${command.description}`, "lime")
+		}
+		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nPro tip: you can delete random autocomplete suggestions by `)
+	}, "/help <command name>", "Shows how to use a command", () => {
+		setAutocomplete(commandList.map(command => `/help ${command.slice(1)}`))
+	})
+	addCommand("ban", args => {
 		let username = args.join(" ")
 		if (!username) {
-			chat(`Please provide a username. Like /ban Willard`, "tomato")
+			chat("Please provide a username. Like /ban Willard", "tomato")
 			return
 		}
 		if (!window.ban) {
@@ -1802,28 +1995,93 @@ async function MineKhan() {
 			return
 		}
 		window.ban(username)
+	}, "/ban <username>", "IP ban a player from your world until you close it.", () => {
+		setAutocomplete(Object.keys(playerPositions).map(player => `/ban ${player}`))
 	})
-	commands.set("online", () => {
+	addCommand("online", () => {
 		if (window.online && multiplayer) {
 			window.online()
 		}
 		else {
 			chat("You're all alone. Sorry.", "tomato")
 		}
+	}, "/online", "Lists online players")
+	addCommand("history", args => {
+		let dist = +args[0] || 20
+		dist *= dist
+		let lines = []
+		for (let name in blockLog) {
+			let list = blockLog[name]
+			let oldest = 0
+			let newest = 0
+			let broken = 0
+			let placed = 0
+			for (let i = 0; i < list.length; i++) {
+				let block = list[i]
+				let dx = block[0] - p.x
+				let dy = block[1] - p.y
+				let dz = block[2] - p.z
+				if (dx * dx + dy * dy + dz * dz <= dist) {
+					if (block[3]) placed++
+					else broken++
+					newest = block[5]
+					if (!oldest) oldest = block[5]
+				}
+			}
+			if (oldest) {
+				lines.push(`${name}: ${broken} blocks broken and ${placed} blocks placed between ${timeString(now-oldest)} and ${timeString(now-newest)}.`)
+			}
+		}
+		if (lines.length) {
+			let ul = document.createElement("ul")
+			for (let line of lines) {
+				let li = document.createElement("li")
+				li.textContent = line
+				ul.append(li)
+			}
+			chatOutput.append(ul)
+			// chat(`Within ${Math.sqrt(dist)} blocks of your position:\n` + lines.join("\n"), "lime")
+		}
+		else chat(`No blocks edited within ${Math.sqrt(dist)} blocks within this world session.`, "tomato")
+	}, "/history [dist=20]", "Shows a list of block edits within a specified range from your current world session.")
+	addCommand("undo", async args => {
+		if (multiplayer && !multiplayer.host) {
+			chat("Only the world's host may use this command.", "tomato")
+			return
+		}
+		let count = +args.pop()
+		if (isNaN(count)) {
+			chat("Please provide a count of the number of blocks to undo. Like /undo Willard 4000", "tomato")
+			return
+		}
+		let name = currentUser.username
+		if (args.length) name = args.join(" ")
+		let list = blockLog[name]
+		if (!list) {
+			chat("You provided a name that didn't match any users with a block history. Names are case-sensitive.", "tomato")
+			return
+		}
+
+		if (count > list.length) count = list.length
+		chat(`Undoing the last ${count} block edits from ${name}`, "lime")
+		for (let i = 0; i < count; i++) {
+			let [x, y, z, newBlock, oldBlock] = list.pop()
+			if (multiplayer) await sleep(50)
+			world.setBlock(x, y, z, oldBlock, false, false, true)
+		}
+		chat(`${count} block edits undone.`, "lime")
+	}, "/undo [username=Player] <blockCount>", "Undoes the last <blockCount> block edits made by [username]", () => {
+		setAutocomplete(Object.keys(blockLog).map(name => `/undo ${name} ${blockLog[name].length}`))
 	})
 
 	function sendCommand(msg) {
 		msg = msg.substr(1)
 		let parts = msg.split(" ")
 		let cmd = parts.shift()
-		if (commands.has(cmd)) commands.get(cmd)(parts)
+		if (commands.has(cmd)) commands.get(cmd).callback(parts)
+		setAutocomplete(commandList)
 	}
 
-	var multiplayer = null
-	let playerPositions = {}
-	let playerEntities = {}
-	let playerDistances = []
-	let currentUser = { username: "Player" }
 	async function loggedIn() {
 		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(() => "401")
 		if (!exists || exists === "401") {
@@ -1836,6 +2094,10 @@ async function MineKhan() {
 			return false
 		}
 		currentUser = JSON.parse(exists)
+		if (blockLog.Player) {
+			blockLog[currentUser.username] = blockLog.Player
+			delete blockLog.Player
+		}
 		return true
 	}
 
@@ -1850,6 +2112,7 @@ async function MineKhan() {
 			host = true
 		}
 		multiplayer = new WebSocket("wss://willard.fun/ws?target=" + target)
+		multiplayer.host = host
 		multiplayer.binaryType = "arraybuffer"
 		multiplayer.onopen = () => {
 			let password = ""
@@ -1874,6 +2137,10 @@ async function MineKhan() {
 		}
 		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
+			if (msg.data === "ping") {
+				multiplayer.send("pong")
+				return
+			}
 			if (typeof msg.data !== "string" && screen === "multiplayer menu") {
 				world = new World(true)
 				world.loadSave(new Uint8Array(msg.data))
@@ -1883,6 +2150,15 @@ async function MineKhan() {
 			let packet = JSON.parse(msg.data)
 			if (packet.type === "setBlock") {
 				let a = packet.data
+
+				if (!a[4]) {
+					// If it's not an "Undo" packet, log it.
+					let old = world.getBlock(a[0], a[1], a[2])
+					a.push(old, now)
+					if (!blockLog[packet.author]) blockLog[packet.author] = []
+					blockLog[packet.author].push(a)
+				}
+
 				world.setBlock(a[0], a[1], a[2], a[3], false, true)
 			}
 			else if (packet.type === "genChunk") {
@@ -1940,10 +2216,10 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				if (screen === "play") alert(`Connection lost! ${multiplayerError}`)
+				if (screen !== "main menu") alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
-			else if (screen === "play") {
+			else if (screen !== "main menu") {
 				alert(`Connection lost! ${multiplayerError || "You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
@@ -2005,7 +2281,7 @@ async function MineKhan() {
 			generatedChunks = 0
 			fogDist = 16
 
-			//Initialize the world's arrays
+			// Initialize the world's arrays
 			this.chunks = []
 			this.loaded = []
 			this.sortedChunks = []
@@ -2073,7 +2349,7 @@ async function MineKhan() {
 		setWorldBlock(x, y, z, blockID) {
 			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
-		setBlock(x, y, z, blockID, lazy, remote) {
+		setBlock(x, y, z, blockID, lazy, remote, doNotLog) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
 				this.eventQueue.push([x, y, z, blockID])
 				return
@@ -2086,6 +2362,12 @@ async function MineKhan() {
 
 			let xm = x & 15
 			let zm = z & 15
+
+			if (!remote && !doNotLog) {
+				// Log your own blocks
+				let oldBlock = chunk.getBlock(xm, y, zm)
+				blockLog[currentUser.username].push([x, y, z, blockID, oldBlock, now])
+			}
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
 				let data = blockData[blockID]
@@ -2105,14 +2387,16 @@ async function MineKhan() {
 				return
 			}
 
-			if (multiplayer && !remote && screen === "play") {
+			if (multiplayer && !remote) {
+				let data = [x, y, z, blockID]
+				if (doNotLog) data.push(1)
 				multiplayer.send(JSON.stringify({
 					type: "setBlock",
-					data: [x, y, z, blockID]
+					data: data
 				}))
 			}
 
-			//Update the 6 adjacent blocks and 1 changed block
+			// Update the 6 adjacent blocks and 1 changed block
 			if (xm && xm !== 15 && zm && zm !== 15) {
 				chunk.updateBlock(xm - 1, y, zm, this)
 				chunk.updateBlock(xm, y - 1, zm, this)
@@ -2274,29 +2558,27 @@ async function MineKhan() {
 			}
 		}
 		spawnBlock(x, y, z, blockID) {
-			//Sets a block anywhere without causing block updates around it. Only to be used in world gen.
+			// Sets a block anywhere without causing block updates around it. Only to be used in world gen.
+			// Currently only used in chunk.populate()
 
-			let chunkX = x >> 4
-			let chunkZ = z >> 4
-			if (!this.chunks[chunkX]) {
-				this.chunks[chunkX] = []
-			}
-			let chunk = this.chunks[chunkX][chunkZ]
-			if (!chunk) {
-				chunk = new Chunk(chunkX * 16, chunkZ * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
-				this.chunks[chunkX][chunkZ] = chunk
-			}
-			if (chunk.buffer) {
-				//Only used if spawning a block post-gen
-				this.setBlock(x, y, z, blockID, true)
-			}
-			else if (!chunk.getBlock(x & 15, y, z & 15)) {
-				chunk.setBlock(x & 15, y, z & 15, blockID)
+			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
+
+			x &= 15
+			z &= 15
+			if (!chunk.getBlock(x, y, z)) {
+				chunk.setBlock(x, y, z, blockID)
+				// let i = x * 16 + z
+				// if (y > chunk.tops[i]) chunk.tops[i] = y
+				if (y > chunk.maxY) chunk.maxY = y
 			}
 		}
 		async tick() {
 			this.lastTick = performance.now()
 			this.tickCount++
+			if (this.tickCount & 1) {
+				hud() // Update the HUD at 10 TPS
+				renderChatAlerts()
+			}
 
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
 			let maxChunkZ = (p.z >> 4) + settings.renderDistance
@@ -2394,11 +2676,8 @@ async function MineKhan() {
 			this.ticking = false
 		}
 		async load() {
-			if (this.loading) return false
-			if (!this.loadKeys.length) return true
+			if (this.loading || !this.loadKeys.length) return
 			this.loading = true
-
-			let startTime = Date.now()
 
 			do {
 				let [cx, cz] = this.loadKeys.pop().split(",")
@@ -2426,6 +2705,7 @@ async function MineKhan() {
 					}
 					await Promise.all(promises)
 				}
+				else if (this.loadKeys % 50 === 0) await window.yieldThread() // Let the loading screen render if it needs to
 
 				// Fill them with trees and ores
 				for (let x = cx - 1; x <= cx + 1; x++) {
@@ -2437,28 +2717,22 @@ async function MineKhan() {
 
 				// Load blocks
 				this.chunks[cx][cz].load()
-			} while(Date.now() - startTime < 50 && this.loadKeys.length)
+			} while(this.loadKeys.length)
 			this.loading = false
 		}
 		render() {
-			// Was in tick; moved here just for joseph lol
+			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
 				newWorldBlock()
 			}
 
 			initModelView(p)
-
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
-			// These need to be disabled, but they're already disabled at this point, so it's fine
-			// gl.disableVertexAttribArray(glCache.aSkylight)
-			// gl.disableVertexAttribArray(glCache.aBlocklight)
 			let time = 0
 			if (multiplayer) time = Date.now()
 			else time = this.tickCount * 50 + (performance.now() - this.lastTick) % 50
-			skybox(time / 1000 + 150, matrix)
-			use3d()
 
 			p2.x = round(p.x)
 			p2.y = round(p.y)
@@ -2466,41 +2740,61 @@ async function MineKhan() {
 
 			renderedChunks = 0
 
-			let dist = settings.renderDistance * 16
+			let dist = Math.max(settings.renderDistance * 16 - 8, 16)
 			if (this.chunkGenQueue.length) {
-				this.chunkGenQueue.sort(sortChunks)
 				let chunk = this.chunkGenQueue[0]
 				dist = min(dist, chunkDist(chunk))
 			}
 			if (dist !== fogDist) {
-				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 120
+				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 30
 				else if (fogDist > dist + 0.1) fogDist += (dist - fogDist) / 30
 				else fogDist = dist
 			}
+
 			gl.uniform3f(glCache.uPos, p.x, p.y, p.z)
 			gl.uniform1f(glCache.uDist, fogDist)
 
+			gl.useProgram(program3DFogless)
+			gl.uniform3f(glCache.uPosFogless, p.x, p.y, p.z)
+
 			let c = this.sortedChunks
 			let glob = { renderedChunks }
+			let fog = false
 			for (let i = 0; i < c.length; i++) {
+				if (!fog && fogDist < chunkDist(c[i]) + 24) {
+					gl.useProgram(program3D)
+					fog = true
+				}
 				c[i].render(p, glob)
 			}
+
+			skybox(time / 1000 + 150, matrix)
+			use3d()
+			gl.useProgram(program3DFogless)
+			fog = false
 			if (this.doubleRenderChunks.length) {
 				gl.depthMask(false)
-				gl.uniform1i(glCache.uTrans, 1)
+				gl.uniform1i(glCache.uTransFogless, 1)
 				for (let chunk of this.doubleRenderChunks) {
+					if (!fog && fogDist < chunkDist(chunk) + 24) {
+						gl.uniform1i(glCache.uTransFogless, 0)
+						gl.useProgram(program3D)
+						gl.uniform1i(glCache.uTrans, 1)
+						fog = true
+					}
 					chunk.render(p, glob)
 				}
-				gl.uniform1i(glCache.uTrans, 0)
+				if (!fog) gl.uniform1i(glCache.uTransFogless, 0)
+				else gl.uniform1i(glCache.uTrans, 0)
 				gl.depthMask(true)
 			}
-			gl.disableVertexAttribArray(glCache.aSkylight)
-			gl.disableVertexAttribArray(glCache.aBlocklight)
 
 			renderedChunks = glob.renderedChunks
 
-			gl.uniform3f(glCache.uPos, 0, 0, 0)
-
+			gl.disableVertexAttribArray(glCache.aSkylight)
+			gl.disableVertexAttribArray(glCache.aBlocklight)
+			gl.disableVertexAttribArray(glCache.aShadow)
+			// gl.uniform3f(glCache.uPos, 0, 0, 0)
 			if (hitBox.pos) {
 				blockOutlines = true
 				blockFill = false
@@ -2509,13 +2803,14 @@ async function MineKhan() {
 				blockFill = true
 			}
 
+			// Render entities
 			gl.useProgram(programEntity)
-
 			for (let i = this.entities.length - 1; i >= 0; i--) {
 				const entity = this.entities[i]
 				entity.render()
 			}
 
+			// Render players
 			if (multiplayer) {
 				for (let name in playerEntities) {
 					const entity = playerEntities[name]
@@ -2523,7 +2818,8 @@ async function MineKhan() {
 					entity.render()
 				}
 			}
-			gl.useProgram(program3D)
+
+			// gl.useProgram(program3D)
 		}
 		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 3) {
 			// let renderDistance = settings.renderDistance + 3
@@ -2559,6 +2855,9 @@ async function MineKhan() {
 						this.chunks[x][z] = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, trees)
 					}
 					chunk = this.chunks[x][z]
+					const cdx = (chunk.x >> 4) - cx
+					const cdz = (chunk.z >> 4) - cz
+					chunk.distSq = cdx * cdx + cdz * cdz
 					if (!chunk.buffer && renderFilter(chunk)) {
 						this.chunkGenQueue.push(chunk)
 					}
@@ -2628,7 +2927,7 @@ async function MineKhan() {
 			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
 			bab.add(worldSeed, 32)
 			bab.add(this.tickCount, 32)
-			bab.add(p.x, 20).add(Math.min(p.y, 255), 8).add(p.z, 20)
+			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
 			for (let block of inventory.hotbar) bab.add(block, 16)
 			bab.add(inventory.hotbarSlot, 4)
@@ -2776,7 +3075,7 @@ async function MineKhan() {
 				let ckey = `${cx},${cz}`
 				let chunk = chunks[ckey]
 				if (!chunk) {
-					chunk = []//new Int16Array(16*256*16).fill(-1)
+					chunk = []// new Int16Array(16*256*16).fill(-1)
 					chunks[ckey] = chunk
 				}
 				let runs = reader.read(8)
@@ -2905,7 +3204,7 @@ async function MineKhan() {
 			move.z *= move.ang
 		}
 
-		//Update the velocity, rather than the position.
+		// Update the velocity, rather than the position.
 		let co = cos(p.ry)
 		let si = sin(p.ry)
 		let friction = p.onGround ? 1 : 0.3
@@ -2956,7 +3255,7 @@ async function MineKhan() {
 			let x = this.x - (this.w - 10) / 2 + (this.w - 10) * current - 5
 			ctx.fillRect(x, this.y - this.h / 2, 10, this.h)
 
-			//Label
+			// Label
 			fill(255, 255, 255)
 			textSize(16)
 			ctx.textAlign = 'center'
@@ -3065,7 +3364,7 @@ async function MineKhan() {
 			ctx.stroke()
 			ctx.fill()
 
-			//Label
+			// Label
 			fill(255)
 			textSize(16)
 			ctx.textAlign = 'center'
@@ -3186,7 +3485,7 @@ async function MineKhan() {
 					naming = false
 				}
 			}
-			world.name = name.replace(/;/g, "\u037e") // Greek question mark lol
+			world.name = name
 			win.world = world
 			world.loadChunks()
 			world.chunkGenQueue.sort(sortChunks)
@@ -3255,10 +3554,28 @@ async function MineKhan() {
 
 		Button.add(mid, height / 2, w2, 40, "Save", "editworld", () => {
 			let w = worlds[selectedWorld]
-			w.name = boxCenterTop.value.replace(/;/g, "\u037e")
-			let split = w.code.split(";")
-			split[0] = w.name
-			w.code = split.join(";")
+			if (typeof w.code === "string") {
+				// Legacy world saves
+				w.name = boxCenterTop.value.replace(/;/g, "\u037e")
+				let split = w.code.split(";")
+				split[0] = w.name
+				w.code = split.join(";")
+			}
+			else {
+				let oldLength = w.name.length
+				w.name = boxCenterTop.value.slice(0, 256)
+				let newLength = w.name.length
+				let newCode = new Uint8Array(w.code.length + newLength - oldLength)
+				newCode[0] = newLength
+				for (let i = 0; i < newLength; i++) newCode[i + 1] = w.name.charCodeAt(i) & 255
+				let newIndex = newLength + 1
+				let oldIndex = oldLength + 1
+				while (newIndex < newCode.length) {
+					newCode[newIndex++] = w.code[oldIndex++]
+				}
+				w.code = newCode
+			}
+
 			saveToDB(w.id, w).then(() => {
 				initWorldsMenu()
 				changeScene("loadsave menu")
@@ -3285,6 +3602,7 @@ async function MineKhan() {
 			}
 			initWorldsMenu()
 			changeScene("main menu")
+			world = null
 		})
 
 		// Options buttons
@@ -3317,68 +3635,28 @@ async function MineKhan() {
 		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
 	}
 
-	function drawIcon(x, y, id) {
-		id = id < 0xff ? id | blockMode : id
-		x =  x / (3 * height) - 0.1666 * width / height
-		y = y / (3 * height) - 0.1666
-		initModelView(null, x, y, 0, 0, 0)
-
-		let data = blockData[id]
-
-		let buffer = blockIcons[id]
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
-		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
-		gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
-		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
-		gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
-		if (data.semiTrans) {
-			gl.depthMask(false)
-			gl.uniform1i(glCache.uTrans, 1)
-			gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
-			gl.uniform1i(glCache.uTrans, 0)
-			gl.depthMask(true)
-		}
-	}
-
-	function hotbar() {
-		FOV(90)
-
-		for(let i = 0; i < inventory.hotbar.length; i ++) {
-			if(inventory.hotbar[i]) {
-				let x = width / 2 - inventory.hotbar.length / 2 * inventory.size + (i + 0.5) * inventory.size + 25
-				let y = height - inventory.size
-				drawIcon(x, y, inventory.hotbar[i])
-			}
-		}
-	}
-	function hud() {
-		if (p.spectator) {
-			return
+	function hotbar(highlight = inventory.hotbarSlot) {
+		if (p.spectator || screen !== "play" && screen !== "inventory") return
+		// If the hotbar needs to be rendered, then the selected block may have changed
+		{
+			let heldLight = blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0
+			gl.useProgram(program3D)
+			gl.uniform1f(glCache.uLantern, heldLight)
+			gl.useProgram(program3DFogless)
+			gl.uniform1f(glCache.uLanternFogless, heldLight)
 		}
 
-		hotbar()
 
 		let s = inventory.size
-		let x = width / 2 + 0.5
-		let y = height / 2 + 0.5
+		let x = width / 2 - 9 / 2 * s + 0.5 + 25
+		let y = height - s * 1.5 + 0.5
 
-		// Crosshair
-		ctx.lineWidth = 1
-		ctx.strokeStyle = "white"
-		ctx.beginPath()
-		ctx.moveTo(x - 10, y)
-		ctx.lineTo(x + 10, y)
-		ctx.moveTo(x, y - 10)
-		ctx.lineTo(x, y + 10)
-		ctx.stroke()
-
-		//Hotbar
-		x = width / 2 - 9 / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
+		ctx.clearRect(x - 2, y - 2, 9 * s + 4, s + 4)
+		for(let i = 0; i < inventory.hotbar.length; i ++) {
+			if (inventory.hotbar[i]) {
+				drawIcon(x + i * s, y, inventory.hotbar[i])
+			}
+		}
 
 		ctx.strokeStyle = "black"
 		ctx.lineWidth = 2
@@ -3397,24 +3675,55 @@ async function MineKhan() {
 		ctx.lineWidth = 2
 		ctx.beginPath()
 
-		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
+		if (highlight >= 0) ctx.strokeRect(width / 2 - 9 / 2 * s + highlight * s + 25, height - s * 1.5, s, s)
+	}
 
-		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
-		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
-		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
-		+ "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
-		+ "Render Time: " + analytics.displayedRenderTime + "ms\n"
-		+ "Tick Time: " + analytics.displayedTickTime + "ms\n"
-		+ "Rendered Chunks: " + renderedChunks.toLocaleString() + " / " + world.loaded.length + "\n"
-		+ "Generated Chunks: " + generatedChunks.toLocaleString() + "\n"
-		+ "FPS: " + analytics.fps
+	function crosshair() {
+		if (p.spectator) return
+		let x = width / 2 + 0.5
+		let y = height / 2 + 0.5
+		ctx.lineWidth = 1
+		ctx.strokeStyle = "white"
+		ctx.beginPath()
+		ctx.moveTo(x - 10, y)
+		ctx.lineTo(x + 10, y)
+		ctx.moveTo(x, y - 10)
+		ctx.lineTo(x, y + 10)
+		ctx.stroke()
+	}
 
-		if (p.autoBreak) {
-			text("Super breaker enabled", 5, height - 89, 12)
+	let debugLines = []
+	let newDebugLines = []
+	function hud(clear) {
+		if (p.spectator || screen !== "play") return
+		if (clear) debugLines.length = 0
+
+		textSize(20)
+		let x = 5
+		let lineHeight = 24
+		let y = lineHeight + 3
+		let heightOffset = floor(lineHeight / 5)
+
+		let lines = 0
+		if (settings.showDebug === 3) {
+			newDebugLines[0] = "Press F3 to cycle debug info."
+			lines = 1
 		}
-		if (p.autoBuild) {
-			text("Hyper builder enabled", 5, height - 101, 12)
+		else {
+			if (settings.showDebug >= 1) {
+				newDebugLines[lines++] = analytics.fps + "/" + analytics.displayedwFps + "fps, C: " + renderedChunks.toLocaleString()
+				newDebugLines[lines++] = "XYZ: " + p2.x + ", " + p2.y + ", " + p2.z
+			}
+			if (settings.showDebug >= 2) {
+				newDebugLines[lines++] = "Average Frame Time: " + analytics.displayedFrameTime + "ms"
+				newDebugLines[lines++] = "Worst Frame Time: " + analytics.displayedwFrameTime + "ms"
+				newDebugLines[lines++] = "Render Time: " + analytics.displayedRenderTime + "ms"
+				newDebugLines[lines++] = "Tick Time: " + analytics.displayedTickTime + "ms"
+				newDebugLines[lines++] = "Generated Chunks: " + generatedChunks.toLocaleString()
+			}
 		}
+		if (p.autoBreak) newDebugLines[lines++] = "Super breaker enabled"
+		if (p.autoBuild) newDebugLines[lines++] = "Hyper builder enabled"
 		if (multiplayer) {
 			playerDistances.length = 0
 			let closest = Infinity
@@ -3431,13 +3740,63 @@ async function MineKhan() {
 					cname = name
 				}
 			}
-			text(`Closest player: ${cname} (${round(closest)} blocks away)`, 5, height - 113, 12)
+			newDebugLines[lines++] = `Closest player: ${cname} (${round(closest)} blocks away)`
 		}
 
-		ctx.textAlign = 'right'
-		text(p2.x + ", " + p2.y + ", " + p2.z, width - 10, 15, 0)
+		// Draw updated text
 		ctx.textAlign = 'left'
-		text(str, 5, height - 100, 12)
+		for (let i = 0; i < lines; i++) {
+			if (debugLines[i] !== newDebugLines[i]) {
+				let start = 0
+				if (debugLines[i]) {
+					for (let j = 0; j < debugLines[i].length; j++) {
+						if (debugLines[i][j] !== newDebugLines[i][j]) {
+							start = j
+							break
+						}
+					}
+					ctx.clearRect(x + start * charWidth, y + lineHeight * (i - 1) + heightOffset, (debugLines[i].length - start) * charWidth, lineHeight)
+				}
+				ctx.fillStyle = "rgba(50, 50, 50, 0.4)"
+				ctx.fillRect(x + start * charWidth, y + lineHeight * (i-1) + heightOffset, (newDebugLines[i].length - start) * charWidth, lineHeight)
+				ctx.fillStyle = "#fff"
+				ctx.fillText(newDebugLines[i].slice(start), x + start*charWidth, y + lineHeight * i)
+				debugLines[i] = newDebugLines[i]
+			}
+		}
+
+		// Remove extra lines
+		if (lines < debugLines.length) {
+			let maxWidth = 0
+			for (let i = lines; i < debugLines.length; i++) {
+				maxWidth = Math.max(maxWidth, debugLines[i].length)
+			}
+			ctx.clearRect(x, y + (lines - 1) * lineHeight + heightOffset, maxWidth * charWidth, lineHeight * (debugLines.length - lines))
+			debugLines.length = lines
+		}
+
+		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
+		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
+
+		// let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
+		// + "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
+		// + "Render Time: " + analytics.displayedRenderTime + "ms\n"
+		// + "Tick Time: " + analytics.displayedTickTime + "ms\n"
+		// + "Rendered Chunks: " + renderedChunks.toLocaleString() + " / " + world.sortedChunks.length + "\n"
+		// + "Generated Chunks: " + generatedChunks.toLocaleString() + "\n"
+		// + "FPS: " + analytics.fps
+
+		// if (p.autoBreak) {
+		// 	text("Super breaker enabled", 5, height - 89, 12)
+		// }
+		// if (p.autoBuild) {
+		// 	text("Hyper builder enabled", 5, height - 101, 12)
+		// }
+
+		// ctx.textAlign = 'right'
+		// text(p2.x + ", " + p2.y + ", " + p2.z, width - 10, 15, 0)
+		// ctx.textAlign = 'left'
+		// text(str, 5, height - 77, 12)
 	}
 	function drawInv() {
 		let x = 0
@@ -3446,11 +3805,16 @@ async function MineKhan() {
 		let s2 = s / 2
 		let perRow = 13
 
-		gl.clearColor(0, 0, 0, 0)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		ctx.fillStyle = "rgb(127, 127, 127)"
+		ctx.fillStyle = "rgba(127, 127, 127, 0.4)"
+		ctx.clearRect(0, 0, width, height)
 		ctx.fillRect(0, 0, canvas.width, canvas.height)
-		FOV(90)
+
+		// Draw the blocks
+		for (let i = 1; i < BLOCK_COUNT; i++) {
+			x = (i - 1) % perRow * s + 51
+			y = ((i - 1) / perRow | 0) * s + 51
+			drawIcon(x - s2, y - s2, i)
+		}
 
 		// Draw the grid
 		ctx.lineWidth = 1
@@ -3465,31 +3829,20 @@ async function MineKhan() {
 			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
 			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
 		}
-
-		// Hotbar
-		x = width / 2 - inventory.hotbar.length / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
-		ctx.moveTo(x, y)
-		ctx.lineTo(x + s * 9, y)
-		ctx.moveTo(x, y + s)
-		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= inventory.hotbar.length; i ++) {
-			ctx.moveTo(x + i * s, y)
-			ctx.lineTo(x + i * s, y + s)
-		}
 		ctx.stroke()
 
+		// Hotbar
+		x = width / 2 - 9 / 2 * s + 0.5 + 25
+		y = height - s * 1.5 + 0.5
+		let drawName = false
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			x += s * overHot
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
-			ctx.beginPath()
-			ctx.strokeRect(x, y, s, s)
+			drawName = true
+			hotbar(overHot)
 		}
+		else hotbar(-1)
 
-		//Box highlight in inv
-		let drawName = false
+		// Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		if (overInv >= 0 && overInv < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			drawName = true
@@ -3500,19 +3853,14 @@ async function MineKhan() {
 			ctx.beginPath()
 			ctx.strokeRect(x, y, s, s)
 		}
+		else overInv = inventory.hotbar[overHot] - 1
 
+		// Item you're dragging
 		if (inventory.holding) {
-			drawIcon(mouseX, mouseY, inventory.holding)
-		}
-		for (let i = 1; i < BLOCK_COUNT; i++) {
-			x = (i - 1) % perRow * s + 50
-			y = ((i - 1) / perRow | 0) * s + 50
-			drawIcon(x, y, i)
+			drawIcon(mouseX - s2, mouseY - s2, inventory.holding)
 		}
 
-		hotbar()
-		//hud()
-		ctx.drawImage(gl.canvas, 0, 0)
+		// Tooltip for the item you're hovering over
 		if (drawName) {
 			let name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
@@ -3579,7 +3927,7 @@ async function MineKhan() {
 	function controlEvent(name, event) {
 		if (name === controlMap.cycleBlockShapes.key) {
 			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
-			updateHUD = true
+			hotbar()
 		}
 
 		if(screen === "play") {
@@ -3598,7 +3946,6 @@ async function MineKhan() {
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
-					updateHUD = true
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
 					let index = inventory.hotbar.indexOf(block)
 					if (index >= 0) {
@@ -3607,6 +3954,8 @@ async function MineKhan() {
 					else {
 						inventory.hotbar[inventory.hotbarSlot] = block
 					}
+					holding = inventory.hotbar[inventory.hotbarSlot]
+					hotbar()
 				}
 
 				if(name === controlMap.pause.key) {
@@ -3618,15 +3967,19 @@ async function MineKhan() {
 					event.preventDefault()
 					changeScene("chat")
 				}
+				if (name === "Slash") {
+					changeScene("chat")
+					chatInput.value = "/"
+				}
 
 				if(name === controlMap.superBreaker.key) {
 					p.autoBreak = !p.autoBreak
-					updateHUD = true
+					hud()
 				}
 
 				if(name === controlMap.hyperBuilder.key) {
 					p.autoBuild = !p.autoBuild
-					updateHUD = true
+					hud()
 				}
 
 				if (name === controlMap.jump.key && !p.spectator) {
@@ -3656,7 +4009,14 @@ async function MineKhan() {
 					p.spectator = !p.spectator
 					p.flying = true
 					p.onGround = false
-					updateHUD = true
+					if (!p.spectator) {
+						hotbar()
+						crosshair()
+						hud(true)
+					}
+					else {
+						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+					}
 				}
 
 				if (name === controlMap.openInventory.key) {
@@ -3666,7 +4026,12 @@ async function MineKhan() {
 
 				if (name === "Semicolon") {
 					releasePointer()
-					freezeFrame = true
+					freezeFrame = now + 500
+				}
+
+				if (name === "F3") {
+					settings.showDebug = (settings.showDebug + 1) % 3
+					hud()
 				}
 
 				// Drop held item; this just crashes since I broke Item entities.
@@ -3698,9 +4063,9 @@ async function MineKhan() {
 		}
 		else {
 			document.onmousemove = trackMouse
-			if (screen === "play" && !freezeFrame) {
+			if (screen === "play" && now > freezeFrame) {
 				changeScene("pause")
-				unpauseDelay = now + 1000
+				unpauseDelay = now + 500
 			}
 		}
 		for (let key in Key) {
@@ -3750,7 +4115,8 @@ async function MineKhan() {
 	}
 	canvas.onkeydown = function(e) {
 		let code = e.code
-		if (code === "Space" || code === "ArrowDown" || code === "ArrowUp") {
+		// code === "Space" || code === "ArrowDown" || code === "ArrowUp" || code === "F3") {
+		if (!Key.ControlLeft && !Key.ControlRight && code !== "F12" && code !== "F11") {
 			e.preventDefault()
 		}
 		if (e.repeat || Key[code]) {
@@ -3763,7 +4129,7 @@ async function MineKhan() {
 		if (screen === "play" && Number(e.key)) {
 			inventory.hotbarSlot = e.key - 1
 			holding = inventory.hotbar[inventory.hotbarSlot]
-			updateHUD = true
+			hotbar()
 		}
 	}
 	canvas.onkeyup = function(e) {
@@ -3817,8 +4183,8 @@ async function MineKhan() {
 			inventory.hotbarSlot = 8
 		}
 
-		updateHUD = true
 		holding = inventory.hotbar[inventory.hotbarSlot]
+		hotbar()
 	}
 	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
 	window.onresize = () => {
@@ -3831,8 +4197,9 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
+		let oldSize = inventory.size
 		inventory.size = 40 * min(width, height) / 600
-		genIcons()
+		if (oldSize !== inventory.size) genIcons()
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
 
@@ -3844,6 +4211,9 @@ async function MineKhan() {
 			Button.draw()
 			Slider.draw()
 		}
+	}
+	chatInput.oninput = () => {
+		if (chatInput.value.length > 512) chatInput.value = chatInput.value.slice(0, 512)
 	}
 	chatInput.onkeyup = e => {
 		if (e.key === "Enter") {
@@ -3863,18 +4233,37 @@ async function MineKhan() {
 				play()
 			}
 		}
-		else if (e.key === "Escape") {
+		else {
+			let msg = chatInput.value
+			if (msg.startsWith("/")) {
+				let words = msg.split(" ")
+				if (words.length > 1) {
+					let cmd = words[0].slice(1)
+					if (commands.has(cmd)) commands.get(cmd).autocomplete(msg)
+				}
+				else {
+					let possible = commandList.filter(name => name.startsWith(msg))
+					if (possible.length === 1) commands.get(possible[0].slice(1)).autocomplete(msg)
+					else setAutocomplete(commandList)
+				}
+			}
+		}
+	}
+	document.onkeyup = e => {
+		if (e.key === "Escape" && screen === "chat") {
 			e.preventDefault()
 			e.stopPropagation()
-			play()
 			chatInput.value = ""
+			play()
 		}
+		else if (screen === "chat" && !chatInput.hasFocus) chatInput.focus()
 	}
 
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.useProgram(program2D)
+		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset
 		// gl.depthFunc(gl.ALWAYS)
 	}
 	function use3d() {
@@ -3889,10 +4278,7 @@ async function MineKhan() {
 
 	let maxLoad = 1
 	function startLoad() {
-		// Runs when the loading screen is opened; cache the player's position
-		// p2.x = p.x
-		// p2.y = p.y
-		// p2.z = p.z
+		ctx.putImageData(dirtbg, 0, 0)
 		maxLoad = world.loadKeys.length + 9
 	}
 	function initWebgl() {
@@ -3909,8 +4295,11 @@ async function MineKhan() {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
 				throw "Error: Cannot play a WebGL game without WebGL."
 			}
-			let ext = gl.getExtension('OES_element_index_uint')
-			if (!ext) {
+			glExtensions = {
+				"vertex_array_object": gl.getExtension("OES_vertex_array_object"),
+				"element_index_uint": gl.getExtension("OES_element_index_uint")
+			}
+			if (!glExtensions.element_index_uint || !glExtensions.vertex_array_object) {
 				alert("Unable to load WebGL extension. Please use a supported browser, or update your current browser.")
 			}
 			gl.viewport(0, 0, canv.width, canv.height)
@@ -3918,12 +4307,12 @@ async function MineKhan() {
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 			win.gl = gl
-			glExtensions = {}
-			const availableExtensions = gl.getSupportedExtensions()
-			for (let i = 0; i < availableExtensions.length; i++) {
-				const extensionName = availableExtensions[i]
-				glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
-			}
+
+			// const availableExtensions = gl.getSupportedExtensions()
+			// for (let i = 0; i < availableExtensions.length; i++) {
+			// 	const extensionName = availableExtensions[i]
+			// 	glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
+			// }
 		}
 		else {
 			gl = win.gl
@@ -3937,11 +4326,13 @@ async function MineKhan() {
 		glCache = {}
 		win.glCache = glCache
 		program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
+		program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
 		program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
 		programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
-		skybox = getSkybox(gl, glCache)
+		skybox = getSkybox(gl, glCache, program3D, program3DFogless)
 
 		gl.useProgram(program2D)
+		glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
 		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
 		glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
 		glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
@@ -3954,7 +4345,16 @@ async function MineKhan() {
 		glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
 		glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
 
+		gl.useProgram(program3DFogless)
+		glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
+		glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
+		glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
+		glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
+		glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
+		glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
+
 		gl.useProgram(program3D)
+		glCache.uView = gl.getUniformLocation(program3D, "uView")
 		glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
 		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
@@ -3972,9 +4372,8 @@ async function MineKhan() {
 		gl.uniform1f(glCache.uDist, 1000)
 		gl.uniform1i(glCache.uTrans, 0)
 
-		//Send the block textures to the GPU
+		// Send the block textures to the GPU
 		initTextures(gl, glCache)
-		genIcons()
 		initShapes()
 
 		// These buffers are only used for drawing the main menu blocks
@@ -3993,12 +4392,12 @@ async function MineKhan() {
 			texCoordsBuffers.push(buff)
 		}
 
-		//Bind the Vertex Array Object (VAO) that will be used to draw everything
+		// Bind the Vertex Array Object (VAO) that will be used to draw everything
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
 
-		//Tell it not to render the insides of blocks
+		// Tell it not to render the insides of blocks
 		gl.enable(gl.CULL_FACE)
 		gl.cullFace(gl.BACK)
 
@@ -4252,19 +4651,9 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
-		let pixels = new Uint8Array(width * height * 4)
-		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		mainbg = ctx.createImageData(width, height)
-		let w = width * 4
-		for (let i = 0; i < pixels.length; i += 4) {
-			let x = i % w
-			let y = height - floor(i / w) - 1
-			let j = y * w + x
-			mainbg.data[j] = pixels[i]
-			mainbg.data[j + 1] = pixels[i + 1]
-			mainbg.data[j + 2] = pixels[i + 2]
-			mainbg.data[j + 3] = pixels[i + 3]
-		}
+
+		ctx.drawImage(gl.canvas, 0, 0)
+		mainbg = ctx.getImageData(0, 0, width, height)
 
 		// Dirt background
 		use2d()
@@ -4290,10 +4679,12 @@ async function MineKhan() {
 		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
 		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-		pixels = new Uint8Array(width * height * 4)
-		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		dirtbg = ctx.createImageData(width, height)
-		dirtbg.data.set(pixels)
+		// pixels = new Uint8Array(width * height * 4)
+		// gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+		// dirtbg = ctx.createImageData(width, height)
+		// dirtbg.data.set(pixels)
+		ctx.drawImage(gl.canvas, 0, 0)
+		dirtbg = ctx.getImageData(0, 0, width, height)
 	}
 	function initPlayer() {
 		p = new Camera()
@@ -4303,7 +4694,7 @@ async function MineKhan() {
 		p.sprintSpeed = 1.5
 		p.flySpeed = 3.75
 		p.x = 8
-		p.y = superflat ? 6 : 70
+		p.y = 0
 		p.z = 8
 		p.w = 3 / 8
 		p.bottomH = 1.62
@@ -4311,7 +4702,7 @@ async function MineKhan() {
 		p.onGround = false
 		p.jumpSpeed = 0.45
 		p.sprinting = false
-		p.maxYVelocity = 1.5
+		p.maxYVelocity = 4.5
 		p.gravityStrength = -0.091
 		p.lastUpdate = performance.now()
 		p.lastBreak = now
@@ -4488,7 +4879,9 @@ async function MineKhan() {
 		initWebgl()
 
 		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 183240)) {
-			// Prevent Ctrl F
+			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
+			// If you're making significant changes and want to remove this, then you can.
+			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("")
 		}
 
@@ -4501,6 +4894,10 @@ async function MineKhan() {
 		p.FOV(settings.fov)
 		initWorldsMenu()
 		initButtons()
+
+		// Generate all the block icons
+		genIcons()
+		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(window.location.search)
@@ -4561,18 +4958,6 @@ async function MineKhan() {
 		}
 
 		drawScreens.play = () => {
-			if (updateHUD) {
-				clear()
-				gl.clearColor(0, 0, 0, 0)
-				gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-				hud()
-				ctx.drawImage(gl.canvas, 0, 0)
-				updateHUD = false
-				freezeFrame = false
-				renderChatAlerts()
-				textSize(10)
-				gl.uniform1f(glCache.uLantern, blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
-			}
 			let renderStart = performance.now()
 			p.setDirection()
 			world.render()
@@ -4599,7 +4984,7 @@ async function MineKhan() {
 					}
 				}
 			}
-			if (world.loadKeys.length) {
+			if (world.loadKeys.length || world.loading) {
 				world.load()
 				standing = false
 			}
@@ -4609,18 +4994,19 @@ async function MineKhan() {
 
 			if (standing) {
 				play()
-				if (maxLoad === 9 && !p.flying && !p.spectator) {
-					p.y = world.chunks[cx][cz].tops[(p.z & 15) * 16 + (p.x & 15)] + 2
+				if (maxLoad === 9 && p.y === 0 && !p.flying && !p.spectator) {
+					p.y = world.chunks[cx][cz].tops[(p.x & 15) * 16 + (p.z & 15)] + 2
 				}
 				return
 			}
 
 			let progress = round(100 * sub / maxLoad)
-			dirt()
-			fill(255)
-			textSize(30)
-			ctx.textAlign = "center"
-			text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
+			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${sub} / ${maxLoad})`
+			// ctx.putImageData(dirtbg, 0, 0)
+			// fill(255)
+			// textSize(30)
+			// ctx.textAlign = "center"
+			// text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
 
 		drawScreens.inventory = drawInv
@@ -4688,7 +5074,11 @@ async function MineKhan() {
 		}
 	}
 
-	function renderLoop() {
+	let prevTime = 0
+	function renderLoop(time) {
+		let frameFPS = Math.round(10000/(time - prevTime)) / 10
+		prevTime = time
+
 		now = Date.now()
 		let frameStart = performance.now()
 		if (!gl) {
@@ -4705,12 +5095,14 @@ async function MineKhan() {
 			}
 		}
 
-		if (now - analytics.lastUpdate > 500 && analytics.frames) {
+		if (screen === "play" && now - analytics.lastUpdate > 500 && analytics.frames) {
 			analytics.displayedTickTime = (analytics.totalTickTime / analytics.ticks).toFixed(1)
 			analytics.displayedRenderTime = (analytics.totalRenderTime / analytics.frames).toFixed(1)
 			analytics.displayedFrameTime = (analytics.totalFrameTime / analytics.frames).toFixed(1)
 			analytics.fps = round(analytics.frames * 1000 / (now - analytics.lastUpdate))
 			analytics.displayedwFrameTime = analytics.worstFrameTime.toFixed(1)
+			analytics.displayedwFps = analytics.worstFps
+			analytics.worstFps = 1000000
 			analytics.frames = 0
 			analytics.totalRenderTime = 0
 			analytics.totalTickTime = 0
@@ -4718,12 +5110,13 @@ async function MineKhan() {
 			analytics.totalFrameTime = 0
 			analytics.worstFrameTime = 0
 			analytics.lastUpdate = now
-			updateHUD = true
+			hud()
 		}
 
 		analytics.frames++
 		analytics.totalFrameTime += performance.now() - frameStart
 		analytics.worstFrameTime = max(performance.now() - frameStart, analytics.worstFrameTime)
+		analytics.worstFps = min(frameFPS, analytics.worstFps)
 		win.raf = requestAnimationFrame(renderLoop)
 	}
 	return renderLoop

@@ -66,16 +66,16 @@ void main (void) {
 
 	float sunDot = dot(dir, uSun);
 	vec3 col = mix(skyColor, uHorizon, horizonal * horizonal * (sunDot * 0.5 + 1.2)); // Mix the sky and the horizon
-	// col = mix(col, sunColor, smoothstep(0.98, 1.0, dot(dir, uSun))); // Draw the sun
 	
 
 	// float cloud = noise(position + uTime * 0.02, 10.0);
 	// col = mix(col, vec3(1.0), cloud);
 
 	// The sky starts getting darker when it's 30% above the horizon, then reachest max darkness at 50% below the horizon
-	col *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.1);
+	col *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.3);
 	// col *= clamp((-uSun.y + 0.5) / 0.8, 0.1, 1.0);
 
+	// Draw the sun
 	float sun = 1.0 - max(sunDot * 50.0 - 49.0, 0.0);
 	col = mix(col, sunColor, 1.0 - sun * sun);
 

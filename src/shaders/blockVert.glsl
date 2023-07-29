@@ -23,16 +23,13 @@ mat4 no_translate (mat4 mat) {
 void main() {
 	vPosition = uPos - aVertex;
 	vTexture = aTexture;
-	// If you are going to change this final lightlevel calculation
-	// you have to change line 4487 as well since it calculates lightlevel of entity based on this
 
 	gl_Position = uView * vec4(aVertex, 1.0);
-	float dist = length(uPos - aVertex);
 	float worldLight = max(aSkylight * uTime, aBlocklight);
-	float dynamicLight = max(worldLight, uLantern - dist / 10.0);
+	float dynamicLight = max(worldLight, uLantern - length(uPos - aVertex) / 10.0);
 
 	vShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);
 
-	float range = max(uDist / 5.0, 8.0);
-	vFog = clamp((dist - uDist + range) / range, 0.0, 1.0);
+	float range = 8.0;//clamp(uDist / 5.0, 8.0, 24.0);
+	vFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);
 }

@@ -120,12 +120,22 @@ async function Worker() {
 		if (e.data && e.data.caves) {
 			const { x, z } = e.data
 			const ptr = wasmCaves(x, z)
-			const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)
-			const arr = new Int8Array(buffer)
+			// const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)
+			const arr = new Int8Array(wasmMemory.buffer, ptr, 20992)
+
+			let air = []
+			let carve = []
+			for (let i = 512; i < arr.length; i++) {
+				if (arr[i] === 1) carve.push(i)
+				else if (arr[i] === 2) air.push(i)
+			}
+			let airArr = new Uint16Array(air)
+			let carveArr = new Uint16Array(carve)
+
 			self.postMessage({
-				jobId: e.data.jobId,
-				caves: arr,
-			}, [buffer])
+				air: airArr,
+				carve: carveArr
+			}, [airArr.buffer, carveArr.buffer])
 		}
 	}
 }

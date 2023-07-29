@@ -5655,13 +5655,13 @@ async function MineKhan() {
 			}
 		}
 		if (blockOutlines) {
-			(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.vertexAttribPointer)(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.vertexAttribPointer)(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap.hitbox])
-			// gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
-			// gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
+			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
+			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
+			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
-			// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
-			// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap.hitbox])
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
