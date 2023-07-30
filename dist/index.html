@@ -94,6 +94,7 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<!-- <link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"> -->
 		<link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin>
 		<link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
+		<!-- <link rel="manifest" href="https://willard.fun/manifest.json" /> -->
 	</head>
 	<body>
 		<div id="background-text">
@@ -119,6 +120,10 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	</p>
 	<div class="world-select hidden" id="worlds"></div>
 	<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
+	<span class="hidden" id="loading-text"></span>
+	<div id="inv-container" class="hidden">
+		<canvas id="inventory" height="1000"></canvas>
+	</div>
 	<script>
 		// Code edits will erase the world.
 		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol

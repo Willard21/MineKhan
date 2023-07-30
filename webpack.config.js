@@ -1,21 +1,32 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const InlinePlugin = require("html-inline-script-webpack-plugin")
 const path = require("path")
+const fs = require('fs')
 
-// Build straight into production if building on my VPS
-let output = "./dist"
 let plugins = [
 	new HtmlWebpackPlugin({
 		template: './src/index.html',
 		inject: "body",
 	})
 ]
+
+// Build to the dist folder by default
+let output = "./dist"
+
+// If I'm coding on my VPS, build to the beta page on willard.fun
 if (__dirname.includes("willard/server/dev")) {
 	output = "../../public/minekhan/beta"
-	// plugins.push(new InlinePlugin()) // This breaks the auto build thing, so only do it in production
 }
-// else plugins.push(new InlinePlugin())
-output = "/home/willard/vps/server/public/minekhan/beta"
+
+// If I'm coding on my desktop, and have my VPS mounted, build to the beta page on willard.fun
+else if (__dirname.includes("/home/willard/Desktop/MineKhan")) {
+	if (fs.readdirSync("/home/willard/vps").includes("server")) {
+		output = "/home/willard/vps/server/public/minekhan/beta"
+	}
+}
+
+// Bundle the JS into the HTML file; makes debugging harder, and breaks webpack's auto build
+// plugins.push(new InlinePlugin())
 
 module.exports = {
 	mode: "none",

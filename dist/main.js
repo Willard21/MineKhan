@@ -9,7 +9,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\nuniform float uLantern;\r\n\r\nmat4 no_translate (mat4 mat) {\r\n\tmat4 nmat = mat;\r\n\tnmat[3].xyz = vec3(0.0);\r\n\r\n\treturn nmat;\r\n}\r\n\r\nvoid main() {\r\n\tvPosition = uPos - aVertex;\r\n\tvTexture = aTexture;\r\n\t// If you are going to change this final lightlevel calculation\r\n\t// you have to change line 4487 as well since it calculates lightlevel of entity based on this\r\n\r\n\tgl_Position = uView * vec4(aVertex, 1.0);\r\n\tfloat dist = length(uPos - aVertex);\r\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\r\n\tfloat dynamicLight = max(worldLight, uLantern - dist / 10.0);\r\n\r\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\r\n\r\n\tfloat range = max(uDist / 5.0, 8.0);\r\n\tvFog = clamp((dist - uDist + range) / range, 0.0, 1.0);\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\nuniform float uLantern;\r\n\r\nmat4 no_translate (mat4 mat) {\r\n\tmat4 nmat = mat;\r\n\tnmat[3].xyz = vec3(0.0);\r\n\r\n\treturn nmat;\r\n}\r\n\r\nvoid main() {\r\n\tvPosition = uPos - aVertex;\r\n\tvTexture = aTexture;\r\n\r\n\tgl_Position = uView * vec4(aVertex, 1.0);\r\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\r\n\tfloat dynamicLight = max(worldLight, uLantern - length(uPos - aVertex) / 10.0);\r\n\r\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\r\n\r\n\tfloat range = 8.0;//clamp(uDist / 5.0, 8.0, 24.0);\r\n\tvFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);\r\n}");
 
 /***/ }),
 /* 2 */
@@ -19,7 +19,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n\tprecision highp float;\r\n#else\r\n\tprecision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nuniform bool uTrans;\r\nuniform vec3 uSky; // The horizon color\r\nuniform vec3 uSun; // The sun position\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\n\r\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\r\nvoid main(){\r\n\tvec3 dir = normalize(vPosition);\r\n\tfloat horizonal = 1.0 - abs(dir.y);\r\n    float sunDot = dot(dir, uSun);\r\n\tvec3 sky = mix(skyColor, uSky, horizonal * horizonal * (sunDot * 0.5 + 1.2)) * uTime;\r\n\t\t// * max(smoothstep(-0.5, 0.2, uTime), 0.1);\r\n\r\n\tvec4 color = texture2D(uSampler, vTexture);\r\n\tgl_FragColor = vec4(mix(color.rgb * vShadow, sky, vFog), color.a);\r\n\tif (!uTrans && gl_FragColor.a != 1.0) discard;\r\n\telse if (uTrans && gl_FragColor.a == 1.0) discard;\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n\tprecision highp float;\r\n#else\r\n\tprecision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nuniform bool uTrans;\r\nuniform vec3 uSky; // The horizon color\r\nuniform vec3 uSun; // The sun position\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\n\r\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\r\nvoid main(){\r\n\tvec3 dir = normalize(vPosition);\r\n\tfloat horizonal = 1.0 - abs(dir.y);\r\n    float sunDot = dot(dir, uSun);\r\n\tvec4 sky = vec4(mix(skyColor, uSky, horizonal * horizonal * (sunDot * 0.5 + 1.2)) * uTime, 1.0);\r\n\t\t// * max(smoothstep(-0.5, 0.2, uTime), 0.1);\r\n\r\n\tvec4 color = texture2D(uSampler, vTexture);\r\n\tgl_FragColor = mix(vec4(color.rgb * vShadow, color.a), sky, vFog);\r\n\tif (!uTrans && color.a != 1.0 || uTrans && (color.a == 1.0 || color.a == 0.0)) discard;\r\n}");
 
 /***/ }),
 /* 3 */
@@ -29,7 +29,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec2 aVertex;\r\nattribute vec2 aTexture;\r\nattribute float aShadow;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    vShadow = aShadow;\r\n    gl_Position = vec4(aVertex, 0.5, 1.0);\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\nattribute vec2  aTexture;\nattribute float aShadow;\nattribute float aSkylight;\nattribute float aBlocklight;\nvarying vec2  vTexture;\nvarying float vShadow;\nuniform mat4 uView;\nuniform vec3 uPos;\nuniform float uTime;\nuniform float uLantern;\n\nmat4 no_translate (mat4 mat) {\n\tmat4 nmat = mat;\n\tnmat[3].xyz = vec3(0.0);\n\n\treturn nmat;\n}\n\nvoid main() {\n\tvTexture = aTexture;\n\tgl_Position = uView * vec4(aVertex, 1.0);\n\n\tfloat dist = length(uPos - aVertex);\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\n\tfloat dynamicLight = max(worldLight, uLantern - dist / 10.0);\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\n}");
 
 /***/ }),
 /* 4 */
@@ -39,7 +39,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * vShadow, color.a);\r\n    if (gl_FragColor.a == 0.0) discard;\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\n\tprecision highp float;\n#else\n\tprecision mediump float;\n#endif\n\nuniform sampler2D uSampler;\nuniform bool uTrans;\nvarying float vShadow;\nvarying vec2 vTexture;\n\nvoid main(){\n\tvec4 color = texture2D(uSampler, vTexture);\n\tgl_FragColor = vec4(color.rgb * vShadow, color.a);\n\n\tif (!uTrans && gl_FragColor.a != 1.0 || uTrans && gl_FragColor.a == 1.0) discard;\n}");
 
 /***/ }),
 /* 5 */
@@ -49,7 +49,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nvarying vec2  vTexture;\r\nuniform mat4 uView;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec2 aVertex;\r\nattribute vec2 aTexture;\r\nattribute float aShadow;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\nuniform vec2 uOffset;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    vShadow = aShadow;\r\n    gl_Position = vec4(aVertex.x + uOffset.x, aVertex.y + uOffset.y, 0.5, 1.0);\r\n}");
 
 /***/ }),
 /* 6 */
@@ -59,7 +59,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uLightLevel;\r\nvarying vec2 vTexture;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * uLightLevel, color.a);\r\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * vShadow, color.a);\r\n}");
 
 /***/ }),
 /* 7 */
@@ -69,7 +69,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("async function Worker() {\n\t// Originally this stuff was generated in code\n\tconst GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])\n\tconst POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]\n\tconst DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]\n\tlet SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])\n\n\tlet data, positions, perm, perm3D, caves, gradients3D, sphere\n\tfunction seedNoise(seed, buffer) {\n\t\tpositions = new Int32Array(buffer, 0, 80)\n\t\tdata = new Float64Array(buffer, positions.byteLength, DATA.length)\n\t\tconst source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)\n\t\tperm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)\n\t\tperm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)\n\t\tgradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)\n\t\tcaves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)\n\t\tsphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)\n\n\t\tsphere.set(SPHERE)\n\t\tpositions.set(POSITIONS)\n\t\tdata.set(DATA)\n\t\tgradients3D.set(GRADIENTS_3D)\n\n\t\tfor (let i = 0; i < 256; i++) source[i] = i\n\t\tfor (let i = 0; i < 3; i++) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t}\n\t\tfor (let i = 255; i >= 0; i--) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t\tlet r = (seed + 31) % (i + 1)\n\t\t\tif (r < 0) r += i + 1\n\t\t\tperm[i] = source[r]\n\t\t\tperm3D[i] = perm[i] % 24 * 3\n\t\t\tsource[r] = source[i]\n\t\t}\n\t}\n\n\t/*\n\tconst { abs, floor } = Math\n\tconst NORM_3D = 1.0 / 206.0\n\tconst SQUISH_3D = 1 / 3\n\tconst STRETCH_3D = -1 / 6\n\tfunction noise(x, y, z) {\n\t\tconst stretchOffset = (x + y + z) * STRETCH_3D\n\t\tconst xs = x + stretchOffset\n\t\tconst ys = y + stretchOffset\n\t\tconst zs = z + stretchOffset\n\t\tconst xsb = floor(xs)\n\t\tconst ysb = floor(ys)\n\t\tconst zsb = floor(zs)\n\t\tconst xins = xs - xsb\n\t\tconst yins = ys - ysb\n\t\tconst zins = zs - zsb\n\t\tconst inSum = xins + yins + zins\n\n\t\tconst bits = yins - zins + 1\n\t\t| xins - yins + 1 << 1\n\t\t| xins - zins + 1 << 2\n\t\t| inSum << 3\n\t\t| inSum + zins << 5\n\t\t| inSum + yins << 7\n\t\t| inSum + xins << 9\n\n\t\tconst n = bits * 571183418275 + 1013904223 >>> 1\n\n\t\tlet c = positions[n % 80]\n\t\tif (c === -1) return 0\n\t\tlet value = 0\n\t\tconst squishOffset = (xsb + ysb + zsb) * SQUISH_3D\n\t\tconst dx0 = x - (xsb + squishOffset)\n\t\tconst dy0 = y - (ysb + squishOffset)\n\t\tconst dz0 = z - (zsb + squishOffset)\n\t\tconst count = c < 432 ? 6 : 8\n\t\tfor (let j = 0; j < count ; j++) {\n\t\t\tconst dx = dx0 + data[c]\n\t\t\tconst dy = dy0 + data[c+1]\n\t\t\tconst dz = dz0 + data[c+2]\n\t\t\tlet attn = 2 - dx * dx - dy * dy - dz * dz\n\t\t\tif (attn > 0) {\n\t\t\t\tlet i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]\n\t\t\t\tattn *= attn\n\t\t\t\tvalue += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)\n\t\t\t}\n\t\t\tc += 6\n\t\t}\n\n\t\treturn value * NORM_3D + 0.5\n\t}\n\tconst smooth = 0.02\n\tconst caveSize = 0.0055\n\tfunction isCave(x, y, z) {\n\t\t// Generate a 3D rigid multifractal noise shell.\n\t\t// Then generate another one with different coordinates.\n\t\t// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.\n\t\t// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.\n\t\t// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.\n\n\t\treturn abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize\n\t\t\t&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize\n\t}\n\t*/\n\n\t// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.\n\tconst program = new Uint8Array(atob(\"AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL\").split(\"\").map(c => c.charCodeAt(0))).buffer\n\n\tconst wasm = await WebAssembly.instantiate(program)\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))\n\n\tconst exports = wasm.instance.exports\n\tconst wasmCaves = exports.getCaves || exports.get_caves || exports.c\n\tconst wasmMemory = exports.memory || exports.a\n\n\tself.onmessage = function(e) {\n\t\tif (e.data && e.data.seed) {\n\t\t\tif (exports.seed_noise) exports.seed_noise(e.data.seed)\n\t\t\telse seedNoise(e.data.seed, wasmMemory.buffer)\n\t\t\tself.postMessage(e.data)\n\t\t}\n\t\tif (e.data && e.data.caves) {\n\t\t\tconst { x, z } = e.data\n\t\t\tconst ptr = wasmCaves(x, z)\n\t\t\tconst buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)\n\t\t\tconst arr = new Int8Array(buffer)\n\t\t\tself.postMessage({\n\t\t\t\tjobId: e.data.jobId,\n\t\t\t\tcaves: arr,\n\t\t\t}, [buffer])\n\t\t}\n\t}\n}\nWorker()");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nvarying vec2  vTexture;\r\nuniform mat4 uView;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n}");
 
 /***/ }),
 /* 8 */
@@ -79,9 +79,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uLightLevel;\r\nvarying vec2 vTexture;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * uLightLevel, color.a);\r\n}");
+
+/***/ }),
+/* 9 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("async function Worker() {\n\t// Originally this stuff was generated in code\n\tconst GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])\n\tconst POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]\n\tconst DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]\n\tlet SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])\n\n\tlet data, positions, perm, perm3D, caves, gradients3D, sphere\n\tfunction seedNoise(seed, buffer) {\n\t\tpositions = new Int32Array(buffer, 0, 80)\n\t\tdata = new Float64Array(buffer, positions.byteLength, DATA.length)\n\t\tconst source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)\n\t\tperm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)\n\t\tperm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)\n\t\tgradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)\n\t\tcaves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)\n\t\tsphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)\n\n\t\tsphere.set(SPHERE)\n\t\tpositions.set(POSITIONS)\n\t\tdata.set(DATA)\n\t\tgradients3D.set(GRADIENTS_3D)\n\n\t\tfor (let i = 0; i < 256; i++) source[i] = i\n\t\tfor (let i = 0; i < 3; i++) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t}\n\t\tfor (let i = 255; i >= 0; i--) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t\tlet r = (seed + 31) % (i + 1)\n\t\t\tif (r < 0) r += i + 1\n\t\t\tperm[i] = source[r]\n\t\t\tperm3D[i] = perm[i] % 24 * 3\n\t\t\tsource[r] = source[i]\n\t\t}\n\t}\n\n\t/*\n\tconst { abs, floor } = Math\n\tconst NORM_3D = 1.0 / 206.0\n\tconst SQUISH_3D = 1 / 3\n\tconst STRETCH_3D = -1 / 6\n\tfunction noise(x, y, z) {\n\t\tconst stretchOffset = (x + y + z) * STRETCH_3D\n\t\tconst xs = x + stretchOffset\n\t\tconst ys = y + stretchOffset\n\t\tconst zs = z + stretchOffset\n\t\tconst xsb = floor(xs)\n\t\tconst ysb = floor(ys)\n\t\tconst zsb = floor(zs)\n\t\tconst xins = xs - xsb\n\t\tconst yins = ys - ysb\n\t\tconst zins = zs - zsb\n\t\tconst inSum = xins + yins + zins\n\n\t\tconst bits = yins - zins + 1\n\t\t| xins - yins + 1 << 1\n\t\t| xins - zins + 1 << 2\n\t\t| inSum << 3\n\t\t| inSum + zins << 5\n\t\t| inSum + yins << 7\n\t\t| inSum + xins << 9\n\n\t\tconst n = bits * 571183418275 + 1013904223 >>> 1\n\n\t\tlet c = positions[n % 80]\n\t\tif (c === -1) return 0\n\t\tlet value = 0\n\t\tconst squishOffset = (xsb + ysb + zsb) * SQUISH_3D\n\t\tconst dx0 = x - (xsb + squishOffset)\n\t\tconst dy0 = y - (ysb + squishOffset)\n\t\tconst dz0 = z - (zsb + squishOffset)\n\t\tconst count = c < 432 ? 6 : 8\n\t\tfor (let j = 0; j < count ; j++) {\n\t\t\tconst dx = dx0 + data[c]\n\t\t\tconst dy = dy0 + data[c+1]\n\t\t\tconst dz = dz0 + data[c+2]\n\t\t\tlet attn = 2 - dx * dx - dy * dy - dz * dz\n\t\t\tif (attn > 0) {\n\t\t\t\tlet i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]\n\t\t\t\tattn *= attn\n\t\t\t\tvalue += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)\n\t\t\t}\n\t\t\tc += 6\n\t\t}\n\n\t\treturn value * NORM_3D + 0.5\n\t}\n\tconst smooth = 0.02\n\tconst caveSize = 0.0055\n\tfunction isCave(x, y, z) {\n\t\t// Generate a 3D rigid multifractal noise shell.\n\t\t// Then generate another one with different coordinates.\n\t\t// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.\n\t\t// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.\n\t\t// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.\n\n\t\treturn abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize\n\t\t\t&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize\n\t}\n\t*/\n\n\t// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.\n\tconst program = new Uint8Array(atob(\"AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL\").split(\"\").map(c => c.charCodeAt(0))).buffer\n\n\tconst wasm = await WebAssembly.instantiate(program)\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))\n\n\tconst exports = wasm.instance.exports\n\tconst wasmCaves = exports.getCaves || exports.get_caves || exports.c\n\tconst wasmMemory = exports.memory || exports.a\n\n\tself.onmessage = function(e) {\n\t\tif (e.data && e.data.seed) {\n\t\t\tif (exports.seed_noise) exports.seed_noise(e.data.seed)\n\t\t\telse seedNoise(e.data.seed, wasmMemory.buffer)\n\t\t\tself.postMessage(e.data)\n\t\t}\n\t\tif (e.data && e.data.caves) {\n\t\t\tconst { x, z } = e.data\n\t\t\tconst ptr = wasmCaves(x, z)\n\t\t\t// const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)\n\t\t\tconst arr = new Int8Array(wasmMemory.buffer, ptr, 20992)\n\n\t\t\tlet air = []\n\t\t\tlet carve = []\n\t\t\tfor (let i = 512; i < arr.length; i++) {\n\t\t\t\tif (arr[i] === 1) carve.push(i)\n\t\t\t\telse if (arr[i] === 2) air.push(i)\n\t\t\t}\n\t\t\tlet airArr = new Uint16Array(air)\n\t\t\tlet carveArr = new Uint16Array(carve)\n\n\t\t\tself.postMessage({\n\t\t\t\tair: airArr,\n\t\t\t\tcarve: carveArr\n\t\t\t}, [airArr.buffer, carveArr.buffer])\n\t\t}\n\t}\n}\nWorker()");
+
+/***/ }),
+/* 10 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(10);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
 
             
 
@@ -97,7 +117,7 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -371,26 +391,26 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
 /* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
 // Imports
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n    background-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n    position: absolute;\r\n    left: 0px;\r\n    top: 100px;\r\n    height: calc(100vh - 200px);\r\n    overflow-y: auto;\r\n    overflow-x: hidden;\r\n\tpadding-right: 20px;\r\n    width: 40vw;\r\n    min-width: 600px;\r\n    background-color: RGBA(0, 0, 0, 0.8);\r\n    color: white;\r\n}\r\n#chatbar {\r\n    position: absolute;\r\n    left: 30px;\r\n    bottom: 0px;\r\n    height: 20;\r\n    width: calc(100vw - 60px);\r\n    background-color: RGBA(0, 0, 0, 0.8);\r\n    color: white;\r\n}\r\n.message {\r\n    width: 100%;\r\n    background-color: transparent;\r\n    padding: 10px;\r\n    word-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n    width: 100vw;\r\n    height: 100vh;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n\tbackground-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n}\r\n#chat {\r\n\tposition: absolute;\r\n\tleft: 0px;\r\n\ttop: 100px;\r\n\theight: calc(100vh - 200px);\r\n\toverflow-y: auto;\r\n\toverflow-x: hidden;\r\n\tpadding-right: 20px;\r\n\twidth: 40vw;\r\n\tmin-width: 600px;\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n}\r\n#chat > div > span {\r\n\twhite-space: pre-wrap;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n}\r\n#chatbar {\r\n\tposition: absolute;\r\n\tleft: 30px;\r\n\tbottom: 0px;\r\n\theight: 20;\r\n\twidth: calc(100vw - 60px);\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n}\r\n.message {\r\n\twidth: 100%;\r\n\tbackground-color: transparent;\r\n\tpadding: 10px;\r\n\tword-wrap: break-word;\r\n}\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\twidth: 100vw;\r\n\theight: 100vh;\r\n\tz-index: -10;\r\n}\r\n#loading-text {\r\n\tposition: absolute;\r\n\ttop: 50%;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\ttext-align: center;\r\n\tcolor: #fff;\r\n\tfont-size: 30px;\r\n\tfont-family: monospace;\r\n}\r\n#inv-container {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttop: 50px;\r\n\ttransform: translate(-50%, 0);\r\n\theight: 80hv;\r\n\tmax-height: 500px;\r\n\twidth: fit-content;\r\n\toverflow-y: scroll;\r\n\tpadding: 0;\r\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ ((module) => {
 
 
@@ -461,7 +481,7 @@ module.exports = function (cssWithMappingToString) {
 };
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -965,7 +985,7 @@ function openSimplexNoise(clientSeed) {
 
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1280,7 +1300,7 @@ function copyArr(a, b) {
 
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1303,10 +1323,6 @@ function timeString(millis) {
 	const DAY = HOUR * 24
 	const YEAR = DAY * 365
 
-	if (millis < MINUTE) {
-		return "just now"
-	}
-
 	let years = floor(millis / YEAR)
 	millis -= years * YEAR
 
@@ -1317,6 +1333,9 @@ function timeString(millis) {
 	millis -= hours * HOUR
 
 	let minutes = floor(millis / MINUTE)
+	millis -= minutes * MINUTE
+
+	let seconds = floor(millis / SECOND)
 
 	if (years) {
 		return `${years} year${years > 1 ? "s" : ""} and ${days} day${days !== 1 ? "s" : ""} ago`
@@ -1327,7 +1346,10 @@ function timeString(millis) {
 	if (hours) {
 		return `${hours} hour${hours > 1 ? "s" : ""} and ${minutes} minute${minutes !== 1 ? "s" : ""} ago`
 	}
-	return `${minutes} minute${minutes > 1 ? "s" : ""} ago`
+	if (minutes) {
+		return `${minutes} minute${minutes > 1 ? "s" : ""} and ${seconds} second${seconds !== 1 ? "s" : ""} ago`
+	}
+	return `${seconds} second${seconds !== 1 ? "s" : ""} ago`
 }
 
 function roundBits(number) {
@@ -1452,7 +1474,7 @@ class BitArrayReader {
 
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1863,7 +1885,7 @@ let Block = {
 
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1944,7 +1966,7 @@ async function deleteFromDB(id) {
 
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2050,7 +2072,7 @@ let shapes = {
 
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2121,7 +2143,7 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2131,7 +2153,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "textureCoords": () => (/* binding */ textureCoords),
 /* harmony export */   "textureMap": () => (/* binding */ textureMap)
 /* harmony export */ });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 
 
 const textureMap = {}
@@ -2310,16 +2332,16 @@ function initTextures(gl, glCache) {
 
 
 /***/ }),
-/* 20 */
+/* 22 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "getSkybox": () => (/* binding */ getSkybox)
 /* harmony export */ });
-/* harmony import */ var _shaders_skyFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(21);
-/* harmony import */ var _shaders_skyVertexShader_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(22);
-/* harmony import */ var _glUtils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(18);
+/* harmony import */ var _shaders_skyFrag_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(23);
+/* harmony import */ var _shaders_skyVert_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(24);
+/* harmony import */ var _glUtils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(20);
 
 
 
@@ -2328,51 +2350,64 @@ __webpack_require__.r(__webpack_exports__);
  * @param {WebGLRenderingContext} gl gl
  * @returns Rendering function
  */
-function getSkybox(gl, glCache) {
+function getSkybox(gl, glCache, program3D, program3DFogless) {
 	// I can't explain why, but the directions are all backwards from the world coordinates
 	const vertexData = new Float32Array([
 		// top
-		-1, -1, -1,
-		 1, -1, -1,
-		 1, -1,  1,
-		-1, -1,  1,
+		-1, -1, -1, // 1
+		 1, -1, -1, // 2
+		 1, -1,  1, // 3
+		 1, -1,  1, // 3
+		-1, -1,  1, // 4
+		-1, -1, -1, // 1
 
 		// bottom
-		-1,  1, -1,
-		-1,  1,  1,
-		 1,  1,  1,
-		 1,  1, -1,
+		-1,  1, -1, // 1
+		-1,  1,  1, // 2
+		 1,  1,  1, // 3
+		 1,  1,  1, // 3
+		 1,  1, -1, // 4
+		-1,  1, -1, // 1
 
 		// south
-		1, -1, -1,
-		1,  1, -1,
-		1,  1,  1,
-		1, -1,  1,
+		1, -1, -1, // 1
+		1,  1, -1, // 2
+		1,  1,  1, // 3
+		1,  1,  1, // 3
+		1, -1,  1, // 4
+		1, -1, -1, // 1
 
 		// north
-		-1, -1, -1,
-		-1, -1,  1,
-		-1,  1,  1,
-		-1,  1, -1,
+		-1, -1, -1, // 1
+		-1, -1,  1, // 2
+		-1,  1,  1, // 3
+		-1,  1,  1, // 3
+		-1,  1, -1, // 4
+		-1, -1, -1, // 1
 
 		// west
-		-1, -1, 1,
-		 1, -1, 1,
-		 1,  1, 1,
-		-1,  1, 1,
+		-1, -1, 1, // 1
+		 1, -1, 1, // 2
+		 1,  1, 1, // 3
+		 1,  1, 1, // 3
+		-1,  1, 1, // 4
+		-1, -1, 1, // 1
 
 		// east
-		-1, -1, -1,
-		-1,  1, -1,
-		 1,  1, -1,
-		 1, -1, -1,
+		-1, -1, -1, // 1
+		-1,  1, -1, // 2
+		 1,  1, -1, // 3
+		 1,  1, -1, // 3
+		 1, -1, -1, // 4
+		-1, -1, -1, // 1
 	].map(n => n * 1))
+
 
 	const buffer = gl.createBuffer()
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 	gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW)
 
-	const skyboxProgram = (0,_glUtils__WEBPACK_IMPORTED_MODULE_2__.createProgramObject)(gl, _shaders_skyVertexShader_glsl__WEBPACK_IMPORTED_MODULE_1__["default"], _shaders_skyFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_0__["default"])
+	const skyboxProgram = (0,_glUtils__WEBPACK_IMPORTED_MODULE_2__.createProgramObject)(gl, _shaders_skyVert_glsl__WEBPACK_IMPORTED_MODULE_1__["default"], _shaders_skyFrag_glsl__WEBPACK_IMPORTED_MODULE_0__["default"])
 
 	const aVertex = gl.getAttribLocation(skyboxProgram, "aVertex")
 	const uTime = gl.getUniformLocation(skyboxProgram, "uTime")
@@ -2403,23 +2438,34 @@ function getSkybox(gl, glCache) {
 		]
 
 		const sun = [sin/mag, cos/mag, sin/mag]
+		const skyBrightness = Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.3)
 
-		// Setting these uniforms in program3D
+		// Set uniform for program3DFogless
+		gl.useProgram(program3DFogless)
+		gl.uniform1f(glCache.uTimeFogless, skyBrightness)
+
+		// Set uniform for program3D
+		gl.useProgram(program3D)
 		gl.uniform3f(glCache.uSky, horizonColor[0], horizonColor[1], horizonColor[2])
 		gl.uniform3f(glCache.uSun, sun[0], sun[1], sun[2])
-		gl.uniform1f(glCache.uTime, Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.3))
+		gl.uniform1f(glCache.uTime, skyBrightness)
 
 		gl.useProgram(skyboxProgram)
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.disableVertexAttribArray(glCache.aShadow)
+		gl.disableVertexAttribArray(glCache.aTexture)
+
 		gl.uniform1f(uTime, time)
 		gl.uniform3f(uSun, sun[0], sun[1], sun[2])
 		gl.uniform3f(uHorizon, horizonColor[0], horizonColor[1], horizonColor[2])
 		gl.uniformMatrix4fv(uView, false, view)
 
-		gl.depthFunc(gl.ALWAYS)
+		gl.depthFunc(gl.EQUAL)
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.vertexAttribPointer(aVertex, 3, gl.FLOAT, false, 0, 0)
-		gl.drawElements(gl.TRIANGLES, 6 * 6, gl.UNSIGNED_INT, 0)
+		gl.drawArrays(gl.TRIANGLES, 0, 6 * 6)//, gl.UNSIGNED_INT, 0)
 
 		gl.depthFunc(gl.LESS)
 	}
@@ -2428,17 +2474,17 @@ function getSkybox(gl, glCache) {
 
 
 /***/ }),
-/* 21 */
+/* 23 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\nuniform float uTime;\nuniform vec3 uSun;\nuniform vec3 uHorizon;\nvarying vec3 position;\n\n/*\nfloat rand3D(in vec3 co) {\n\treturn fract(sin(dot(co.xyz ,vec3(12.9898,78.233,144.7272))) * 43758.5453);\n}\nfloat simple_interpolate(in float a, in float b, in float x) {\n\treturn a + smoothstep(0.0,1.0,x) * (b-a);\n}\nfloat interpolatedNoise3D(in float x, in float y, in float z) {\n\tfloat integer_x = x - fract(x);\n\tfloat fractional_x = x - integer_x;\n\n\tfloat integer_y = y - fract(y);\n\tfloat fractional_y = y - integer_y;\n\n\tfloat integer_z = z - fract(z);\n\tfloat fractional_z = z - integer_z;\n\n\tfloat v1 = rand3D(vec3(integer_x, integer_y, integer_z));\n\tfloat v2 = rand3D(vec3(integer_x+1.0, integer_y, integer_z));\n\tfloat v3 = rand3D(vec3(integer_x, integer_y+1.0, integer_z));\n\tfloat v4 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z));\n\n\tfloat v5 = rand3D(vec3(integer_x, integer_y, integer_z+1.0));\n\tfloat v6 = rand3D(vec3(integer_x+1.0, integer_y, integer_z+1.0));\n\tfloat v7 = rand3D(vec3(integer_x, integer_y+1.0, integer_z+1.0));\n\tfloat v8 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z+1.0));\n\n\tfloat i1 = simple_interpolate(v1,v5, fractional_z);\n\tfloat i2 = simple_interpolate(v2,v6, fractional_z);\n\tfloat i3 = simple_interpolate(v3,v7, fractional_z);\n\tfloat i4 = simple_interpolate(v4,v8, fractional_z);\n\n\tfloat ii1 = simple_interpolate(i1,i2,fractional_x);\n\tfloat ii2 = simple_interpolate(i3,i4,fractional_x);\n\n\treturn simple_interpolate(ii1 , ii2 , fractional_y);\n}\nfloat Noise3D(in vec3 coord, in float wavelength) {\n\treturn interpolatedNoise3D(coord.x/wavelength, coord.y/wavelength, coord.z/wavelength);\n}\nfloat noise(vec3 p, float frequency) {\n\tfloat sum = 0.0;\n\tfor (float i = 0.0; i < 5.0; i++) {\n\t\tsum += Noise3D(p * frequency * pow(2.0, i), 1.0) / pow(2.0, i);\n\t}\n\treturn sum * 0.5;\n}\n*/\n\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\nconst vec3 sunColor = vec3(1.0, 1.0, 0.7);\nconst vec3 moonColor = vec3(0.7);\nvoid main (void) {\n\tvec3 dir = normalize(position);\n\tfloat horizonal = 1.0 - abs(dir.y);\n\n\tfloat sunDot = dot(dir, uSun);\n\tvec3 col = mix(skyColor, uHorizon, horizonal * horizonal * (sunDot * 0.5 + 1.2)); // Mix the sky and the horizon\n\t// col = mix(col, sunColor, smoothstep(0.98, 1.0, dot(dir, uSun))); // Draw the sun\n\t\n\n\t// float cloud = noise(position + uTime * 0.02, 10.0);\n\t// col = mix(col, vec3(1.0), cloud);\n\n\t// The sky starts getting darker when it's 30% above the horizon, then reachest max darkness at 50% below the horizon\n\tcol *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.1);\n\t// col *= clamp((-uSun.y + 0.5) / 0.8, 0.1, 1.0);\n\n\tfloat sun = 1.0 - max(sunDot * 50.0 - 49.0, 0.0);\n\tcol = mix(col, sunColor, 1.0 - sun * sun);\n\n\tif (dot(dir, -uSun) > 0.994) col = moonColor; // Draw the moon\n\tgl_FragColor = vec4(col, 1.0);\n}");
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\nuniform float uTime;\nuniform vec3 uSun;\nuniform vec3 uHorizon;\nvarying vec3 position;\n\n/*\nfloat rand3D(in vec3 co) {\n\treturn fract(sin(dot(co.xyz ,vec3(12.9898,78.233,144.7272))) * 43758.5453);\n}\nfloat simple_interpolate(in float a, in float b, in float x) {\n\treturn a + smoothstep(0.0,1.0,x) * (b-a);\n}\nfloat interpolatedNoise3D(in float x, in float y, in float z) {\n\tfloat integer_x = x - fract(x);\n\tfloat fractional_x = x - integer_x;\n\n\tfloat integer_y = y - fract(y);\n\tfloat fractional_y = y - integer_y;\n\n\tfloat integer_z = z - fract(z);\n\tfloat fractional_z = z - integer_z;\n\n\tfloat v1 = rand3D(vec3(integer_x, integer_y, integer_z));\n\tfloat v2 = rand3D(vec3(integer_x+1.0, integer_y, integer_z));\n\tfloat v3 = rand3D(vec3(integer_x, integer_y+1.0, integer_z));\n\tfloat v4 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z));\n\n\tfloat v5 = rand3D(vec3(integer_x, integer_y, integer_z+1.0));\n\tfloat v6 = rand3D(vec3(integer_x+1.0, integer_y, integer_z+1.0));\n\tfloat v7 = rand3D(vec3(integer_x, integer_y+1.0, integer_z+1.0));\n\tfloat v8 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z+1.0));\n\n\tfloat i1 = simple_interpolate(v1,v5, fractional_z);\n\tfloat i2 = simple_interpolate(v2,v6, fractional_z);\n\tfloat i3 = simple_interpolate(v3,v7, fractional_z);\n\tfloat i4 = simple_interpolate(v4,v8, fractional_z);\n\n\tfloat ii1 = simple_interpolate(i1,i2,fractional_x);\n\tfloat ii2 = simple_interpolate(i3,i4,fractional_x);\n\n\treturn simple_interpolate(ii1 , ii2 , fractional_y);\n}\nfloat Noise3D(in vec3 coord, in float wavelength) {\n\treturn interpolatedNoise3D(coord.x/wavelength, coord.y/wavelength, coord.z/wavelength);\n}\nfloat noise(vec3 p, float frequency) {\n\tfloat sum = 0.0;\n\tfor (float i = 0.0; i < 5.0; i++) {\n\t\tsum += Noise3D(p * frequency * pow(2.0, i), 1.0) / pow(2.0, i);\n\t}\n\treturn sum * 0.5;\n}\n*/\n\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\nconst vec3 sunColor = vec3(1.0, 1.0, 0.7);\nconst vec3 moonColor = vec3(0.7);\nvoid main (void) {\n\tvec3 dir = normalize(position);\n\tfloat horizonal = 1.0 - abs(dir.y);\n\n\tfloat sunDot = dot(dir, uSun);\n\tvec3 col = mix(skyColor, uHorizon, horizonal * horizonal * (sunDot * 0.5 + 1.2)); // Mix the sky and the horizon\n\t\n\n\t// float cloud = noise(position + uTime * 0.02, 10.0);\n\t// col = mix(col, vec3(1.0), cloud);\n\n\t// The sky starts getting darker when it's 30% above the horizon, then reachest max darkness at 50% below the horizon\n\tcol *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.3);\n\t// col *= clamp((-uSun.y + 0.5) / 0.8, 0.1, 1.0);\n\n\t// Draw the sun\n\tfloat sun = 1.0 - max(sunDot * 50.0 - 49.0, 0.0);\n\tcol = mix(col, sunColor, 1.0 - sun * sun);\n\n\tif (dot(dir, -uSun) > 0.994) col = moonColor; // Draw the moon\n\tgl_FragColor = vec4(col, 1.0);\n}");
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2448,20 +2494,20 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3 aVertex;\nuniform float uTime;\nuniform mat4 uView;\nvarying vec3 position;\nmat4 no_translate (mat4 mat) {\n\tmat4 nmat = mat;\n\tnmat[3].xyz = vec3(0.0);\n\n\treturn nmat;\n}\nvoid main(void) {\n   position = aVertex;\n   gl_Position = no_translate(uView) * vec4(aVertex * -100.0, 0.0);\n}");
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Chunk": () => (/* binding */ Chunk)
 /* harmony export */ });
-/* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(12);
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(15);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
+/* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
 
 
 
-let world
+// let world
 
 const { floor, max, abs } = Math
 const semiTrans = new Uint8Array(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData.filter((data, i) => data && i < 256).map(data => data.semiTrans ? 1 : 0))
@@ -2477,6 +2523,7 @@ const lightLevels = new Uint8Array(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.bl
 
 // Save the coords for a small sphere used to carve out caves
 let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,-1,-2,1,0,-2,1,1,-1,-2,-1,-1,-2,0,-1,-2,1,-1,-1,-2,-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,2,-1,0,-2,-1,0,-1,-1,0,0,-1,0,1,-1,0,2,-1,1,-2,-1,1,-1,-1,1,0,-1,1,1,-1,1,2,-1,2,-1,-1,2,0,-1,2,1,0,-2,-1,0,-2,0,0,-2,1,0,-1,-2,0,-1,-1,0,-1,0,0,-1,1,0,-1,2,0,0,-2,0,0,-1,0,0,0,0,0,1,0,0,2,0,1,-2,0,1,-1,0,1,0,0,1,1,0,1,2,0,2,-1,0,2,0,0,2,1,1,-2,-1,1,-2,0,1,-2,1,1,-1,-2,1,-1,-1,1,-1,0,1,-1,1,1,-1,2,1,0,-2,1,0,-1,1,0,0,1,0,1,1,0,2,1,1,-2,1,1,-1,1,1,0,1,1,1,1,1,2,1,2,-1,1,2,0,1,2,1,2,-1,-1,2,-1,0,2,-1,1,2,0,-1,2,0,0,2,0,1,2,1,-1,2,1,0,2,1,1])
+
 // {
 // 	let blocks = []
 // 	let radius = 3.5
@@ -2502,123 +2549,54 @@ function carveSphere(x, y, z, world) {
 	}
 }
 
-let getShadows = {
-	shade: [1, 0.85, 0.7, 0.6, 0.3],
-	ret: [],
-	blocks: [],
-	top: function(x, y, z, world) { // Actually the bottom... How did these get flipped?
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x, y-1, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x, y-1, z)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y-1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x, y-1, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-
-		ret[0] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.75
-		ret[1] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.75
-		ret[2] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.75
-		ret[3] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.75
-		return ret
-	},
-	bottom: function(x, y, z, world) { // Actually the top
-		let ret = this.ret
-		let b0 = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		let b1 = shadow[255 & world.getBlock(x, y+1, z-1)]
-		let b2 = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-		let b3 = shadow[255 & world.getBlock(x-1, y+1, z)]
-		let b4 = shadow[255 & world.getBlock(x, y+1, z)]
-		let b5 = shadow[255 & world.getBlock(x+1, y+1, z)]
-		let b6 = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-		let b7 = shadow[255 & world.getBlock(x, y+1, z+1)]
-		let b8 = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[b6 + b3 + b7 + b4]
-		ret[1] = this.shade[b8 + b5 + b7 + b4]
-		ret[2] = this.shade[b2 + b1 + b5 + b4]
-		ret[3] = this.shade[b0 + b1 + b3 + b4]
-		return ret
-	},
-	north: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[1] = shadow[255 & world.getBlock(x, y-1, z+1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y, z+1)]
-		blocks[4] = shadow[255 & world.getBlock(x, y, z+1)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y, z+1)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x, y+1, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-		ret[1] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-		ret[2] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-		ret[3] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-		return ret
-	},
-	south: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x-1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x, y-1, z-1)]
-		blocks[4] = shadow[255 & world.getBlock(x, y, z-1)]
-		blocks[5] = shadow[255 & world.getBlock(x, y+1, z-1)]
-		blocks[6] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[7] = shadow[255 & world.getBlock(x+1, y, z-1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-
-		ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.95
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.95
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.95
-		ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.95
-		return ret
-	},
-	east: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x+1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x+1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x+1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x+1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x+1, y, z)]
-		blocks[5] = shadow[255 & world.getBlock(x+1, y+1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x+1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x+1, y, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x+1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[1] + blocks[2] + blocks[4] + blocks[5]]*0.8
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[8] + blocks[7]]*0.8
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[7] + blocks[6]]*0.8
-		ret[3] = this.shade[blocks[0] + blocks[1] + blocks[3] + blocks[4]]*0.8
-		return ret
-	},
-	west: function(x, y, z, world) {
-		let blocks = this.blocks
-		let ret = this.ret
-		blocks[0] = shadow[255 & world.getBlock(x-1, y-1, z-1)]
-		blocks[1] = shadow[255 & world.getBlock(x-1, y, z-1)]
-		blocks[2] = shadow[255 & world.getBlock(x-1, y+1, z-1)]
-		blocks[3] = shadow[255 & world.getBlock(x-1, y-1, z)]
-		blocks[4] = shadow[255 & world.getBlock(x-1, y, z)]
-		blocks[5] = shadow[255 & world.getBlock(x-1, y+1, z)]
-		blocks[6] = shadow[255 & world.getBlock(x-1, y-1, z+1)]
-		blocks[7] = shadow[255 & world.getBlock(x-1, y, z+1)]
-		blocks[8] = shadow[255 & world.getBlock(x-1, y+1, z+1)]
-
-		ret[0] = this.shade[blocks[7] + blocks[8] + blocks[4] + blocks[5]]*0.8
-		ret[1] = this.shade[blocks[5] + blocks[4] + blocks[2] + blocks[1]]*0.8
-		ret[2] = this.shade[blocks[4] + blocks[3] + blocks[1] + blocks[0]]*0.8
-		ret[3] = this.shade[blocks[6] + blocks[7] + blocks[3] + blocks[4]]*0.8
-		return ret
-	},
+let getShadows
+{
+	const shade = [1, 0.85, 0.7, 0.6, 0.3]
+	const ret = []
+	getShadows = [
+		b => { // Bottom
+			ret[0] = shade[b[0] + b[3] + b[1] + b[4]]*0.75
+			ret[1] = shade[b[3] + b[6] + b[4] + b[7]]*0.75
+			ret[2] = shade[b[7] + b[4] + b[8] + b[5]]*0.75
+			ret[3] = shade[b[4] + b[1] + b[5] + b[2]]*0.75
+			return ret
+		},
+		b => { // Top
+			ret[0] = shade[b[20] + b[19] + b[23] + b[22]]
+			ret[1] = shade[b[26] + b[25] + b[23] + b[22]]
+			ret[2] = shade[b[24] + b[21] + b[25] + b[22]]
+			ret[3] = shade[b[18] + b[21] + b[19] + b[22]]
+			return ret
+		},
+		b => { // North
+			ret[0] = shade[b[17] + b[26] + b[23] + b[14]]*0.95
+			ret[1] = shade[b[11] + b[20] + b[23] + b[14]]*0.95
+			ret[2] = shade[b[11] + b[2]  + b[5]  + b[14]]*0.95
+			ret[3] = shade[b[17] + b[8]  + b[5]  + b[14]]*0.95
+			return ret
+		},
+		b => { // South
+			ret[0] = shade[b[9]  + b[18] + b[12] + b[21]]*0.95
+			ret[1] = shade[b[21] + b[12] + b[24] + b[15]]*0.95
+			ret[2] = shade[b[12] + b[3]  + b[15] + b[6]]*0.95
+			ret[3] = shade[b[0]  + b[9]  + b[3]  + b[12]]*0.95
+			return ret
+		},
+		b => { // East
+			ret[0] = shade[b[15] + b[24] + b[16] + b[25]]*0.8
+			ret[1] = shade[b[25] + b[16] + b[26] + b[17]]*0.8
+			ret[2] = shade[b[16] + b[7] + b[17] + b[8]]*0.8
+			ret[3] = shade[b[6] + b[15] + b[7] + b[16]]*0.8
+			return ret
+		},
+		b => { // West
+			ret[0] = shade[b[11] + b[20] + b[10] + b[19]]*0.8
+			ret[1] = shade[b[19] + b[10] + b[18] + b[9]]*0.8
+			ret[2] = shade[b[10] + b[1]  + b[9]  + b[0]]*0.8
+			ret[3] = shade[b[2]  + b[11] + b[1]  + b[10]]*0.8
+			return ret
+		},
+	]
 }
 
 function average(l, a, b, c, d) {
@@ -2655,190 +2633,181 @@ function average(l, a, b, c, d) {
 	return total / 60
 }
 
-let getLight = {
-	blocks: [],
-	top: function(x, y, z, ret, blockLight, world) { // Actually the bottom... How did these get flipped?
-		const face = world.getLight(x, y-1, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
+let getLight
+{
+	const blocks = []
+	getLight = [
+		(lights27, ret, blockMask, blockShift) => { // Bottom
+			const face = (lights27[4] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[3] & blockMask) >> blockShift
+			blocks[2] = (lights27[6] & blockMask) >> blockShift
+			blocks[3] = (lights27[1] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[7] & blockMask) >> blockShift
+			blocks[6] = (lights27[2] & blockMask) >> blockShift
+			blocks[7] = (lights27[5] & blockMask) >> blockShift
+			blocks[8] = (lights27[8] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 0, 1, 3)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 5, 7, 8)
+			ret[3] = average(blocks, 4, 3, 6, 7)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // Top
+			const face = (lights27[22] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[18] & blockMask) >> blockShift
+			blocks[1] = (lights27[21] & blockMask) >> blockShift
+			blocks[2] = (lights27[24] & blockMask) >> blockShift
+			blocks[3] = (lights27[19] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[25] & blockMask) >> blockShift
+			blocks[6] = (lights27[20] & blockMask) >> blockShift
+			blocks[7] = (lights27[23] & blockMask) >> blockShift
+			blocks[8] = (lights27[26] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 3, 6, 7)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 1, 2, 5)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // North
+			const face = (lights27[14] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[2] & blockMask) >> blockShift
+			blocks[1] = (lights27[5] & blockMask) >> blockShift
+			blocks[2] = (lights27[8] & blockMask) >> blockShift
+			blocks[3] = (lights27[11] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[17] & blockMask) >> blockShift
+			blocks[6] = (lights27[20] & blockMask) >> blockShift
+			blocks[7] = (lights27[23] & blockMask) >> blockShift
+			blocks[8] = (lights27[26] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 3, 6, 7)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 1, 2, 5)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // South
+			const face = (lights27[12] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[9] & blockMask) >> blockShift
+			blocks[2] = (lights27[18] & blockMask) >> blockShift
+			blocks[3] = (lights27[3] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[21] & blockMask) >> blockShift
+			blocks[6] = (lights27[6] & blockMask) >> blockShift
+			blocks[7] = (lights27[15] & blockMask) >> blockShift
+			blocks[8] = (lights27[24] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // East
+			const face = (lights27[16] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[6] & blockMask) >> blockShift
+			blocks[1] = (lights27[15] & blockMask) >> blockShift
+			blocks[2] = (lights27[24] & blockMask) >> blockShift
+			blocks[3] = (lights27[7] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[25] & blockMask) >> blockShift
+			blocks[6] = (lights27[8] & blockMask) >> blockShift
+			blocks[7] = (lights27[17] & blockMask) >> blockShift
+			blocks[8] = (lights27[27] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 1, 2, 5)
+			ret[1] = average(blocks, 4, 5, 7, 8)
+			ret[2] = average(blocks, 4, 3, 6, 7)
+			ret[3] = average(blocks, 4, 0, 1, 3)
+			return ret
+		},
+		(lights27, ret, blockMask, blockShift) => { // West
+			const face = (lights27[10] & blockMask) >> blockShift
+			if (face === 0 || face === 15) {
+				const n = face / 15
+				ret[0] = n
+				ret[1] = n
+				ret[2] = n
+				ret[3] = n
+				return ret
+			}
+			blocks[0] = (lights27[0] & blockMask) >> blockShift
+			blocks[1] = (lights27[9] & blockMask) >> blockShift
+			blocks[2] = (lights27[18] & blockMask) >> blockShift
+			blocks[3] = (lights27[1] & blockMask) >> blockShift
+			blocks[4] = face
+			blocks[5] = (lights27[19] & blockMask) >> blockShift
+			blocks[6] = (lights27[2] & blockMask) >> blockShift
+			blocks[7] = (lights27[11] & blockMask) >> blockShift
+			blocks[8] = (lights27[20] & blockMask) >> blockShift
+
+			ret[0] = average(blocks, 4, 5, 7, 8)
+			ret[1] = average(blocks, 4, 1, 2, 5)
+			ret[2] = average(blocks, 4, 0, 1, 3)
+			ret[3] = average(blocks, 4, 3, 6, 7)
 			return ret
 		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 0, 1, 3)
-		ret[1] = average(blocks, 4, 1, 2, 5)
-		ret[2] = average(blocks, 4, 5, 7, 8)
-		ret[3] = average(blocks, 4, 3, 6, 7)
-		return ret
-	},
-	bottom: function(x, y, z, ret, blockLight, world) { // Actually the top
-		const face = world.getLight(x, y+1, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 3, 6, 7)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 1, 2, 5)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	north: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x, y, z+1, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x,   y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x,   y+1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 5, 7, 8)
-		ret[1] = average(blocks, 4, 3, 6, 7)
-		ret[2] = average(blocks, 4, 0, 1, 3)
-		ret[3] = average(blocks, 4, 1, 2, 5)
-		return ret
-	},
-	south: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x, y, z-1, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x-1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x,   y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x,   y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x+1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 1, 2, 5)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 3, 6, 7)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	east: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x+1, y, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x+1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x+1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x+1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x+1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x+1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x+1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x+1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x+1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 1, 2, 5)
-		ret[1] = average(blocks, 4, 5, 7, 8)
-		ret[2] = average(blocks, 4, 3, 6, 7)
-		ret[3] = average(blocks, 4, 0, 1, 3)
-		return ret
-	},
-	west: function(x, y, z, ret, blockLight, world) {
-		const face = world.getLight(x-1, y, z, blockLight)
-		if (face === 0 || face === 15) {
-			const n = face / 15
-			ret[0] = n
-			ret[1] = n
-			ret[2] = n
-			ret[3] = n
-			return ret
-		}
-		blockLight *= 4
-		let blocks = this.blocks
-		blocks[0] = (world.getLight(x-1, y-1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[1] = (world.getLight(x-1, y,   z-1) & 0xf << blockLight) >> blockLight
-		blocks[2] = (world.getLight(x-1, y+1, z-1) & 0xf << blockLight) >> blockLight
-		blocks[3] = (world.getLight(x-1, y-1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[4] = face
-		blocks[5] = (world.getLight(x-1, y+1, z  ) & 0xf << blockLight) >> blockLight
-		blocks[6] = (world.getLight(x-1, y-1, z+1) & 0xf << blockLight) >> blockLight
-		blocks[7] = (world.getLight(x-1, y,   z+1) & 0xf << blockLight) >> blockLight
-		blocks[8] = (world.getLight(x-1, y+1, z+1) & 0xf << blockLight) >> blockLight
-
-		ret[0] = average(blocks, 4, 5, 7, 8)
-		ret[1] = average(blocks, 4, 1, 2, 5)
-		ret[2] = average(blocks, 4, 0, 1, 3)
-		ret[3] = average(blocks, 4, 3, 6, 7)
-		return ret
-	},
+	]
 }
 
 class Chunk {
 	/**
 	 * @param {Number} x
 	 * @param {Number} z
-	 * @param {*} WoRlD
+	 * @param {World} world
 	 * @param {{vertex_array_object: OES_vertex_array_object}} glExtensions
 	 * @param {WebGLRenderingContext} gl
 	 * @param {Object} glCache
 	 * @param {Boolean} superflat
 	 * @param {Boolean} caves
 	 */
-	constructor(x, z, WoRlD, glExtensions, gl, glCache, superflat, caves) {
+	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
@@ -2848,12 +2817,13 @@ class Chunk {
 		this.generated = false // Terrain
 		this.populated = superflat // Trees and ores
 		this.lit = false
+		this.lightDropped = false
 		this.edited = false
 		this.loaded = false
 		// vao for this chunk
 		this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
 		this.caves = !caves
-		this.world = WoRlD
+		this.world = world
 		this.gl = gl
 		this.glCache = glCache
 		this.glExtensions = glExtensions
@@ -2861,15 +2831,14 @@ class Chunk {
 		this.blocks = new Int16Array(16*16*256)
 		this.originalBlocks = new Int16Array(0)
 		this.light = new Uint8Array(16*16*256)
-		this.palette = [0, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dirt, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.bedrock]
-		this.paletteMap = []
-		for (let i = 0; i < 256; i++) this.paletteMap[i] = 0
-		for (let i = 0; i < this.palette.length; i++) this.paletteMap[this.palette[i]] = i
-		this.paletteSize = 2
 		this.renderData = []
 		this.renderLength = 0
 		this.hasBlockLight = false
-		world = WoRlD
+
+		// These are temporary and will be removed after the chunk is generated.
+		this.blockSpread = []
+		this.visFlags = new Int8Array(0)
+		this.shadowFlags = new Int8Array(0)
 	}
 	getBlock(x, y, z) {
 		// if (y < 0 || y > 255) debugger
@@ -2889,84 +2858,113 @@ class Chunk {
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
-	fillLight() {
-		let blockSpread = []
 
-		this.maxY = 0
+	processBlocks() {
+		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
+		const { blocks, maxY, blockSpread, world } = this
+		const trans = transparent
+
+		const chunkN = world.getChunk(this.x, this.z + 16).blocks
+		const chunkS = world.getChunk(this.x, this.z - 16).blocks
+		const chunkE = world.getChunk(this.x + 16, this.z).blocks
+		const chunkW = world.getChunk(this.x - 16, this.z).blocks
+
+		const flags = new Int8Array((maxY + 1) * 256)
+		this.visFlags = flags
+		// this.shadowFlags = new Int32Array(flags.length >> 5)
+		for (let i = flags.length - 256; i < flags.length; i++) {
+			flags[i] = 8 // Up is Air
+		}
+		for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
+		for (let i = 256; i < flags.length; i++) {
+			const x = i >> 4 & 15
+			const z = i & 15
+			const b = blocks[i]
+
+			// Set bit flags on adjacent blocks
+			if (trans[b] === 1) {
+				if (b === 0) flags[i] ^= 128 // This is an air block, so it can't be rendered
+				else if (hideInterior[b] === 1) {
+					flags[i] ^= (b === (i >> 4 & 15 ? blocks[i - 16] : chunkW[i + 240])) << 0
+					| (b === (~i >> 4 & 15 ? blocks[i + 16] : chunkE[i - 240])) << 1
+					| (b === blocks[i - 256]) << 2
+					| (b === blocks[i + 256]) << 3
+					| (b === (i & 15 ? blocks[i - 1] : chunkS[i + 15])) << 4
+					| (b === (~i & 15 ? blocks[i + 1] : chunkN[i - 15])) << 5
+				}
+
+				flags[i - 256] ^= 8 // Top face of block below is visible
+				if (i < flags.length - 256) flags[i + 256] ^= 4 // Bottom face of block above is visible
+				if (z)      flags[i - 1] ^= 32 // South face of North block is visible
+				if (z < 15) flags[i + 1] ^= 16 // North face of South block is visible
+				if (x)      flags[i - 16] ^= 2 // West face of East block is visible
+				if (x < 15) flags[i + 16] ^= 1 // East face of West block is visible
+			}
+
+			// Some lighting stuff
+			const light = lightLevels[255 & b]
+			if (light) {
+				if (!blockSpread[light]) blockSpread[light] = []
+				blockSpread[light].push(this.x + x, i >> 8, this.z + z)
+				this.light[i] |= light * 16
+			}
+		}
+	}
+
+	dropLight() {
+		// Drop light from the sky without spreading it.
+		if (this.lightDropped) return
 		const { blocks, hasBlockLight } = this
 
-		// Find top block in chunk, and fill all air blocks above it with light
-		for (let i = blocks.length - 1; !this.maxY && i > 255; i--) {
-			if (blocks[i]) this.maxY = i >>> 8
+		if (!hasBlockLight) this.light.fill(15, (this.maxY + 1) * 256)
+		else {
+			// May introduce a subtle lighting glitch, but it's worth it for the time savings.
+			let end = Math.min((this.maxY + 14) * 256, blocks.length)
+			this.light.fill(15, end)
+			for (let i = this.maxY * 256; i < end; i++) this.light[i] |= 15
 		}
-		if (!hasBlockLight) this.light.fill(15, this.maxY * 256)
-		else for (let i = this.maxY * 256; i < blocks.length; i++) this.light[i] |= 15
 
 		// Set vertical columns of light to level 15
 		this.tops.fill(0)
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
-				let stop = false
 				for (let y = this.maxY; y > 0; y--) {
-					const block = this.getBlock(x, y, z)
-					if (block > 74) { // 75 (glowstone) is the first light-emitting block
-						// Spread block light
-						const light = lightLevels[255 & block]
-						if (light) {
-							if (!blockSpread[light]) blockSpread[light] = []
-							blockSpread[light].push(x + this.x, y, z + this.z)
-							this.setBlockLight(x, y, z, light)
-						}
-					}
+					const block = blocks[y * 256 + x * 16 + z]
 
-					if (!stop && block && !transparent[block]) {
-						this.tops[z * 16 + x] = y
-						stop = true
+					if (block && !transparent[block]) {
+					// if ((visFlags[y*256 + x*16 + z - 256] & 8) === 0) {
+						this.tops[x * 16 + z] = y
+						break
 					}
-					else if (!stop) {
-						this.light[y * 256 + x * 16 + z] |= 15
-						// this.setSkyLight(x, y, z, 15)
-					}
+					this.light[y * 256 + x * 16 + z] |= 15
 				}
 			}
 		}
 
-		// Set vertical columns of light to level 15 in neighboring chunk borders so we won't need to spread into them.
-		for (let x = this.x - 1; x <= this.x + 16; x += 17) {
-			for (let z = this.z - 1; z <= this.z + 16; z++) {
-				if (world.getLight(x, 255, z) === 0) {
-					let chunk = world.getChunk(x, z)
-					let index = 255 * 256 + (x - chunk.x) * 16 + z - chunk.z
-					let block = chunk.blocks[index]
-					while (!block || transparent[block]) {
-						chunk.light[index] |= 15
-						index -= 256
-						block = chunk.blocks[index]
-					}
-				}
-			}
-		}
-		for (let x = this.x; x < this.x + 16; x++) {
-			for (let z = this.z - 1; z <= this.z + 16; z += 17) {
-				if (world.getLight(x, 255, z) === 0) {
-					let chunk = world.getChunk(x, z)
-					let index = 255 * 256 + (x - chunk.x) * 16 + z - chunk.z
-					for (; transparent[255 & chunk.blocks[index]]; index -= 256) {
-						chunk.light[index] |= 15
-					}
-				}
-			}
-		}
+		this.lightDropped = true
+	}
+	fillLight() {
+		const { world } = this
+		this.processBlocks()
+		this.dropLight()
+		let blockSpread = this.blockSpread
+		this.blockSpread = null
+
+		// Drop light in neighboring chunk borders so we won't need to spread into them as much.
+		world.getChunk(this.x - 1, this.z).dropLight()
+		world.getChunk(this.x + 17, this.z).dropLight()
+		world.getChunk(this.x, this.z - 1).dropLight()
+		world.getChunk(this.x, this.z + 17).dropLight()
 
 		// Spread the light to places where the vertical columns stopped earlier, plus chunk borders
 		let spread = []
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
-				for (let y = this.tops[z * 16 + x] + 1; y <= this.maxY; y++) {
-					if (   x === 15 || this.tops[z * 16 + x + 1 ] > y
-						|| x === 0  || this.tops[z * 16 + x - 1 ] > y
-						|| z === 15 || this.tops[z * 16 + x + 16] > y
-						|| z === 0  || this.tops[z * 16 + x - 16] > y
+				for (let y = this.tops[x * 16 + z] + 1; y <= this.maxY; y++) {
+					if (   x === 15 || this.tops[x * 16 + z + 1 ] > y
+						|| x === 0  || this.tops[x * 16 + z - 1 ] > y
+						|| z === 15 || this.tops[x * 16 + z + 16] > y
+						|| z === 0  || this.tops[x * 16 + z - 16] > y
 					) {
 						spread.push(x + this.x, y, z + this.z)
 					}
@@ -3106,8 +3104,7 @@ class Chunk {
 		const { grass, dirt, stone, bedrock } = _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds
 
 		if (this.generated) {
-			// throw "Wot? Why?"
-			return false
+			return
 		}
 
 		const smoothness = 0.01 // How close hills and valleys are together
@@ -3118,7 +3115,8 @@ class Chunk {
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
 				gen = superflat ? 4 : Math.round(_random_js__WEBPACK_IMPORTED_MODULE_0__.noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + extra
-				this.tops[k * 16 + i] = gen
+				this.tops[i * 16 + k] = gen
+				if (gen > this.maxY) this.maxY = gen
 
 				let index = i * 16 + k
 				this.blocks[index] = bedrock
@@ -3136,61 +3134,53 @@ class Chunk {
 		this.getCaveData() // Queue up the multithreaded cave gen
 	}
 	optimize() {
-		const { world, x, z, blocks, maxY } = this
-		let index = 256
-		this.renderLength = 0
+		const { blocks, renderData, world, x, z, maxY } = this
+		const trans = transparent
+		const flags = this.visFlags // Computed in this.processBlocks()
+		this.visFlags = null
 
-		//Check all the blocks in the chunk to see if they're visible.
-		for (let j = 1; j <= maxY; j++) {
+		// Load adjacent chunks blocks
+		const chunkN = world.getChunk(x, z + 17).blocks
+		const chunkS = world.getChunk(x, z - 1).blocks
+		const chunkE = world.getChunk(x + 17, z).blocks
+		const chunkW = world.getChunk(x - 1, z).blocks
+		// let max = (maxY - 1) * 256
+		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
+		for (let y = 1; y <= maxY; y++) {
+			let indexN = y * 256
+			let indexS = indexN + 15
+			let indexE = indexN
+			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				for (let k = 0; k < 16; k++, index++) {
-					let blockState = blocks[index]
-					if (!blockState) continue
-
-					if (!this.paletteMap[blockState]) {
-						this.paletteMap[blockState] = this.palette.length
-						this.palette.push(blockState)
-					}
-
-					let s = i      ? blocks[index - 16] : world.getBlock(x + i - 1, j, z + k)
-					let n = i < 15 ? blocks[index + 16] : world.getBlock(x + i + 1, j, z + k)
-					let d = blocks[index - 256]
-					let u = blocks[index + 256]
-					let w = k      ? blocks[index - 1] : world.getBlock(x + i, j, z + k - 1)
-					let e = k < 15 ? blocks[index + 1] : world.getBlock(x + i, j, z + k + 1)
-
-					let visible = transparent[s]
-					+ transparent[n] * 2
-					+ transparent[d] * 4
-					+ transparent[u] * 8
-					+ transparent[w] * 16
-					+ transparent[e] * 32
-
-					if (blockState > 6 && blockState < 256 && hideInterior[blockState]) {
-						visible ^= s === blockState
-						| (n === blockState) << 1
-						| (d === blockState) << 2
-						| (u === blockState) << 3
-						| (w === blockState) << 4
-						| (e === blockState) << 5
-					}
-
-					if (visible) {
-						let pos = (i | j << 4 | k << 12) << 16
-						this.renderData[this.renderLength++] = pos | visible << 10 | this.paletteMap[blockState]
-					}
-				}
+				if (trans[chunkN[indexN]]) flags[indexN + 15] ^= 32
+				if (trans[chunkS[indexS]]) flags[indexS - 15] ^= 16
+				if (trans[chunkE[indexE]]) flags[indexE + 240] ^= 2
+				if (trans[chunkW[indexW]]) flags[indexW - 240] ^= 1
+				indexN += 16
+				indexS += 16
+				indexE++
+				indexW++
 			}
 		}
+
+		//Check all the blocks in the chunk to see if they're visible.
+		for (let index = 256; index < flags.length; index++) {
+			if (flags[index] > 0) {
+				renderData[this.renderLength++] = index << 16 | flags[index] << 10
+			}
+		}
+		this.minY = renderData[0] >>> 24
 
 		// The bottom layer of bedrock is only ever visible on top
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				let visible = transparent[this.blocks[256 + i*16 + k]] << 3
-				let pos = (i | k << 12) << 16
-				this.renderData[this.renderLength++] = pos | visible << 10 | 4
+				if (transparent[blocks[256 + i*16 + k]]) {
+					this.minY = 0
+					renderData.push(i*16 + k << 16 | 1 << 13)
+				}
 			}
 		}
+		this.renderLength = renderData.length
 
 		if (!world.meshQueue.includes(this)) {
 			world.meshQueue.push(this)
@@ -3222,30 +3212,30 @@ class Chunk {
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
 
-		let s = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
-		let n = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
+		let w = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
+		let e = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
 		let d = y      ? this.blocks[index - 256]: 4
 		let u =          this.blocks[index + 256]
-		let w = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
-		let e = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
+		let s = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
+		let n = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
 
-		let visible = blockState && transparent[s]
-		+ transparent[n] * 2
+		let visible = blockState && transparent[w]
+		+ transparent[e] * 2
 		+ transparent[d] * 4
 		+ transparent[u] * 8
-		+ transparent[w] * 16
-		+ transparent[e] * 32
+		+ transparent[s] * 16
+		+ transparent[n] * 32
 
 		if (blockState < 256 && hideInterior[blockState]) {
-			visible ^= s === blockState
-			| (n === blockState) << 1
+			visible ^= w === blockState
+			| (e === blockState) << 1
 			| (d === blockState) << 2
 			| (u === blockState) << 3
-			| (w === blockState) << 4
-			| (e === blockState) << 5
+			| (s === blockState) << 4
+			| (n === blockState) << 5
 		}
 
-		let pos = (i | j << 4 | k << 12) << 16
+		let pos = index << 16
 		index = -1
 
 		// Find index of current block in this.renderData
@@ -3257,10 +3247,10 @@ class Chunk {
 		}
 
 		// Update palette
-		if (!this.paletteMap[blockState]) {
-			this.paletteMap[blockState] = this.palette.length
-			this.palette.push(blockState)
-		}
+		// if (!this.paletteMap[blockState]) {
+		// 	this.paletteMap[blockState] = this.palette.length
+		// 	this.palette.push(blockState)
+		// }
 
 		if (index < 0 && !visible) {
 			// Wasn't visible before, isn't visible after.
@@ -3273,10 +3263,12 @@ class Chunk {
 			return
 		}
 		if (visible && index < 0) {
+			if (y <= this.minY) this.minY = y - 1
+			if (y > this.maxY) this.maxY = y
 			// Wasn't visible before, is visible after.
 			index = this.renderLength++
 		}
-		this.renderData[index] = pos | visible << 10 | this.paletteMap[blockState]
+		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
 	}
 	deleteBlock(x, y, z, user) {
 		if (user && !this.edited) {
@@ -3286,46 +3278,72 @@ class Chunk {
 		this.blocks[y * 256 + x * 16 + z] = 0
 		this.minY = y < this.minY ? y : this.minY
 	}
-	async getCaveData() {
-		if (this.caves) return
-		this.caveData = new Promise(async resolve => {
-			while (!window.workers.length) {
-				await Promise.race(window.pendingWorkers)
-			}
+	getCaveData() {
+		if (this.caves || this.caveData) return
+		this.caveData = new Promise(resolve => {
 			window.doWork({
 				caves: true,
 				x: this.x,
 				y: 0,
 				z: this.z
-			}).then(data => resolve(data.caves))
+			}, resolve)
 		})
 	}
 	async carveCaves() {
 		const { world } = this
 		this.caves = true
 
-		const caves = await this.caveData
+		const { carve, air } = await this.caveData
 
-		let sx = this.x, sy = 0, sz = this.z
-		let cy = 0
-		for (let x = 0; x < 16; x++) {
-			for (let z = 0; z < 16; z++) {
-				cy = this.tops[z * 16 + x]
-				cy = cy > 82 ? 82 : cy
-				for (let y = 2; y <= cy; y++) {
-					let i = y * 256 + x * 16 + z
-					if (caves[i] === 1) {
-						carveSphere(sx + x, sy + y, sz + z, world)
-					}
-					else if (caves[i] === 2) {
-						this.blocks[i] = 0
-					}
-				}
+		// Find the lowest point we need to check.
+		let lowest = 255
+		for (let i = 0; i < 256; i++) {
+			let n = this.tops[i]
+			lowest = lowest < n ? lowest : n
+		}
+		lowest = (lowest - 1) * 256
+
+		// Set air blocks
+		for (let i = 0; i < air.length; i++) {
+			let index = air[i]
+			// if (index === 20030) debugger
+			if (index < lowest || index >> 8 <= this.tops[index & 255]) {
+				this.blocks[index] = 0
 			}
 		}
+
+		// // Carve spheres
+		for (let i = 0; i < carve.length; i++) {
+			let index = carve[i]
+			// if (index === 20030) debugger
+			if (index < lowest || index >> 8 <= this.tops[index & 255]) {
+				let x = index >> 4 & 15
+				let y = index >> 8
+				let z = index & 15
+				carveSphere(x + this.x, y, z + this.z, world)
+			}
+		}
+
+		// let sx = this.x, sy = 0, sz = this.z
+		// let cy = 0
+		// for (let xz = 0; xz < 256; xz++) {
+		// 	cy = this.tops[xz]
+		// 	cy = cy > 82 ? 82 : cy
+		// 	for (let y = 2; y <= cy; y++) {
+		// 		let i = y * 256 + xz
+		// 		let c = caves[i]
+		// 		if (c === 1) {
+		// 			carveSphere(sx + (xz >> 4), sy + y, sz + (xz & 15), world)
+		// 		}
+		// 		else if (c === 2) {
+		// 			this.blocks[i] = 0
+		// 		}
+		// 	}
+		// }
 		this.caveData = null
 	}
 	populate(trees) {
+		if (this.populated) return
 		const { world } = this
 		;(0,_random_js__WEBPACK_IMPORTED_MODULE_0__.randomSeed)((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.hash)(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
@@ -3335,8 +3353,9 @@ class Chunk {
 				wx = this.x + i
 				wz = this.z + k
 
-				ground = this.tops[k * 16 + i]
-				if (trees && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.005 && this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass) {
+				ground = this.tops[i * 16 + k]
+				let topBlock = this.getBlock(i, ground, k)
+				if (trees && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.005 && topBlock === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass) {
 
 					top = ground + floor(4.5 + (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(2.5))
 					rand = floor((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(4096))
@@ -3352,7 +3371,7 @@ class Chunk {
 					//Bottom leaves
 					for (let x = -2; x <= 2; x++) {
 						for (let z = -2; z <= 2; z++) {
-							if (x || z) {
+							if (x || z) { // Not center
 								if ((x * z & 7) === 4) {
 									place = rand & 1
 									rand >>>= 1
@@ -3418,11 +3437,12 @@ class Chunk {
 				// Diamond: 3.7
 				// Lapis: 4.1
 				ground -= 4
+				while (this.getBlock(i, ground, k) !== _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) ground--
 
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 3.7 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * 16 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.diamondOre)
 					}
 				}
@@ -3430,7 +3450,7 @@ class Chunk {
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 111.5 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * 64 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.ironOre)
 					}
 				}
@@ -3438,7 +3458,7 @@ class Chunk {
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 185.5 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * ground | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.coalOre)
 					}
 				}
@@ -3446,7 +3466,7 @@ class Chunk {
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 10.4 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * 32 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.goldOre)
 					}
 				}
@@ -3454,7 +3474,7 @@ class Chunk {
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 29.1 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * 16 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.redstoneOre)
 					}
 				}
@@ -3462,7 +3482,7 @@ class Chunk {
 				if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 4.1 / 256) {
 					let y = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() * 32 | 0 + 1
 					y = y < ground ? y : ground
-					if (this.getBlock(i, y, k)) {
+					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.lapisOre)
 					}
 				}
@@ -3471,8 +3491,148 @@ class Chunk {
 
 		this.populated = true
 	}
+	getSurroundingBlocks(loc, sides, blocks27, lights27) {
+		// Used in this.genMesh()
+		// Note that, while this *does* do more work than simply loading the blocks/lights as they're needed,
+		// the improved cache efficiency nearly doubled the overall speed of genMesh (on Chrome).
+		const chunkX = loc >> 4 & 15
+		const chunkY = loc >> 8
+		const chunkZ = loc & 15
+
+		const worldX = chunkX + this.x
+		const worldY = chunkY
+		const worldZ = chunkZ + this.z
+
+		// Preload any blocks that will be used for the shadows/lighting.
+		if (chunkX && chunkZ && chunkX < 15 && chunkZ < 15) {
+			const index = loc
+			let topLight = this.light[index + 256]
+			lights27[22] = topLight
+			if (topLight !== 15 || sides !== 8) {
+				// Bottom layer
+				lights27[0] = this.light[index - 273]
+				lights27[1] = this.light[index - 272]
+				lights27[2] = this.light[index - 271]
+				lights27[3] = this.light[index - 257]
+				lights27[4] = this.light[index - 256]
+				lights27[5] = this.light[index - 255]
+				lights27[6] = this.light[index - 241]
+				lights27[7] = this.light[index - 240]
+				lights27[8] = this.light[index - 239]
+
+				// Middle layer
+				lights27[9] = this.light[index - 17]
+				lights27[10] = this.light[index - 16]
+				lights27[11] = this.light[index - 15]
+				lights27[12] = this.light[index - 1]
+				lights27[14] = this.light[index + 1]
+				lights27[15] = this.light[index + 15]
+				lights27[16] = this.light[index + 16]
+				lights27[17] = this.light[index + 17]
+
+				// Top layer
+				lights27[18] = this.light[index + 239]
+				lights27[19] = this.light[index + 240]
+				lights27[20] = this.light[index + 241]
+				lights27[21] = this.light[index + 255]
+				lights27[23] = this.light[index + 257]
+				lights27[24] = this.light[index + 271]
+				lights27[25] = this.light[index + 272]
+				lights27[26] = this.light[index + 273]
+			}
+			if (sides !== 8) {
+				// Bottom layer
+				blocks27[0] = shadow[255 & this.blocks[index - 273]]
+				blocks27[1] = shadow[255 & this.blocks[index - 272]]
+				blocks27[2] = shadow[255 & this.blocks[index - 271]]
+				blocks27[3] = shadow[255 & this.blocks[index - 257]]
+				blocks27[4] = shadow[255 & this.blocks[index - 256]]
+				blocks27[5] = shadow[255 & this.blocks[index - 255]]
+				blocks27[6] = shadow[255 & this.blocks[index - 241]]
+				blocks27[7] = shadow[255 & this.blocks[index - 240]]
+				blocks27[8] = shadow[255 & this.blocks[index - 239]]
+
+				// Middle layer
+				blocks27[9] = shadow[255 & this.blocks[index - 17]]
+				blocks27[10] = shadow[255 & this.blocks[index - 16]]
+				blocks27[11] = shadow[255 & this.blocks[index - 15]]
+				blocks27[12] = shadow[255 & this.blocks[index - 1]]
+				blocks27[14] = shadow[255 & this.blocks[index + 1]]
+				blocks27[15] = shadow[255 & this.blocks[index + 15]]
+				blocks27[16] = shadow[255 & this.blocks[index + 16]]
+				blocks27[17] = shadow[255 & this.blocks[index + 17]]
+			}
+
+			// Top layer
+			blocks27[18] = shadow[255 & this.blocks[index + 239]]
+			blocks27[19] = shadow[255 & this.blocks[index + 240]]
+			blocks27[20] = shadow[255 & this.blocks[index + 241]]
+			blocks27[21] = shadow[255 & this.blocks[index + 255]]
+			blocks27[22] = shadow[255 & this.blocks[index + 256]]
+			blocks27[23] = shadow[255 & this.blocks[index + 257]]
+			blocks27[24] = shadow[255 & this.blocks[index + 271]]
+			blocks27[25] = shadow[255 & this.blocks[index + 272]]
+			blocks27[26] = shadow[255 & this.blocks[index + 273]]
+		}
+		else {
+			// Lights
+			let topLight = this.light[loc + 256]
+			lights27[22] = topLight
+			if (topLight !== 15 || sides !== 8) {
+				// Lights in this chunk
+				for (let x = -1, i = 0; x <= 1; x++) {
+					for (let z = -1; z <= 1; z++, i++) {
+						if (chunkX + x >= 0 && chunkZ + z >= 0 && chunkX + x < 16 && chunkZ + z < 16) {
+							const index = loc + x * 16 + z
+							lights27[i] = this.light[index - 256]
+							lights27[i+9] = this.light[index]
+							lights27[i+18] = this.light[index + 256]
+						}
+					}
+				}
+
+				// Lights in the other chunks
+				for (let x = -1, i = 0; x <= 1; x++) {
+					for (let z = -1; z <= 1; z++, i++) {
+						if (chunkX + x < 0 || chunkZ + z < 0 || chunkX + x > 15 || chunkZ + z > 15) {
+							let chunk = this.world.getChunk(worldX + x, worldZ + z)
+							let index = worldY * 256 + (worldX + x & 15) * 16 + (worldZ + z & 15)
+							lights27[i] = chunk.light[index - 256]
+							lights27[i+9] = chunk.light[index]
+							lights27[i+18] = chunk.light[index + 256]
+						}
+					}
+				}
+			}
+
+			// Blocks in this chunk
+			for (let x = -1, i = 0; x <= 1; x++) {
+				for (let z = -1; z <= 1; z++, i++) {
+					if (chunkX + x >= 0 && chunkZ + z >= 0 && chunkX + x < 16 && chunkZ + z < 16) {
+						const index = loc + x * 16 + z
+						blocks27[i] = shadow[255 & this.blocks[index - 256]]
+						blocks27[i+9] = shadow[255 & this.blocks[index]]
+						blocks27[i+18] = shadow[255 & this.blocks[index + 256]]
+					}
+				}
+			}
+
+			// Blocks in the other chunks
+			for (let x = -1, i = 0; x <= 1; x++) {
+				for (let z = -1; z <= 1; z++, i++) {
+					if (chunkX + x < 0 || chunkZ + z < 0 || chunkX + x > 15 || chunkZ + z > 15) {
+						const chunk = this.world.getChunk(worldX + x, worldZ + z)
+						const index = worldY * 256 + (worldX + x & 15) * 16 + (worldZ + z & 15)
+						blocks27[i] = shadow[255 & chunk.blocks[index - 256]]
+						blocks27[i+9] = shadow[255 & chunk.blocks[index]]
+						blocks27[i+18] = shadow[255 & chunk.blocks[index + 256]]
+					}
+				}
+			}
+		}
+	}
 	genMesh(indexBuffer, bigArray) {
-		const { glExtensions, gl, glCache, renderLength, renderData, palette } = this
+		const { glExtensions, gl, glCache, renderLength, renderData } = this
 		let index = 0
 		if (!this.renderLength) {
 			return index
@@ -3480,27 +3640,27 @@ class Chunk {
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
 
-		let shadows = null, slights = [0, 0, 0, 0], blights = [0, 0, 0, 0]
-		let blockSides = Object.keys(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.Block)
+		let shadows = [1, 1, 1, 1], slights = [1, 1, 1, 1], blights = [1, 1, 1, 1]
 		let blockMasks = Object.values(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.Block)
+		const blocks27 = new Uint8Array(27)
+		const lights27 = new Uint8Array(27)
 
 		for (let i = 0; i < renderLength; i++) {
 			const data = renderData[i]
-			const block = _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[palette[data & 0x3ff]]
-			const tex = block.textures
 			const sides = data >> 10 & 0x3f // 6 bit flags indicating which faces should be rendered
-			const loc = data >>> 16 // #zzyyyyxx
-			const chunkX = loc & 15
-			const chunkY = loc >> 4 & 255
-			const chunkZ = loc >> 12 & 15
+			const loc = data >>> 16 // #yyyyxxzz
+			const block = _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[this.blocks[loc]]
+			const tex = block.textures
+			const chunkX = loc >> 4 & 15
+			const chunkY = loc >> 8
+			const chunkZ = loc & 15
 
 			const worldX = chunkX + this.x
 			const worldY = chunkY
 			const worldZ = chunkZ + this.z
-			// console.log(worldY)
-			// debugger
 
-			const corner = !chunkX || !chunkZ || !chunkY || chunkX === 15 || chunkZ === 15
+			// Preload any blocks that will be used for the shadows/lighting.
+			this.getSurroundingBlocks(loc, sides, blocks27, lights27)
 
 			const shapeVerts = block.shape.verts
 			const shapeTexVerts = block.shape.texVerts
@@ -3508,15 +3668,9 @@ class Chunk {
 			let texNum = 0
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
-					let side = blockSides[n]
-					if (corner) {
-						shadows = getShadows[side](worldX, worldY, worldZ, this.world)
-					}
-					else {
-						shadows = getShadows[side](chunkX, chunkY, chunkZ, this)
-					}
-					slights = getLight[side](worldX, worldY, worldZ, slights, 0, this.world)
-					blights = getLight[side](worldX, worldY, worldZ, blights, 1, this.world)
+					shadows = getShadows[n](blocks27)
+					slights = getLight[n](lights27, slights, 0x0f, 0)
+					blights = getLight[n](lights27, blights, 0xf0, 4)
 
 					let directionalFaces = shapeVerts[n]
 
@@ -3575,15 +3729,15 @@ class Chunk {
 		}
 		let data = new Float32Array(bigArray.buffer, 0, index)
 
-		let maxY = 0
-		let minY = 255
-		for (let i = 1; i < data.length; i += 6) {
-			const y = data[i]
-			maxY = y > maxY ? y : maxY
-			minY = y < minY ? y : minY
-		}
-		this.maxY = maxY
-		this.minY = minY
+		// let maxY = 0
+		// let minY = 255
+		// for (let i = 1; i < data.length; i += 6) {
+		// 	const y = data[i]
+		// 	maxY = y > maxY ? y : maxY
+		// 	minY = y < minY ? y : minY
+		// }
+		// this.maxY = maxY
+		// this.minY = minY
 
 		this.faces = data.length / 32
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
@@ -3619,21 +3773,21 @@ class Chunk {
 		if (load) {
 			this.edited = true
 			this.originalBlocks = this.blocks.slice()
-
+			let last = 0
 			for (let j in load) {
-				let block = load[j]
-				this.blocks[+j] = block
+				last = +j
+				let block = load[last]
+				this.blocks[last] = block
 				if (!this.doubleRender && _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[block].semiTrans) {
 					this.doubleRender = true
 					if (!this.world.doubleRenderChunks.includes(this)) {
 						this.world.doubleRenderChunks.push(this)
 					}
 				}
-				// world.setBlock((j >> 8 & 15) + this.x, (j >> 4 & 15) + y, (j & 15) + this.z, load.blocks[j])
 			}
+			if (last >> 8 > this.maxY) this.maxY = last >> 8
 
 			delete world.loadFrom[str]
-			// world.loadKeys.splice(world.loadKeys.indexOf(str), 1)
 		}
 		this.loaded = true
 	}
@@ -3642,18 +3796,18 @@ class Chunk {
 
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Player": () => (/* binding */ Player)
 /* harmony export */ });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
-/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
-/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(25);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(13);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
+/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
+/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(27);
+/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(15);
 
 
 
@@ -3726,17 +3880,17 @@ class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__.Entity {
 
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Entity": () => (/* binding */ Entity)
 /* harmony export */ });
-/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(13);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(19);
+/* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
+/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(21);
 
 
 
@@ -4090,29 +4244,33 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
-/* harmony import */ var _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
-/* harmony import */ var _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
-/* harmony import */ var _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6);
-/* harmony import */ var _workers_Caves_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
-/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(8);
-/* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
-/* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
-/* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
-/* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
-/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
-/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
-/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(18);
-/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(19);
-/* harmony import */ var _js_sky__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
-/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(23);
-/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(24);
+/* harmony import */ var _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
+/* harmony import */ var _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
+/* harmony import */ var _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6);
+/* harmony import */ var _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
+/* harmony import */ var _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(8);
+/* harmony import */ var _workers_Caves_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(9);
+/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(10);
+/* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
+/* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
+/* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
+/* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
+/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(18);
+/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(19);
+/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
+/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
+/* harmony import */ var _js_sky__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(22);
+/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(25);
+/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(26);
 
 
 // GLSL Shader code
 ;
+
+
 
 
 
@@ -4139,9 +4297,10 @@ __webpack_require__.r(__webpack_exports__);
 // import { Item } from './js/item.js'
 
 
-window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData
+window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
+window.ctx.suppressWarnings = true
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -4152,10 +4311,15 @@ window.hoverbox = document.getElementById("onhover")
 window.canvas.width  = window.innerWidth
 window.canvas.height = window.innerHeight
 window.controlMap = {}
+window.sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function MineKhan() {
 	// Cache user-defined globals
-	const { canvas, ctx, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
+	const { canvas, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap, sleep } = window
+	/**
+	 * @type {CanvasRenderingContext2D}
+	 */
+	const ctx = window.ctx
 
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
@@ -4186,42 +4350,39 @@ async function MineKhan() {
 
 	{
 		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-		const workerURL = window.URL.createObjectURL(new Blob([_workers_Caves_js__WEBPACK_IMPORTED_MODULE_6__["default"]], { type: "text/javascript" }))
+		const workerURL = window.URL.createObjectURL(new Blob([_workers_Caves_js__WEBPACK_IMPORTED_MODULE_8__["default"]], { type: "text/javascript" }))
 		window.workers = []
-		window.pendingWorkers = [] // Array of promises; can be awaited with Promise.race()
-		let jobId = 1
-		const pendingJobs = new Map()
-		for (let i = 0, count = (navigator.hardwareConcurrency || 4) - 1 || 1; i < count; i++) { // Generate between 1 and (processors - 1) workers.
-			let worker = new Worker(workerURL)
+		const jobQueue = []
+		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
+		for (let i = 0; i < workerCount; i++) { // Generate between 1 and (processors - 1) workers.
+			let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
 			worker.onmessage = e => {
-				let [promise, resolve] = pendingJobs.get(e.data.jobId)
-				resolve(e.data)
-				pendingJobs.delete(e.data.jobId)
-				window.workers.push(worker)
-				window.pendingWorkers.splice(window.pendingWorkers.indexOf(promise), 1)
+				if (worker.resolve) worker.resolve(e.data)
+				worker.resolve = null
+				if (jobQueue.length) {
+					let [data, resolve] = jobQueue.shift()
+					worker.resolve = resolve
+					worker.postMessage(data)
+				}
+				else window.workers.push(worker)
 			}
 			window.workers.push(worker)
 		}
 
-		window.doWork = function(data) {
-			let job = []
-			let promise = new Promise(resolve => {
-				let id = jobId++
-				data.jobId = id
-				job[1] = resolve
-				pendingJobs.set(id, job)
-				window.workers.shift().postMessage(data)
-			})
-			job[0] = promise
-			window.pendingWorkers.push(promise)
-			return promise
+		window.doWork = (data, resolve) => {
+			if (window.workers.length) {
+				let worker = window.workers.pop()
+				worker.resolve = resolve
+				worker.postMessage(data)
+			}
+			else jobQueue.push([data, resolve])
 		}
 
 		// await window.yieldThread() will pause the current task until the event loop is cleared
 		const channel = new MessageChannel()
 		let res
 		channel.port1.onmessage = () => res()
-		window.yieldThread = function() {
+		window.yieldThread = () => {
 			return new Promise(resolve => {
 				res = resolve
 				channel.port2.postMessage("")
@@ -4233,8 +4394,8 @@ async function MineKhan() {
 
 	function setSeed(seed) {
 		worldSeed = seed
-		;(0,_js_random_js__WEBPACK_IMPORTED_MODULE_8__.seedHash)(seed)
-		_js_random_js__WEBPACK_IMPORTED_MODULE_8__.noiseProfile.noiseSeed(seed)
+		;(0,_js_random_js__WEBPACK_IMPORTED_MODULE_10__.seedHash)(seed)
+		_js_random_js__WEBPACK_IMPORTED_MODULE_10__.noiseProfile.noiseSeed(seed)
 		while(window.workers.length) {
 			window.doWork({ seed })
 		}
@@ -4278,7 +4439,7 @@ async function MineKhan() {
 	let cursor = function(type) {
 		canvas.style.cursor = type
 	}
-	;(0,_js_random_js__WEBPACK_IMPORTED_MODULE_8__.randomSeed)(Math.random() * 10000000 | 0)
+	;(0,_js_random_js__WEBPACK_IMPORTED_MODULE_10__.randomSeed)(Math.random() * 10000000 | 0)
 
 	async function save() {
 		let saveObj = {
@@ -4288,7 +4449,7 @@ async function MineKhan() {
 			version: version,
 			code: world.getSaveString()
 		}
-		await (0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.saveToDB)(world.id, saveObj).catch(e => console.error(e))
+		await (0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.saveToDB)(world.id, saveObj).catch(e => console.error(e))
 		world.edited = now
 		if (location.href.startsWith("https://willard.fun/")) {
 			console.log('Saving to server')
@@ -4303,27 +4464,28 @@ async function MineKhan() {
 	}
 
 	// Expose these functions to the global scope for debugging
-	win.saveToDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.saveToDB
-	win.loadFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.loadFromDB
-	win.createDatabase = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.createDatabase
-	win.deleteFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.deleteFromDB
+	win.saveToDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.saveToDB
+	win.loadFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.loadFromDB
+	win.createDatabase = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.createDatabase
+	win.deleteFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.deleteFromDB
 
-	//globals
+	// Globals
 	//{
 	let version = "Alpha 0.8.0"
 	let superflat = false
 	let trees = true
 	let caves = true
 
-	win.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData
-	win.blockIds = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockIds
+	win.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData
+	win.blockIds = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds
 
 	// Configurable and savable settings
 	let settings = {
 		renderDistance: 4,
 		fov: 70, // Field of view in degrees
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
-		reach: 5
+		reach: 5,
+		showDebug: 3
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
@@ -4335,7 +4497,6 @@ async function MineKhan() {
 	let maxHeight = 255
 	let blockOutlines = false
 	let blockFill = true
-	let updateHUD = true
 	const CUBE     = 0
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
@@ -4403,6 +4564,8 @@ async function MineKhan() {
 			}
 		},
 		loading: {
+			enter: [document.getElementById("loading-text")],
+			exit: [document.getElementById("loading-text")],
 			onenter: startLoad
 		},
 		editworld: {
@@ -4433,7 +4596,7 @@ async function MineKhan() {
 	function changeScene(newScene) {
 		document.getElementById('background-text').classList.add('hidden')
 		if (screen === "options") {
-			(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.saveToDB)("settings", settings).catch(e => console.error(e))
+			(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.saveToDB)("settings", settings).catch(e => console.error(e))
 		}
 
 		if (html[screen] && html[screen].exit) {
@@ -4471,7 +4634,7 @@ async function MineKhan() {
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
-	let vec1 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.PVector(), vec2 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.PVector(), vec3 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.PVector()
+	let vec1 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.PVector(), vec2 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.PVector(), vec3 = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.PVector()
 	let move = {
 		x: 0,
 		y: 0,
@@ -4537,13 +4700,19 @@ async function MineKhan() {
 		canvas.onblur()
 		p.lastBreak = now
 		holding = inventory.hotbar[inventory.hotbarSlot]
-		updateHUD = true
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
 		textSize(10)
 		canvas.focus()
 		changeScene("play")
+
+		ctx.clearRect(0, 0, width, height)
+
+		crosshair()
+		hud(true)
+		hotbar()
+
 	}
 
 	/**
@@ -4569,9 +4738,9 @@ async function MineKhan() {
 		}
 	}
 
-	let program3D, program2D, programEntity
+	let program3D, program2D, programEntity, program3DFogless
 
-	win.shapes = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes
+	win.shapes = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes
 
 	function initShapes() {
 		function mapCoords(rect, face) {
@@ -4605,7 +4774,7 @@ async function MineKhan() {
 					break
 			}
 			pos = pos.map(c => c / 16 - 0.5)
-			let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.compareArr)(pos, [])
+			let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(pos, [])
 			pos.max = minmax.splice(3, 3)
 			pos.min = minmax
 			tex = tex.map(c => c / 16 / 16)
@@ -4649,7 +4818,7 @@ async function MineKhan() {
 						tex[i][j].unshift(...tex[i][j].splice(-2, 2))
 					}
 
-					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.compareArr)(c, [])
+					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(c, [])
 					c.max = minmax.splice(3, 3)
 					c.min = minmax
 				}
@@ -4711,7 +4880,7 @@ async function MineKhan() {
 						c[k + 1] = -face[k + 1]
 						c[k + 2] = face[k]
 					}
-					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.compareArr)(c, [])
+					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(c, [])
 					c.max = minmax.splice(3, 3)
 					c.min = minmax
 
@@ -4751,8 +4920,8 @@ async function MineKhan() {
 			}
 		}
 
-		for (let shape in _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes) {
-			let obj = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes[shape]
+		for (let shape in _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes) {
+			let obj = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes[shape]
 			let verts = obj.verts
 
 			// Populate the vertex coordinates
@@ -4793,24 +4962,24 @@ async function MineKhan() {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 		}
 
-		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT; i++) {
-			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i]
+		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
+			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
 			let slabBlock = Object.create(baseBlock)
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
-			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.slab
-			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.cube
-			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.stair
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | SLAB] = slabBlock
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | STAIR] = stairBlock
+			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
+			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.cube
+			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.stair
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | SLAB] = slabBlock
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | STAIR] = stairBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | SLAB | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | SLAB | j << 10] = block
 				}
 			}
 			v = stairBlock.shape.varients
@@ -4819,7 +4988,7 @@ async function MineKhan() {
 					let block = Object.create(baseBlock)
 					block.transparent = true
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i | STAIR | j << 10] = block
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | STAIR | j << 10] = block
 				}
 			}
 		}
@@ -4839,20 +5008,19 @@ async function MineKhan() {
 	let stairIconVerts
 	let blockIcons
 	{
-		let side = Math.sqrt(3) / 2
-		let s = side
+		let s = Math.sqrt(3) / 2
 		let q = s / 2
 
 		hexagonVerts = new Float32Array([
-			0, 1, 1, side, 0.5, 1, 0, 0, 1, -side, 0.5, 1,
-			0, 0, 1, side, 0.5, 1, side, -0.5, 1, 0, -1, 1,
-			-side, 0.5, 1, 0, 0, 1, 0, -1, 1, -side, -0.5, 1,
+			0, 1, s, 0.5, 0, 0, -s, 0.5,
+			-s, 0.5, 0, 0, 0, -1, -s, -0.5,
+			0, 0, s, 0.5, s, -0.5, 0, -1,
 		])
 
 		slabIconVerts = new Float32Array([
-			0, 0.5, 1, side, 0, 1, 0, -0.5, 1, -side, 0, 1,
-			0, -0.5, 1, side, 0, 1, side, -0.5, 1, 0, -1, 1,
-			-side, 0, 1, 0, -0.5, 1, 0, -1, 1, -side, -0.5, 1,
+			0,  0.5, s,  0,   0, -0.5, -s,  0,
+			-s, 0,   0, -0.5, 0, -1,   -s, -0.5,
+			0, -0.5, s,  0,   s, -0.5,  0, -1,
 		])
 
 		stairIconVerts = [
@@ -4864,21 +5032,54 @@ async function MineKhan() {
 			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
 		]
 	}
+
+	/**
+	 * Draws the block icon for the given ID
+	 * @param {*} x X coordinate in pixels
+	 * @param {*} y Y coordinate in pixels (from the top)
+	 * @param {*} id Block ID for the icon to draw
+	 * @returns {void}
+	 */
+	let drawIcon = (x, y, id) => ctx.putImageData(blockIcons[id], x, y)
+	function renderIcon(x, y, id) {
+		x = x * 2 / width - 1
+		y = y * 2 / height - 1
+		gl.uniform2f(glCache.uOffset, x, y)
+
+		let buffer = blockIcons[id]
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+
+		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
+		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
+		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
+		gl.drawArrays(gl.TRIANGLES, 0, blockIcons.lengths[id])
+	}
 	function genIcons() {
+		let firstTime = false
+		if (!blockIcons) firstTime = true
+
 		blockIcons = [null]
-		blockIcons.lengths = []
+		blockIcons.lengths = [0]
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scale = 0.16 / height * inventory.size
-		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT; i++) {
+		let scaleY = inventory.size / height
+		let scaleX = inventory.size / width
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let data = []
-			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[i]
+			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
+
+			// Square icon
 			if (block.icon) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.icon]]
-				data.push(-scale * 0.9, scale * 0.9, 1/6, tex[0], tex[1], 1)
-				data.push(scale * 0.9, scale * 0.9, 1/6, tex[2], tex[3], 1)
-				data.push(scale * 0.9, -scale * 0.9, 1/6, tex[4], tex[5], 1)
-				data.push(-scale * 0.9, -scale * 0.9, 1/6, tex[6], tex[7], 1)
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.icon]]
+				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
+				data.push(scaleX * 0.9, scaleY * 0.9, tex[2], tex[3], 1) // 2
+				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
+
+				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
+				data.push(-scaleX * 0.9, -scaleY * 0.9, tex[6], tex[7], 1) // 4
+				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
+
 				let buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
@@ -4892,13 +5093,15 @@ async function MineKhan() {
 			}
 
 			// Cube icon
-			for (let j = 11; j >= 0; j--) {
-				data.push(-hexagonVerts[j * 3 + 0] * scale)
-				data.push(hexagonVerts[j * 3 + 1] * scale)
-				data.push(0.1666666)
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+			for (let j = 0; j <= 11; j++) {
+				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
+				data.push(hexagonVerts[j * 2 + 1] * scaleY)
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
+
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			let buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -4908,15 +5111,16 @@ async function MineKhan() {
 
 			// Slab icon
 			data = []
-			for (let j = 11; j >= 0; j--) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
+			for (let j = 0; j <= 11; j++) {
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
 
-				data.push(-slabIconVerts[j * 3 + 0] * scale)
-				data.push(slabIconVerts[j * 3 + 1] * scale)
-				data.push(0.1666666)
+				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
+				data.push(slabIconVerts[j * 2 + 1] * scaleY)
 				data.push(tex[(j * 2 + 0) % 8])
 				data.push(tex[(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -4927,17 +5131,19 @@ async function MineKhan() {
 			// Stair icon
 			data = []
 			let v = stairIconVerts
-			for (let j = 23; j >= 0; j--) {
+			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[block.textures[texOrder[num]]]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[num]]]]
 				let tx = tex[0]
 				let ty = tex[1]
-				data.push(-v[j * 5 + 0] * scale)
-				data.push(v[j * 5 + 1] * scale)
-				data.push(0.1666666)
+				data.push(-v[j * 5 + 0] * scaleX)
+				data.push(v[j * 5 + 1] * scaleY)
+				// data.push(0.1666666)
 				data.push(tx + v[j * 5 + 2] / 16)
 				data.push(ty + v[j * 5 + 3] / 16)
 				data.push(shadows[num])
+				if (j % 4 === 2) data.push(...data.slice(-5))
+				if (j % 4 === 3) data.push(...data.slice(-25, -20))
 			}
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -4945,6 +5151,65 @@ async function MineKhan() {
 			blockIcons[i | STAIR] = buffer
 			blockIcons.lengths[i | STAIR] = 6 * 6
 		}
+
+		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
+		// Now we draw them all on the canvas at once.
+		gl.useProgram(program2D)
+		gl.uniform1i(glCache.uSampler2, 0)
+		gl.disableVertexAttribArray(3)
+		gl.disableVertexAttribArray(4)
+		gl.enableVertexAttribArray(0)
+		gl.enableVertexAttribArray(1)
+		gl.enableVertexAttribArray(2)
+
+		const s = inventory.size | 0
+		const limitX = gl.canvas.width / s | 0
+		const limitY = gl.canvas.height / s | 0
+		const limit = limitX * limitY
+		const total = (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1) * 3
+		const pages = Math.ceil(total / limit)
+		const blocksPerPage = (limit / 3 | 0) * 3
+		const imageIcons = []
+
+		let masks = [CUBE, SLAB, STAIR]
+		let drawn = 1 // 0 = air
+
+		let start = Date.now()
+		for (let i = 0; i < pages; i++) {
+			gl.clearColor(0, 0, 0, 0)
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			let pageStart = drawn
+			for (let j = 0; j < blocksPerPage; j += 3) {
+				for (let k = 0; k < 3; k++) {
+					let x = (j + k) % limitX
+					let y = (j + k) / limitX | 0
+					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k])
+				}
+				drawn++
+				if (drawn === _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT) break
+			}
+
+			// Page is full, now copy it onto the 2D canvas
+			ctx.clearRect(0, 0, width, height)
+			ctx.drawImage(gl.canvas, 0, 0)
+
+			// Now load all the icons off the canvas.
+			for (let j = 0; j < blocksPerPage; j += 3) {
+				for (let k = 0; k < 3; k++) {
+					let x = (j + k) % limitX
+					let y = (j + k) / limitX | 0
+					let id = pageStart + j/3 | masks[k]
+					imageIcons[id] = ctx.getImageData(x * s, y * s, s, s)
+				}
+			}
+		}
+		if (firstTime) console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
+		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
+
+		// Yeet the buffers
+		delete blockIcons.lengths
+		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
+		blockIcons = imageIcons
 	}
 
 	//Generate buffers for every block face and store them
@@ -4955,7 +5220,7 @@ async function MineKhan() {
 	let projection = new Float32Array(16)
 	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
-	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.Matrix([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
+	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.Matrix([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
 		constructor() {
 			this.x = 0
@@ -4976,11 +5241,11 @@ async function MineKhan() {
 			this.step = 0
 			this.lastStep = 0
 			this.projection = new Float32Array(5)
-			this.transformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.Matrix()
+			this.transformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.Matrix()
 			this.direction = { x: 1, y: 0, z: 0 } // Normalized direction vector
 			this.frustum = [] // The 5 planes of the viewing frustum (there's no far plane)
 			for (let i = 0; i < 5; i++) {
-				this.frustum.push(new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.Plane(1, 0, 0))
+				this.frustum.push(new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.Plane(1, 0, 0))
 			}
 		}
 		FOV(fov, time) {
@@ -5068,9 +5333,9 @@ async function MineKhan() {
 			let Y = vec2
 			Y.set(dir)
 			Y.mult(-1)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.cross)(Y, X, Y)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.cross)(Y, X, Y)
 
-			//Near plane
+			// Near plane
 			this.frustum[0].set(dir.x, dir.y, dir.z)
 
 			let aux = vec3
@@ -5078,28 +5343,28 @@ async function MineKhan() {
 			aux.mult(this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.cross)(aux, X, aux)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.cross)(aux, X, aux)
 			this.frustum[1].set(aux.x, aux.y, aux.z)
 
 			aux.set(Y)
 			aux.mult(-this.nearH)
 			aux.add(dir)
 			aux.normalize()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.cross)(X, aux, aux)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.cross)(X, aux, aux)
 			this.frustum[2].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(-this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.cross)(aux, Y, aux)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.cross)(aux, Y, aux)
 			this.frustum[3].set(aux.x, aux.y, aux.z)
 
 			aux.set(X)
 			aux.mult(this.nearH * width / height)
 			aux.add(dir)
 			aux.normalize()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.cross)(Y, aux, aux)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.cross)(Y, aux, aux)
 			this.frustum[4].set(aux.x, aux.y, aux.z)
 		}
 		canSee(x, y, z, maxY) {
@@ -5108,7 +5373,10 @@ async function MineKhan() {
 			y -= 0.5
 			z -= 0.5
 			maxY += 0.5
-			let cx = p.x, cy = p.y, cz = p.z
+
+			// Player's position is only updated once per tick (20 TPS), but the camera is interpolated between ticks.
+			// Add the velocity here to make sure the chunks don't become invisible in those interpolated areas.
+			let cx = p.x - p.velocity.x, cy = p.y - p.velocity.y, cz = p.z - p.velocity.z
 			for (let i = 0; i < 5; i++) {
 				let plane = this.frustum[i]
 				let px = x + plane.dx
@@ -5131,7 +5399,7 @@ async function MineKhan() {
 	}
 
 	function matMult() {
-		//Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
+		// Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
 		let proj = projection
 		let view = modelView
 		matrix[0] = proj[0] * view[0]
@@ -5169,24 +5437,35 @@ async function MineKhan() {
 		if (camera) {
 			// Inside the game
 			camera.transform()
-			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.uniformMatrix)(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.getMatrix()
+
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
 		else {
 			// On the home screen
-			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.copyArr)(defaultModelView, modelView)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.rotX)(modelView, rx)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.rotY)(modelView, ry)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.trans)(modelView, -x, -y, -z)
+			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.copyArr)(defaultModelView, modelView)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.rotX)(modelView, rx)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.rotY)(modelView, ry)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, -x, -y, -z)
 			matMult()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.transpose)(matrix)
-			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.uniformMatrix)(gl, glCache, "view3d", program3D, "uView", false, matrix)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.transpose)(matrix)
+
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
 	}
 
 	function rayTrace(x, y, z, shape) {
-		let cf, cd = 1e9 //Closest face and distance
-		let m //Absolute distance to intersection point
-		let ix, iy, iz //Intersection coords
+		let cf, cd = 1e9 // Closest face and distance
+		let m // Absolute distance to intersection point
+		let ix, iy, iz // Intersection coords
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max //Bounds of face coordinates
 		let east = p.direction.x < 0
 		let top = p.direction.y < 0
@@ -5194,7 +5473,7 @@ async function MineKhan() {
 		let verts = shape.verts
 		let faces = verts[0]
 
-		//Top and bottom faces
+		// Top and bottom faces
 
 		if (top) {
 			faces = verts[1]
@@ -5211,13 +5490,13 @@ async function MineKhan() {
 				ix = m * p.direction.x + p.x
 				iz = m * p.direction.z + p.z
 				if (m > 0 && m < cd && ix >= x + minX && ix <= x + maxX && iz >= z + minZ && iz <= z + maxZ) {
-					cd = m //Ray crosses bottom face
+					cd = m // Ray crosses bottom face
 					cf = top ? "top" : "bottom"
 				}
 			}
 		}
 
-		//West and East faces
+		// West and East faces
 		if (east) {
 			faces = verts[4]
 		}
@@ -5242,7 +5521,7 @@ async function MineKhan() {
 			}
 		}
 
-		//South and North faces
+		// South and North faces
 		if (north) {
 			faces = verts[2]
 		}
@@ -5271,13 +5550,13 @@ async function MineKhan() {
 	function runRayTrace(x, y, z) {
 		let block = world.getBlock(x, y, z)
 		if (block) {
-			let rt = rayTrace(x, y, z, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[block].shape)
+			let rt = rayTrace(x, y, z, _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[block].shape)
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0]
 				hitBox.face = rt[1]
 				hitBox.pos = [x, y, z]
-				hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[block].shape
+				hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[block].shape
 			}
 		}
 	}
@@ -5293,7 +5572,7 @@ async function MineKhan() {
 		if (blockState) {
 			hitBox.pos = [p2.x, p2.y, p2.z]
 			hitBox.closest = 0
-			hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[blockState].shape
+			hitBox.shape = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[blockState].shape
 			return
 		}
 
@@ -5338,7 +5617,7 @@ async function MineKhan() {
 				runRayTrace(minX, minY, maxZ)
 			}
 			if (hitBox.pos) {
-				return //The ray has collided; it can't possibly find a closer collision now
+				return // The ray has collided; it can't possibly find a closer collision now
 			}
 			minZ = maxZ
 			minY = maxY
@@ -5346,37 +5625,37 @@ async function MineKhan() {
 		}
 	}
 	let inBox = function(x, y, z, w, h, d) {
-		let iy = y - h/2 - p.topH
-		let ih = h + p.bottomH + p.topH
+		let iy = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(y - h/2 - p.topH)
+		let ih = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(h + p.bottomH + p.topH)
 		let ix = x - w/2 - p.w
 		let iw = w + p.w*2
 		let iz = z - d/2 - p.w
 		let id = d + p.w*2
-		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < iy + ih && p.z < iz + id
+		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(iy + ih) && p.z < iz + id
 	}
 	let onBox = function(x, y, z, w, h, d) {
-		let iy = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(y - h/2 - p.topH)
-		let ih = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(h + p.bottomH + p.topH)
-		let ix = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(x - w/2 - p.w)
-		let iw = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(w + p.w*2)
-		let iz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(z - d/2 - p.w)
-		let id = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(d + p.w*2)
+		let iy = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(y - h/2 - p.topH)
+		let ih = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(h + p.bottomH + p.topH)
+		let ix = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(x - w/2 - p.w)
+		let iw = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(w + p.w*2)
+		let iz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(z - d/2 - p.w)
+		let id = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(d + p.w*2)
 		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id
 	}
 	function collided(x, y, z, vx, vy, vz, block) {
-		if(p.spectator && block !== _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockIds.bedrock) {
+		if(p.spectator && block !== _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds.bedrock) {
 			return false
 		}
-		let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[block].shape.verts
-		let px = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.x - p.w - x)
-		let py = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.y - p.bottomH - y)
-		let pz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.z - p.w - z)
-		let pxx = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.x + p.w - x)
-		let pyy = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.y + p.topH - y)
-		let pzz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.roundBits)(p.z + p.w - z)
+		let verts = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[block].shape.verts
+		let px = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.x - p.w - x)
+		let py = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.y - p.bottomH - y)
+		let pz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.z - p.w - z)
+		let pxx = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.x + p.w - x)
+		let pyy = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.y + p.topH - y)
+		let pzz = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.roundBits)(p.z + p.w - z)
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max
 
-		//Top and bottom faces
+		// Top and bottom faces
 		let faces = verts[0]
 		if (vy <= 0) {
 			faces = verts[1]
@@ -5405,7 +5684,7 @@ async function MineKhan() {
 			return col
 		}
 
-		//West and East faces
+		// West and East faces
 		if (vx < 0) {
 			faces = verts[4]
 		}
@@ -5432,7 +5711,7 @@ async function MineKhan() {
 			return col
 		}
 
-		//South and North faces
+		// South and North faces
 		if (vz < 0) {
 			faces = verts[2]
 		}
@@ -5480,8 +5759,9 @@ async function MineKhan() {
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
+		if (p.y < 0) p.y = 70
 		let mag = p.velocity.mag()
-		let steps = Math.ceil(mag)
+		let steps = Math.ceil(mag / p.w)
 		const VX = p.velocity.x / steps
 		const VY = p.velocity.y / steps
 		const VZ = p.velocity.z / steps
@@ -5497,7 +5777,7 @@ async function MineKhan() {
 			for (let x = pminX; x <= pmaxX; x++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
-					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[block].solid) {
+					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[block].solid) {
 						contacts.add(x, y, z, block)
 					}
 				}
@@ -5512,7 +5792,7 @@ async function MineKhan() {
 			let px = p.x
 			let pz = p.z
 
-			//Check collisions in the Y direction
+			// Check collisions in the Y direction
 			p.onGround = false
 			p.canStepX = false
 			p.canStepZ = false
@@ -5548,7 +5828,7 @@ async function MineKhan() {
 				}
 			}
 
-			//Check collisions in the X direction
+			// Check collisions in the X direction
 			p.x += VX
 			for (let i = 0; i < contacts.size; i++) {
 				let [x, y, z, block] = contacts.array[i]
@@ -5573,7 +5853,7 @@ async function MineKhan() {
 			}
 			sneakSafe = false
 
-			//Check collisions in the Z direction
+			// Check collisions in the Z direction
 			p.z += VZ
 			for (let i = 0; i < contacts.size; i++) {
 				let [x, y, z, block] = contacts.array[i]
@@ -5639,12 +5919,12 @@ async function MineKhan() {
 	function box2(sides, tex) {
 		if (blockFill) {
 			let i = 0
-			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.Block) {
-				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.Block[side]) {
+			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block) {
+				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block[side]) {
 					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
 					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap[tex[i]]])
+					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[tex[i]]])
 					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
@@ -5657,11 +5937,12 @@ async function MineKhan() {
 		if (blockOutlines) {
 			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
 			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap.hitbox])
+			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+
 			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
 			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureMap.hitbox])
-			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 			for (let i = 0; i < hitBox.shape.size; i++) {
 				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
@@ -5671,24 +5952,32 @@ async function MineKhan() {
 	function block2(x, y, z, t, camera) {
 		if (camera) {
 			camera.transformation.translate(x, y, z)
-			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.uniformMatrix)(gl, glCache, "view3d", program3D, "uView", false, camera.getMatrix())
+			camera.getMatrix()
+			gl.useProgram(program3DFogless)
+			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			// gl.useProgram(program3D)
+			// gl.uniformMatrix4fv(glCache.uView, false, matrix)
 			camera.transformation.translate(-x, -y, -z)
 		}
 		else {
-			//copyArr(modelView, matrix)
-			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.trans)(modelView, x, y, z)
+			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, x, y, z)
 			matMult()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.trans)(modelView, -x, -y, -z)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.transpose)(matrix)
-			;(0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.uniformMatrix)(gl, glCache, "view3d", program3D, "uView", false, matrix)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, -x, -y, -z)
+			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.transpose)(matrix)
+			// gl.useProgram(program3DFogless)
+			// gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+
+			gl.useProgram(program3D)
+			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
-		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[t].textures)
+		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[t].shape
+			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].shape
 			if (t && shape.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
@@ -5718,9 +6007,7 @@ async function MineKhan() {
 		}
 	}
 	function newWorldBlock() {
-		if(!hitBox.pos || !holding) {
-			return
-		}
+		if(!hitBox.pos || !holding) return
 		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
 		switch(hitBox.face) {
 			case "top":
@@ -5752,14 +6039,6 @@ async function MineKhan() {
 
 	let renderedChunks = 0
 
-	/*
-	function interpolateShadows(shadows, x, y) {
-		let sx = (shadows[1] - shadows[0]) * x + shadows[0]
-		let sx2 = (shadows[3] - shadows[2]) * x + shadows[2]
-		return (sx2 - sx) * y + sx
-	}
-	*/
-
 	let analytics = {
 		totalTickTime: 0,
 		worstFrameTime: 0,
@@ -5770,8 +6049,10 @@ async function MineKhan() {
 		displayedTickTime: "0",
 		displayedRenderTime: "0",
 		displayedFrameTime: "0",
-		displayedwFrameTime: 0,
+		displayedwFrameTime: "0",
+		displayedwFps: 0,
 		fps: 0,
+		worstFps: 60,
 	}
 	function chunkDist(c) {
 		let dx = p.x - c.x
@@ -5790,7 +6071,7 @@ async function MineKhan() {
 		}
 		return Math.sqrt(dx * dx + dz * dz)
 	}
-	function sortChunks(c1, c2) { //Sort the list of chunks based on distance from the player
+	function sortChunks(c1, c2) { // Sort the list of chunks based on distance from the player
 		let dx1 = p.x - c1.x - 8
 		let dy1 = p.z - c1.z - 8
 		let dx2 = p.x - c2.x - 8
@@ -5823,10 +6104,8 @@ async function MineKhan() {
 		return done
 	}
 	function renderFilter(chunk) {
-		const cx = (chunk.x >> 4) - p.cx
-		const cz = (chunk.z >> 4) - p.cz
 		const d = settings.renderDistance + Math.SQRT1_2
-		return cx * cx + cz * cz <= d * d
+		return chunk.distSq <= d * d
 	}
 
 	function debug(message) {
@@ -5838,25 +6117,46 @@ async function MineKhan() {
 
 	let alerts = []
 	function chatAlert(msg) {
+		if (screen !== "play") return
 		alerts.push({
 			msg: msg.substr(0, 50),
-			born: now
+			created: now,
+			rendered: false
 		})
 		if (alerts.length > 5) alerts.shift()
-		updateHUD = true
+		renderChatAlerts()
+	}
+	let charWidth = 6
+	{
+		// Determine the width of the user's system monospace font.
+		let span = document.createElement('span')
+		span.style.fontFamily = "monospace"
+		span.style.fontSize = "20px"
+		span.textContent = "a"
+		document.body.append(span)
+		charWidth = span.offsetWidth
+		span.remove()
 	}
 	function renderChatAlerts() {
-		if (!alerts.length) return
-		textSize(20)
+		if (!alerts.length || screen !== "play") return
 		let y = height - 150
+		if (now - alerts[0].created > 10000 || !alerts.at(-1).rendered) {
+			// Clear old alerts
+			let x = 50
+			let y2 = y - 50 * (alerts.length - 1) - 20
+			let w = charWidth * alerts.reduce((mx, al) => max(mx, al.msg.length), 0)
+			let h = 50 * (alerts.length - 1) + 24
+			ctx.clearRect(x, y2, w, h)
+		}
+		else return
+		while(alerts.length && now - alerts[0].created > 10000) {
+			alerts.shift()
+		}
+		textSize(20)
 		for (let i = alerts.length - 1; i >= 0; i--) {
 			let alert = alerts[i]
 			text(alert.msg, 50, y)
 			y -= 50
-		}
-		while(alerts.length && now - alerts[0].born > 10000) {
-			alerts.shift()
-			updateHUD = true
 		}
 	}
 
@@ -5901,11 +6201,60 @@ async function MineKhan() {
 		chat(`${currentUser.username}: ${msg}`, "lightgray")
 	}
 
+	let currentUser = { username: "Player" }
+	let blockLog = { Player: [] }
 	let commands = new Map()
-	commands.set("ban", args => {
+	let autocompleteList = []
+	let commandList = []
+	var multiplayer = null
+	let playerPositions = {}
+	let playerEntities = {}
+	let playerDistances = []
+	function setAutocomplete(list) {
+		if (list === autocompleteList) return
+		if (list.length === autocompleteList.length) {
+			let i = 0
+			for (; i < list.length; i++) {
+				if (list[i] !== autocompleteList[i]) break
+			}
+			if (i === list.length) return
+		}
+
+		let element = document.getElementById("commands")
+		while (element.childElementCount) element.removeChild(element.lastChild)
+
+		for (let string of list) {
+			let option = document.createElement("option")
+			option.value = string
+			element.append(option)
+		}
+		autocompleteList = list
+	}
+	function addCommand(name, callback, usage, description, autocomplete) {
+		if (!autocomplete) autocomplete = () => {}
+		commands.set(name, {
+			name,
+			callback,
+			usage,
+			description,
+			autocomplete
+		})
+		commandList.push("/" + name)
+	}
+	addCommand("help", args => {
+		let commandName = args[0]
+		if (commands.has(commandName)) {
+			const command = commands.get(commandName)
+			chat(`Usage: ${command.usage}\nDescription: ${command.description}`, "lime")
+		}
+		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nPro tip: you can delete random autocomplete suggestions by `)
+	}, "/help <command name>", "Shows how to use a command", () => {
+		setAutocomplete(commandList.map(command => `/help ${command.slice(1)}`))
+	})
+	addCommand("ban", args => {
 		let username = args.join(" ")
 		if (!username) {
-			chat(`Please provide a username. Like /ban Willard`, "tomato")
+			chat("Please provide a username. Like /ban Willard", "tomato")
 			return
 		}
 		if (!window.ban) {
@@ -5913,28 +6262,93 @@ async function MineKhan() {
 			return
 		}
 		window.ban(username)
+	}, "/ban <username>", "IP ban a player from your world until you close it.", () => {
+		setAutocomplete(Object.keys(playerPositions).map(player => `/ban ${player}`))
 	})
-	commands.set("online", () => {
+	addCommand("online", () => {
 		if (window.online && multiplayer) {
 			window.online()
 		}
 		else {
 			chat("You're all alone. Sorry.", "tomato")
 		}
+	}, "/online", "Lists online players")
+	addCommand("history", args => {
+		let dist = +args[0] || 20
+		dist *= dist
+		let lines = []
+		for (let name in blockLog) {
+			let list = blockLog[name]
+			let oldest = 0
+			let newest = 0
+			let broken = 0
+			let placed = 0
+			for (let i = 0; i < list.length; i++) {
+				let block = list[i]
+				let dx = block[0] - p.x
+				let dy = block[1] - p.y
+				let dz = block[2] - p.z
+				if (dx * dx + dy * dy + dz * dz <= dist) {
+					if (block[3]) placed++
+					else broken++
+					newest = block[5]
+					if (!oldest) oldest = block[5]
+				}
+			}
+			if (oldest) {
+				lines.push(`${name}: ${broken} blocks broken and ${placed} blocks placed between ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.timeString)(now-oldest)} and ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.timeString)(now-newest)}.`)
+			}
+		}
+		if (lines.length) {
+			let ul = document.createElement("ul")
+			for (let line of lines) {
+				let li = document.createElement("li")
+				li.textContent = line
+				ul.append(li)
+			}
+			chatOutput.append(ul)
+			// chat(`Within ${Math.sqrt(dist)} blocks of your position:\n` + lines.join("\n"), "lime")
+		}
+		else chat(`No blocks edited within ${Math.sqrt(dist)} blocks within this world session.`, "tomato")
+	}, "/history [dist=20]", "Shows a list of block edits within a specified range from your current world session.")
+	addCommand("undo", async args => {
+		if (multiplayer && !multiplayer.host) {
+			chat("Only the world's host may use this command.", "tomato")
+			return
+		}
+		let count = +args.pop()
+		if (isNaN(count)) {
+			chat("Please provide a count of the number of blocks to undo. Like /undo Willard 4000", "tomato")
+			return
+		}
+		let name = currentUser.username
+		if (args.length) name = args.join(" ")
+		let list = blockLog[name]
+		if (!list) {
+			chat("You provided a name that didn't match any users with a block history. Names are case-sensitive.", "tomato")
+			return
+		}
+
+		if (count > list.length) count = list.length
+		chat(`Undoing the last ${count} block edits from ${name}`, "lime")
+		for (let i = 0; i < count; i++) {
+			let [x, y, z, newBlock, oldBlock] = list.pop()
+			if (multiplayer) await sleep(50)
+			world.setBlock(x, y, z, oldBlock, false, false, true)
+		}
+		chat(`${count} block edits undone.`, "lime")
+	}, "/undo [username=Player] <blockCount>", "Undoes the last <blockCount> block edits made by [username]", () => {
+		setAutocomplete(Object.keys(blockLog).map(name => `/undo ${name} ${blockLog[name].length}`))
 	})
 
 	function sendCommand(msg) {
 		msg = msg.substr(1)
 		let parts = msg.split(" ")
 		let cmd = parts.shift()
-		if (commands.has(cmd)) commands.get(cmd)(parts)
+		if (commands.has(cmd)) commands.get(cmd).callback(parts)
+		setAutocomplete(commandList)
 	}
 
-	var multiplayer = null
-	let playerPositions = {}
-	let playerEntities = {}
-	let playerDistances = []
-	let currentUser = { username: "Player" }
 	async function loggedIn() {
 		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(() => "401")
 		if (!exists || exists === "401") {
@@ -5947,6 +6361,10 @@ async function MineKhan() {
 			return false
 		}
 		currentUser = JSON.parse(exists)
+		if (blockLog.Player) {
+			blockLog[currentUser.username] = blockLog.Player
+			delete blockLog.Player
+		}
 		return true
 	}
 
@@ -5961,6 +6379,7 @@ async function MineKhan() {
 			host = true
 		}
 		multiplayer = new WebSocket("wss://willard.fun/ws?target=" + target)
+		multiplayer.host = host
 		multiplayer.binaryType = "arraybuffer"
 		multiplayer.onopen = () => {
 			let password = ""
@@ -5985,6 +6404,10 @@ async function MineKhan() {
 		}
 		let multiplayerError = ""
 		multiplayer.onmessage = msg => {
+			if (msg.data === "ping") {
+				multiplayer.send("pong")
+				return
+			}
 			if (typeof msg.data !== "string" && screen === "multiplayer menu") {
 				world = new World(true)
 				world.loadSave(new Uint8Array(msg.data))
@@ -5994,6 +6417,15 @@ async function MineKhan() {
 			let packet = JSON.parse(msg.data)
 			if (packet.type === "setBlock") {
 				let a = packet.data
+
+				if (!a[4]) {
+					// If it's not an "Undo" packet, log it.
+					let old = world.getBlock(a[0], a[1], a[2])
+					a.push(old, now)
+					if (!blockLog[packet.author]) blockLog[packet.author] = []
+					blockLog[packet.author].push(a)
+				}
+
 				world.setBlock(a[0], a[1], a[2], a[3], false, true)
 			}
 			else if (packet.type === "genChunk") {
@@ -6015,7 +6447,7 @@ async function MineKhan() {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_18__.Player(pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
+				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_20__.Player(pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
@@ -6051,10 +6483,10 @@ async function MineKhan() {
 
 		multiplayer.onclose = () => {
 			if (!host) {
-				if (screen === "play") alert(`Connection lost! ${multiplayerError}`)
+				if (screen !== "main menu") alert(`Connection lost! ${multiplayerError}`)
 				changeScene("main menu")
 			}
-			else if (screen === "play") {
+			else if (screen !== "main menu") {
 				alert(`Connection lost! ${multiplayerError || "You can re-open your world from the pause menu."}`)
 			}
 			clearInterval(multiplayer.pos)
@@ -6116,7 +6548,7 @@ async function MineKhan() {
 			generatedChunks = 0
 			fogDist = 16
 
-			//Initialize the world's arrays
+			// Initialize the world's arrays
 			this.chunks = []
 			this.loaded = []
 			this.sortedChunks = []
@@ -6160,7 +6592,7 @@ async function MineKhan() {
 		}
 		getWorldBlock(x, y, z) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockIds.air
+				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds.air
 			}
 			return this.chunks[x >> 4][z >> 4].getBlock(x & 15, y, z & 15)
 		}
@@ -6184,7 +6616,7 @@ async function MineKhan() {
 		setWorldBlock(x, y, z, blockID) {
 			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
-		setBlock(x, y, z, blockID, lazy, remote) {
+		setBlock(x, y, z, blockID, lazy, remote, doNotLog) {
 			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
 				this.eventQueue.push([x, y, z, blockID])
 				return
@@ -6197,15 +6629,21 @@ async function MineKhan() {
 
 			let xm = x & 15
 			let zm = z & 15
+
+			if (!remote && !doNotLog) {
+				// Log your own blocks
+				let oldBlock = chunk.getBlock(xm, y, zm)
+				blockLog[currentUser.username].push([x, y, z, blockID, oldBlock, now])
+			}
 			if (blockID) {
 				chunk.setBlock(xm, y, zm, blockID, !lazy)
-				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[blockID]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[blockID]
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, true, data.lightLevel)
 				}
 			}
 			else {
-				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[chunk.getBlock(xm, y, zm)]
+				let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[chunk.getBlock(xm, y, zm)]
 				chunk.deleteBlock(xm, y, zm, !lazy)
 				if (!lazy && chunk.buffer && (!data.transparent || data.lightLevel) && screen !== "loading") {
 					this.updateLight(x, y, z, false, data.lightLevel)
@@ -6216,14 +6654,16 @@ async function MineKhan() {
 				return
 			}
 
-			if (multiplayer && !remote && screen === "play") {
+			if (multiplayer && !remote) {
+				let data = [x, y, z, blockID]
+				if (doNotLog) data.push(1)
 				multiplayer.send(JSON.stringify({
 					type: "setBlock",
-					data: [x, y, z, blockID]
+					data: data
 				}))
 			}
 
-			//Update the 6 adjacent blocks and 1 changed block
+			// Update the 6 adjacent blocks and 1 changed block
 			if (xm && xm !== 15 && zm && zm !== 15) {
 				chunk.updateBlock(xm - 1, y, zm, this)
 				chunk.updateBlock(xm, y - 1, zm, this)
@@ -6299,7 +6739,7 @@ async function MineKhan() {
 			if (!place) { // Block was removed; increase light levels
 				if (up === 15) { // Removed block was under direct sunlight; fill light downward
 					for (let i = y; i > 0; i--) {
-						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setSkyLight(cx, i, cz, 15)
 							spread.push(x, i, z)
 						}
@@ -6346,7 +6786,7 @@ async function MineKhan() {
 				// Sky light
 				if (center === 15) {
 					for (let i = y-1; i > 0; i--) {
-						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[chunk.getBlock(cx, i, cz)].transparent) {
+						if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[chunk.getBlock(cx, i, cz)].transparent) {
 							chunk.setSkyLight(cx, i, cz, 0)
 							spread.push(x, i, z)
 						}
@@ -6385,29 +6825,27 @@ async function MineKhan() {
 			}
 		}
 		spawnBlock(x, y, z, blockID) {
-			//Sets a block anywhere without causing block updates around it. Only to be used in world gen.
+			// Sets a block anywhere without causing block updates around it. Only to be used in world gen.
+			// Currently only used in chunk.populate()
 
-			let chunkX = x >> 4
-			let chunkZ = z >> 4
-			if (!this.chunks[chunkX]) {
-				this.chunks[chunkX] = []
-			}
-			let chunk = this.chunks[chunkX][chunkZ]
-			if (!chunk) {
-				chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__.Chunk(chunkX * 16, chunkZ * 16, world, glExtensions, gl, glCache, superflat, caves, trees)
-				this.chunks[chunkX][chunkZ] = chunk
-			}
-			if (chunk.buffer) {
-				//Only used if spawning a block post-gen
-				this.setBlock(x, y, z, blockID, true)
-			}
-			else if (!chunk.getBlock(x & 15, y, z & 15)) {
-				chunk.setBlock(x & 15, y, z & 15, blockID)
+			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
+
+			x &= 15
+			z &= 15
+			if (!chunk.getBlock(x, y, z)) {
+				chunk.setBlock(x, y, z, blockID)
+				// let i = x * 16 + z
+				// if (y > chunk.tops[i]) chunk.tops[i] = y
+				if (y > chunk.maxY) chunk.maxY = y
 			}
 		}
 		async tick() {
 			this.lastTick = performance.now()
 			this.tickCount++
+			if (this.tickCount & 1) {
+				hud() // Update the HUD at 10 TPS
+				renderChatAlerts()
+			}
 
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
 			let maxChunkZ = (p.z >> 4) + settings.renderDistance
@@ -6505,11 +6943,8 @@ async function MineKhan() {
 			this.ticking = false
 		}
 		async load() {
-			if (this.loading) return false
-			if (!this.loadKeys.length) return true
+			if (this.loading || !this.loadKeys.length) return
 			this.loading = true
-
-			let startTime = Date.now()
 
 			do {
 				let [cx, cz] = this.loadKeys.pop().split(",")
@@ -6537,6 +6972,7 @@ async function MineKhan() {
 					}
 					await Promise.all(promises)
 				}
+				else if (this.loadKeys % 50 === 0) await window.yieldThread() // Let the loading screen render if it needs to
 
 				// Fill them with trees and ores
 				for (let x = cx - 1; x <= cx + 1; x++) {
@@ -6548,28 +6984,22 @@ async function MineKhan() {
 
 				// Load blocks
 				this.chunks[cx][cz].load()
-			} while(Date.now() - startTime < 50 && this.loadKeys.length)
+			} while(this.loadKeys.length)
 			this.loading = false
 		}
 		render() {
-			// Was in tick; moved here just for joseph lol
+			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
 				newWorldBlock()
 			}
 
 			initModelView(p)
-
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
-			// These need to be disabled, but they're already disabled at this point, so it's fine
-			// gl.disableVertexAttribArray(glCache.aSkylight)
-			// gl.disableVertexAttribArray(glCache.aBlocklight)
 			let time = 0
 			if (multiplayer) time = Date.now()
 			else time = this.tickCount * 50 + (performance.now() - this.lastTick) % 50
-			skybox(time / 1000 + 150, matrix)
-			use3d()
 
 			p2.x = round(p.x)
 			p2.y = round(p.y)
@@ -6577,41 +7007,61 @@ async function MineKhan() {
 
 			renderedChunks = 0
 
-			let dist = settings.renderDistance * 16
+			let dist = Math.max(settings.renderDistance * 16 - 8, 16)
 			if (this.chunkGenQueue.length) {
-				this.chunkGenQueue.sort(sortChunks)
 				let chunk = this.chunkGenQueue[0]
 				dist = min(dist, chunkDist(chunk))
 			}
 			if (dist !== fogDist) {
-				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 120
+				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 30
 				else if (fogDist > dist + 0.1) fogDist += (dist - fogDist) / 30
 				else fogDist = dist
 			}
+
 			gl.uniform3f(glCache.uPos, p.x, p.y, p.z)
 			gl.uniform1f(glCache.uDist, fogDist)
 
+			gl.useProgram(program3DFogless)
+			gl.uniform3f(glCache.uPosFogless, p.x, p.y, p.z)
+
 			let c = this.sortedChunks
 			let glob = { renderedChunks }
+			let fog = false
 			for (let i = 0; i < c.length; i++) {
+				if (!fog && fogDist < chunkDist(c[i]) + 24) {
+					gl.useProgram(program3D)
+					fog = true
+				}
 				c[i].render(p, glob)
 			}
+
+			skybox(time / 1000 + 150, matrix)
+			use3d()
+			gl.useProgram(program3DFogless)
+			fog = false
 			if (this.doubleRenderChunks.length) {
 				gl.depthMask(false)
-				gl.uniform1i(glCache.uTrans, 1)
+				gl.uniform1i(glCache.uTransFogless, 1)
 				for (let chunk of this.doubleRenderChunks) {
+					if (!fog && fogDist < chunkDist(chunk) + 24) {
+						gl.uniform1i(glCache.uTransFogless, 0)
+						gl.useProgram(program3D)
+						gl.uniform1i(glCache.uTrans, 1)
+						fog = true
+					}
 					chunk.render(p, glob)
 				}
-				gl.uniform1i(glCache.uTrans, 0)
+				if (!fog) gl.uniform1i(glCache.uTransFogless, 0)
+				else gl.uniform1i(glCache.uTrans, 0)
 				gl.depthMask(true)
 			}
-			gl.disableVertexAttribArray(glCache.aSkylight)
-			gl.disableVertexAttribArray(glCache.aBlocklight)
 
 			renderedChunks = glob.renderedChunks
 
-			gl.uniform3f(glCache.uPos, 0, 0, 0)
-
+			gl.disableVertexAttribArray(glCache.aSkylight)
+			gl.disableVertexAttribArray(glCache.aBlocklight)
+			gl.disableVertexAttribArray(glCache.aShadow)
+			// gl.uniform3f(glCache.uPos, 0, 0, 0)
 			if (hitBox.pos) {
 				blockOutlines = true
 				blockFill = false
@@ -6620,13 +7070,14 @@ async function MineKhan() {
 				blockFill = true
 			}
 
+			// Render entities
 			gl.useProgram(programEntity)
-
 			for (let i = this.entities.length - 1; i >= 0; i--) {
 				const entity = this.entities[i]
 				entity.render()
 			}
 
+			// Render players
 			if (multiplayer) {
 				for (let name in playerEntities) {
 					const entity = playerEntities[name]
@@ -6634,7 +7085,8 @@ async function MineKhan() {
 					entity.render()
 				}
 			}
-			gl.useProgram(program3D)
+
+			// gl.useProgram(program3D)
 		}
 		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 3) {
 			// let renderDistance = settings.renderDistance + 3
@@ -6667,9 +7119,12 @@ async function MineKhan() {
 						this.chunks[x] = []
 					}
 					if (!this.chunks[x][z]) {
-						this.chunks[x][z] = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_17__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, trees)
+						this.chunks[x][z] = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_19__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, trees)
 					}
 					chunk = this.chunks[x][z]
+					const cdx = (chunk.x >> 4) - cx
+					const cdz = (chunk.z >> 4) - cz
+					chunk.distSq = cdx * cdx + cdz * cdz
 					if (!chunk.buffer && renderFilter(chunk)) {
 						this.chunkGenQueue.push(chunk)
 					}
@@ -6730,16 +7185,16 @@ async function MineKhan() {
 			let blocks = Array.from(blockSet)
 			let palette = {}
 			blocks.forEach((block, index) => palette[block] = index)
-			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayBuilder.bits(blocks.length)
+			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(blocks.length)
 
 			let ver = version.split(" ")[1].split(".").map(Number)
 
-			let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayBuilder()
+			let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder()
 			bab.add(this.name.length, 8)
 			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
 			bab.add(worldSeed, 32)
 			bab.add(this.tickCount, 32)
-			bab.add(p.x, 20).add(Math.min(p.y, 255), 8).add(p.z, 20)
+			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
 			for (let block of inventory.hotbar) bab.add(block, 16)
 			bab.add(inventory.hotbarSlot, 4)
@@ -6758,7 +7213,7 @@ async function MineKhan() {
 				// Determine the most compact orientation by checking all 6!
 				let bestBAB = null
 				for (let i = 0; i < 6; i++) {
-					let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayBuilder()
+					let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder()
 
 					let blocks = section[i]
 					bab.add(i, 3)
@@ -6788,7 +7243,7 @@ async function MineKhan() {
 						// Determine the number of bits needed to store the lengths of each block type
 						let maxBlocks = 0
 						for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
-						let lenBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayBuilder.bits(maxBlocks)
+						let lenBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(maxBlocks)
 
 						bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
 						for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
@@ -6826,7 +7281,7 @@ async function MineKhan() {
 				}
 			}
 
-			let reader = new _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayReader(data)
+			let reader = new _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayReader(data)
 
 			let nameLen = reader.read(8)
 			this.name = ""
@@ -6851,7 +7306,7 @@ async function MineKhan() {
 
 			let paletteLen = reader.read(16)
 			let palette = []
-			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_10__.BitArrayBuilder.bits(paletteLen)
+			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(paletteLen)
 			for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
 
 			// sectionMap[str][0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
@@ -6887,7 +7342,7 @@ async function MineKhan() {
 				let ckey = `${cx},${cz}`
 				let chunk = chunks[ckey]
 				if (!chunk) {
-					chunk = []//new Int16Array(16*256*16).fill(-1)
+					chunk = []// new Int16Array(16*256*16).fill(-1)
 					chunks[ckey] = chunk
 				}
 				let runs = reader.read(8)
@@ -7016,7 +7471,7 @@ async function MineKhan() {
 			move.z *= move.ang
 		}
 
-		//Update the velocity, rather than the position.
+		// Update the velocity, rather than the position.
 		let co = cos(p.ry)
 		let si = sin(p.ry)
 		let friction = p.onGround ? 1 : 0.3
@@ -7067,7 +7522,7 @@ async function MineKhan() {
 			let x = this.x - (this.w - 10) / 2 + (this.w - 10) * current - 5
 			ctx.fillRect(x, this.y - this.h / 2, 10, this.h)
 
-			//Label
+			// Label
 			fill(255, 255, 255)
 			textSize(16)
 			ctx.textAlign = 'center'
@@ -7176,7 +7631,7 @@ async function MineKhan() {
 			ctx.stroke()
 			ctx.fill()
 
-			//Label
+			// Label
 			fill(255)
 			textSize(16)
 			ctx.textAlign = 'center'
@@ -7297,7 +7752,7 @@ async function MineKhan() {
 					naming = false
 				}
 			}
-			world.name = name.replace(/;/g, "\u037e") // Greek question mark lol
+			world.name = name
 			win.world = world
 			world.loadChunks()
 			world.chunkGenQueue.sort(sortChunks)
@@ -7315,7 +7770,7 @@ async function MineKhan() {
 		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", () => changeScene("editworld"), () => selected() || !worlds[selectedWorld].edited)
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
 			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}? This will also delete it from the cloud.`)) {
-				(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.deleteFromDB)(selectedWorld)
+				(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.deleteFromDB)(selectedWorld)
 				window.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
 				if (location.href.startsWith("https://willard.fun/")) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
@@ -7366,11 +7821,29 @@ async function MineKhan() {
 
 		Button.add(mid, height / 2, w2, 40, "Save", "editworld", () => {
 			let w = worlds[selectedWorld]
-			w.name = boxCenterTop.value.replace(/;/g, "\u037e")
-			let split = w.code.split(";")
-			split[0] = w.name
-			w.code = split.join(";")
-			;(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.saveToDB)(w.id, w).then(() => {
+			if (typeof w.code === "string") {
+				// Legacy world saves
+				w.name = boxCenterTop.value.replace(/;/g, "\u037e")
+				let split = w.code.split(";")
+				split[0] = w.name
+				w.code = split.join(";")
+			}
+			else {
+				let oldLength = w.name.length
+				w.name = boxCenterTop.value.slice(0, 256)
+				let newLength = w.name.length
+				let newCode = new Uint8Array(w.code.length + newLength - oldLength)
+				newCode[0] = newLength
+				for (let i = 0; i < newLength; i++) newCode[i + 1] = w.name.charCodeAt(i) & 255
+				let newIndex = newLength + 1
+				let oldIndex = oldLength + 1
+				while (newIndex < newCode.length) {
+					newCode[newIndex++] = w.code[oldIndex++]
+				}
+				w.code = newCode
+			}
+
+			(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.saveToDB)(w.id, w).then(() => {
 				initWorldsMenu()
 				changeScene("loadsave menu")
 			}).catch(e => console.error(e))
@@ -7380,7 +7853,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_10__.timeString)(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.timeString)(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -7396,6 +7869,7 @@ async function MineKhan() {
 			}
 			initWorldsMenu()
 			changeScene("main menu")
+			world = null
 		})
 
 		// Options buttons
@@ -7428,68 +7902,28 @@ async function MineKhan() {
 		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
 	}
 
-	function drawIcon(x, y, id) {
-		id = id < 0xff ? id | blockMode : id
-		x =  x / (3 * height) - 0.1666 * width / height
-		y = y / (3 * height) - 0.1666
-		initModelView(null, x, y, 0, 0, 0)
-
-		let data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[id]
-
-		let buffer = blockIcons[id]
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 24, 0)
-		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 24, 12)
-		gl.vertexAttribPointer(glCache.aShadow, 1, gl.FLOAT, false, 24, 20)
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
-		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
-		gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
-		if (data.semiTrans) {
-			gl.depthMask(false)
-			gl.uniform1i(glCache.uTrans, 1)
-			gl.drawElements(gl.TRIANGLES, blockIcons.lengths[id], gl.UNSIGNED_INT, 0)
-			gl.uniform1i(glCache.uTrans, 0)
-			gl.depthMask(true)
-		}
-	}
-
-	function hotbar() {
-		FOV(90)
-
-		for(let i = 0; i < inventory.hotbar.length; i ++) {
-			if(inventory.hotbar[i]) {
-				let x = width / 2 - inventory.hotbar.length / 2 * inventory.size + (i + 0.5) * inventory.size + 25
-				let y = height - inventory.size
-				drawIcon(x, y, inventory.hotbar[i])
-			}
-		}
-	}
-	function hud() {
-		if (p.spectator) {
-			return
+	function hotbar(highlight = inventory.hotbarSlot) {
+		if (p.spectator || screen !== "play" && screen !== "inventory") return
+		// If the hotbar needs to be rendered, then the selected block may have changed
+		{
+			let heldLight = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0
+			gl.useProgram(program3D)
+			gl.uniform1f(glCache.uLantern, heldLight)
+			gl.useProgram(program3DFogless)
+			gl.uniform1f(glCache.uLanternFogless, heldLight)
 		}
 
-		hotbar()
 
 		let s = inventory.size
-		let x = width / 2 + 0.5
-		let y = height / 2 + 0.5
+		let x = width / 2 - 9 / 2 * s + 0.5 + 25
+		let y = height - s * 1.5 + 0.5
 
-		// Crosshair
-		ctx.lineWidth = 1
-		ctx.strokeStyle = "white"
-		ctx.beginPath()
-		ctx.moveTo(x - 10, y)
-		ctx.lineTo(x + 10, y)
-		ctx.moveTo(x, y - 10)
-		ctx.lineTo(x, y + 10)
-		ctx.stroke()
-
-		//Hotbar
-		x = width / 2 - 9 / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
+		ctx.clearRect(x - 2, y - 2, 9 * s + 4, s + 4)
+		for(let i = 0; i < inventory.hotbar.length; i ++) {
+			if (inventory.hotbar[i]) {
+				drawIcon(x + i * s, y, inventory.hotbar[i])
+			}
+		}
 
 		ctx.strokeStyle = "black"
 		ctx.lineWidth = 2
@@ -7508,24 +7942,55 @@ async function MineKhan() {
 		ctx.lineWidth = 2
 		ctx.beginPath()
 
-		ctx.strokeRect(width / 2 - 9 / 2 * s + inventory.hotbarSlot * s + 25, height - s * 1.5, s, s)
+		if (highlight >= 0) ctx.strokeRect(width / 2 - 9 / 2 * s + highlight * s + 25, height - s * 1.5, s, s)
+	}
 
-		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
-		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
-		let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
-		+ "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
-		+ "Render Time: " + analytics.displayedRenderTime + "ms\n"
-		+ "Tick Time: " + analytics.displayedTickTime + "ms\n"
-		+ "Rendered Chunks: " + renderedChunks.toLocaleString() + " / " + world.loaded.length + "\n"
-		+ "Generated Chunks: " + generatedChunks.toLocaleString() + "\n"
-		+ "FPS: " + analytics.fps
+	function crosshair() {
+		if (p.spectator) return
+		let x = width / 2 + 0.5
+		let y = height / 2 + 0.5
+		ctx.lineWidth = 1
+		ctx.strokeStyle = "white"
+		ctx.beginPath()
+		ctx.moveTo(x - 10, y)
+		ctx.lineTo(x + 10, y)
+		ctx.moveTo(x, y - 10)
+		ctx.lineTo(x, y + 10)
+		ctx.stroke()
+	}
 
-		if (p.autoBreak) {
-			text("Super breaker enabled", 5, height - 89, 12)
+	let debugLines = []
+	let newDebugLines = []
+	function hud(clear) {
+		if (p.spectator || screen !== "play") return
+		if (clear) debugLines.length = 0
+
+		textSize(20)
+		let x = 5
+		let lineHeight = 24
+		let y = lineHeight + 3
+		let heightOffset = floor(lineHeight / 5)
+
+		let lines = 0
+		if (settings.showDebug === 3) {
+			newDebugLines[0] = "Press F3 to cycle debug info."
+			lines = 1
 		}
-		if (p.autoBuild) {
-			text("Hyper builder enabled", 5, height - 101, 12)
+		else {
+			if (settings.showDebug >= 1) {
+				newDebugLines[lines++] = analytics.fps + "/" + analytics.displayedwFps + "fps, C: " + renderedChunks.toLocaleString()
+				newDebugLines[lines++] = "XYZ: " + p2.x + ", " + p2.y + ", " + p2.z
+			}
+			if (settings.showDebug >= 2) {
+				newDebugLines[lines++] = "Average Frame Time: " + analytics.displayedFrameTime + "ms"
+				newDebugLines[lines++] = "Worst Frame Time: " + analytics.displayedwFrameTime + "ms"
+				newDebugLines[lines++] = "Render Time: " + analytics.displayedRenderTime + "ms"
+				newDebugLines[lines++] = "Tick Time: " + analytics.displayedTickTime + "ms"
+				newDebugLines[lines++] = "Generated Chunks: " + generatedChunks.toLocaleString()
+			}
 		}
+		if (p.autoBreak) newDebugLines[lines++] = "Super breaker enabled"
+		if (p.autoBuild) newDebugLines[lines++] = "Hyper builder enabled"
 		if (multiplayer) {
 			playerDistances.length = 0
 			let closest = Infinity
@@ -7542,13 +8007,63 @@ async function MineKhan() {
 					cname = name
 				}
 			}
-			text(`Closest player: ${cname} (${round(closest)} blocks away)`, 5, height - 113, 12)
+			newDebugLines[lines++] = `Closest player: ${cname} (${round(closest)} blocks away)`
 		}
 
-		ctx.textAlign = 'right'
-		text(p2.x + ", " + p2.y + ", " + p2.z, width - 10, 15, 0)
+		// Draw updated text
 		ctx.textAlign = 'left'
-		text(str, 5, height - 100, 12)
+		for (let i = 0; i < lines; i++) {
+			if (debugLines[i] !== newDebugLines[i]) {
+				let start = 0
+				if (debugLines[i]) {
+					for (let j = 0; j < debugLines[i].length; j++) {
+						if (debugLines[i][j] !== newDebugLines[i][j]) {
+							start = j
+							break
+						}
+					}
+					ctx.clearRect(x + start * charWidth, y + lineHeight * (i - 1) + heightOffset, (debugLines[i].length - start) * charWidth, lineHeight)
+				}
+				ctx.fillStyle = "rgba(50, 50, 50, 0.4)"
+				ctx.fillRect(x + start * charWidth, y + lineHeight * (i-1) + heightOffset, (newDebugLines[i].length - start) * charWidth, lineHeight)
+				ctx.fillStyle = "#fff"
+				ctx.fillText(newDebugLines[i].slice(start), x + start*charWidth, y + lineHeight * i)
+				debugLines[i] = newDebugLines[i]
+			}
+		}
+
+		// Remove extra lines
+		if (lines < debugLines.length) {
+			let maxWidth = 0
+			for (let i = lines; i < debugLines.length; i++) {
+				maxWidth = Math.max(maxWidth, debugLines[i].length)
+			}
+			ctx.clearRect(x, y + (lines - 1) * lineHeight + heightOffset, maxWidth * charWidth, lineHeight * (debugLines.length - lines))
+			debugLines.length = lines
+		}
+
+		// "Block light (head): " + world.getLight(p2.x, p2.y, p2.z, 1) + "\n"
+		// + "Sky light (head): " + world.getLight(p2.x, p2.y, p2.z, 0) + "\n"
+
+		// let str = "Average Frame Time: " + analytics.displayedFrameTime + "ms\n"
+		// + "Worst Frame Time: " + analytics.displayedwFrameTime + "ms\n"
+		// + "Render Time: " + analytics.displayedRenderTime + "ms\n"
+		// + "Tick Time: " + analytics.displayedTickTime + "ms\n"
+		// + "Rendered Chunks: " + renderedChunks.toLocaleString() + " / " + world.sortedChunks.length + "\n"
+		// + "Generated Chunks: " + generatedChunks.toLocaleString() + "\n"
+		// + "FPS: " + analytics.fps
+
+		// if (p.autoBreak) {
+		// 	text("Super breaker enabled", 5, height - 89, 12)
+		// }
+		// if (p.autoBuild) {
+		// 	text("Hyper builder enabled", 5, height - 101, 12)
+		// }
+
+		// ctx.textAlign = 'right'
+		// text(p2.x + ", " + p2.y + ", " + p2.z, width - 10, 15, 0)
+		// ctx.textAlign = 'left'
+		// text(str, 5, height - 77, 12)
 	}
 	function drawInv() {
 		let x = 0
@@ -7557,11 +8072,16 @@ async function MineKhan() {
 		let s2 = s / 2
 		let perRow = 13
 
-		gl.clearColor(0, 0, 0, 0)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		ctx.fillStyle = "rgb(127, 127, 127)"
+		ctx.fillStyle = "rgba(127, 127, 127, 0.4)"
+		ctx.clearRect(0, 0, width, height)
 		ctx.fillRect(0, 0, canvas.width, canvas.height)
-		FOV(90)
+
+		// Draw the blocks
+		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
+			x = (i - 1) % perRow * s + 51
+			y = ((i - 1) / perRow | 0) * s + 51
+			drawIcon(x - s2, y - s2, i)
+		}
 
 		// Draw the grid
 		ctx.lineWidth = 1
@@ -7576,33 +8096,22 @@ async function MineKhan() {
 			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
 			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
 		}
-
-		// Hotbar
-		x = width / 2 - inventory.hotbar.length / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
-		ctx.moveTo(x, y)
-		ctx.lineTo(x + s * 9, y)
-		ctx.moveTo(x, y + s)
-		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= inventory.hotbar.length; i ++) {
-			ctx.moveTo(x + i * s, y)
-			ctx.lineTo(x + i * s, y + s)
-		}
 		ctx.stroke()
 
+		// Hotbar
+		x = width / 2 - 9 / 2 * s + 0.5 + 25
+		y = height - s * 1.5 + 0.5
+		let drawName = false
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			x += s * overHot
-			ctx.lineWidth = 2
-			ctx.strokeStyle = "white"
-			ctx.beginPath()
-			ctx.strokeRect(x, y, s, s)
+			drawName = true
+			hotbar(overHot)
 		}
+		else hotbar(-1)
 
-		//Box highlight in inv
-		let drawName = false
+		// Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
@@ -7611,21 +8120,16 @@ async function MineKhan() {
 			ctx.beginPath()
 			ctx.strokeRect(x, y, s, s)
 		}
+		else overInv = inventory.hotbar[overHot] - 1
 
+		// Item you're dragging
 		if (inventory.holding) {
-			drawIcon(mouseX, mouseY, inventory.holding)
-		}
-		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT; i++) {
-			x = (i - 1) % perRow * s + 50
-			y = ((i - 1) / perRow | 0) * s + 50
-			drawIcon(x, y, i)
+			drawIcon(mouseX - s2, mouseY - s2, inventory.holding)
 		}
 
-		hotbar()
-		//hud()
-		ctx.drawImage(gl.canvas, 0, 0)
+		// Tooltip for the item you're hovering over
 		if (drawName) {
-			let name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			let name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
 			ctx.fillRect(mouseX - 3, mouseY - 20, name.length * 6 + 6, 15)
 			ctx.fillStyle = "white"
@@ -7645,7 +8149,7 @@ async function MineKhan() {
 			inventory.hotbar[overHot] = inventory.holding
 			inventory.holding = temp
 		}
-		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
+		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			inventory.holding = over + 1
 		}
 		else {
@@ -7690,7 +8194,7 @@ async function MineKhan() {
 	function controlEvent(name, event) {
 		if (name === controlMap.cycleBlockShapes.key) {
 			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
-			updateHUD = true
+			hotbar()
 		}
 
 		if(screen === "play") {
@@ -7709,7 +8213,6 @@ async function MineKhan() {
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
-					updateHUD = true
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
 					let index = inventory.hotbar.indexOf(block)
 					if (index >= 0) {
@@ -7718,6 +8221,8 @@ async function MineKhan() {
 					else {
 						inventory.hotbar[inventory.hotbarSlot] = block
 					}
+					holding = inventory.hotbar[inventory.hotbarSlot]
+					hotbar()
 				}
 
 				if(name === controlMap.pause.key) {
@@ -7729,15 +8234,19 @@ async function MineKhan() {
 					event.preventDefault()
 					changeScene("chat")
 				}
+				if (name === "Slash") {
+					changeScene("chat")
+					chatInput.value = "/"
+				}
 
 				if(name === controlMap.superBreaker.key) {
 					p.autoBreak = !p.autoBreak
-					updateHUD = true
+					hud()
 				}
 
 				if(name === controlMap.hyperBuilder.key) {
 					p.autoBuild = !p.autoBuild
-					updateHUD = true
+					hud()
 				}
 
 				if (name === controlMap.jump.key && !p.spectator) {
@@ -7767,7 +8276,14 @@ async function MineKhan() {
 					p.spectator = !p.spectator
 					p.flying = true
 					p.onGround = false
-					updateHUD = true
+					if (!p.spectator) {
+						hotbar()
+						crosshair()
+						hud(true)
+					}
+					else {
+						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+					}
 				}
 
 				if (name === controlMap.openInventory.key) {
@@ -7777,7 +8293,12 @@ async function MineKhan() {
 
 				if (name === "Semicolon") {
 					releasePointer()
-					freezeFrame = true
+					freezeFrame = now + 500
+				}
+
+				if (name === "F3") {
+					settings.showDebug = (settings.showDebug + 1) % 3
+					hud()
 				}
 
 				// Drop held item; this just crashes since I broke Item entities.
@@ -7809,9 +8330,9 @@ async function MineKhan() {
 		}
 		else {
 			document.onmousemove = trackMouse
-			if (screen === "play" && !freezeFrame) {
+			if (screen === "play" && now > freezeFrame) {
 				changeScene("pause")
-				unpauseDelay = now + 1000
+				unpauseDelay = now + 500
 			}
 		}
 		for (let key in Key) {
@@ -7861,7 +8382,8 @@ async function MineKhan() {
 	}
 	canvas.onkeydown = function(e) {
 		let code = e.code
-		if (code === "Space" || code === "ArrowDown" || code === "ArrowUp") {
+		// code === "Space" || code === "ArrowDown" || code === "ArrowUp" || code === "F3") {
+		if (!Key.ControlLeft && !Key.ControlRight && code !== "F12" && code !== "F11") {
 			e.preventDefault()
 		}
 		if (e.repeat || Key[code]) {
@@ -7874,7 +8396,7 @@ async function MineKhan() {
 		if (screen === "play" && Number(e.key)) {
 			inventory.hotbarSlot = e.key - 1
 			holding = inventory.hotbar[inventory.hotbarSlot]
-			updateHUD = true
+			hotbar()
 		}
 	}
 	canvas.onkeyup = function(e) {
@@ -7928,8 +8450,8 @@ async function MineKhan() {
 			inventory.hotbarSlot = 8
 		}
 
-		updateHUD = true
 		holding = inventory.hotbar[inventory.hotbarSlot]
+		hotbar()
 	}
 	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
 	window.onresize = () => {
@@ -7942,8 +8464,9 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
+		let oldSize = inventory.size
 		inventory.size = 40 * min(width, height) / 600
-		genIcons()
+		if (oldSize !== inventory.size) genIcons()
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
 
@@ -7955,6 +8478,9 @@ async function MineKhan() {
 			Button.draw()
 			Slider.draw()
 		}
+	}
+	chatInput.oninput = () => {
+		if (chatInput.value.length > 512) chatInput.value = chatInput.value.slice(0, 512)
 	}
 	chatInput.onkeyup = e => {
 		if (e.key === "Enter") {
@@ -7974,18 +8500,37 @@ async function MineKhan() {
 				play()
 			}
 		}
-		else if (e.key === "Escape") {
+		else {
+			let msg = chatInput.value
+			if (msg.startsWith("/")) {
+				let words = msg.split(" ")
+				if (words.length > 1) {
+					let cmd = words[0].slice(1)
+					if (commands.has(cmd)) commands.get(cmd).autocomplete(msg)
+				}
+				else {
+					let possible = commandList.filter(name => name.startsWith(msg))
+					if (possible.length === 1) commands.get(possible[0].slice(1)).autocomplete(msg)
+					else setAutocomplete(commandList)
+				}
+			}
+		}
+	}
+	document.onkeyup = e => {
+		if (e.key === "Escape" && screen === "chat") {
 			e.preventDefault()
 			e.stopPropagation()
-			play()
 			chatInput.value = ""
+			play()
 		}
+		else if (screen === "chat" && !chatInput.hasFocus) chatInput.focus()
 	}
 
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
 		gl.useProgram(program2D)
+		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset
 		// gl.depthFunc(gl.ALWAYS)
 	}
 	function use3d() {
@@ -8000,10 +8545,7 @@ async function MineKhan() {
 
 	let maxLoad = 1
 	function startLoad() {
-		// Runs when the loading screen is opened; cache the player's position
-		// p2.x = p.x
-		// p2.y = p.y
-		// p2.z = p.z
+		ctx.putImageData(dirtbg, 0, 0)
 		maxLoad = world.loadKeys.length + 9
 	}
 	function initWebgl() {
@@ -8020,8 +8562,11 @@ async function MineKhan() {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
 				throw "Error: Cannot play a WebGL game without WebGL."
 			}
-			let ext = gl.getExtension('OES_element_index_uint')
-			if (!ext) {
+			glExtensions = {
+				"vertex_array_object": gl.getExtension("OES_vertex_array_object"),
+				"element_index_uint": gl.getExtension("OES_element_index_uint")
+			}
+			if (!glExtensions.element_index_uint || !glExtensions.vertex_array_object) {
 				alert("Unable to load WebGL extension. Please use a supported browser, or update your current browser.")
 			}
 			gl.viewport(0, 0, canv.width, canv.height)
@@ -8029,12 +8574,12 @@ async function MineKhan() {
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 			win.gl = gl
-			glExtensions = {}
-			const availableExtensions = gl.getSupportedExtensions()
-			for (let i = 0; i < availableExtensions.length; i++) {
-				const extensionName = availableExtensions[i]
-				glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
-			}
+
+			// const availableExtensions = gl.getSupportedExtensions()
+			// for (let i = 0; i < availableExtensions.length; i++) {
+			// 	const extensionName = availableExtensions[i]
+			// 	glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
+			// }
 		}
 		else {
 			gl = win.gl
@@ -8047,12 +8592,14 @@ async function MineKhan() {
 		modelView = new Float32Array(16)
 		glCache = {}
 		win.glCache = glCache
-		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.createProgramObject)(gl, _shaders_blockVertexShader_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
-		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.createProgramObject)(gl, _shaders_2dVertexShader_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_2dFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
-		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_14__.createProgramObject)(gl, _shaders_entityVertexShader_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_entityFragmentShader_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
-		skybox = (0,_js_sky__WEBPACK_IMPORTED_MODULE_16__.getSkybox)(gl, glCache)
+		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
+		program3DFogless = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
+		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
+		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__["default"], _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__["default"])
+		skybox = (0,_js_sky__WEBPACK_IMPORTED_MODULE_18__.getSkybox)(gl, glCache, program3D, program3DFogless)
 
 		gl.useProgram(program2D)
+		glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
 		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
 		glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
 		glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
@@ -8065,7 +8612,16 @@ async function MineKhan() {
 		glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
 		glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
 
+		gl.useProgram(program3DFogless)
+		glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
+		glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
+		glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
+		glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
+		glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
+		glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
+
 		gl.useProgram(program3D)
+		glCache.uView = gl.getUniformLocation(program3D, "uView")
 		glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
 		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
 		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
@@ -8083,33 +8639,32 @@ async function MineKhan() {
 		gl.uniform1f(glCache.uDist, 1000)
 		gl.uniform1i(glCache.uTrans, 0)
 
-		//Send the block textures to the GPU
-		;(0,_js_texture_js__WEBPACK_IMPORTED_MODULE_15__.initTextures)(gl, glCache)
-		genIcons()
+		// Send the block textures to the GPU
+		;(0,_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.initTextures)(gl, glCache)
 		initShapes()
 
 		// These buffers are only used for drawing the main menu blocks
 		sideEdgeBuffers = {}
-		for (let side in _js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.cube.verts) {
+		for (let side in _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.cube.verts) {
 			let edgeBuffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_js_shapes_js__WEBPACK_IMPORTED_MODULE_13__.shapes.cube.verts[side][0]), gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.cube.verts[side][0]), gl.STATIC_DRAW)
 			sideEdgeBuffers[side] = edgeBuffer
 		}
 		texCoordsBuffers = []
-		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords) {
+		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords) {
 			let buff = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buff)
-			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_15__.textureCoords[t], gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[t], gl.STATIC_DRAW)
 			texCoordsBuffers.push(buff)
 		}
 
-		//Bind the Vertex Array Object (VAO) that will be used to draw everything
+		// Bind the Vertex Array Object (VAO) that will be used to draw everything
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
 
-		//Tell it not to render the insides of blocks
+		// Tell it not to render the insides of blocks
 		gl.enable(gl.CULL_FACE)
 		gl.cullFace(gl.BACK)
 
@@ -8363,19 +8918,9 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
-		let pixels = new Uint8Array(width * height * 4)
-		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		mainbg = ctx.createImageData(width, height)
-		let w = width * 4
-		for (let i = 0; i < pixels.length; i += 4) {
-			let x = i % w
-			let y = height - floor(i / w) - 1
-			let j = y * w + x
-			mainbg.data[j] = pixels[i]
-			mainbg.data[j + 1] = pixels[i + 1]
-			mainbg.data[j + 2] = pixels[i + 2]
-			mainbg.data[j + 3] = pixels[i + 3]
-		}
+
+		ctx.drawImage(gl.canvas, 0, 0)
+		mainbg = ctx.getImageData(0, 0, width, height)
 
 		// Dirt background
 		use2d()
@@ -8401,20 +8946,22 @@ async function MineKhan() {
 		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
 		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
 		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-		pixels = new Uint8Array(width * height * 4)
-		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		dirtbg = ctx.createImageData(width, height)
-		dirtbg.data.set(pixels)
+		// pixels = new Uint8Array(width * height * 4)
+		// gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+		// dirtbg = ctx.createImageData(width, height)
+		// dirtbg.data.set(pixels)
+		ctx.drawImage(gl.canvas, 0, 0)
+		dirtbg = ctx.getImageData(0, 0, width, height)
 	}
 	function initPlayer() {
 		p = new Camera()
 		p.speed = 0.11
-		p.velocity = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_9__.PVector(0, 0, 0)
+		p.velocity = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.PVector(0, 0, 0)
 		p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
 		p.flySpeed = 3.75
 		p.x = 8
-		p.y = superflat ? 6 : 70
+		p.y = 0
 		p.z = 8
 		p.w = 3 / 8
 		p.bottomH = 1.62
@@ -8422,7 +8969,7 @@ async function MineKhan() {
 		p.onGround = false
 		p.jumpSpeed = 0.45
 		p.sprinting = false
-		p.maxYVelocity = 1.5
+		p.maxYVelocity = 4.5
 		p.gravityStrength = -0.091
 		p.lastUpdate = performance.now()
 		p.lastBreak = now
@@ -8503,7 +9050,7 @@ async function MineKhan() {
 				console.error(e)
 			}
 		}
-		(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_12__.loadFromDB)().then(async res => {
+		(0,_js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.loadFromDB)().then(async res => {
 			if(res && res.length) {
 				let index = res.findIndex(obj => obj.id === "settings")
 				if (index >= 0) {
@@ -8599,7 +9146,9 @@ async function MineKhan() {
 		initWebgl()
 
 		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 183240)) {
-			// Prevent Ctrl F
+			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
+			// If you're making significant changes and want to remove this, then you can.
+			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("")
 		}
 
@@ -8612,6 +9161,10 @@ async function MineKhan() {
 		p.FOV(settings.fov)
 		initWorldsMenu()
 		initButtons()
+
+		// Generate all the block icons
+		genIcons()
+		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(window.location.search)
@@ -8672,18 +9225,6 @@ async function MineKhan() {
 		}
 
 		drawScreens.play = () => {
-			if (updateHUD) {
-				clear()
-				gl.clearColor(0, 0, 0, 0)
-				gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-				hud()
-				ctx.drawImage(gl.canvas, 0, 0)
-				updateHUD = false
-				freezeFrame = false
-				renderChatAlerts()
-				textSize(10)
-				gl.uniform1f(glCache.uLantern, _js_blockData_js__WEBPACK_IMPORTED_MODULE_11__.blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0)
-			}
 			let renderStart = performance.now()
 			p.setDirection()
 			world.render()
@@ -8710,7 +9251,7 @@ async function MineKhan() {
 					}
 				}
 			}
-			if (world.loadKeys.length) {
+			if (world.loadKeys.length || world.loading) {
 				world.load()
 				standing = false
 			}
@@ -8720,18 +9261,19 @@ async function MineKhan() {
 
 			if (standing) {
 				play()
-				if (maxLoad === 9 && !p.flying && !p.spectator) {
-					p.y = world.chunks[cx][cz].tops[(p.z & 15) * 16 + (p.x & 15)] + 2
+				if (maxLoad === 9 && p.y === 0 && !p.flying && !p.spectator) {
+					p.y = world.chunks[cx][cz].tops[(p.x & 15) * 16 + (p.z & 15)] + 2
 				}
 				return
 			}
 
 			let progress = round(100 * sub / maxLoad)
-			dirt()
-			fill(255)
-			textSize(30)
-			ctx.textAlign = "center"
-			text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
+			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${sub} / ${maxLoad})`
+			// ctx.putImageData(dirtbg, 0, 0)
+			// fill(255)
+			// textSize(30)
+			// ctx.textAlign = "center"
+			// text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
 
 		drawScreens.inventory = drawInv
@@ -8799,7 +9341,11 @@ async function MineKhan() {
 		}
 	}
 
-	function renderLoop() {
+	let prevTime = 0
+	function renderLoop(time) {
+		let frameFPS = Math.round(10000/(time - prevTime)) / 10
+		prevTime = time
+
 		now = Date.now()
 		let frameStart = performance.now()
 		if (!gl) {
@@ -8816,12 +9362,14 @@ async function MineKhan() {
 			}
 		}
 
-		if (now - analytics.lastUpdate > 500 && analytics.frames) {
+		if (screen === "play" && now - analytics.lastUpdate > 500 && analytics.frames) {
 			analytics.displayedTickTime = (analytics.totalTickTime / analytics.ticks).toFixed(1)
 			analytics.displayedRenderTime = (analytics.totalRenderTime / analytics.frames).toFixed(1)
 			analytics.displayedFrameTime = (analytics.totalFrameTime / analytics.frames).toFixed(1)
 			analytics.fps = round(analytics.frames * 1000 / (now - analytics.lastUpdate))
 			analytics.displayedwFrameTime = analytics.worstFrameTime.toFixed(1)
+			analytics.displayedwFps = analytics.worstFps
+			analytics.worstFps = 1000000
 			analytics.frames = 0
 			analytics.totalRenderTime = 0
 			analytics.totalTickTime = 0
@@ -8829,12 +9377,13 @@ async function MineKhan() {
 			analytics.totalFrameTime = 0
 			analytics.worstFrameTime = 0
 			analytics.lastUpdate = now
-			updateHUD = true
+			hud()
 		}
 
 		analytics.frames++
 		analytics.totalFrameTime += performance.now() - frameStart
 		analytics.worstFrameTime = max(performance.now() - frameStart, analytics.worstFrameTime)
+		analytics.worstFps = min(frameFPS, analytics.worstFps)
 		win.raf = requestAnimationFrame(renderLoop)
 	}
 	return renderLoop
