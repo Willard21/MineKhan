@@ -309,7 +309,7 @@ class Chunk {
 		this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
 		this.optimized = false
 		this.generated = false // Terrain
-		this.populated = superflat // Trees and ores
+		this.populated = superflat // Details and ores
 		this.lit = false
 		this.lightDropped = false
 		this.edited = false
@@ -836,7 +836,7 @@ class Chunk {
 		// }
 		this.caveData = null
 	}
-	populate(trees) {
+	populate(details) {
 		if (this.populated) return
 		const { world } = this
 		randomSeed(hash(this.x, this.z) * 210000000)
@@ -849,7 +849,7 @@ class Chunk {
 
 				ground = this.tops[i * 16 + k]
 				let topBlock = this.getBlock(i, ground, k)
-				if (trees && random() < 0.005 && topBlock === blockIds.grass) {
+				if (details && random() < 0.005 && topBlock === blockIds.grass) {
 
 					top = ground + floor(4.5 + random(2.5))
 					rand = floor(random(4096))
@@ -921,6 +921,249 @@ class Chunk {
 					world.spawnBlock(wx, top + 1, wz - 1, blockIds.leaves)
 					world.spawnBlock(wx, top + 1, wz + 1, blockIds.leaves)
 					world.spawnBlock(wx - 1, top + 1, wz, blockIds.leaves)
+				}
+
+				if (details && random() < 0.05 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k + 3) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i - 3, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k - 3) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 3, ground, k - 1) === blockIds.grass &&
+					
+					this.getBlock(i, ground + 1, k) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k) === blockIds.air &&
+					this.getBlock(i, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k) === blockIds.air &&
+					this.getBlock(i, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k + 3) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k + 2) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k + 1) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k - 1) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i - 3, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i - 2, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i - 1, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i + 1, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i + 2, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k - 3) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k - 2) === blockIds.air &&
+					this.getBlock(i + 3, ground + 1, k - 1) === blockIds.air
+				   ) {
+					if(random() < 0.25) {
+						this.setBlock(i, ground, k, blockIds.water)
+						this.setBlock(i - 1, ground, k, blockIds.water)
+						this.setBlock(i, ground, k + 1, blockIds.water)
+						this.setBlock(i + 1, ground, k + 1, blockIds.water)
+						this.setBlock(i + 1, ground, k, blockIds.water)
+						this.setBlock(i + 1, ground, k - 1, blockIds.water)
+						this.setBlock(i + 2, ground, k - 1, blockIds.water)
+					} else if (random() > 0.25 && random() < 0.5) {
+						this.setBlock(i, ground, k, blockIds.water)
+						this.setBlock(i + 1, ground, k, blockIds.water)
+						this.setBlock(i - 1, ground, k, blockIds.water)
+						this.setBlock(i + 1, ground, k + 1, blockIds.water)
+						this.setBlock(i - 1, ground, k + 1, blockIds.water)
+						this.setBlock(i - 1, ground, k - 1, blockIds.water)
+						this.setBlock(i, ground, k - 1, blockIds.water)
+						this.setBlock(i, ground, k - 2, blockIds.water)
+					} else if (random() > 0.5 && random() < 0.75) {
+						this.setBlock(i, ground, k, blockIds.water)
+						this.setBlock(i + 1, ground, k, blockIds.water)
+						this.setBlock(i - 1, ground, k, blockIds.water)
+						this.setBlock(i, ground, k + 1, blockIds.water)
+						this.setBlock(i, ground, k - 1, blockIds.water)
+						this.setBlock(i + 1, ground, k + 1, blockIds.water)
+						this.setBlock(i - 1, ground, k + 1, blockIds.water)
+						this.setBlock(i + 1, ground, k - 1, blockIds.water)
+						this.setBlock(i + 2, ground, k, blockIds.water)
+					} else if (random() > 0.75 && random() < 1) {
+						this.setBlock(i, ground, k, blockIds.water)
+						this.setBlock(i + 1, ground, k, blockIds.water)
+						this.setBlock(i - 1, ground, k, blockIds.water)
+						this.setBlock(i, ground, k + 1, blockIds.water)
+						this.setBlock(i, ground, k - 1, blockIds.water)
+						this.setBlock(i + 1, ground, k - 1, blockIds.water)
+						this.setBlock(i + 1, ground, k - 2, blockIds.water)
+						this.setBlock(i + 2, ground, k, blockIds.water)
+						this.setBlock(i + 2, ground, k - 1, blockIds.water)
+						this.setBlock(i + 2, ground, k - 2, blockIds.water)
+					}
+				}
+
+				const FLOWER   = 0x300
+				if (details && random() < 0.015 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.poppy | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.poppy | FLOWER)
+				}
+				if (details && random() < 0.015 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.cornflower | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.cornflower | FLOWER)
+				}
+				if (details && random() < 0.015 &&
+					this.getBlock(i, ground, k) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k) === blockIds.grass &&
+					this.getBlock(i, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 2) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k + 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 1) === blockIds.grass &&
+					this.getBlock(i - 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i - 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 1, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 2) === blockIds.grass &&
+					this.getBlock(i + 2, ground, k - 1) === blockIds.grass
+				   ) {
+					this.setBlock(i, ground + 1, k, blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.dandelion | FLOWER)
+					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), blockIds.dandelion | FLOWER)
 				}
 
 				// Blocks of each per chunk in Minecraft
