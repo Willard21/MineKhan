@@ -224,6 +224,7 @@ async function MineKhan() {
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
 	let height = window.innerHeight
+	let inventorySort = "name"
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
@@ -381,7 +382,7 @@ async function MineKhan() {
 		z: 0,
 	}
 	let inventory = {
-		hotbar: [1, 2, 3, 4, 5, 6, 7, 12, 8],
+		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
 		main: [],
 		hotbarSlot: 0,
 		size: 40 * min(width, height) / 600,
@@ -3612,6 +3613,13 @@ async function MineKhan() {
 
 		// Options buttons
 		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
+		Button.add(width/2, 185, width / 3, 40, ["Sort Inventory By: Name", "Sort Inventory By: Block ID"], "options", () => {
+			if (inventorySort === "name") {
+				inventorySort = "blockid"
+			} else if (inventorySort === "blockid") {
+				inventorySort = "name"
+			}
+		})
 
 		// Comingsoon menu buttons
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
@@ -3800,6 +3808,9 @@ async function MineKhan() {
 		// ctx.textAlign = 'left'
 		// text(str, 5, height - 77, 12)
 	}
+	let sortedBlocks = Object.entries(blockIds)
+	sortedBlocks.sort()
+	sortedBlocks.splice(2, 1) // Get rid of the air block in the array of sorted blocks
 	function drawInv() {
 		let x = 0
 		let y = 0
@@ -3810,10 +3821,18 @@ async function MineKhan() {
 		ctx.clearRect(0, 0, width, height)
 
 		// Draw the blocks
-		for (let i = 1; i < BLOCK_COUNT; i++) {
-			x = (i - 1) % perRow * s + 51
-			y = ((i - 1) / perRow | 0) * s + 51
-			drawIcon(x - s2, y - s2, i)
+		if (inventorySort === "name") {
+			for (let i = 0; i < BLOCK_COUNT - 1; i++) {
+				x = i % perRow * s + 51
+				y = (i / perRow | 0) * s + 51
+				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
+			}
+		} else if (inventorySort === "blockid") {
+			for (let i = 1; i < BLOCK_COUNT; i++) {
+				x = (i - 1) % perRow * s + 51
+				y = ((i - 1) / perRow | 0) * s + 51
+				drawIcon(x - s2, y - s2, i)
+			}
 		}
 
 		// Draw the grid
@@ -3861,7 +3880,12 @@ async function MineKhan() {
 
 		// Tooltip for the item you're hovering over
 		if (drawName) {
-			let name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			let name
+			if (inventorySort === "name") {
+				name = sortedBlocks[overInv][0].replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			} else if (inventorySort === "blockid") {
+				name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			}
 			ctx.fillStyle = "black"
 			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
 			ctx.font = "16px monospace"
@@ -3883,7 +3907,11 @@ async function MineKhan() {
 			inventory.holding = temp
 		}
 		else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			inventory.holding = over + 1
+			if (inventorySort === "name") {
+				inventory.holding = sortedBlocks[over][1]
+			} else if (inventorySort === "blockid") {
+				inventory.holding = over + 1
+			}
 		}
 		else {
 			inventory.holding = 0
@@ -3942,7 +3970,7 @@ async function MineKhan() {
 
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
-					if (holding === 8 || holding === 9 || holding === 10) {
+					if (holding === 152 || holding === 153 || holding === 154) {
 						newWorldBlock(FLOWER)
 					} else {
 						newWorldBlock(blockMode)
@@ -4452,12 +4480,12 @@ async function MineKhan() {
 				5, 0, 0, 1,
 				5, 0, 1, 1,
 				5, 0, 2, 1,
-				5, 1, 2, 41,
-				5, 2, 2, 41,
-				5, 3, 2, 41,
-				5, 4, 2, 41,
-				5, 5, 2, 41,
-				5, 6, 2, 41,
+				5, 1, 2, 29,
+				5, 2, 2, 29,
+				5, 3, 2, 29,
+				5, 4, 2, 29,
+				5, 5, 2, 29,
+				5, 6, 2, 29,
 				5, 4, 0, 7,
 				5, 4, 1, 7,
 				5, 4, 3, 7,

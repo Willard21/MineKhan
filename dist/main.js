@@ -1694,6 +1694,7 @@ const texturesFunc = function (setPixel, getPixels) {
 		"deepslateLapisOre": "0g0gdåŎYÒþHÁ?W;śW$ěHpÉZxÕYloZgłZhqZ?ĥZ×ÍHgŀZ1yyOhizyz>QOxy>zhÄÅA)>ñ3N1p7Ĉg0i>y((1hhz0z*úhÕyx1-ēďyē1Npĉ00h0jy!ĚOFlGkN(0ypÈďp>giJwóĘ!Khèħ1w1rĉi(chæĊoĈO)ēÁēëw30hÈÝw2xg0ig2(hyh",
 		"deepslateRedstoneOre": "0g0ggåŎYÒþHÁ?W;śW$ěH{ĺH-ĚZügHįgHţ0WŤâZīgHü0WťEYïÒYśÞZ1yyOhizyzQOOxyOzh1lÄQ>)ONlÅGÎ0hi>EäĂĤghz0xġŀňxøň1i&ŕyOŕNlÄOghV>yÍďÐwnñóř,ťyxy/ņŊuŉNz)>ŕ0hCVKzzN1iÔşŞi-řhO=ĕhz>QO0hŕ)(ixg0iiAwhyh",
 		"netherGoldOre": "0g0gcÀÁHUíWÀÎYÑĊYÝĪWSÁHę1HšĚYï4WZĜYZŢHĬúZ12NQOÃ)MjMBzR5Ow>>Ó2MÝN)X.ďk)ă3z][û]îQAM4MĜIQ:O>3RU)>!üXT5z>ç_àIN)NCOQ()zPċÂ))S2k)àÂ]QCÂ+ANbA(Ôi3>A/J4)(k)]Pçj]SzQîxC))Oy)R)lzQO",
+		"soulSoil": "0g0g5ÇjY]ĹZ;ĚH)ĊWÖQH4Č^ÖgABNj|24FĘjÕû8PwÉQù1|ùİA2aÖ0]0ë^]20ùiÃwù8ëüúF1wAČP]91Fwag]9]íJJ2óSmķgiJ0Ďõëüŀ1+Qìmĸ5)KXĎòFĊ4",
 		"blackstone": "0g0g6(ěHAìZwTZkMW;ŋH|BH4ČĩÑSÀwgi0]qÕJú2]ÃQ0ÀJÂôwPamüôJ^9^CÉiķıEĞh0Ďį4Iú0ČQ9ČÁByú|gaS4ŁNP3ySÃyĿ92]aE2úJÀŀF4ùþXŁÒkõACŀ{J]",
 		"blackstoneTop": "0g0g5AìZ(ěH;ŋHsTYkMW5yÆEëÑòirKñaIĈa%ĚìKI^TČÀ2]iik_0xpJR>ÎyõÎįrÒk_]8İ0ĉ2AĀa2+2QòrÂ2I]-ĨQiJiNíÀč1e4ùÎyoÛ2IÑĈTQSSxĚTP]õ",
 		"polishedBlackstone": "0g0g6|BH;ŋH(ěHkMWAìZsTY0ë840^5ih]ĊûEiJIíV1iúFkÒ0ĐĊEĐĊ82^IíÂBiúFkÏx2U4ĬB0XÑB?bBk9ÂAö4iÏüĀ{8ĊúÀđU5AóM^ý8ăiFq|EĐČþČUÂP$JP$",
@@ -1740,30 +1741,6 @@ const blockData = [
 		hideInterior: false
 	},
 	{
-		name: "poppy",
-		textures: ["nothing", "poppy"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		icon: "poppy"
-	},
-	{
-		name: "cornflower",
-		textures: ["nothing", "cornflower"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		icon: "cornflower"
-	},
-	{
-		name: "dandelion",
-		textures: ["nothing", "dandelion"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		icon: "dandelion"
-	},
-	{
 		name: "glass",
 		transparent: true,
 		shadow: false,
@@ -1780,7 +1757,6 @@ const blockData = [
 	{ name: "redstoneOre" },
 	{ name: "lapisOre" },
 	{ name: "emeraldOre" },
-	{ name: "copperOre" },
 	{ name: "coalBlock" },
 	{ name: "ironBlock" },
 	{ name: "goldBlock" },
@@ -1788,14 +1764,6 @@ const blockData = [
 	{ name: "redstoneBlock" },
 	{ name: "lapisBlock" },
 	{ name: "emeraldBlock" },
-	{ name: "copperBlock" },
-	{ name: "cutCopper" },
-	{ name: "exposedCopper" },
-	{ name: "exposedCutCopper" },
-	{ name: "weatheredCopper" },
-	{ name: "weatheredCutCopper" },
-	{ name: "oxidizedCopper" },
-	{ name: "oxidizedCutCopper" },
 	{ name: "oakPlanks" },
 	{
 		name: "oakLog",
@@ -1826,23 +1794,6 @@ const blockData = [
 		name: "spruceLog",
 		textures: ["spruceLogTop", "spruceLog"],
 	},
-	{ name: "cherryPlanks" },
-	{
-		name: "cherryLog",
-		textures: ["cherryLogTop", "cherryLog"],
-	},
-	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
-	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
-	/* Doors/trapdoors will hopefully get proper models one day...
-	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
-	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
-	*/
-	{ name: "ironTrapdoor", solid: false, transparent: true, icon: "ironTrapdoor" },
-	// I swear, if y'all don't stop asking about TNT every 5 minutes!
-	/* {
-        name: "tnt",
-        textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
 	{ name: "whiteWool" },
 	{ name: "orangeWool" },
 	{ name: "magentaWool" },
@@ -1879,13 +1830,6 @@ const blockData = [
 		name: "bookshelf",
 		textures: ["oakPlanks", "bookshelf"]
 	},
-	{ name: "prismarine" },
-	{ name: "prismarineBricks" },
-	{ name: "darkPrismarine" },
-	{
-		name: "seaLantern",
-		lightLevel: 15
-	},
 	{ name: "netherrack" },
 	{ name: "soulSand" },
 	{
@@ -1895,14 +1839,7 @@ const blockData = [
 	{ name: "netherWartBlock" },
 	{ name: "netherBricks" },
 	{ name: "redNetherBricks" },
-	{ name: "chiseledNetherBricks" },
-	{ name: "crackedNetherBricks" },
 	{ name: "netherQuartzOre" },
-	{ name: "netherGoldOre" },
-	{
-		name: "ancientDebris",
-		textures: ["ancientDebrisTop", "ancientDebrisSide"],
-	},
 	{
 		name: "quartzBlock",
 		textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"]
@@ -1915,15 +1852,72 @@ const blockData = [
 		name: "chiseledQuartzBlock",
 		textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"]
 	},
+	{ name: "chiseledStoneBricks" },
+	{ name: "smoothStone" },
+	{ name: "andesite" },
+	{ name: "polishedAndesite" },
+	{ name: "diorite" },
+	{ name: "polishedDiorite" },
+	{ name: "granite" },
+	{ name: "polishedGranite" },
+	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
+	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
+	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
+	{ name: "obsidian" },
+	{ name: "cryingObsidian", lightLevel: 10 },
+	{ name: "endStone" },
+	{ name: "endStoneBricks" },
+	{ name: "chiseledNetherBricks" },
+	{ name: "crackedNetherBricks" },
+	{ name: "crackedPolishedBlackstoneBricks" },
+	{ name: "crackedStoneBricks" },
+	{ name: "polishedBlackstoneBricks" },
+	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
+	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
+	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	/* Doors/trapdoors will hopefully get proper models one day...
+	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
+	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
+	*/
+	{ name: "ironTrapdoor", solid: false, transparent: true, icon: "ironTrapdoor" },
+	// I swear, if y'all don't stop asking about TNT every 5 minutes!
+	/* {
+        name: "tnt",
+        textures: ["tntBottom", "tntTop", "tntSide"]
+    },*/
+	{ name: "cherryPlanks" },
+	{
+		name: "cherryLog",
+		textures: ["cherryLogTop", "cherryLog"],
+	},
+	{ name: "copperOre" },
+	{ name: "copperBlock" },
+	{ name: "cutCopper" },
+	{ name: "exposedCopper" },
+	{ name: "exposedCutCopper" },
+	{ name: "weatheredCopper" },
+	{ name: "weatheredCutCopper" },
+	{ name: "oxidizedCopper" },
+	{ name: "oxidizedCutCopper" },
+	{ name: "prismarine" },
+	{ name: "darkPrismarine" },
+	{
+		name: "seaLantern",
+		lightLevel: 15
+	},
+	{ name: "netherGoldOre" },
+	{
+		name: "ancientDebris",
+		textures: ["ancientDebrisTop", "ancientDebrisSide"],
+	},
 	{ name: "netheriteBlock" },
+	{ name: "soulSoil" },
 	{
 		name: "blackstone",
 		textures: ["blackstoneTop", "blackstone"],
 	},
 	{ name: "polishedBlackstone" },
-	{ name: "polishedBlackstoneBricks" },
-	{ name: "crackedPolishedBlackstoneBricks" },
 	{ name: "gildedBlackstone" },
 	{
 		name: "basalt",
@@ -1947,23 +1941,6 @@ const blockData = [
 		name: "warpedStem",
 		textures: ["warpedStemTop", "warpedStem"],
 	},
-	{ name: "obsidian" },
-	{ name: "cryingObsidian", lightLevel: 10 },
-	{ name: "chiseledStoneBricks" },
-	{ name: "smoothStone" },
-	{ name: "andesite" },
-	{ name: "polishedAndesite" },
-	{ name: "diorite" },
-	{ name: "polishedDiorite" },
-	{ name: "granite" },
-	{ name: "polishedGranite" },
-	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
-	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
-	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
-	{ name: "endStone" },
-	{ name: "endStoneBricks" },
-	{ name: "crackedStoneBricks" },
-	{ name: "polishedBlackstoneBricks" },
 	{ name: "amethystBlock" },
 	{
 		name: "deepslate",
@@ -1983,6 +1960,30 @@ const blockData = [
 	{ name: "deepslateIronOre" },
 	{ name: "deepslateLapisOre" },
 	{ name: "deepslateRedstoneOre" },
+	{
+		name: "poppy",
+		textures: ["nothing", "poppy"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "poppy"
+	},
+	{
+		name: "cornflower",
+		textures: ["nothing", "cornflower"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "cornflower"
+	},
+	{
+		name: "dandelion",
+		textures: ["nothing", "dandelion"],
+		solid: false,
+		transparent: true,
+		shadow: false,
+		icon: "dandelion"
+	},
 ]
 
 const BLOCK_COUNT = blockData.length
@@ -4911,6 +4912,7 @@ async function MineKhan() {
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
 	let height = window.innerHeight
+	let inventorySort = "name"
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
@@ -5068,7 +5070,7 @@ async function MineKhan() {
 		z: 0,
 	}
 	let inventory = {
-		hotbar: [1, 2, 3, 4, 5, 6, 7, 12, 8],
+		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
 		main: [],
 		hotbarSlot: 0,
 		size: 40 * min(width, height) / 600,
@@ -8299,6 +8301,13 @@ async function MineKhan() {
 
 		// Options buttons
 		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
+		Button.add(width/2, 185, width / 3, 40, ["Sort Inventory By: Name", "Sort Inventory By: Block ID"], "options", () => {
+			if (inventorySort === "name") {
+				inventorySort = "blockid"
+			} else if (inventorySort === "blockid") {
+				inventorySort = "name"
+			}
+		})
 
 		// Comingsoon menu buttons
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
@@ -8487,6 +8496,9 @@ async function MineKhan() {
 		// ctx.textAlign = 'left'
 		// text(str, 5, height - 77, 12)
 	}
+	let sortedBlocks = Object.entries(_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds)
+	sortedBlocks.sort()
+	sortedBlocks.splice(2, 1) // Get rid of the air block in the array of sorted blocks
 	function drawInv() {
 		let x = 0
 		let y = 0
@@ -8497,10 +8509,18 @@ async function MineKhan() {
 		ctx.clearRect(0, 0, width, height)
 
 		// Draw the blocks
-		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
-			x = (i - 1) % perRow * s + 51
-			y = ((i - 1) / perRow | 0) * s + 51
-			drawIcon(x - s2, y - s2, i)
+		if (inventorySort === "name") {
+			for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1; i++) {
+				x = i % perRow * s + 51
+				y = (i / perRow | 0) * s + 51
+				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
+			}
+		} else if (inventorySort === "blockid") {
+			for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
+				x = (i - 1) % perRow * s + 51
+				y = ((i - 1) / perRow | 0) * s + 51
+				drawIcon(x - s2, y - s2, i)
+			}
 		}
 
 		// Draw the grid
@@ -8548,7 +8568,12 @@ async function MineKhan() {
 
 		// Tooltip for the item you're hovering over
 		if (drawName) {
-			let name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			let name
+			if (inventorySort === "name") {
+				name = sortedBlocks[overInv][0].replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			} else if (inventorySort === "blockid") {
+				name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+			}
 			ctx.fillStyle = "black"
 			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
 			ctx.font = "16px monospace"
@@ -8570,7 +8595,11 @@ async function MineKhan() {
 			inventory.holding = temp
 		}
 		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			inventory.holding = over + 1
+			if (inventorySort === "name") {
+				inventory.holding = sortedBlocks[over][1]
+			} else if (inventorySort === "blockid") {
+				inventory.holding = over + 1
+			}
 		}
 		else {
 			inventory.holding = 0
@@ -8629,7 +8658,7 @@ async function MineKhan() {
 
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
-					if (holding === 8 || holding === 9 || holding === 10) {
+					if (holding === 152 || holding === 153 || holding === 154) {
 						newWorldBlock(FLOWER)
 					} else {
 						newWorldBlock(blockMode)
@@ -9139,12 +9168,12 @@ async function MineKhan() {
 				5, 0, 0, 1,
 				5, 0, 1, 1,
 				5, 0, 2, 1,
-				5, 1, 2, 41,
-				5, 2, 2, 41,
-				5, 3, 2, 41,
-				5, 4, 2, 41,
-				5, 5, 2, 41,
-				5, 6, 2, 41,
+				5, 1, 2, 29,
+				5, 2, 2, 29,
+				5, 3, 2, 29,
+				5, 4, 2, 29,
+				5, 5, 2, 29,
+				5, 6, 2, 29,
 				5, 4, 0, 7,
 				5, 4, 1, 7,
 				5, 4, 3, 7,
