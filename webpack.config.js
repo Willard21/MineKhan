@@ -42,7 +42,7 @@ module.exports = {
 				use: ["style-loader", "css-loader"],
 			},
 			{
-				test: /\.(txt|glsl)$|workers\//i,
+				test: /\.(txt|glsl)$|workers(\/|\\)/i,
 				use: "raw-loader",
 			},
 		],

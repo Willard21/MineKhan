@@ -12,6 +12,7 @@ body {
 	background-color: RGBA(0, 0, 0, 0.6);
 	justify-content: center;
 	margin: 0 auto;
+	font-family: monospace;
 }
 .world {
 	width: 250px;
@@ -39,6 +40,7 @@ input[type=text] {
 	color: white;
 	font-size: 24px;
 	padding-left: 12px;
+	font-family: monospace;
 }
 input[type=text]:focus {
 	border: 2px solid lightgray;
@@ -79,6 +81,7 @@ input[type=text]:focus {
 	justify-content: center;
 	text-align: center;
 	color: white;
+	font-family: monospace;
 }
 #chat {
 	position: absolute;
@@ -92,6 +95,7 @@ input[type=text]:focus {
 	min-width: 600px;
 	background-color: RGBA(0, 0, 0, 0.8);
 	color: white;
+	font-family: monospace;
 }
 #chat > div > span {
 	white-space: pre-wrap;
@@ -106,6 +110,7 @@ input[type=text]:focus {
 	width: calc(100vw - 60px);
 	background-color: RGBA(0, 0, 0, 0.8);
 	color: white;
+	font-family: monospace;
 }
 .message {
 	width: 100%;
@@ -113,6 +118,7 @@ input[type=text]:focus {
 	padding: 10px;
 	word-wrap: break-word;
 }
+/*
 @font-face {
 	font-family: 'VT323';
 	font-style: normal;
@@ -121,6 +127,7 @@ input[type=text]:focus {
 	src: url(https://willard.fun/fonts/VT323.woff2) format('woff2');
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+*/
 #background-text {
 	position: absolute;
 	left: 0;

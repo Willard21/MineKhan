@@ -92,6 +92,28 @@ let shapes = {
 		flip: true,
 		rotate: true
 	},
+	flower: {
+		verts: [
+			[objectify( 8,  0,  8,  2,  2,  0,  0)],
+			[objectify( 8, 16,  8,  2,  2,  0,  0)],
+			[objectify(16, 16,  8, 16, 16,  0,  0)],
+			[objectify( 0, 16,  8, 16, 16,  0,  0)],
+			[objectify( 8, 16,  0, 16, 16,  0,  0)],
+			[objectify( 8, 16, 16, 16, 16,  0,  0)]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		varients: [],
+		buffer: null,
+		size: 6
+	},
 }
 
 export { shapes }
