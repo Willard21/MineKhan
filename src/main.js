@@ -2071,7 +2071,7 @@ async function MineKhan() {
 		if (count > list.length) count = list.length
 		chat(`Undoing the last ${count} block edits from ${name}`, "lime")
 		for (let i = 0; i < count; i++) {
-			let [x, y, z, newBlock, oldBlock] = list.pop()
+			let [x, y, z, , oldBlock] = list.pop()
 			if (multiplayer) await sleep(50)
 			world.setBlock(x, y, z, oldBlock, false, false, true)
 		}
@@ -3616,7 +3616,8 @@ async function MineKhan() {
 		Button.add(width/2, 185, width / 3, 40, ["Sort Inventory By: Name", "Sort Inventory By: Block ID"], "options", () => {
 			if (inventorySort === "name") {
 				inventorySort = "blockid"
-			} else if (inventorySort === "blockid") {
+			}
+			else if (inventorySort === "blockid") {
 				inventorySort = "name"
 			}
 		})
@@ -3827,7 +3828,8 @@ async function MineKhan() {
 				y = (i / perRow | 0) * s + 51
 				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
 			}
-		} else if (inventorySort === "blockid") {
+		}
+		else if (inventorySort === "blockid") {
 			for (let i = 1; i < BLOCK_COUNT; i++) {
 				x = (i - 1) % perRow * s + 51
 				y = ((i - 1) / perRow | 0) * s + 51
@@ -3883,7 +3885,8 @@ async function MineKhan() {
 			let name
 			if (inventorySort === "name") {
 				name = sortedBlocks[overInv][0].replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			} else if (inventorySort === "blockid") {
+			}
+			else if (inventorySort === "blockid") {
 				name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			}
 			ctx.fillStyle = "black"
@@ -3909,7 +3912,8 @@ async function MineKhan() {
 		else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
 			if (inventorySort === "name") {
 				inventory.holding = sortedBlocks[over][1]
-			} else if (inventorySort === "blockid") {
+			}
+			else if (inventorySort === "blockid") {
 				inventory.holding = over + 1
 			}
 		}
@@ -3972,7 +3976,8 @@ async function MineKhan() {
 				if(name === controlMap.placeBlock.key && holding) {
 					if (holding === 152 || holding === 153 || holding === 154) {
 						newWorldBlock(FLOWER)
-					} else {
+					}
+					else {
 						newWorldBlock(blockMode)
 					}
 				}
@@ -4247,6 +4252,7 @@ async function MineKhan() {
 	chatInput.oninput = () => {
 		if (chatInput.value.length > 512) chatInput.value = chatInput.value.slice(0, 512)
 	}
+	chatInput.onkeydown = e => e.key === "Tab" ? e.preventDefault() : 0
 	chatInput.onkeyup = e => {
 		if (e.key === "Enter") {
 			let msg = chatInput.value.trim()
@@ -4281,6 +4287,7 @@ async function MineKhan() {
 			}
 		}
 	}
+
 	document.onkeyup = e => {
 		if (e.key === "Escape" && screen === "chat") {
 			e.preventDefault()
@@ -4954,20 +4961,23 @@ async function MineKhan() {
 			for (let i = 0; i < 15; i++) {
 				if (i < 12) {
 					fill(i * 10)
-				} else if (i > 11) {
+				}
+				else if (i > 11) {
 					fill(125)
 				}
 
 				if (i < 10) {
 					ctx.font = "bold 12" + i.toString() + "px " + font
-				} else if (i > 9) {
+				}
+				else if (i > 9) {
 					ctx.font = "bold 1" + (20 + i).toString() + "px " + font
 				}
 				text(title, width / 2, 158 - i)
 
 				if (i < 8) {
 					ctx.font = "bold 3" + (2 + i / 4).toString() + "px " + font
-				} else if (i > 7) {
+				}
+				else if (i > 7) {
 					ctx.font = "bold " + (32 + i / 4).toString() + "px " + font
 				}
 				text(subtext, width / 2, 190 - i / 2)
