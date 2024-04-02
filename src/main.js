@@ -461,7 +461,7 @@ async function MineKhan() {
 	let skybox
 
 	function getPointer() {
-		if (canvas.requestPointerLock) {
+		if (canvas.requestPointerLock && !canvas.ontouchmove) {
 			canvas.requestPointerLock()
 		}
 	}
@@ -4258,6 +4258,20 @@ async function MineKhan() {
 		}
 		else if (screen === "chat" && !chatInput.hasFocus) chatInput.focus()
 	}
+
+	let pTouch = { x: 0, y: 0 }
+	canvas.addEventListener("touchstart", function(e) {
+	    pTouch.x = e.changedTouches[0].pageX
+	    pTouch.y = e.changedTouches[0].pageY
+	}, false)
+	canvas.addEventListener("touchmove", function(e) {
+	    e.movementY = e.changedTouches[0].pageY - pTouch.y
+	    e.movementX = e.changedTouches[0].pageX - pTouch.x
+	    pTouch.x = e.changedTouches[0].pageX
+	    pTouch.y = e.changedTouches[0].pageY
+	    mmoved(e)
+	    e.preventDefault()
+	}, false)
 
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
