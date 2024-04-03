@@ -5151,7 +5151,7 @@ async function MineKhan() {
 	let skybox
 
 	function getPointer() {
-		if (canvas.requestPointerLock) {
+		if (canvas.requestPointerLock && !canvas.ontouchmove) {
 			canvas.requestPointerLock()
 		}
 	}
@@ -8130,8 +8130,8 @@ async function MineKhan() {
 			changeScene("loadsave menu")
 		})
 		Button.add(width / 2, height / 2 + 35, 400, 40, "Multiplayer", "main menu", () => {
-			initMultiplayerMenu()
 			changeScene("multiplayer menu")
+			initMultiplayerMenu()
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
 
@@ -8986,6 +8986,20 @@ async function MineKhan() {
 		else if (screen === "chat" && !chatInput.hasFocus) chatInput.focus()
 	}
 
+	let pTouch = { x: 0, y: 0 }
+	canvas.addEventListener("touchstart", function(e) {
+	    pTouch.x = e.changedTouches[0].pageX
+	    pTouch.y = e.changedTouches[0].pageY
+	}, false)
+	canvas.addEventListener("touchmove", function(e) {
+	    e.movementY = e.changedTouches[0].pageY - pTouch.y
+	    e.movementX = e.changedTouches[0].pageX - pTouch.x
+	    pTouch.x = e.changedTouches[0].pageX
+	    pTouch.y = e.changedTouches[0].pageY
+	    mmoved(e)
+	    e.preventDefault()
+	}, false)
+
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
@@ -9580,7 +9594,11 @@ async function MineKhan() {
 			div.innerHTML = "<strong>" + sanitize(name) + "</strong>" + br
 
 			div.innerHTML += "Hosted by " + sanitize(host) + br
-			div.innerHTML += online + " players online" + br
+			const span = document.createElement("span")
+			span.className = "online"
+			span.textContent = online.toString()
+			div.appendChild(span)
+			div.innerHTML += " players online" + br
 			div.innerHTML += version + br
 			if (password) div.innerHTML += "Password-protected" + br
 
@@ -9595,6 +9613,25 @@ async function MineKhan() {
 		}
 		window.worlds.onclick = Button.draw
 		window.boxCenterTop.onkeyup = Button.draw
+
+		let refresh = setInterval(async () => {
+			if (screen !== "multiplayer menu") return clearInterval(refresh)
+			let servers = await getWorlds()
+			clear: for (let target in worlds) {
+				for (let data of servers) if (data.target === target) continue clear
+				document.getElementById(target).remove()
+				delete worlds[target]
+			}
+			for (let data of servers) {
+				if (!document.getElementById(data.target)) {
+					addWorld(data.name, data.host, data.online, data.target, data.version, !data.public)
+				}
+				worlds[data.target] = data
+
+				const element = document.getElementById(data.target)
+				element.getElementsByClassName("online")[0].textContent = data.online.toString()
+			}
+		}, 5000)
 	}
 
 	function initEverything() {
