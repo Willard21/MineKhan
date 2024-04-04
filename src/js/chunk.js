@@ -309,7 +309,7 @@ class Chunk {
 		this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
 		this.optimized = false
 		this.generated = false // Terrain
-		this.populated = superflat // Trees and ores
+		this.populated = superflat // Details and ores
 		this.lit = false
 		this.lightDropped = false
 		this.edited = false
@@ -836,12 +836,13 @@ class Chunk {
 		// }
 		this.caveData = null
 	}
-	populate(trees) {
+	populate(details) {
 		if (this.populated) return
 		const { world } = this
 		randomSeed(hash(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
+		// Spawn trees and ores
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
 				wx = this.x + i
@@ -849,7 +850,7 @@ class Chunk {
 
 				ground = this.tops[i * 16 + k]
 				let topBlock = this.getBlock(i, ground, k)
-				if (trees && random() < 0.005 && topBlock === blockIds.grass) {
+				if (details && random() < 0.005 && topBlock === blockIds.grass) {
 
 					top = ground + floor(4.5 + random(2.5))
 					rand = floor(random(4096))
@@ -978,6 +979,70 @@ class Chunk {
 					y = y < ground ? y : ground
 					if (this.getBlock(i, y, k) === blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, blockIds.lapisOre)
+					}
+				}
+			}
+		}
+
+		// Spawn water pools; 1 in 5000 blocks
+		let queue = []
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				wx = this.x + i
+				wz = this.z + k
+				ground = this.tops[i * 16 + k]
+
+				if (details && random() < 0.0002 && world.getBlock(wx, ground, wz) === blockIds.grass) {
+					let size = 0
+					let maxSize = random(7, 30) | 0
+					queue.push(wx, wz)
+					while(queue.length) {
+						let x = queue.shift()
+						let z = queue.shift()
+						if (Math.abs(x - wx) > 15 || Math.abs(z - wz) > 15) continue
+						if ((size < 3 || random() < 0.5) && world.getBlock(x, ground, z) === blockIds.grass) {
+							world.setWorldBlock(x, ground, z, blockIds.water)
+							world.setWorldBlock(x, ground + 1, z, blockIds.air) // Remove any flowers above the water
+							size++
+
+							// Waterfall
+							if (!world.getBlock(x - 1, ground, z)
+								|| !world.getBlock(x + 1, ground, z)
+								|| !world.getBlock(x, ground, z - 1)
+								|| !world.getBlock(x, ground, z + 1)
+							) {
+								maxSize -= Math.min(size, 3)
+								if (maxSize < 7) maxSize = 7
+								size = 0
+								world.setWorldBlock(x, --ground, z, blockIds.water)
+								queue.length = 0
+							}
+							if (size < maxSize) queue.push(x - 1, z, x + 1, z, x, z - 1, x, z + 1)
+						}
+					}
+				}
+			}
+		}
+
+		// Spawn flower patches; 1 in 500 blocks
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				wx = this.x + i
+				wz = this.z + k
+
+				if (details && random() < 0.002) {
+					const types = []
+					if (random() < 0.5) types.push(blockIds.poppy)
+					if (random() < 0.5) types.push(blockIds.cornflower)
+					if (random() < 0.5) types.push(blockIds.dandelion)
+
+					for (let i = 0; i < types.length * 4; i++) {
+						let x = wx + random(-2, 3) | 0
+						let z = wz + random(-2, 3) | 0
+						let y = world.getSurfaceHeight(x, z)
+						if (world.getBlock(x, y, z) === blockIds.grass && !world.getBlock(x, y + 1, z)) {
+							world.spawnBlock(x, y + 1, z, types[random(types.length) | 0])
+						}
 					}
 				}
 			}

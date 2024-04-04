@@ -9,3 +9,4 @@ app.use('/', (req, res, next) => {
 	next()
 })
 app.use(express.static('dist'))
+console.log("Server started on http://localhost:4000")
