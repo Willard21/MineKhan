@@ -1,3 +1,5 @@
+import { shapes } from "./shapes.js"
+
 const texturesFunc = function (setPixel, getPixels) {
 	return {
 		grassTop: n => {
@@ -387,13 +389,13 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
-	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.cube },
+	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.cube  },
 	/* Doors/trapdoors will hopefully get proper models one day...
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
 	*/
-	{ name: "ironTrapdoor", solid: false, transparent: true, icon: "ironTrapdoor" },
+	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube  },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -479,7 +481,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "poppy"
+		hideInterior: false,
+		icon: "poppy",
+		shape: shapes.flower
 	},
 	{
 		name: "cornflower",
@@ -487,7 +491,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "cornflower"
+		hideInterior: false,
+		icon: "cornflower",
+		shape: shapes.flower
 	},
 	{
 		name: "dandelion",
@@ -495,7 +501,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "dandelion"
+		hideInterior: false,
+		icon: "dandelion",
+		shape: shapes.flower
 	},
 ]
 

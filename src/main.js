@@ -33,7 +33,6 @@ import { Player } from "./js/player.js"
 window.blockData = blockData
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
-window.ctx.suppressWarnings = true
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -218,13 +217,13 @@ async function MineKhan() {
 		fov: 70, // Field of view in degrees
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
 		reach: 5,
-		showDebug: 3
+		showDebug: 3,
+		inventorySort: "blockid"
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
 	let height = window.innerHeight
-	let inventorySort = "name"
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
@@ -235,7 +234,6 @@ async function MineKhan() {
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
 	const FLIP     = 0x400 // 11th bit
-	const FLOWER   = 0x300
 	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
 	const SOUTH    = 0x800
 	const EAST     = 0x1000
@@ -438,7 +436,7 @@ async function MineKhan() {
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
-		textSize(10)
+		textSize(20)
 		canvas.focus()
 		changeScene("play")
 
@@ -699,19 +697,17 @@ async function MineKhan() {
 
 		for (let i = 0; i < BLOCK_COUNT; i++) {
 			let baseBlock = blockData[i]
+			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
+
 			let slabBlock = Object.create(baseBlock)
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
-			let flowerBlock = Object.create(baseBlock)
-			flowerBlock.transparent = true
 			slabBlock.shape = shapes.slab
 			baseBlock.shape = shapes.cube
 			stairBlock.shape = shapes.stair
-			flowerBlock.shape = shapes.flower
 			blockData[i | SLAB] = slabBlock
 			blockData[i | STAIR] = stairBlock
-			blockData[i | FLOWER] = flowerBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -2314,10 +2310,10 @@ async function MineKhan() {
 			// this.memory = memory
 			// this.freeMemory = []
 		}
-		initMemory() {
-			// Reserve first 256 bytes for settings or whatever
-			this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
-		}
+		// initMemory() {
+		// 	// Reserve first 256 bytes for settings or whatever
+		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
+		// }
 		updateBlock(x, y, z) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
@@ -2352,7 +2348,26 @@ async function MineKhan() {
 			// }
 			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
 		}
+		getSurfaceHeight(x, z) {
+			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].tops[(x & 15) * 16 + (z & 15)]
+		}
+		spawnBlock(x, y, z, blockID) {
+			// Sets a block if it was previously air. Only to be used in world gen.
+			// Currently only used in chunk.populate()
+
+			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
+
+			x &= 15
+			z &= 15
+			if (!chunk.getBlock(x, y, z)) {
+				chunk.setBlock(x, y, z, blockID)
+				// let i = x * 16 + z
+				// if (y > chunk.tops[i]) chunk.tops[i] = y
+				if (y > chunk.maxY) chunk.maxY = y
+			}
+		}
 		setWorldBlock(x, y, z, blockID) {
+			// Sets a block during world gen.
 			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
 		setBlock(x, y, z, blockID, lazy, remote, doNotLog) {
@@ -2561,21 +2576,6 @@ async function MineKhan() {
 				for (let i = 0; i <= blockLight + 1; i++) respread[i] = []
 				chunk.unSpreadLight(spread, blockLight - 1, respread, 1)
 				chunk.reSpreadLight(respread, 1)
-			}
-		}
-		spawnBlock(x, y, z, blockID) {
-			// Sets a block anywhere without causing block updates around it. Only to be used in world gen.
-			// Currently only used in chunk.populate()
-
-			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
-
-			x &= 15
-			z &= 15
-			if (!chunk.getBlock(x, y, z)) {
-				chunk.setBlock(x, y, z, blockID)
-				// let i = x * 16 + z
-				// if (y > chunk.tops[i]) chunk.tops[i] = y
-				if (y > chunk.maxY) chunk.maxY = y
 			}
 		}
 		async tick() {
@@ -3374,11 +3374,12 @@ async function MineKhan() {
 			fill(255)
 			textSize(16)
 			ctx.textAlign = 'center'
-			text(this.labels[this.index], this.x, this.y + this.h / 8)
+			const label = this.labels[this.index]
+			text(label.call ? label() : label, this.x, this.y + this.h / 8)
 
 			if (hovering && hoverText) {
 				hoverbox.innerText = hoverText
-				hoverbox.classList.remove("hidden")
+				if (hoverbox.className.includes("hidden")) hoverbox.classList.remove("hidden")
 				if (mouseY < height / 2) {
 					hoverbox.style.bottom = ""
 					hoverbox.style.top = mouseY + 10 + "px"
@@ -3410,7 +3411,7 @@ async function MineKhan() {
 		}
 
 		static draw() {
-			hoverbox.classList.add("hidden")
+			if (!hoverbox.className.includes("hidden")) hoverbox.classList.add("hidden")
 			for (let button of Button.all) {
 				button.draw()
 			}
@@ -3592,7 +3593,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, () => !!multiplayer && !multiplayer.host, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -3613,12 +3614,12 @@ async function MineKhan() {
 
 		// Options buttons
 		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
-		Button.add(width/2, 185, width / 3, 40, ["Sort Inventory By: Name", "Sort Inventory By: Block ID"], "options", () => {
-			if (inventorySort === "name") {
-				inventorySort = "blockid"
+		Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
+			if (settings.inventorySort === "name") {
+				settings.inventorySort = "blockid"
 			}
-			else if (inventorySort === "blockid") {
-				inventorySort = "name"
+			else if (settings.inventorySort === "blockid") {
+				settings.inventorySort = "name"
 			}
 		})
 
@@ -3709,7 +3710,6 @@ async function MineKhan() {
 		if (p.spectator || screen !== "play") return
 		if (clear) debugLines.length = 0
 
-		textSize(20)
 		let x = 5
 		let lineHeight = 24
 		let y = lineHeight + 3
@@ -3810,8 +3810,9 @@ async function MineKhan() {
 		// text(str, 5, height - 77, 12)
 	}
 	let sortedBlocks = Object.entries(blockIds)
+	sortedBlocks.shift() // Get rid of the air block in the array of sorted blocks
 	sortedBlocks.sort()
-	sortedBlocks.splice(2, 1) // Get rid of the air block in the array of sorted blocks
+
 	function drawInv() {
 		let x = 0
 		let y = 0
@@ -3822,14 +3823,14 @@ async function MineKhan() {
 		ctx.clearRect(0, 0, width, height)
 
 		// Draw the blocks
-		if (inventorySort === "name") {
+		if (settings.inventorySort === "name") {
 			for (let i = 0; i < BLOCK_COUNT - 1; i++) {
 				x = i % perRow * s + 51
 				y = (i / perRow | 0) * s + 51
 				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
 			}
 		}
-		else if (inventorySort === "blockid") {
+		else if (settings.inventorySort === "blockid") {
 			for (let i = 1; i < BLOCK_COUNT; i++) {
 				x = (i - 1) % perRow * s + 51
 				y = ((i - 1) / perRow | 0) * s + 51
@@ -3855,10 +3856,10 @@ async function MineKhan() {
 		// Hotbar
 		x = width / 2 - 9 / 2 * s + 0.5 + 25
 		y = height - s * 1.5 + 0.5
-		let drawName = false
+		let hoverName = ""
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			drawName = true
+			hoverName = blockData[inventory.hotbar[overHot]].name
 			hotbar(overHot)
 		}
 		else hotbar(-1)
@@ -3866,14 +3867,13 @@ async function MineKhan() {
 		// Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		if (overInv >= 0 && overInv < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.strokeStyle = "rgb(100, 100, 100)"
 			ctx.beginPath()
 			ctx.strokeRect(x, y, s, s)
+			hoverName = settings.inventorySort === "name" ? sortedBlocks[overInv][0] : blockData[overInv + 1].name
 		}
-		else overInv = inventory.hotbar[overHot] - 1
 
 		// Item you're dragging
 		if (inventory.holding) {
@@ -3881,19 +3881,15 @@ async function MineKhan() {
 		}
 
 		// Tooltip for the item you're hovering over
-		if (drawName) {
-			let name
-			if (inventorySort === "name") {
-				name = sortedBlocks[overInv][0].replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			}
-			else if (inventorySort === "blockid") {
-				name = blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			}
+		if (hoverName) {
+			hoverName = hoverName.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
-			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
-			ctx.font = "16px monospace"
+			const w = hoverName.length * charWidth + 5
+			const x = mouseX + w > width ? width - w : mouseX
+			ctx.fillRect(x, mouseY - 22, w, 24)
+			ctx.font = "20px monospace"
 			ctx.fillStyle = "white"
-			ctx.fillText(name, mouseX + 3, mouseY)
+			ctx.fillText(hoverName, x + 3, mouseY - 4)
 		}
 	}
 	function clickInv() {
@@ -3910,10 +3906,10 @@ async function MineKhan() {
 			inventory.holding = temp
 		}
 		else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			if (inventorySort === "name") {
+			if (settings.inventorySort === "name") {
 				inventory.holding = sortedBlocks[over][1]
 			}
-			else if (inventorySort === "blockid") {
+			else if (settings.inventorySort === "blockid") {
 				inventory.holding = over + 1
 			}
 		}
@@ -3975,7 +3971,7 @@ async function MineKhan() {
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
 					if (holding === 152 || holding === 153 || holding === 154) {
-						newWorldBlock(FLOWER)
+						newWorldBlock(0)
 					}
 					else {
 						newWorldBlock(blockMode)
@@ -5089,7 +5085,7 @@ async function MineKhan() {
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
-			ctx.drawImage(gl.canvas, 0, 0)
+			// ctx.drawImage(gl.canvas, 0, 0)
 		}
 
 		drawScreens.options = () => {

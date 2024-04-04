@@ -1485,6 +1485,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "blockIds": () => (/* binding */ blockIds),
 /* harmony export */   "texturesFunc": () => (/* binding */ texturesFunc)
 /* harmony export */ });
+/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
+
+
 const texturesFunc = function (setPixel, getPixels) {
 	return {
 		grassTop: n => {
@@ -1874,13 +1877,13 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop" },
-	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom" },
+	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
+	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
 	/* Doors/trapdoors will hopefully get proper models one day...
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
 	*/
-	{ name: "ironTrapdoor", solid: false, transparent: true, icon: "ironTrapdoor" },
+	{ name: "ironTrapdoor", solid: false, transparent: true, shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
         name: "tnt",
@@ -1966,7 +1969,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "poppy"
+		hideInterior: false,
+		icon: "poppy",
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
 	},
 	{
 		name: "cornflower",
@@ -1974,7 +1979,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "cornflower"
+		hideInterior: false,
+		icon: "cornflower",
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
 	},
 	{
 		name: "dandelion",
@@ -1982,7 +1989,9 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "dandelion"
+		hideInterior: false,
+		icon: "dandelion",
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
 	},
 ]
 
@@ -2042,87 +2051,6 @@ let Block = {
 
 /***/ }),
 /* 18 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "createDatabase": () => (/* binding */ createDatabase),
-/* harmony export */   "deleteFromDB": () => (/* binding */ deleteFromDB),
-/* harmony export */   "loadFromDB": () => (/* binding */ loadFromDB),
-/* harmony export */   "saveToDB": () => (/* binding */ saveToDB)
-/* harmony export */ });
-async function createDatabase() {
-	return await new Promise((resolve, reject) => {
-		let request = window.indexedDB.open("MineKhan", 1)
-
-		request.onupgradeneeded = function(event) {
-			let DB = event.target.result
-			// Worlds will contain and ID containing the timestamp at which the world was created, a "saved" timestamp,
-			// and a "data" string that's identical to the copy/paste save string
-			let store = DB.createObjectStore("worlds", { keyPath: "id" })
-			store.createIndex("id", "id", { unique: true })
-			store.createIndex("data", "data", { unique: false })
-		}
-
-		request.onsuccess = function() {
-			resolve(request.result)
-		}
-
-		request.onerror = function(e) {
-			console.error(e)
-			reject(e)
-		}
-	})
-}
-async function loadFromDB(id) {
-	let db = await createDatabase()
-	let trans = db.transaction("worlds", "readwrite")
-	let store = trans.objectStore("worlds")
-	let req = id ? store.get(id) : store.getAll()
-	return await new Promise(resolve => {
-		req.onsuccess = function() {
-			resolve(req.result)
-			db.close()
-		}
-		req.onerror = function() {
-			resolve(null)
-			db.close()
-		}
-	})
-}
-async function saveToDB(id, data) {
-	let db = await createDatabase()
-	let trans = db.transaction("worlds", "readwrite")
-	let store = trans.objectStore("worlds")
-	let req = store.put({ id: id, data: data })
-	return new Promise((resolve, reject) => {
-		req.onsuccess = function() {
-			resolve(req.result)
-		}
-		req.onerror = function(e) {
-			reject(e)
-		}
-	})
-}
-async function deleteFromDB(id) {
-	let db = await createDatabase()
-	let trans = db.transaction("worlds", "readwrite")
-	let store = trans.objectStore("worlds")
-	let req = store.delete(id)
-	return new Promise((resolve, reject) => {
-		req.onsuccess = function() {
-			resolve(req.result)
-		}
-		req.onerror = function(e) {
-			reject(e)
-		}
-	})
-}
-
-
-
-/***/ }),
-/* 19 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2245,6 +2173,87 @@ let shapes = {
 		buffer: null,
 		size: 6
 	},
+}
+
+
+
+/***/ }),
+/* 19 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "createDatabase": () => (/* binding */ createDatabase),
+/* harmony export */   "deleteFromDB": () => (/* binding */ deleteFromDB),
+/* harmony export */   "loadFromDB": () => (/* binding */ loadFromDB),
+/* harmony export */   "saveToDB": () => (/* binding */ saveToDB)
+/* harmony export */ });
+async function createDatabase() {
+	return await new Promise((resolve, reject) => {
+		let request = window.indexedDB.open("MineKhan", 1)
+
+		request.onupgradeneeded = function(event) {
+			let DB = event.target.result
+			// Worlds will contain and ID containing the timestamp at which the world was created, a "saved" timestamp,
+			// and a "data" string that's identical to the copy/paste save string
+			let store = DB.createObjectStore("worlds", { keyPath: "id" })
+			store.createIndex("id", "id", { unique: true })
+			store.createIndex("data", "data", { unique: false })
+		}
+
+		request.onsuccess = function() {
+			resolve(request.result)
+		}
+
+		request.onerror = function(e) {
+			console.error(e)
+			reject(e)
+		}
+	})
+}
+async function loadFromDB(id) {
+	let db = await createDatabase()
+	let trans = db.transaction("worlds", "readwrite")
+	let store = trans.objectStore("worlds")
+	let req = id ? store.get(id) : store.getAll()
+	return await new Promise(resolve => {
+		req.onsuccess = function() {
+			resolve(req.result)
+			db.close()
+		}
+		req.onerror = function() {
+			resolve(null)
+			db.close()
+		}
+	})
+}
+async function saveToDB(id, data) {
+	let db = await createDatabase()
+	let trans = db.transaction("worlds", "readwrite")
+	let store = trans.objectStore("worlds")
+	let req = store.put({ id: id, data: data })
+	return new Promise((resolve, reject) => {
+		req.onsuccess = function() {
+			resolve(req.result)
+		}
+		req.onerror = function(e) {
+			reject(e)
+		}
+	})
+}
+async function deleteFromDB(id) {
+	let db = await createDatabase()
+	let trans = db.transaction("worlds", "readwrite")
+	let store = trans.objectStore("worlds")
+	let req = store.delete(id)
+	return new Promise((resolve, reject) => {
+		req.onsuccess = function() {
+			resolve(req.result)
+		}
+		req.onerror = function(e) {
+			reject(e)
+		}
+	})
 }
 
 
@@ -3526,6 +3535,7 @@ class Chunk {
 		;(0,_random_js__WEBPACK_IMPORTED_MODULE_0__.randomSeed)((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.hash)(this.x, this.z) * 210000000)
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
+		// Spawn trees and ores
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
 				wx = this.x + i
@@ -3607,249 +3617,6 @@ class Chunk {
 					world.spawnBlock(wx - 1, top + 1, wz, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.leaves)
 				}
 
-				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.05 &&
-					this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 3, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 3, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					
-					this.getBlock(i, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k + 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 3, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 2, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i - 1, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 1, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 2, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k - 3) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air &&
-					this.getBlock(i + 3, ground + 1, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air
-				   ) {
-					if((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.25) {
-						this.setBlock(i, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 2, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-					} else if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() > 0.25 && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.5) {
-						this.setBlock(i, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k - 2, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-					} else if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() > 0.5 && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.75) {
-						this.setBlock(i, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 2, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-					} else if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() > 0.75 && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 1) {
-						this.setBlock(i, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i - 1, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k + 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 1, ground, k - 2, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 2, ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 2, ground, k - 1, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-						this.setBlock(i + 2, ground, k - 2, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
-					}
-				}
-
-				const FLOWER   = 0x300
-				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.015 &&
-					this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass
-				   ) {
-					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy | FLOWER)
-				}
-				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.015 &&
-					this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass
-				   ) {
-					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower | FLOWER)
-				}
-				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.015 &&
-					this.getBlock(i, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k + 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i - 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 1, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 2) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass &&
-					this.getBlock(i + 2, ground, k - 1) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass
-				   ) {
-					this.setBlock(i, ground + 1, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
-					this.setBlock(i + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), ground + 1, k + Math.floor(Math.random() * 3) - Math.floor(Math.random() * 3), _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion | FLOWER)
-				}
-
 				// Blocks of each per chunk in Minecraft
 				// Coal: 185.5
 				// Iron: 111.5
@@ -3905,6 +3672,70 @@ class Chunk {
 					y = y < ground ? y : ground
 					if (this.getBlock(i, y, k) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.stone) {
 						this.setBlock(i, y < ground ? y : ground, k, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.lapisOre)
+					}
+				}
+			}
+		}
+
+		// Spawn water pools; 1 in 5000 blocks
+		let queue = []
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				wx = this.x + i
+				wz = this.z + k
+				ground = this.tops[i * 16 + k]
+
+				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.0002 && world.getBlock(wx, ground, wz) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass) {
+					let size = 0
+					let maxSize = (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(7, 30) | 0
+					queue.push(wx, wz)
+					while(queue.length) {
+						let x = queue.shift()
+						let z = queue.shift()
+						if (Math.abs(x - wx) > 15 || Math.abs(z - wz) > 15) continue
+						if ((size < 3 || (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.5) && world.getBlock(x, ground, z) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass) {
+							world.setWorldBlock(x, ground, z, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
+							world.setWorldBlock(x, ground + 1, z, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.air) // Remove any flowers above the water
+							size++
+
+							// Waterfall
+							if (!world.getBlock(x - 1, ground, z)
+								|| !world.getBlock(x + 1, ground, z)
+								|| !world.getBlock(x, ground, z - 1)
+								|| !world.getBlock(x, ground, z + 1)
+							) {
+								maxSize -= Math.min(size, 3)
+								if (maxSize < 7) maxSize = 7
+								size = 0
+								world.setWorldBlock(x, --ground, z, _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.water)
+								queue.length = 0
+							}
+							if (size < maxSize) queue.push(x - 1, z, x + 1, z, x, z - 1, x, z + 1)
+						}
+					}
+				}
+			}
+		}
+
+		// Spawn flower patches; 1 in 500 blocks
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				wx = this.x + i
+				wz = this.z + k
+
+				if (details && (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.002) {
+					const types = []
+					if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.5) types.push(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy)
+					if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.5) types.push(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.cornflower)
+					if ((0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)() < 0.5) types.push(_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.dandelion)
+
+					for (let i = 0; i < types.length * 4; i++) {
+						let x = wx + (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(-2, 3) | 0
+						let z = wz + (0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(-2, 3) | 0
+						let y = world.getSurfaceHeight(x, z)
+						if (world.getBlock(x, y, z) === _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass && !world.getBlock(x, y + 1, z)) {
+							world.spawnBlock(x, y + 1, z, types[(0,_random_js__WEBPACK_IMPORTED_MODULE_0__.random)(types.length) | 0])
+						}
 					}
 				}
 			}
@@ -4225,7 +4056,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "Player": () => (/* binding */ Player)
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
-/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
+/* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18);
 /* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
 /* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(27);
 /* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(15);
@@ -4679,8 +4510,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
 /* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
 /* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
-/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(18);
-/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(19);
+/* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(19);
+/* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(18);
 /* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
 /* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
 /* harmony import */ var _js_sky__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(22);
@@ -4721,7 +4552,6 @@ __webpack_require__.r(__webpack_exports__);
 window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData
 window.canvas = document.getElementById("overlay")
 window.ctx = window.canvas.getContext("2d")
-window.ctx.suppressWarnings = true
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -4906,13 +4736,13 @@ async function MineKhan() {
 		fov: 70, // Field of view in degrees
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
 		reach: 5,
-		showDebug: 3
+		showDebug: 3,
+		inventorySort: "blockid"
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
 	let width = window.innerWidth
 	let height = window.innerHeight
-	let inventorySort = "name"
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
@@ -4923,7 +4753,6 @@ async function MineKhan() {
 	const SLAB     = 0x100 // 9th bit
 	const STAIR    = 0x200 // 10th bit
 	const FLIP     = 0x400 // 11th bit
-	const FLOWER   = 0x300
 	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
 	const SOUTH    = 0x800
 	const EAST     = 0x1000
@@ -5126,7 +4955,7 @@ async function MineKhan() {
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
-		textSize(10)
+		textSize(20)
 		canvas.focus()
 		changeScene("play")
 
@@ -5387,19 +5216,17 @@ async function MineKhan() {
 
 		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
+			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
+
 			let slabBlock = Object.create(baseBlock)
 			slabBlock.transparent = true
 			let stairBlock = Object.create(baseBlock)
 			stairBlock.transparent = true
-			let flowerBlock = Object.create(baseBlock)
-			flowerBlock.transparent = true
 			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
 			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.cube
 			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.stair
-			flowerBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.flower
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | SLAB] = slabBlock
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | STAIR] = stairBlock
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | FLOWER] = flowerBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -7002,10 +6829,10 @@ async function MineKhan() {
 			// this.memory = memory
 			// this.freeMemory = []
 		}
-		initMemory() {
-			// Reserve first 256 bytes for settings or whatever
-			this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
-		}
+		// initMemory() {
+		// 	// Reserve first 256 bytes for settings or whatever
+		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
+		// }
 		updateBlock(x, y, z) {
 			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
 			if (chunk && chunk.buffer) {
@@ -7040,7 +6867,26 @@ async function MineKhan() {
 			// }
 			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
 		}
+		getSurfaceHeight(x, z) {
+			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].tops[(x & 15) * 16 + (z & 15)]
+		}
+		spawnBlock(x, y, z, blockID) {
+			// Sets a block if it was previously air. Only to be used in world gen.
+			// Currently only used in chunk.populate()
+
+			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
+
+			x &= 15
+			z &= 15
+			if (!chunk.getBlock(x, y, z)) {
+				chunk.setBlock(x, y, z, blockID)
+				// let i = x * 16 + z
+				// if (y > chunk.tops[i]) chunk.tops[i] = y
+				if (y > chunk.maxY) chunk.maxY = y
+			}
+		}
 		setWorldBlock(x, y, z, blockID) {
+			// Sets a block during world gen.
 			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
 		setBlock(x, y, z, blockID, lazy, remote, doNotLog) {
@@ -7249,21 +7095,6 @@ async function MineKhan() {
 				for (let i = 0; i <= blockLight + 1; i++) respread[i] = []
 				chunk.unSpreadLight(spread, blockLight - 1, respread, 1)
 				chunk.reSpreadLight(respread, 1)
-			}
-		}
-		spawnBlock(x, y, z, blockID) {
-			// Sets a block anywhere without causing block updates around it. Only to be used in world gen.
-			// Currently only used in chunk.populate()
-
-			let chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
-
-			x &= 15
-			z &= 15
-			if (!chunk.getBlock(x, y, z)) {
-				chunk.setBlock(x, y, z, blockID)
-				// let i = x * 16 + z
-				// if (y > chunk.tops[i]) chunk.tops[i] = y
-				if (y > chunk.maxY) chunk.maxY = y
 			}
 		}
 		async tick() {
@@ -8062,11 +7893,12 @@ async function MineKhan() {
 			fill(255)
 			textSize(16)
 			ctx.textAlign = 'center'
-			text(this.labels[this.index], this.x, this.y + this.h / 8)
+			const label = this.labels[this.index]
+			text(label.call ? label() : label, this.x, this.y + this.h / 8)
 
 			if (hovering && hoverText) {
 				hoverbox.innerText = hoverText
-				hoverbox.classList.remove("hidden")
+				if (hoverbox.className.includes("hidden")) hoverbox.classList.remove("hidden")
 				if (mouseY < height / 2) {
 					hoverbox.style.bottom = ""
 					hoverbox.style.top = mouseY + 10 + "px"
@@ -8098,7 +7930,7 @@ async function MineKhan() {
 		}
 
 		static draw() {
-			hoverbox.classList.add("hidden")
+			if (!hoverbox.className.includes("hidden")) hoverbox.classList.add("hidden")
 			for (let button of Button.all) {
 				button.draw()
 			}
@@ -8280,7 +8112,7 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, nothing, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.timeString)(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, () => !!multiplayer && !multiplayer.host, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${(0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.timeString)(now - world.edited)}.`)
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -8301,12 +8133,12 @@ async function MineKhan() {
 
 		// Options buttons
 		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
-		Button.add(width/2, 185, width / 3, 40, ["Sort Inventory By: Name", "Sort Inventory By: Block ID"], "options", () => {
-			if (inventorySort === "name") {
-				inventorySort = "blockid"
+		Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
+			if (settings.inventorySort === "name") {
+				settings.inventorySort = "blockid"
 			}
-			else if (inventorySort === "blockid") {
-				inventorySort = "name"
+			else if (settings.inventorySort === "blockid") {
+				settings.inventorySort = "name"
 			}
 		})
 
@@ -8397,7 +8229,6 @@ async function MineKhan() {
 		if (p.spectator || screen !== "play") return
 		if (clear) debugLines.length = 0
 
-		textSize(20)
 		let x = 5
 		let lineHeight = 24
 		let y = lineHeight + 3
@@ -8498,8 +8329,9 @@ async function MineKhan() {
 		// text(str, 5, height - 77, 12)
 	}
 	let sortedBlocks = Object.entries(_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds)
+	sortedBlocks.shift() // Get rid of the air block in the array of sorted blocks
 	sortedBlocks.sort()
-	sortedBlocks.splice(2, 1) // Get rid of the air block in the array of sorted blocks
+
 	function drawInv() {
 		let x = 0
 		let y = 0
@@ -8510,14 +8342,14 @@ async function MineKhan() {
 		ctx.clearRect(0, 0, width, height)
 
 		// Draw the blocks
-		if (inventorySort === "name") {
+		if (settings.inventorySort === "name") {
 			for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1; i++) {
 				x = i % perRow * s + 51
 				y = (i / perRow | 0) * s + 51
 				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
 			}
 		}
-		else if (inventorySort === "blockid") {
+		else if (settings.inventorySort === "blockid") {
 			for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 				x = (i - 1) % perRow * s + 51
 				y = ((i - 1) / perRow | 0) * s + 51
@@ -8543,10 +8375,10 @@ async function MineKhan() {
 		// Hotbar
 		x = width / 2 - 9 / 2 * s + 0.5 + 25
 		y = height - s * 1.5 + 0.5
-		let drawName = false
+		let hoverName = ""
 		let overHot = (mouseX - x) / s | 0
 		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			drawName = true
+			hoverName = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[inventory.hotbar[overHot]].name
 			hotbar(overHot)
 		}
 		else hotbar(-1)
@@ -8554,14 +8386,13 @@ async function MineKhan() {
 		// Box highlight in inv
 		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
 		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			drawName = true
 			x = overInv % perRow * s + 50 - s2
 			y = (overInv / perRow | 0) * s + 50 - s2
 			ctx.strokeStyle = "rgb(100, 100, 100)"
 			ctx.beginPath()
 			ctx.strokeRect(x, y, s, s)
+			hoverName = settings.inventorySort === "name" ? sortedBlocks[overInv][0] : _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name
 		}
-		else overInv = inventory.hotbar[overHot] - 1
 
 		// Item you're dragging
 		if (inventory.holding) {
@@ -8569,19 +8400,15 @@ async function MineKhan() {
 		}
 
 		// Tooltip for the item you're hovering over
-		if (drawName) {
-			let name
-			if (inventorySort === "name") {
-				name = sortedBlocks[overInv][0].replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			}
-			else if (inventorySort === "blockid") {
-				name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			}
+		if (hoverName) {
+			hoverName = hoverName.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 			ctx.fillStyle = "black"
-			ctx.fillRect(mouseX, mouseY - 15, name.length * 9 + 5, 20)
-			ctx.font = "16px monospace"
+			const w = hoverName.length * charWidth + 5
+			const x = mouseX + w > width ? width - w : mouseX
+			ctx.fillRect(x, mouseY - 22, w, 24)
+			ctx.font = "20px monospace"
 			ctx.fillStyle = "white"
-			ctx.fillText(name, mouseX + 3, mouseY)
+			ctx.fillText(hoverName, x + 3, mouseY - 4)
 		}
 	}
 	function clickInv() {
@@ -8598,10 +8425,10 @@ async function MineKhan() {
 			inventory.holding = temp
 		}
 		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			if (inventorySort === "name") {
+			if (settings.inventorySort === "name") {
 				inventory.holding = sortedBlocks[over][1]
 			}
-			else if (inventorySort === "blockid") {
+			else if (settings.inventorySort === "blockid") {
 				inventory.holding = over + 1
 			}
 		}
@@ -8663,7 +8490,7 @@ async function MineKhan() {
 				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
 					if (holding === 152 || holding === 153 || holding === 154) {
-						newWorldBlock(FLOWER)
+						newWorldBlock(0)
 					}
 					else {
 						newWorldBlock(blockMode)
@@ -9777,7 +9604,7 @@ async function MineKhan() {
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
-			ctx.drawImage(gl.canvas, 0, 0)
+			// ctx.drawImage(gl.canvas, 0, 0)
 		}
 
 		drawScreens.options = () => {
