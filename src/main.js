@@ -2075,6 +2075,154 @@ async function MineKhan() {
 	}, "/undo [username=Player] <blockCount>", "Undoes the last <blockCount> block edits made by [username]", () => {
 		setAutocomplete(Object.keys(blockLog).map(name => `/undo ${name} ${blockLog[name].length}`))
 	})
+	addCommand("fill", args => {
+		if (multiplayer) {
+			chat("This command only works on offline worlds.", "tomato")
+			return
+		}
+		if (blockLog[currentUser.username].length < 2) {
+			chat("You must place (or break) 2 blocks to indicate the fill zone before using this command.", "tomato")
+			return
+		}
+
+		let solid = true
+		if (args[1]?.toLowerCase()[0] === "h") solid = false
+		let shape = "cube"
+		if (args[0]?.toLowerCase() === "sphere") shape = "sphere"
+		if (args[0]?.toLowerCase().startsWith("cyl")) shape = "cylinder"
+
+		const block = inventory.hotbar[inventory.hotbarSlot]
+		const name = blockData[block].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+
+		let [start, end] = blockLog[currentUser.username].slice(-2)
+		let [x1, y1, z1] = start
+		let [x2, y2, z2] = end
+
+		const range = settings.renderDistance * 16 - 16
+		const sort = (a, b) => a - b
+
+		if (shape === "cube") {
+			// Make x1 y1 z1 be the lowest corner so I can loop up
+
+			[x1, x2] = [x1, x2].sort(sort);
+			[y1, y2] = [y1, y2].sort(sort);
+			[z1, z2] = [z1, z2].sort(sort)
+
+			if (x2 - p.x > range || p.x - x1 > range || z2 - p.z > range || p.z - z1 > range) {
+				chat("You're trying to use this command outside your loaded chunks. That'll crash the game, so move closer or re-select your corners.", "tomato")
+				return
+			}
+
+			let count = (x2 - x1 + 1) * (y2 - y1 + 1) * (z2 - z1 + 1)
+			if (!solid) count -= (x2 - x1 - 1) * (y2 - y1 - 1) * (z2 - z1 - 1)
+
+			if (count > 1000000) {
+				chat(`You're trying to edit ${count.toLocaleString()} blocks at once. Stop and reevaluate your life choices.`, "tomato")
+				return
+			}
+
+			if (!confirm(`Width: ${x2 - x1 + 1}\nHeight: ${y2 - y1 + 1}\nDepth: ${z2 - z1 + 1}\nYou're about to set ${count.toLocaleString()} blocks of ${name}  with a ${solid ? "solid" : "hollow"} cuboid. Are you sure you want to proceed?`)) return
+
+			new Promise(async resolve => {
+				await sleep(0) // Let the player watch the blocks change
+				let edited = 0
+				for (let x = x1; x <= x2; x++) {
+					for (let y = y1; y <= y2; y++) {
+						for (let z = z1; z <= z2; z++) {
+							if ((solid || x === x1 || x === x2 || y === y1 || y === y2 || z === z1 || z === z2) && world.getBlock(x, y, z) !== block) {
+								world.setBlock(x, y, z, block)
+								edited++
+								if ((edited & 1023) === 0) await sleep(4)
+							}
+						}
+					}
+				}
+				chat(`${edited.toLocaleString()} ${name} blocks successfully filled!`, "lime")
+				resolve()
+			})
+		}
+		else if (shape === "sphere") {
+			const radius = Math.hypot(x1 - x2, y1 - y2, z1 - z2) + 0.5
+
+			if (Math.hypot(x1 - p.x, z1 - p.z) + radius > range) {
+				chat("You're trying to use this command outside your loaded chunks. That'll crash the game, so move closer or re-select your center and edge.", "tomato")
+				return
+			}
+
+			let count = 4 / 3 * Math.PI * radius**3 | 0
+			if (!solid) count -= 4 / 3 * Math.PI * (radius - 1)**3 | 0
+
+			if (count > 1000000) {
+				chat(`You're trying to edit ${count.toLocaleString()} blocks at once. Stop and reevaluate your life choices.`, "tomato")
+				return
+			}
+
+			if (!confirm(`Center: (${x1}, ${y1}, ${z1})\nRadius: ${radius | 0}\nYou're about to set approximately ${count.toLocaleString()} blocks of ${name} with a ${solid ? "solid" : "hollow"} sphere. Are you sure you want to proceed?`)) return
+
+			const offset = Math.ceil(radius)
+			new Promise(async resolve => {
+				await sleep(0) // Let the player watch the blocks change
+				let edited = 0
+				for (let x = x1 - offset; x <= x1 + offset; x++) {
+					for (let y = Math.max(y1 - offset, 1); y <= Math.min(y1 + offset, 255); y++) {
+						for (let z = z1 - offset; z <= z1 + offset; z++) {
+							let d = Math.hypot(x1 - x, y1 - y, z1 - z)
+							if (d <= radius && (solid || radius - d < 1.0) && world.getBlock(x, y, z) !== block) {
+								world.setBlock(x, y, z, block)
+								edited++
+								if ((edited & 1023) === 0) await sleep(4)
+							}
+						}
+					}
+				}
+				chat(`${edited.toLocaleString()} ${name} blocks successfully filled!`, "lime")
+				resolve()
+			})
+		}
+		else if (shape === "cylinder") {
+			const radius = Math.hypot(x1 - x2, z1 - z2) + 0.5;
+			[y1, y2] = [y1, y2].sort(sort)
+
+			if (Math.hypot(x1 - p.x, z1 - p.z) + radius > range) {
+				chat("You're trying to use this command outside your loaded chunks. That'll crash the game, so move closer or re-select your center and edge.", "tomato")
+				return
+			}
+
+			let count = (y2 - y1 + 1) * Math.PI * radius**2 | 0
+			if (!solid) count -= (y2 - y1 - 1) * Math.PI * (radius - 1)**2 | 0
+
+			if (count > 1000000) {
+				chat(`You're trying to edit ${count.toLocaleString()} blocks at once. Stop and reevaluate your life choices.`, "tomato")
+				return
+			}
+
+			if (!confirm(`Center: (${x1}, ${y1}, ${z1})\nRadius: ${radius | 0}\nHeight: ${y2 - y1 + 1}\nYou're about to set approximately ${count.toLocaleString()} blocks of ${name} with a ${solid ? "solid" : "hollow"} cylinder. Are you sure you want to proceed?`)) return
+
+			const offset = Math.ceil(radius)
+			new Promise(async resolve => {
+				await sleep(0) // Let the player watch the blocks change
+				let edited = 0
+				for (let x = x1 - offset; x <= x1 + offset; x++) {
+					for (let y = y1; y <= y2; y++) {
+						for (let z = z1 - offset; z <= z1 + offset; z++) {
+							let d = Math.hypot(x1 - x, z1 - z)
+							if (d <= radius && (solid || radius - d < 1.0 || y === y1 || y === y2) && world.getBlock(x, y, z) !== block) {
+								world.setBlock(x, y, z, block)
+								edited++
+								if ((edited & 1023) === 0) await sleep(4)
+							}
+						}
+					}
+				}
+				chat(`${edited.toLocaleString()} ${name} blocks successfully filled!`, "lime")
+				resolve()
+			})
+		}
+
+		play()
+	}, "/fill [cuboid|sphere|cylinder] [solid|hollow]", "Uses the player's last 2 edited blocks to designate an area to fill, then fills it with the block in the player's hand.\nWith a cuboid, the 2 blocks are the corners.\nWith a sphere, the first block you edit is the center, and the 2nd block determines the radius.\nWith a cylinder, the first block determines the center, and the 2nd block determines the radius and height.", () => {
+		setAutocomplete(["/fill cuboid hollow", "/fill sphere hollow", "/fill cylinder hollow", "/fill cuboid solid", "/fill sphere solid", "/fill cylinder solid"])
+	})
 
 	function sendCommand(msg) {
 		msg = msg.substr(1)
