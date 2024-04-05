@@ -6141,9 +6141,10 @@ async function MineKhan() {
 		}
 		else {
 			let drag = 0.9
+			if (!controlMap.walkForwards.pressed && !controlMap.walkBackwards.pressed && !controlMap.strafeLeft.pressed && !controlMap.strafeRight.pressed) drag = 0.7
 			p.velocity.z += p.velocity.z * drag - p.velocity.z
 			p.velocity.x += p.velocity.x * drag - p.velocity.x
-			p.velocity.y += p.velocity.y * 0.8 - p.velocity.y
+			p.velocity.y += p.velocity.y * 0.7 - p.velocity.y
 			if (p.onGround && !p.spectator) {
 				p.flying = false
 			}
@@ -7877,7 +7878,7 @@ async function MineKhan() {
 			move.z *= move.ang
 		}
 
-		// Update the velocity, rather than the position.
+		// Update the velocity
 		let co = cos(p.ry)
 		let si = sin(p.ry)
 		let friction = p.onGround ? 1 : 0.3
