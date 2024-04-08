@@ -404,7 +404,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n\tbackground-color: black;\r\n}\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n\tfont-family: monospace;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n\tfont-family: monospace;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 1;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat {\r\n\tposition: absolute;\r\n\tleft: 0px;\r\n\ttop: 100px;\r\n\theight: calc(100vh - 200px);\r\n\toverflow-y: auto;\r\n\toverflow-x: hidden;\r\n\tpadding-right: 20px;\r\n\twidth: 40vw;\r\n\tmin-width: 600px;\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat > div > span {\r\n\twhite-space: pre-wrap;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n}\r\n#chatbar {\r\n\tposition: absolute;\r\n\tleft: 30px;\r\n\tbottom: 0px;\r\n\theight: 20;\r\n\twidth: calc(100vw - 60px);\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n.message {\r\n\twidth: 100%;\r\n\tbackground-color: transparent;\r\n\tpadding: 10px;\r\n\tword-wrap: break-word;\r\n}\r\n/*\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n*/\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\twidth: 100vw;\r\n\theight: 100vh;\r\n\tz-index: -10;\r\n}\r\n#loading-text {\r\n\tposition: absolute;\r\n\ttop: 50%;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\ttext-align: center;\r\n\tcolor: #fff;\r\n\tfont-size: 30px;\r\n\tfont-family: monospace;\r\n}\r\n#inv-container {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttop: 50px;\r\n\ttransform: translate(-50%, 0);\r\n\theight: 80hv;\r\n\tmax-height: 500px;\r\n\twidth: fit-content;\r\n\toverflow-y: scroll;\r\n\tpadding: 0;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n\tbackground-color: black;\r\n}\r\ncanvas:focus {\r\n\toutline: none;\r\n}\r\n\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n\tfont-family: monospace;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n\tfont-family: monospace;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 11;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat {\r\n\tposition: absolute;\r\n\tleft: 0px;\r\n\ttop: 100px;\r\n\theight: calc(100vh - 200px);\r\n\toverflow-y: auto;\r\n\toverflow-x: hidden;\r\n\tpadding-right: 20px;\r\n\twidth: 40vw;\r\n\tmin-width: 600px;\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat > div > span {\r\n\twhite-space: pre-wrap;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n}\r\n#chatbar {\r\n\tposition: absolute;\r\n\tleft: 30px;\r\n\tbottom: 0px;\r\n\theight: 20;\r\n\twidth: calc(100vw - 60px);\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n.message {\r\n\twidth: 100%;\r\n\tbackground-color: transparent;\r\n\tpadding: 10px;\r\n\tword-wrap: break-word;\r\n}\r\n/*\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n*/\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\twidth: 100vw;\r\n\theight: 100vh;\r\n\tz-index: -10;\r\n}\r\n#loading-text {\r\n\tposition: absolute;\r\n\ttop: 50%;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\ttext-align: center;\r\n\tcolor: #fff;\r\n\tfont-size: 30px;\r\n\tfont-family: monospace;\r\n}\r\n#inv-container {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tz-index: 1;\r\n}\r\n#inv-scroll {\r\n\theight: calc(100vh - (min(100vh, 100vw) / 3.25));\r\n\toverflow-y: auto;\r\n\tborder-bottom: solid 2px lightgray;\r\n}\r\n#hotbar {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tbottom: 10px;\r\n\tz-index: 0;\r\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1701,7 +1701,6 @@ const texturesFunc = function (setPixel, getPixels) {
 		"blackstone": "0g0g6(ěHAìZwTZkMW;ŋH|BH4ČĩÑSÀwgi0]qÕJú2]ÃQ0ÀJÂôwPamüôJ^9^CÉiķıEĞh0Ďį4Iú0ČQ9ČÁByú|gaS4ŁNP3ySÃyĿ92]aE2úJÀŀF4ùþXŁÒkõACŀ{J]",
 		"blackstoneTop": "0g0g5AìZ(ěH;ŋHsTYkMW5yÆEëÑòirKñaIĈa%ĚìKI^TČÀ2]iik_0xpJR>ÎyõÎįrÒk_]8İ0ĉ2AĀa2+2QòrÂ2I]-ĨQiJiNíÀč1e4ùÎyoÛ2IÑĈTQSSxĚTP]õ",
 		"polishedBlackstone": "0g0g6|BH;ŋH(ěHkMWAìZsTY0ë840^5ih]ĊûEiJIíV1iúFkÒ0ĐĊEĐĊ82^IíÂBiúFkÏx2U4ĬB0XÑB?bBk9ÂAö4iÏüĀ{8ĊúÀđU5AóM^ý8ăiFq|EĐČþČUÂP$JP$",
-		"polishedBlackstoneBricks": "0g0g6(ěH|BH;ŋHwÁZAìZkMW4ĊÁEüî8wÂi0j8ČĈùAýT4iT55Â0kÁA5ù9wi8zöįŇ÷[tÛĽłÛĽŔEüûìiÁh4jIAÀìký9kë]wïAAiS85?1g2]z]8Ň÷+łöğAâłÉãŁł",
 		"gildedBlackstone": "0g0ga(ěHAìZwTZkMW;ŋHQKWŁSZégZZĜY|BH1iz2M45ÀgÔÀy04SÂ+hix6XTzÞ01wQäijg4Qi9úßlQQùhyRÁ*4ā3lijÀx0i*Ý1gRx0ix42ÔÁxhyixBx0lxgãN4QQ7gQ1î0āSm0QSÏi0iÞQP3,iwBÀPùz*Mxykh2OMzhÁg",
 		"basaltSide": "0g0g5|AZoûW-ŋYËâZ(ĪZ50ĪÙ(wðSĪÙ(iN0łÙ(ëA6łc-ëQ(ĩ1waÂ+icxaJ)ķÙxgùQëÎĨ2ë(ĀÚĩëë6rÚĠăù6rdírù+rTĚs0+2ìXkëQgëwĹì6ăgAħ46rÎXo",
 		"basaltTop": "0g0g7ËâZâľH|AZ)ĻWóEY;śZoûW0üÉA636mĹKÈŁč+ëeĪÀ{qì{ĀqĭhSÙJ&ħìØ5ìSĿdĀ0Ģý%ŋĐ4Ĥđ1Č5DÙįĞĈ?ġJħSKocëÈ0ĄĨwëO4ăTPëŝī(×~Ó6ĴëeÑĘ]Kwe(wS",
@@ -1996,11 +1995,13 @@ const blockData = [
 ]
 
 const BLOCK_COUNT = blockData.length
+const blockIds = {}
 
 // Set defaults on blockData
 for (let i = 1; i < BLOCK_COUNT; ++i) {
 	const data = blockData[i]
 	data.id = i
+	blockIds[data.name] = i
 
 	if ( !("textures" in data) ) {
 		data.textures = new Array(6).fill(data.name)
@@ -2033,10 +2034,8 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 	data.icon ??= false
 	data.semiTrans ??= false
 	data.hideInterior ??= data.transparent
+	data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 }
-
-const blockIds = {}
-blockData.forEach(block => blockIds[block.name] = block.id)
 
 let Block = {
 	top: 0x4,
@@ -2055,8 +2054,26 @@ let Block = {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "CUBE": () => (/* binding */ CUBE),
+/* harmony export */   "EAST": () => (/* binding */ EAST),
+/* harmony export */   "FLIP": () => (/* binding */ FLIP),
+/* harmony export */   "SLAB": () => (/* binding */ SLAB),
+/* harmony export */   "SOUTH": () => (/* binding */ SOUTH),
+/* harmony export */   "STAIR": () => (/* binding */ STAIR),
+/* harmony export */   "WEST": () => (/* binding */ WEST),
 /* harmony export */   "shapes": () => (/* binding */ shapes)
 /* harmony export */ });
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(16);
+
+
+const CUBE     = 0
+const SLAB     = 0x100 // 9th bit
+const STAIR    = 0x200 // 10th bit
+const FLIP     = 0x400 // 11th bit
+const SOUTH    = 0x800
+const EAST     = 0x1000
+const WEST     = 0x1800
+
 function objectify(x, y, z, width, height, textureX, textureY) {
 	return {
 		x: x,
@@ -2175,6 +2192,225 @@ let shapes = {
 	},
 }
 
+function mapCoords(rect, face) {
+	let x = rect.x
+	let y = rect.y
+	let z = rect.z
+	let w = rect.w
+	let h = rect.h
+	let tx = rect.tx
+	let ty = rect.ty
+	let tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h]
+	let pos = null
+	switch(face) {
+		case 0: // Bottom
+			pos = [x,y,z, x+w,y,z, x+w,y,z+h, x,y,z+h]
+			break
+		case 1: // Top
+			pos = [x,y,z, x+w,y,z, x+w,y,z-h, x,y,z-h]
+			break
+		case 2: // North
+			pos = [x,y,z, x-w,y,z, x-w,y-h,z, x,y-h,z]
+			break
+		case 3: // South
+			pos = [x,y,z, x+w,y,z, x+w,y-h,z, x,y-h,z]
+			break
+		case 4: // East
+			pos = [x,y,z, x,y,z+w, x,y-h,z+w, x,y-h,z]
+			break
+		case 5: // West
+			pos = [x,y,z, x,y,z-w, x,y-h,z-w, x,y-h,z]
+			break
+	}
+	pos = pos.map(c => c / 16 - 0.5)
+	let minmax = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.compareArr)(pos, [])
+	pos.max = minmax.splice(3, 3)
+	pos.min = minmax
+	tex = tex.map(c => c / 16 / 16)
+
+	return {
+		pos: pos,
+		tex: tex
+	}
+}
+
+// 90 degree clockwise rotation; returns a new shape object
+function rotate(shape) {
+	let verts = shape.verts
+	let texVerts = shape.texVerts
+	let cull = shape.cull
+	let pos = []
+	let tex = []
+	for (let i = 0; i < verts.length; i++) {
+		let side = verts[i]
+		pos[i] = []
+		tex[i] = []
+		for (let j = 0; j < side.length; j++) {
+			let face = side[j]
+			let c = []
+			pos[i][j] = c
+			for (let k = 0; k < face.length; k += 3) {
+				c[k] = face[k + 2]
+				c[k + 1] = face[k + 1]
+				c[k + 2] = -face[k]
+			}
+
+			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
+			if (i === 0) {
+				// Bottom
+				c.push(...c.splice(0, 3))
+				tex[i][j].push(...tex[i][j].splice(0, 2))
+			}
+			if (i === 1) {
+				// Top
+				c.unshift(...c.splice(-3, 3))
+				tex[i][j].unshift(...tex[i][j].splice(-2, 2))
+			}
+
+			let minmax = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.compareArr)(c, [])
+			c.max = minmax.splice(3, 3)
+			c.min = minmax
+		}
+	}
+	let temp = tex[2] // North
+	tex[2] = tex[5] // North = West
+	tex[5] = tex[3] // West = South
+	tex[3] = tex[4] // South = East
+	tex[4] = temp // East = North
+
+	temp = pos[2] // North
+	pos[2] = pos[5] // North = West
+	pos[5] = pos[3] // West = South
+	pos[3] = pos[4] // South = East
+	pos[4] = temp // East = North
+
+	let cull2 = {
+		top: cull.top,
+		bottom: cull.bottom,
+		north: cull.west,
+		west: cull.south,
+		south: cull.east,
+		east: cull.north
+	}
+
+	// let buffer = gl.createBuffer()
+	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
+
+	return {
+		verts: pos,
+		texVerts: tex,
+		cull: cull2,
+		rotate: true,
+		flip: shape.flip,
+		buffer: null,
+		size: shape.size,
+		varients: shape.varients
+	}
+}
+
+// Reflect over the y plane; returns a new shape object
+function flip(shape) {
+	let verts = shape.verts
+	let texVerts = shape.texVerts
+	let cull = shape.cull
+	let pos = []
+	let tex = []
+	for (let i = 0; i < verts.length; i++) {
+		let side = verts[i]
+		pos[i] = []
+		tex[i] = []
+		for (let j = 0; j < side.length; j++) {
+			let face = side[j].slice().reverse()
+			let c = []
+			pos[i][j] = c
+			for (let k = 0; k < face.length; k += 3) {
+				c[k] = face[k + 2]
+				c[k + 1] = -face[k + 1]
+				c[k + 2] = face[k]
+			}
+			let minmax = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.compareArr)(c, [])
+			c.max = minmax.splice(3, 3)
+			c.min = minmax
+
+			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
+		}
+	}
+	let temp = pos[0] // Bottom
+	pos[0] = pos[1] // Bottom = Top
+	pos[1] = temp // Top = Bottom
+
+	temp = tex[0] // Bottom
+	tex[0] = tex[1] // Bottom = Top
+	tex[1] = temp // Top = Bottom
+
+	let cull2 = {
+		top: cull.bottom,
+		bottom: cull.top,
+		north: (cull.north & 1) << 1 | (cull.north & 2) >> 1,
+		west: (cull.west & 1) << 1 | (cull.west & 2) >> 1,
+		south: (cull.south & 1) << 1 | (cull.south & 2) >> 1,
+		east: (cull.east & 1) << 1 | (cull.east & 2) >> 1
+	}
+
+	// let buffer = gl.createBuffer()
+	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
+
+	return {
+		verts: pos,
+		texVerts: tex,
+		cull: cull2,
+		rotate: shape.rotate,
+		flip: shape.flip,
+		buffer: null,
+		size: shape.size,
+		varients: shape.varients
+	}
+}
+
+for (let shape in shapes) {
+	let obj = shapes[shape]
+	let verts = obj.verts
+
+	// Populate the vertex coordinates
+	for (let i = 0; i < verts.length; i++) {
+		let side = verts[i]
+		let texArr = []
+		obj.texVerts.push(texArr)
+		for (let j = 0; j < side.length; j++) {
+			let face = side[j]
+			let mapped = mapCoords(face, i)
+			side[j] = mapped.pos
+			texArr.push(mapped.tex)
+		}
+	}
+
+	if (obj.rotate) {
+		let v = obj.varients
+		let east = rotate(obj)
+		let south = rotate(east)
+		let west = rotate(south)
+		v[0] = obj
+		v[2] = south
+		v[4] = east
+		v[6] = west
+	}
+	if (obj.flip) {
+		let v = obj.varients
+		v[1] = flip(obj)
+		if (obj.rotate) {
+			v[3] = flip(v[2])
+			v[5] = flip(v[4])
+			v[7] = flip(v[6])
+		}
+	}
+
+	// obj.buffer = gl.createBuffer()
+	// gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
+	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
+}
+
 
 
 /***/ }),
@@ -2264,6 +2500,499 @@ async function deleteFromDB(id) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "InventoryItem": () => (/* binding */ InventoryItem),
+/* harmony export */   "InventoryManager": () => (/* binding */ InventoryManager),
+/* harmony export */   "InventoryPage": () => (/* binding */ InventoryPage),
+/* harmony export */   "inventory": () => (/* binding */ inventory)
+/* harmony export */ });
+/* harmony import */ var _shapes__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
+/* harmony import */ var _blockData__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
+
+
+
+/**
+* @type {HTMLCanvasElement}
+*/
+const invCanvas = document.getElementById("inventory")
+const invCtx = invCanvas.getContext("2d")
+
+/**
+* @type {HTMLCanvasElement}
+*/
+const containerCanvas = document.getElementById("container")
+const contCtx = containerCanvas.getContext("2d")
+
+/**
+ * @type {HTMLDivElement}
+ */
+const hoverBox = document.getElementById("onhover")
+
+function displayHoverText(text, mouseX, mouseY) {
+	hoverBox.textContent = text
+	hoverBox.classList.remove("hidden")
+	if (mouseY < window.innerHeight / 2) {
+		hoverBox.style.bottom = ""
+		hoverBox.style.top = mouseY + 10 + "px"
+	}
+	else {
+		hoverBox.style.top = ""
+		hoverBox.style.bottom = window.innerHeight - mouseY + 10 + "px"
+	}
+	if (mouseX < window.innerWidth / 2) {
+		hoverBox.style.right = ""
+		hoverBox.style.left = mouseX + 10 + "px"
+	}
+	else {
+		hoverBox.style.left = ""
+		hoverBox.style.right = window.innerWidth - mouseX + 10 + "px"
+	}
+}
+
+class InventoryItem {
+	/**
+	 * @param {Number} id
+	 * @param {String} name
+	 * @param {Number} stackSize
+	 * @param {HTMLCanvasElement} icon
+	 */
+	constructor(id, name, stackSize, icon) {
+		this.id = id
+		this.name = name
+		this.stackSize = stackSize
+		this.icon = icon
+	}
+
+	/**
+	 * @param {CanvasRenderingContext2D} ctx
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 */
+	render(ctx, x, y, width) {
+		if (!this.icon) return
+		ctx.drawImage(this.icon, x, y, width, width)
+
+		if (this.stackSize > 1) {
+			ctx.font = "12px Monospace"
+			ctx.textAlign = "right"
+			ctx.fillStyle = "white"
+			ctx.fillText(this.stackSize.toString(), x + width - 4, y + width - 4)
+		}
+	}
+	copy() {
+		return new InventoryItem(this.id, this.name, this.stackSize, this.icon)
+	}
+}
+
+const air = new InventoryItem(0, "Air", 1, null)
+
+class InventoryPage {
+	creative = true
+	left = 0
+	top = 0
+	slotSize = 64
+	size = 27
+	width = 9 * this.slotSize
+	height = Math.ceil(this.size / 9) * this.slotSize
+	hoverIndex = -1
+
+	/**
+	 * @type {Array<InventoryItem>}
+	 */
+	items = []
+
+	/**
+	 * @param {CanvasRenderingContext2D} context The context to render to.
+	 * @param {HTMLCanvasElement} icon The icon for the inventory page. Like a stair block for the stair inventory or whatever.
+	 */
+	constructor(context, icon) {
+		this.icon = icon
+		this.ctx = context
+	}
+
+	/**
+	 * @param {InventoryItem} item
+	 */
+	addItem(item) {
+		if (!item || item === air) return
+		for (let i = 0; i < this.size; i++) {
+			if (!this.items[i]) {
+				this.items[i] = item
+				return
+			}
+			if (this.items[i].id === item.id) {
+				this.items[i].stackSize += item.stackSize
+				return
+			}
+		}
+	}
+	sortByName() {
+		this.items.sort((a, b) => a.name.localeCompare(b.name))
+	}
+	sortById() {
+		this.items.sort((a, b) => a.id - b.id)
+	}
+
+	indexAt(x, y) {
+		if (x < this.left || y < this.top || x > this.left + this.width || y > this.top + this.height) return -1
+		x = (x - this.left) / this.slotSize | 0
+		y = (y - this.top) / this.slotSize | 0
+		if (x < 0 || x > 9 || y < 0 || y * 9 + x >= this.size) return -1
+		return y * 9 + x
+	}
+
+	renderRow(left, top, slotSize, index) {
+		for (let px = 0; px < 9 && index < this.size; px++) {
+			if (this.items[index]?.icon) {
+				this.items[index].render(this.ctx, left + px * slotSize, top, slotSize)
+			}
+			index++
+		}
+	}
+
+	/**
+	 * @param {Number} left
+	 * @param {Number} top
+	 * @param {Number} slotSize
+	 */
+	render(left = this.left, top = this.top, slotSize = this.slotSize) {
+		// Save render data so we'll have it for click detection
+		this.left = left
+		this.top = top
+		this.slotSize = slotSize
+		this.width = 9 * slotSize
+		this.height = Math.ceil(this.size / 9) * slotSize
+		this.ctx.canvas.height = top + this.height + 10 // Clears the canvas like ctx.clearRect
+		this.ctx.canvas.width = this.width + left * 2
+
+		// Draw the blocks
+		let drawn = 0
+		for (let py = 0; drawn < this.size; py++) {
+			this.renderRow(left, top + py * slotSize, slotSize, drawn)
+			drawn += 9
+		}
+
+		// Draw the grid
+		this.ctx.lineWidth = 4
+		this.ctx.strokeStyle = "black"
+		this.ctx.beginPath()
+		for (let y = 0; y <= this.height; y += slotSize) {
+			this.ctx.moveTo(left,              top + y)
+			this.ctx.lineTo(left + this.width, top + y)
+		}
+		for (let x = 0; x <= this.width; x += slotSize) {
+			this.ctx.moveTo(left + x, top)
+			this.ctx.lineTo(left + x, top + this.height)
+		}
+		this.ctx.stroke()
+	}
+	/**
+	 * @param {MouseEvent} event
+	 */
+	mouseMove(event) {
+		const mouseX = event.offsetX
+		const mouseY = event.offsetY
+		const overIndex = this.indexAt(mouseX, mouseY)
+		if (this.items[overIndex]) displayHoverText(this.items[overIndex].name, event.x, event.y)
+		if (this.hoverIndex === overIndex) return
+		this.ctx.lineWidth = 4
+
+		// Clear the previous highlight
+		if (this.hoverIndex >= 0) {
+			this.ctx.strokeStyle = "black"
+			const x = this.hoverIndex % 9 * this.slotSize + this.left
+			const y = (this.hoverIndex / 9 | 0) * this.slotSize + this.top
+			this.ctx.strokeRect(x, y, this.slotSize, this.slotSize)
+		}
+		this.hoverIndex = overIndex
+
+		// Draw new highlight and hover text
+		if (overIndex >= 0 && this.items[overIndex]?.icon) {
+			this.ctx.strokeStyle = "white"
+			const x = overIndex % 9 * this.slotSize + this.left
+			const y = (overIndex / 9 | 0) * this.slotSize + this.top
+			this.ctx.strokeRect(x, y, this.slotSize, this.slotSize)
+		}
+		else hoverBox.classList.add("hidden")
+	}
+
+	/**
+	 * What happens when the inventory is clicked
+	 * @param {InventoryItem} heldItem The item being dragged around by the mouse
+	 * @returns InvenetoryItem
+	 */
+	mouseClick(heldItem) {
+		if (this.hoverIndex === -1) return null
+		if (this.creative) {
+			return this.items[this.hoverIndex].copy() // Discard the previously held item
+		}
+		let old = this.items[this.hoverIndex]
+		if (!heldItem && !old) return null
+		if (old?.id === heldItem?.id) {
+			old.stackSize += heldItem.stackSize
+			old = null
+		}
+		else this.items[this.hoverIndex] = heldItem || null
+
+		// Redraw the tile
+		const x = this.hoverIndex % 9 * this.slotSize + this.left
+		const y = (this.hoverIndex / 9 | 0) * this.slotSize + this.top
+		this.ctx.clearRect(x, y, this.slotSize, this.slotSize)
+		if (this.items[this.hoverIndex]) {
+			this.items[this.hoverIndex].render(this.ctx, x, y, this.slotSize)
+			this.ctx.strokeStyle = "white"
+		}
+		else invCtx.strokeStyle = "black"
+		invCtx.strokeRect(x, y, this.slotSize, this.slotSize)
+
+		return old
+	}
+
+	/**
+	 * @param {InventoryItem | Number} item
+	 * @param {Number} index
+	 */
+	setItem(item, index) {
+		if (!item) {
+			this.items[index] = null
+		}
+		else if (item instanceof InventoryItem) {
+			this.items[index] = item
+		}
+		else {
+			this.items[index] = new InventoryItem(item, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[item].name, 1, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[item].iconImg)
+		}
+	}
+}
+
+class Hotbar {
+	/**
+	 * @param {InventoryPage} inventory
+	 * @param {Number} start The first index in the inv to use as the hotbar
+	 */
+	constructor(inventory, start) {
+		this.inventory = inventory
+		this.start = this.index = start
+
+		/**
+		 * @type {HTMLCanvasElement}
+		 */
+		this.canvas = document.getElementById("hotbar")
+		this.ctx = this.canvas.getContext("2d")
+	}
+
+	// Make for..of loops loop over the correct elements
+	*[Symbol.iterator]() {
+		for (let i = this.start; i < this.inventory.size; i++) yield this.inventory.items[i]?.id || 0
+	}
+
+	pickBlock(blockID) {
+		let empty = -1
+		for (let i = this.start; i < this.inventory.size; i++) {
+			if (this.inventory.items[i]?.id === blockID) {
+				this.select("black")
+				this.index = i
+				this.select("white")
+				return
+			}
+			else if (!this.inventory.items[i] && empty === -1) empty = i
+		}
+
+		if (empty >= 0 && this.hand !== air) {
+			this.select("black")
+			this.index = empty
+		}
+		else this.inventory.addItem(this.inventory.items[this.index])
+		let itemData = _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[blockID]
+		this.inventory.items[this.index] = new InventoryItem(blockID, itemData.name, 1, itemData.iconImg)
+		this.render()
+	}
+
+	setPosition(index) {
+		this.select("black")
+		this.index = this.start + index
+		this.select("white")
+	}
+	shiftPosition(amount) {
+		this.select("black")
+		this.index += Math.sign(amount)
+		if (this.index >= this.inventory.size) this.index -= 9
+		if (this.index < this.start) this.index += 9
+		this.select("white")
+	}
+
+	get hand() {
+		return this.inventory.items[this.index] || air
+	}
+
+	select(color) {
+		this.ctx.lineWidth = 4
+		this.ctx.strokeStyle = color
+
+		const width = this.inventory.slotSize
+		this.ctx.strokeRect(2 + width * (this.index - this.start), 2, width, width)
+	}
+
+	render() {
+		const width = this.inventory.slotSize
+		this.canvas.width = width * 9 + 4
+		this.canvas.height = width + 4
+		this.ctx.lineWidth = 4
+		this.ctx.strokeStyle = "black"
+
+		for (let i = 0; i < 9; i++) {
+			const x = 2 + width * i
+			this.inventory.items[this.start + i]?.render(this.ctx, x, 2, width)
+			this.ctx.strokeRect(x, 2, width, width)
+		}
+		this.select("white")
+	}
+}
+
+class InventoryManager {
+	/**
+	 * @type {Array<InventoryPage>}
+	 */
+	containers = []
+	currentPage = 0
+	canvas = invCanvas
+	iconSize = 64
+
+	/**
+	 * @type {InventoryItem}
+	 */
+	heldItem = null
+
+	// Don't initialize the inventory before the icons have been generated!
+	init(creative) {
+		// Creative Inventories
+		if (creative) {
+			let cubes = new InventoryPage(contCtx, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[_blockData__WEBPACK_IMPORTED_MODULE_1__.blockIds.grass].iconImg)
+			let slabs = new InventoryPage(contCtx, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[_blockData__WEBPACK_IMPORTED_MODULE_1__.blockIds.smoothStone | _shapes__WEBPACK_IMPORTED_MODULE_0__.SLAB].iconImg)
+			let stairs = new InventoryPage(contCtx, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[_blockData__WEBPACK_IMPORTED_MODULE_1__.blockIds.oakPlanks | _shapes__WEBPACK_IMPORTED_MODULE_0__.STAIR].iconImg)
+			let decor = new InventoryPage(contCtx, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[_blockData__WEBPACK_IMPORTED_MODULE_1__.blockIds.poppy].iconImg)
+			for (let id in _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData) {
+				const block = _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[id]
+				// eslint-disable-next-line no-prototype-builtins
+				if (!block.hasOwnProperty("iconImg")) continue
+
+				let item = new InventoryItem(+id, block.name, 1, block.iconImg)
+
+				if (block.shape === _shapes__WEBPACK_IMPORTED_MODULE_0__.shapes.cube && block.solid) {
+					cubes.items.push(item)
+				}
+				else if (block.shape === _shapes__WEBPACK_IMPORTED_MODULE_0__.shapes.slab && block.solid) {
+					slabs.items.push(item)
+				}
+				else if (block.shape === _shapes__WEBPACK_IMPORTED_MODULE_0__.shapes.stair && block.solid) {
+					stairs.items.push(item)
+				}
+				else {
+					decor.items.push(item)
+				}
+			}
+			cubes.size = cubes.items.length
+			slabs.size = slabs.items.length
+			stairs.size = stairs.items.length
+			decor.size = decor.items.length
+			this.containers.push(cubes, slabs, stairs, decor)
+		}
+		containerCanvas.onmousemove = e => this.mouseMove(e)
+		containerCanvas.onmousedown = e => this.mouseClick(e)
+		this.render()
+
+		// Survival/hotbar inventory
+		let storage = new InventoryPage(invCtx, _blockData__WEBPACK_IMPORTED_MODULE_1__.blockData[_blockData__WEBPACK_IMPORTED_MODULE_1__.blockIds.bookshelf].iconImg)
+		storage.creative = false
+		this.playerStorage = storage
+		this.hotbar = new Hotbar(storage, 27)
+		storage.size = 36
+		storage.render(10, 10, this.iconSize)
+
+		containerCanvas.onkeydown = invCanvas.onkeydown = window.canvas.onkeydown
+		containerCanvas.onkeyup = invCanvas.onkeyup = window.canvas.onkeyup
+
+		invCanvas.onmousemove = e => storage.mouseMove(e)
+		invCanvas.onmousedown = () => {
+			this.heldItem = storage.mouseClick(this.heldItem)
+			if (this.heldItem) {
+				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+			}
+			else document.body.style.cursor = ""
+			for (let i = 0; i < this.hotbar.length; i++) {
+				this.hotbar[i] = storage.items[i + 27]?.id || 0
+			}
+		}
+	}
+
+	render() {
+		const left = 10
+		const top = 10
+		const tileSize = this.iconSize
+
+		this.containers[this.currentPage].render(left, top + tileSize + 5, tileSize)
+
+		for (let i = 0; i < this.containers.length; i++) {
+			const inv = this.containers[i]
+			contCtx.drawImage(inv.icon, left + i * tileSize, top, tileSize, tileSize)
+			contCtx.strokeStyle = "red"
+			contCtx.strokeRect(left + tileSize * i, top, tileSize, tileSize)
+		}
+		contCtx.strokeStyle = "green"
+		contCtx.strokeRect(left + tileSize * this.currentPage, top, tileSize, tileSize)
+	}
+
+	/**
+	 * @param {MouseEvent} event
+	 */
+	mouseMove(event) {
+		this.containers[this.currentPage].mouseMove(event)
+	}
+
+	mouseClick(event) {
+		const mouseX = event.offsetX
+		const mouseY = event.offsetY
+		if (mouseY < 10 + this.iconSize && mouseY > 10 && mouseX > 10 && mouseX < 10 + this.iconSize * this.containers.length) {
+			let newPage = (mouseX - 10) / this.iconSize | 0
+			if (newPage !== this.currentPage) {
+				this.currentPage = newPage
+				this.render()
+			}
+		}
+		else {
+			this.heldItem = this.containers[this.currentPage].mouseClick(this.heldItem)
+			if (this.heldItem) {
+				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+			}
+			else document.body.style.cursor = ""
+			// document.body.appendChild(this.heldItem.icon)
+			// this.heldItem.icon.style.zIndex = 2
+			// this.heldItem.icon.style.position = "absolute"
+			// this.heldItem.icon.style.left = (event.x - this.iconSize / 2 | 0) + "px"
+			// this.heldItem.icon.style.top = (event.y - this.iconSize / 2 | 0) + "px"
+		}
+	}
+
+	/**
+	 * @param {Number} newSize
+	 */
+	set size(newSize) {
+		this.iconSize = newSize
+		if (this.playerStorage) {
+			this.playerStorage.render(10, 10, newSize)
+			this.render()
+		}
+	}
+}
+const inventory = new InventoryManager()
+
+
+/***/ }),
+/* 21 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createProgramObject": () => (/* binding */ createProgramObject),
 /* harmony export */   "uniformMatrix": () => (/* binding */ uniformMatrix),
 /* harmony export */   "vertexAttribPointer": () => (/* binding */ vertexAttribPointer)
@@ -2330,7 +3059,7 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2519,16 +3248,16 @@ function initTextures(gl, glCache) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "getSkybox": () => (/* binding */ getSkybox)
 /* harmony export */ });
-/* harmony import */ var _shaders_skyFrag_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(23);
-/* harmony import */ var _shaders_skyVert_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(24);
-/* harmony import */ var _glUtils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(20);
+/* harmony import */ var _shaders_skyFrag_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24);
+/* harmony import */ var _shaders_skyVert_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(25);
+/* harmony import */ var _glUtils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
 
 
 
@@ -2661,7 +3390,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2671,7 +3400,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\nuniform float uTime;\nuniform vec3 uSun;\nuniform vec3 uHorizon;\nvarying vec3 position;\n\n/*\nfloat rand3D(in vec3 co) {\n\treturn fract(sin(dot(co.xyz ,vec3(12.9898,78.233,144.7272))) * 43758.5453);\n}\nfloat simple_interpolate(in float a, in float b, in float x) {\n\treturn a + smoothstep(0.0,1.0,x) * (b-a);\n}\nfloat interpolatedNoise3D(in float x, in float y, in float z) {\n\tfloat integer_x = x - fract(x);\n\tfloat fractional_x = x - integer_x;\n\n\tfloat integer_y = y - fract(y);\n\tfloat fractional_y = y - integer_y;\n\n\tfloat integer_z = z - fract(z);\n\tfloat fractional_z = z - integer_z;\n\n\tfloat v1 = rand3D(vec3(integer_x, integer_y, integer_z));\n\tfloat v2 = rand3D(vec3(integer_x+1.0, integer_y, integer_z));\n\tfloat v3 = rand3D(vec3(integer_x, integer_y+1.0, integer_z));\n\tfloat v4 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z));\n\n\tfloat v5 = rand3D(vec3(integer_x, integer_y, integer_z+1.0));\n\tfloat v6 = rand3D(vec3(integer_x+1.0, integer_y, integer_z+1.0));\n\tfloat v7 = rand3D(vec3(integer_x, integer_y+1.0, integer_z+1.0));\n\tfloat v8 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z+1.0));\n\n\tfloat i1 = simple_interpolate(v1,v5, fractional_z);\n\tfloat i2 = simple_interpolate(v2,v6, fractional_z);\n\tfloat i3 = simple_interpolate(v3,v7, fractional_z);\n\tfloat i4 = simple_interpolate(v4,v8, fractional_z);\n\n\tfloat ii1 = simple_interpolate(i1,i2,fractional_x);\n\tfloat ii2 = simple_interpolate(i3,i4,fractional_x);\n\n\treturn simple_interpolate(ii1 , ii2 , fractional_y);\n}\nfloat Noise3D(in vec3 coord, in float wavelength) {\n\treturn interpolatedNoise3D(coord.x/wavelength, coord.y/wavelength, coord.z/wavelength);\n}\nfloat noise(vec3 p, float frequency) {\n\tfloat sum = 0.0;\n\tfor (float i = 0.0; i < 5.0; i++) {\n\t\tsum += Noise3D(p * frequency * pow(2.0, i), 1.0) / pow(2.0, i);\n\t}\n\treturn sum * 0.5;\n}\n*/\n\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\nconst vec3 sunColor = vec3(1.0, 1.0, 0.7);\nconst vec3 moonColor = vec3(0.7);\nvoid main (void) {\n\tvec3 dir = normalize(position);\n\tfloat horizonal = 1.0 - abs(dir.y);\n\n\tfloat sunDot = dot(dir, uSun);\n\tvec3 col = mix(skyColor, uHorizon, horizonal * horizonal * (sunDot * 0.5 + 1.2)); // Mix the sky and the horizon\n\t\n\n\t// float cloud = noise(position + uTime * 0.02, 10.0);\n\t// col = mix(col, vec3(1.0), cloud);\n\n\t// The sky starts getting darker when it's 30% above the horizon, then reachest max darkness at 50% below the horizon\n\tcol *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.3);\n\t// col *= clamp((-uSun.y + 0.5) / 0.8, 0.1, 1.0);\n\n\t// Draw the sun\n\tfloat sun = 1.0 - max(sunDot * 50.0 - 49.0, 0.0);\n\tcol = mix(col, sunColor, 1.0 - sun * sun);\n\n\tif (dot(dir, -uSun) > 0.994) col = moonColor; // Draw the moon\n\tgl_FragColor = vec4(col, 1.0);\n}");
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2681,7 +3410,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3 aVertex;\nuniform float uTime;\nuniform mat4 uView;\nvarying vec3 position;\nmat4 no_translate (mat4 mat) {\n\tmat4 nmat = mat;\n\tnmat[3].xyz = vec3(0.0);\n\n\treturn nmat;\n}\nvoid main(void) {\n   position = aVertex;\n   gl_Position = no_translate(uView) * vec4(aVertex * -100.0, 0.0);\n}");
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2690,7 +3419,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
 
 
 
@@ -4048,7 +4777,7 @@ class Chunk {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4057,8 +4786,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 /* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(21);
-/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(27);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
+/* harmony import */ var _entity_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(28);
 /* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(15);
 
 
@@ -4132,7 +4861,7 @@ class Player extends _entity_js__WEBPACK_IMPORTED_MODULE_3__.Entity {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4142,7 +4871,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
 /* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(21);
+/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(22);
 
 
 
@@ -4512,11 +5241,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(17);
 /* harmony import */ var _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(19);
 /* harmony import */ var _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(18);
-/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
-/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
-/* harmony import */ var _js_sky__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(22);
-/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(25);
-/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(26);
+/* harmony import */ var _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(20);
+/* harmony import */ var _js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(21);
+/* harmony import */ var _js_texture_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(22);
+/* harmony import */ var _js_sky__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(23);
+/* harmony import */ var _js_chunk_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(26);
+/* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(27);
 
 
 // GLSL Shader code
@@ -4546,12 +5276,13 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 // import { Item } from './js/item.js'
 
 
 window.blockData = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData
-window.canvas = document.getElementById("overlay")
-window.ctx = window.canvas.getContext("2d")
+
+
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -4559,19 +5290,10 @@ window.message = document.getElementById("message")
 window.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "window" as its namespace.
 window.quota = document.getElementById("quota")
 window.hoverbox = document.getElementById("onhover")
-window.canvas.width  = window.innerWidth
-window.canvas.height = window.innerHeight
+
 window.controlMap = {}
-window.sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function MineKhan() {
-	// Cache user-defined globals
-	const { canvas, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap, sleep } = window
-	/**
-	 * @type {CanvasRenderingContext2D}
-	 */
-	const ctx = window.ctx
-
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
@@ -4579,6 +5301,19 @@ async function MineKhan() {
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
+
+	// Cache user-defined globals
+	const { savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
+	const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+	/**
+	 * @type {HTMLCanvasElement}
+	 */
+	const canvas = document.getElementById("overlay")
+	canvas.width  = window.innerWidth
+	canvas.height = window.innerHeight
+	const ctx = canvas.getContext("2d")
+	window.canvas = canvas
 
 	// Shh don't tell anyone I'm overriding native objects
 	String.prototype.hashCode = function() {
@@ -4714,14 +5449,7 @@ async function MineKhan() {
 		}
 	}
 
-	// Expose these functions to the global scope for debugging
-	win.saveToDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.saveToDB
-	win.loadFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.loadFromDB
-	win.createDatabase = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.createDatabase
-	win.deleteFromDB = _js_indexDB_js__WEBPACK_IMPORTED_MODULE_14__.deleteFromDB
-
 	// Globals
-	//{
 	let version = "Alpha 0.8.1"
 	let superflat = false
 	let details = true
@@ -4749,17 +5477,9 @@ async function MineKhan() {
 	let maxHeight = 255
 	let blockOutlines = false
 	let blockFill = true
-	const CUBE     = 0
-	const SLAB     = 0x100 // 9th bit
-	const STAIR    = 0x200 // 10th bit
-	const FLIP     = 0x400 // 11th bit
-	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
-	const SOUTH    = 0x800
-	const EAST     = 0x1000
-	const WEST     = 0x1800
+
 	// const ROTATION = 0x1800 // Mask for the direction bits
-	let blockMode  = CUBE
-	let tex
+	let blockMode  = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE
 	let dirtBuffer
 	let texCoordsBuffers
 	let mainbg, dirtbg // Background images
@@ -4780,6 +5500,10 @@ async function MineKhan() {
 		"chat": () => {}
 	}
 	let html = {
+		play: {
+			enter: [document.getElementById("hotbar")],
+			exit: [document.getElementById("hotbar")]
+		},
 		pause: {
 			enter: [window.message],
 			exit: [window.savebox, window.saveDirections, window.message]
@@ -4841,6 +5565,14 @@ async function MineKhan() {
 				chatOutput.scroll(0, 10000000)
 			}
 		},
+		inventory: {
+			enter: [document.getElementById('inv-container')],
+			exit: [document.getElementById('inv-container'), hoverbox],
+			onenter: () => {
+				ctx.clearRect(0, 0, width, height) // Hide the GUI and text and stuff
+				_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.playerStorage.render()
+			}
+		}
 	}
 
 	let screen = "main menu"
@@ -4898,13 +5630,6 @@ async function MineKhan() {
 		y: 0,
 		z: 0,
 	}
-	let inventory = {
-		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-		main: [],
-		hotbarSlot: 0,
-		size: 40 * min(width, height) / 600,
-		holding: 0,
-	}
 
 	function setControl(name, key, shift = false, ctrl = false, alt = false) {
 		controlMap[name] = {
@@ -4951,7 +5676,7 @@ async function MineKhan() {
 	function play() {
 		canvas.onblur()
 		p.lastBreak = now
-		holding = inventory.hotbar[inventory.hotbarSlot]
+		holding = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.id
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
@@ -4963,8 +5688,8 @@ async function MineKhan() {
 
 		crosshair()
 		hud(true)
+		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.render()
 		hotbar()
-
 	}
 
 	/**
@@ -4980,7 +5705,7 @@ async function MineKhan() {
 	let skybox
 
 	function getPointer() {
-		if (canvas.requestPointerLock && !canvas.ontouchmove) {
+		if (canvas.requestPointerLock) {
 			canvas.requestPointerLock()
 		}
 	}
@@ -4995,254 +5720,56 @@ async function MineKhan() {
 	win.shapes = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes
 
 	function initShapes() {
-		function mapCoords(rect, face) {
-			let x = rect.x
-			let y = rect.y
-			let z = rect.z
-			let w = rect.w
-			let h = rect.h
-			let tx = rect.tx
-			let ty = rect.ty
-			let tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h]
-			let pos = null
-			switch(face) {
-				case 0: // Bottom
-					pos = [x,y,z, x+w,y,z, x+w,y,z+h, x,y,z+h]
-					break
-				case 1: // Top
-					pos = [x,y,z, x+w,y,z, x+w,y,z-h, x,y,z-h]
-					break
-				case 2: // North
-					pos = [x,y,z, x-w,y,z, x-w,y-h,z, x,y-h,z]
-					break
-				case 3: // South
-					pos = [x,y,z, x+w,y,z, x+w,y-h,z, x,y-h,z]
-					break
-				case 4: // East
-					pos = [x,y,z, x,y,z+w, x,y-h,z+w, x,y-h,z]
-					break
-				case 5: // West
-					pos = [x,y,z, x,y,z-w, x,y-h,z-w, x,y-h,z]
-					break
-			}
-			pos = pos.map(c => c / 16 - 0.5)
-			let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(pos, [])
-			pos.max = minmax.splice(3, 3)
-			pos.min = minmax
-			tex = tex.map(c => c / 16 / 16)
 
-			return {
-				pos: pos,
-				tex: tex
-			}
-		}
-
-		// 90 degree clockwise rotation; returns a new shape object
-		function rotate(shape) {
-			let verts = shape.verts
-			let texVerts = shape.texVerts
-			let cull = shape.cull
-			let pos = []
-			tex = []
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				pos[i] = []
-				tex[i] = []
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j]
-					let c = []
-					pos[i][j] = c
-					for (let k = 0; k < face.length; k += 3) {
-						c[k] = face[k + 2]
-						c[k + 1] = face[k + 1]
-						c[k + 2] = -face[k]
-					}
-
-					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-					if (i === 0) {
-						// Bottom
-						c.push(...c.splice(0, 3))
-						tex[i][j].push(...tex[i][j].splice(0, 2))
-					}
-					if (i === 1) {
-						// Top
-						c.unshift(...c.splice(-3, 3))
-						tex[i][j].unshift(...tex[i][j].splice(-2, 2))
-					}
-
-					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(c, [])
-					c.max = minmax.splice(3, 3)
-					c.min = minmax
-				}
-			}
-			let temp = tex[2] // North
-			tex[2] = tex[5] // North = West
-			tex[5] = tex[3] // West = South
-			tex[3] = tex[4] // South = East
-			tex[4] = temp // East = North
-
-			temp = pos[2] // North
-			pos[2] = pos[5] // North = West
-			pos[5] = pos[3] // West = South
-			pos[3] = pos[4] // South = East
-			pos[4] = temp // East = North
-
-			let cull2 = {
-				top: cull.top,
-				bottom: cull.bottom,
-				north: cull.west,
-				west: cull.south,
-				south: cull.east,
-				east: cull.north
-			}
-
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-			return {
-				verts: pos,
-				texVerts: tex,
-				cull: cull2,
-				rotate: true,
-				flip: shape.flip,
-				buffer: buffer,
-				size: shape.size,
-				varients: shape.varients
-			}
-		}
-
-		// Reflect over the y plane; returns a new shape object
-		function flip(shape) {
-			let verts = shape.verts
-			let texVerts = shape.texVerts
-			let cull = shape.cull
-			let pos = []
-			tex = []
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				pos[i] = []
-				tex[i] = []
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j].slice().reverse()
-					let c = []
-					pos[i][j] = c
-					for (let k = 0; k < face.length; k += 3) {
-						c[k] = face[k + 2]
-						c[k + 1] = -face[k + 1]
-						c[k + 2] = face[k]
-					}
-					let minmax = (0,_js_utils_js__WEBPACK_IMPORTED_MODULE_12__.compareArr)(c, [])
-					c.max = minmax.splice(3, 3)
-					c.min = minmax
-
-					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-				}
-			}
-			let temp = pos[0] // Bottom
-			pos[0] = pos[1] // Bottom = Top
-			pos[1] = temp // Top = Bottom
-
-			temp = tex[0] // Bottom
-			tex[0] = tex[1] // Bottom = Top
-			tex[1] = temp // Top = Bottom
-
-			let cull2 = {
-				top: cull.bottom,
-				bottom: cull.top,
-				north: (cull.north & 1) << 1 | (cull.north & 2) >> 1,
-				west: (cull.west & 1) << 1 | (cull.west & 2) >> 1,
-				south: (cull.south & 1) << 1 | (cull.south & 2) >> 1,
-				east: (cull.east & 1) << 1 | (cull.east & 2) >> 1
-			}
-
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-			return {
-				verts: pos,
-				texVerts: tex,
-				cull: cull2,
-				rotate: shape.rotate,
-				flip: shape.flip,
-				buffer: buffer,
-				size: shape.size,
-				varients: shape.varients
-			}
-		}
-
+		// Create buffers for the hitbox outline shapes
 		for (let shape in _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes) {
 			let obj = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes[shape]
-			let verts = obj.verts
-
-			// Populate the vertex coordinates
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				let texArr = []
-				obj.texVerts.push(texArr)
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j]
-					let mapped = mapCoords(face, i)
-					side[j] = mapped.pos
-					texArr.push(mapped.tex)
-				}
-			}
-
-			if (obj.rotate) {
-				let v = obj.varients
-				let east = rotate(obj)
-				let south = rotate(east)
-				let west = rotate(south)
-				v[0] = obj
-				v[2] = south
-				v[4] = east
-				v[6] = west
-			}
-			if (obj.flip) {
-				let v = obj.varients
-				v[1] = flip(obj)
-				if (obj.rotate) {
-					v[3] = flip(v[2])
-					v[5] = flip(v[4])
-					v[7] = flip(v[6])
-				}
-			}
-
 			obj.buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.verts.flat(2)), gl.STATIC_DRAW)
+			for (let i in obj.varients) {
+				let v = obj.varients[i]
+				v.buffer = gl.createBuffer()
+				gl.bindBuffer(gl.ARRAY_BUFFER, v.buffer)
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.verts.flat(2)), gl.STATIC_DRAW)
+			}
 		}
 
+		// Create blockData for each of the slabs and stairs varients
 		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
 			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
-
-			let slabBlock = Object.create(baseBlock)
-			slabBlock.transparent = true
-			let stairBlock = Object.create(baseBlock)
-			stairBlock.transparent = true
-			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
 			baseBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.cube
+
+			let slabBlock = Object.assign({}, baseBlock)
+			slabBlock.transparent = true
+			slabBlock.name += " Slab"
+			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = slabBlock
+
+			let stairBlock = Object.assign({}, baseBlock)
+			stairBlock.transparent = true
+			stairBlock.name += " Stairs"
 			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.stair
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | SLAB] = slabBlock
-			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | STAIR] = stairBlock
+
+			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = stairBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
-					let block = Object.create(baseBlock)
-					block.transparent = true
+					let block = Object.assign({}, slabBlock)
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | SLAB | j << 10] = block
+					delete block.icon
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB | j << 10] = block
+
 				}
 			}
 			v = stairBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
-					let block = Object.create(baseBlock)
-					block.transparent = true
+					let block = Object.assign({}, stairBlock)
 					block.shape = v[j]
-					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | STAIR | j << 10] = block
+					delete block.icon
+					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR | j << 10] = block
 				}
 			}
 		}
@@ -5260,7 +5787,7 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
-	let blockIcons
+
 	{
 		let s = Math.sqrt(3) / 2
 		let q = s / 2
@@ -5287,15 +5814,7 @@ async function MineKhan() {
 		]
 	}
 
-	/**
-	 * Draws the block icon for the given ID
-	 * @param {*} x X coordinate in pixels
-	 * @param {*} y Y coordinate in pixels (from the top)
-	 * @param {*} id Block ID for the icon to draw
-	 * @returns {void}
-	 */
-	let drawIcon = (x, y, id) => ctx.putImageData(blockIcons[id], x, y)
-	function renderIcon(x, y, id) {
+	function renderIcon(x, y, id, blockIcons, iconLengths) {
 		x = x * 2 / width - 1
 		y = y * 2 / height - 1
 		gl.uniform2f(glCache.uOffset, x, y)
@@ -5307,25 +5826,24 @@ async function MineKhan() {
 		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
 		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
 		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLES, 0, blockIcons.lengths[id])
+		gl.drawArrays(gl.TRIANGLES, 0, iconLengths[id])
 	}
 	function genIcons() {
-		let firstTime = false
-		if (!blockIcons) firstTime = true
+		const iconSize = 64 // We'll scale up or down while drawing them.
 
-		blockIcons = [null]
-		blockIcons.lengths = [0]
+		let blockIcons = [null]
+		let iconLengths = [0]
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scaleY = (inventory.size - 5) / height
-		let scaleX = (inventory.size - 5) / width
+		let scaleY = (iconSize - 5) / height
+		let scaleX = (iconSize - 5) / width
 		for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let data = []
 			let block = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
 
 			// Square icon
 			if (block.icon) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.icon]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.icon]]
 				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
 				data.push(scaleX * 0.9, scaleY * 0.9, tex[2], tex[3], 1) // 2
 				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
@@ -5338,11 +5856,11 @@ async function MineKhan() {
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 				blockIcons[i] = buffer
-				blockIcons.lengths[i] = 6
-				blockIcons[i | SLAB] = buffer
-				blockIcons.lengths[i | SLAB] = 6
-				blockIcons[i | STAIR] = buffer
-				blockIcons.lengths[i | STAIR] = 6
+				iconLengths[i] = 6
+				blockIcons[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = buffer
+				iconLengths[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = 6
+				blockIcons[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = buffer
+				iconLengths[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = 6
 				continue
 			}
 
@@ -5350,8 +5868,8 @@ async function MineKhan() {
 			for (let j = 0; j <= 11; j++) {
 				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
 				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
+				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
 
 				if (j % 4 === 2) data.push(...data.slice(-5))
@@ -5361,12 +5879,12 @@ async function MineKhan() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i] = buffer
-			blockIcons.lengths[i] = 6 * 3
+			iconLengths[i] = 6 * 3
 
 			// Slab icon
 			data = []
 			for (let j = 0; j <= 11; j++) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
 
 				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
 				data.push(slabIconVerts[j * 2 + 1] * scaleY)
@@ -5379,15 +5897,15 @@ async function MineKhan() {
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | SLAB] = buffer
-			blockIcons.lengths[i | SLAB] = 6 * 3
+			blockIcons[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = buffer
+			iconLengths[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = 6 * 3
 
 			// Stair icon
 			data = []
 			let v = stairIconVerts
 			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[block.textures[texOrder[num]]]]
+				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[num]]]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scaleX)
@@ -5402,8 +5920,8 @@ async function MineKhan() {
 			buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | STAIR] = buffer
-			blockIcons.lengths[i | STAIR] = 6 * 6
+			blockIcons[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = buffer
+			iconLengths[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = 6 * 6
 		}
 
 		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
@@ -5416,16 +5934,15 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(1)
 		gl.enableVertexAttribArray(2)
 
-		const s = inventory.size | 0
+		const s = iconSize | 0
 		const limitX = gl.canvas.width / s | 0
 		const limitY = gl.canvas.height / s | 0
 		const limit = limitX * limitY
 		const total = (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1) * 3
 		const pages = Math.ceil(total / limit)
 		const blocksPerPage = (limit / 3 | 0) * 3
-		const imageIcons = []
 
-		let masks = [CUBE, SLAB, STAIR]
+		let masks = [_js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE, _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB, _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR]
 		let drawn = 1 // 0 = air
 
 		let start = Date.now()
@@ -5437,7 +5954,7 @@ async function MineKhan() {
 				for (let k = 0; k < 3; k++) {
 					let x = (j + k) % limitX
 					let y = (j + k) / limitX | 0
-					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k])
+					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k], blockIcons, iconLengths)
 				}
 				drawn++
 				if (drawn === _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT) break
@@ -5453,17 +5970,23 @@ async function MineKhan() {
 					let x = (j + k) % limitX
 					let y = (j + k) / limitX | 0
 					let id = pageStart + j/3 | masks[k]
-					imageIcons[id] = ctx.getImageData(x * s, y * s, s, s)
+
+					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[id]) {
+						const icon = document.createElement("canvas")
+						icon.width = s
+						icon.height = s
+						const c = icon.getContext("2d")
+						c.drawImage(ctx.canvas, x * s, y * s, s, s, 0, 0, s, s)
+						_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[id].iconImg = icon
+					}
 				}
 			}
 		}
-		if (firstTime) console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
+		console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
 
 		// Yeet the buffers
-		delete blockIcons.lengths
 		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
-		blockIcons = imageIcons
 	}
 
 	//Generate buffers for every block face and store them
@@ -6023,7 +6546,7 @@ async function MineKhan() {
 		let pminX = floor(0.5 + p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
 		let pmaxX = ceil(-0.5 + p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
 		let pminY = max(floor(0.5 + p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
-		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
+		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), maxHeight)
 		let pminZ = floor(0.5 + p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
 		let pmaxZ = ceil(-0.5 + p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 
@@ -6179,7 +6702,7 @@ async function MineKhan() {
 					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
 					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap[tex[i]]])
+					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[tex[i]]])
 					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
@@ -6193,7 +6716,7 @@ async function MineKhan() {
 			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
 			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
 
-			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureMap.hitbox])
+			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap.hitbox])
 			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
@@ -6237,19 +6760,19 @@ async function MineKhan() {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
 					if (p.ry < 3 * pi) {
-						t |= WEST
+						t |= _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.WEST
 					}
 					else if (p.ry < 5 * pi) {
-						t |= SOUTH
+						t |= _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SOUTH
 					}
 					else if (p.ry < 7 * pi) {
-						t |= EAST
+						t |= _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.EAST
 					}
 				}
 			}
 
 			if (t && shape.flip && hitBox.face !== "top" && (hitBox.face === "bottom" || (p.direction.y * hitBox.closest + p.y) % 1 < 0.5)) {
-				t |= FLIP
+				t |= _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.FLIP
 			}
 
 			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t, 0)
@@ -6261,9 +6784,9 @@ async function MineKhan() {
 			}
 		}
 	}
-	function newWorldBlock(block) {
+	function newWorldBlock() {
 		if(!hitBox.pos || !holding) return
-		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
+		let pos = hitBox.pos, [x, y, z] = pos
 		switch(hitBox.face) {
 			case "top":
 				y += 1
@@ -6284,11 +6807,12 @@ async function MineKhan() {
 				x += 1
 				break
 		}
-		if (!inBox(x, y, z, 1, 1, 1) && !world.getBlock(x, y, z)) {
+		let oldBlock = world.getBlock(x, y, z)
+		if (y < maxHeight && y >= 0 && !inBox(x, y, z, 1, 1, 1) && (!oldBlock || _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[oldBlock].shape === _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.flower) && oldBlock !== holding) {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff ? holding | block : holding)
+			changeWorldBlock(holding < 0xff && _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[holding | blockMode] ? holding | blockMode : holding)
 		}
 	}
 
@@ -6502,7 +7026,7 @@ async function MineKhan() {
 			const command = commands.get(commandName)
 			chat(`Usage: ${command.usage}\nDescription: ${command.description}`, "lime")
 		}
-		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nPro tip: you can delete random autocomplete suggestions by `)
+		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nCommands: ${commandList.map(command => `${command.slice(1)}`).join(", ")}`)
 	}, "/help <command name>", "Shows how to use a command", () => {
 		setAutocomplete(commandList.map(command => `/help ${command.slice(1)}`))
 	})
@@ -6611,8 +7135,8 @@ async function MineKhan() {
 		if (args[0]?.toLowerCase() === "sphere") shape = "sphere"
 		if (args[0]?.toLowerCase().startsWith("cyl")) shape = "cylinder"
 
-		const block = inventory.hotbar[inventory.hotbarSlot]
-		const name = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[block].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+		const block = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.id
+		const name = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.name
 
 		let [start, end] = blockLog[currentUser.username].slice(-2)
 		let [x1, y1, z1] = start
@@ -6684,7 +7208,7 @@ async function MineKhan() {
 				await sleep(0) // Let the player watch the blocks change
 				let edited = 0
 				for (let x = x1 - offset; x <= x1 + offset; x++) {
-					for (let y = Math.max(y1 - offset, 1); y <= Math.min(y1 + offset, 255); y++) {
+					for (let y = Math.max(y1 - offset, 1); y <= Math.min(y1 + offset, maxHeight); y++) {
 						for (let z = z1 - offset; z <= z1 + offset; z++) {
 							let d = Math.hypot(x1 - x, y1 - y, z1 - z)
 							if (d <= radius && (solid || radius - d < 1.0) && world.getBlock(x, y, z) !== block) {
@@ -6812,7 +7336,7 @@ async function MineKhan() {
 				return
 			}
 			if (typeof msg.data !== "string" && screen === "multiplayer menu") {
-				world = new World(true)
+				world = new World(true) // Non-hosts can't use console commands since this isn't global.
 				world.loadSave(new Uint8Array(msg.data))
 				changeScene("loading")
 				return
@@ -6850,7 +7374,7 @@ async function MineKhan() {
 				let pos = packet.data
 				let name = packet.author
 				playerPositions[name] = pos
-				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_20__.Player(pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
+				if (!playerEntities[name]) playerEntities[name] = new _js_player_js__WEBPACK_IMPORTED_MODULE_21__.Player(pos.x, pos.y, pos.z, pos.vx, pos.vy, pos.vz, abs(name.hashCode()) % 80 + 1, glExtensions, gl, glCache, indexBuffer, world, p)
 				let ent = playerEntities[name]
 				ent.x = pos.x
 				ent.y = pos.y
@@ -7124,7 +7648,7 @@ async function MineKhan() {
 			let Z = (z >> 4) + this.offsetZ
 			// if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
-			// 	if (y < 0 || y > 255) debugger
+			// 	if (y < 0 || y > maxHeight) debugger
 			// 	if (blockLight === 1) return this.chunks[x >> 4][z >> 4].getBlockLight(x & 15, y, z & 15)
 			// 	else if (blockLight === 0) return this.chunks[x >> 4][z >> 4].getSkyLight(x & 15, y, z & 15)
 			// 	else return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
@@ -7398,7 +7922,7 @@ async function MineKhan() {
 			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
-				newWorldBlock(blockMode)
+				newWorldBlock()
 			}
 
 			initModelView(p)
@@ -7526,7 +8050,7 @@ async function MineKhan() {
 						this.chunks[x] = []
 					}
 					if (!this.chunks[x][z]) {
-						this.chunks[x][z] = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_19__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
+						this.chunks[x][z] = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_20__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
 					}
 					chunk = this.chunks[x][z]
 					const cdx = (chunk.x >> 4) - cx
@@ -7603,8 +8127,8 @@ async function MineKhan() {
 			bab.add(this.tickCount, 32)
 			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
-			for (let block of inventory.hotbar) bab.add(block, 16)
-			bab.add(inventory.hotbarSlot, 4)
+			for (let block of _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar) bab.add(block, 16)
+			bab.add(_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.index - _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.start, 4)
 			bab.add(p.flying, 1).add(p.spectator, 1)
 			bab.add(superflat, 1).add(caves, 1).add(details, 1)
 			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
@@ -7701,8 +8225,8 @@ async function MineKhan() {
 			p.z = reader.read(20, true)
 			p.rx = reader.read(11, true) / 100
 			p.ry = reader.read(11, true) / 100
-			for (let i = 0; i < 9; i++) inventory.hotbar[i] = reader.read(16)
-			inventory.hotbarSlot = reader.read(4)
+			for (let i = 0; i < 9; i++) _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.playerStorage.setItem(reader.read(16), i + _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.start)
+			_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.index = reader.read(4) + _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.start
 			p.flying = reader.read(1)
 			p.spectator = reader.read(1)
 
@@ -8079,7 +8603,7 @@ async function MineKhan() {
 		}
 
 		static draw() {
-			if (!hoverbox.className.includes("hidden")) hoverbox.classList.add("hidden")
+			if (screen !== "inventory" && screen !== "play") hoverbox.classList.add("hidden")
 			for (let button of Button.all) {
 				button.draw()
 			}
@@ -8297,8 +8821,8 @@ async function MineKhan() {
 		// Multiplayer buttons
 		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", () => changeScene("main menu"))
 		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "multiplayer menu", () => {
-			world = new World()
-			win.world = world
+			// world = new World()
+			win.world = null
 
 			if (selectedWorld) {
 				initMultiplayer(selectedWorld)
@@ -8318,44 +8842,16 @@ async function MineKhan() {
 		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
 	}
 
-	function hotbar(highlight = inventory.hotbarSlot) {
-		if (p.spectator || screen !== "play" && screen !== "inventory") return
-		// If the hotbar needs to be rendered, then the selected block may have changed
+	function hotbar() {
+		if (p.spectator || screen !== "play") return
+		// The selected block has changed. Update lantern brightness
 		{
-			let heldLight = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0
+			let heldLight = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[holding].lightLevel / 15 || 0
 			gl.useProgram(program3D)
 			gl.uniform1f(glCache.uLantern, heldLight)
 			gl.useProgram(program3DFogless)
 			gl.uniform1f(glCache.uLanternFogless, heldLight)
 		}
-
-
-		let s = inventory.size
-		let x = width / 2 - 9 / 2 * s + 0.5 + 25
-		let y = height - s * 1.5 + 0.5
-
-		for(let i = 0; i < inventory.hotbar.length; i ++) {
-			if (inventory.hotbar[i]) {
-				drawIcon(x + i * s, y, inventory.hotbar[i])
-			}
-		}
-
-		ctx.strokeStyle = "rgb(0, 0, 0)"
-		ctx.lineWidth = 5
-		ctx.beginPath()
-		ctx.moveTo(x, y)
-		ctx.lineTo(x + s * 9, y)
-		ctx.moveTo(x, y + s)
-		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= 9; i++) {
-			ctx.moveTo(x + i * s, y)
-			ctx.lineTo(x + i * s, y + s)
-		}
-		ctx.stroke()
-
-		ctx.strokeStyle = "rgb(100, 100, 100)"
-		ctx.beginPath()
-		if (highlight >= 0) ctx.strokeRect(width / 2 - 9 / 2 * s + highlight * s + 25, height - s * 1.5, s, s)
 	}
 
 	function crosshair() {
@@ -8481,111 +8977,9 @@ async function MineKhan() {
 	sortedBlocks.shift() // Get rid of the air block in the array of sorted blocks
 	sortedBlocks.sort()
 
-	function drawInv() {
-		let x = 0
-		let y = 0
-		let s = inventory.size
-		let s2 = s / 2
-		let perRow = 14
-
-		ctx.clearRect(0, 0, width, height)
-
-		// Draw the blocks
-		if (settings.inventorySort === "name") {
-			for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1; i++) {
-				x = i % perRow * s + 51
-				y = (i / perRow | 0) * s + 51
-				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
-			}
-		}
-		else if (settings.inventorySort === "blockid") {
-			for (let i = 1; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
-				x = (i - 1) % perRow * s + 51
-				y = ((i - 1) / perRow | 0) * s + 51
-				drawIcon(x - s2, y - s2, i)
-			}
-		}
-
-		// Draw the grid
-		ctx.lineWidth = 5
-		ctx.strokeStyle = "rgb(0, 0, 0)"
-		ctx.beginPath()
-		for (y = 0; y < 12; y++) {
-			ctx.moveTo(50.5 - s2, 50.5 - s2 + y * s)
-			ctx.lineTo(50.5 - s2 + s * perRow, 50.5 - s2 + y * s)
-		}
-		y--
-		for (x = 0; x < perRow + 1; x++) {
-			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
-			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
-		}
-		ctx.stroke()
-
-		// Hotbar
-		x = width / 2 - 9 / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
-		let hoverName = ""
-		let overHot = (mouseX - x) / s | 0
-		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			hoverName = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[inventory.hotbar[overHot]].name
-			hotbar(overHot)
-		}
-		else hotbar(-1)
-
-		// Box highlight in inv
-		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		if (overInv >= 0 && overInv < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			x = overInv % perRow * s + 50 - s2
-			y = (overInv / perRow | 0) * s + 50 - s2
-			ctx.strokeStyle = "rgb(100, 100, 100)"
-			ctx.beginPath()
-			ctx.strokeRect(x, y, s, s)
-			hoverName = settings.inventorySort === "name" ? sortedBlocks[overInv][0] : _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[overInv + 1].name
-		}
-
-		// Item you're dragging
-		if (inventory.holding) {
-			drawIcon(mouseX - s2, mouseY - s2, inventory.holding)
-		}
-
-		// Tooltip for the item you're hovering over
-		if (hoverName) {
-			hoverName = hoverName.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			ctx.fillStyle = "black"
-			const w = hoverName.length * charWidth + 5
-			const x = mouseX + w > width ? width - w : mouseX
-			ctx.fillRect(x, mouseY - 22, w, 24)
-			ctx.font = "20px monospace"
-			ctx.fillStyle = "white"
-			ctx.fillText(hoverName, x + 3, mouseY - 4)
-		}
-	}
 	function clickInv() {
-		let s = inventory.size
-		let s2 = s / 2
-		let perRow = 14
-		let over = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		let x = width / 2 - 9 / 2 * s + 25
-		let y = height - s * 1.5
-		let overHot = (mouseX - x) / s | 0
-		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			let temp = inventory.hotbar[overHot]
-			inventory.hotbar[overHot] = inventory.holding
-			inventory.holding = temp
-		}
-		else if (over >= 0 && over < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			if (settings.inventorySort === "name") {
-				inventory.holding = sortedBlocks[over][1]
-			}
-			else if (settings.inventorySort === "blockid") {
-				inventory.holding = over + 1
-			}
-		}
-		else {
-			inventory.holding = 0
-		}
-
-		drawScreens.inventory()
+		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.heldItem = null
+		document.body.style.cursor = ""
 	}
 
 	let unpauseDelay = 0
@@ -8622,7 +9016,7 @@ async function MineKhan() {
 	// For user controls that react immediately in the event handlers.
 	function controlEvent(name, event) {
 		if (name === controlMap.cycleBlockShapes.key) {
-			blockMode = blockMode === CUBE ? SLAB : blockMode === SLAB ? STAIR : CUBE
+			blockMode = blockMode === _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE ? _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB : blockMode === _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB ? _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR : _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE
 			hotbar()
 		}
 
@@ -8636,26 +9030,14 @@ async function MineKhan() {
 					changeWorldBlock(0)
 				}
 
-				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
-					if (holding === 152 || holding === 153 || holding === 154) {
-						newWorldBlock(0)
-					}
-					else {
-						newWorldBlock(blockMode)
-					}
+					newWorldBlock()
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
-					let index = inventory.hotbar.indexOf(block)
-					if (index >= 0) {
-						inventory.hotbarSlot = index
-					}
-					else {
-						inventory.hotbar[inventory.hotbarSlot] = block
-					}
-					holding = inventory.hotbar[inventory.hotbarSlot]
+					_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.pickBlock(block)
+					holding = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.id
 					hotbar()
 				}
 
@@ -8828,8 +9210,8 @@ async function MineKhan() {
 		controlEvent(code, e)
 
 		if (screen === "play" && Number(e.key)) {
-			inventory.hotbarSlot = e.key - 1
-			holding = inventory.hotbar[inventory.hotbarSlot]
+			_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.setPosition(e.key - 1)
+			holding = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.id
 			hotbar()
 		}
 	}
@@ -8871,21 +9253,11 @@ async function MineKhan() {
 	canvas.onwheel = e => {
 		e.preventDefault()
 		e.stopPropagation()
-		if (e.deltaY > 0) {
-			inventory.hotbarSlot++
+		if (screen === "play") {
+			_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.shiftPosition(e.deltaY)
+			holding = _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.hand.id
+			hotbar()
 		}
-		else if (e.deltaY < 0) {
-			inventory.hotbarSlot--
-		}
-		if (inventory.hotbarSlot > 8) {
-			inventory.hotbarSlot = 0
-		}
-		else if (inventory.hotbarSlot < 0) {
-			inventory.hotbarSlot = 8
-		}
-
-		holding = inventory.hotbar[inventory.hotbarSlot]
-		hotbar()
 	}
 	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
 	window.onresize = () => {
@@ -8898,9 +9270,7 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
-		let oldSize = inventory.size
-		inventory.size = 5 + 40 * min(width, height) / 600
-		if (oldSize !== inventory.size) genIcons()
+		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.size = min(width, height) / 15 | 0
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
 
@@ -9042,11 +9412,11 @@ async function MineKhan() {
 		modelView = new Float32Array(16)
 		glCache = {}
 		win.glCache = glCache
-		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
-		program3DFogless = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
-		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
-		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_16__.createProgramObject)(gl, _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__["default"], _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__["default"])
-		skybox = (0,_js_sky__WEBPACK_IMPORTED_MODULE_18__.getSkybox)(gl, glCache, program3D, program3DFogless)
+		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
+		program3DFogless = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
+		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
+		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__["default"], _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__["default"])
+		skybox = (0,_js_sky__WEBPACK_IMPORTED_MODULE_19__.getSkybox)(gl, glCache, program3D, program3DFogless)
 
 		gl.useProgram(program2D)
 		glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
@@ -9090,7 +9460,7 @@ async function MineKhan() {
 		gl.uniform1i(glCache.uTrans, 0)
 
 		// Send the block textures to the GPU
-		;(0,_js_texture_js__WEBPACK_IMPORTED_MODULE_17__.initTextures)(gl, glCache)
+		;(0,_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.initTextures)(gl, glCache)
 		initShapes()
 
 		// These buffers are only used for drawing the main menu blocks
@@ -9102,10 +9472,10 @@ async function MineKhan() {
 			sideEdgeBuffers[side] = edgeBuffer
 		}
 		texCoordsBuffers = []
-		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords) {
+		for (let t in _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords) {
 			let buff = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, buff)
-			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_17__.textureCoords[t], gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[t], gl.STATIC_DRAW)
 			texCoordsBuffers.push(buff)
 		}
 
@@ -9639,6 +10009,9 @@ async function MineKhan() {
 		genIcons()
 		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
+		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.size = min(width, height) / 15 | 0
+		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.init(true)
+
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(window.location.search)
 		if (urlParams.has("target")) {
@@ -9741,14 +10114,7 @@ async function MineKhan() {
 
 			let progress = round(100 * sub / maxLoad)
 			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${sub} / ${maxLoad})`
-			// ctx.putImageData(dirtbg, 0, 0)
-			// fill(255)
-			// textSize(30)
-			// ctx.textAlign = "center"
-			// text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
-
-		drawScreens.inventory = drawInv
 
 		drawScreens.pause = () => {
 			strokeWeight(1)

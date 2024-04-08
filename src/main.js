@@ -19,10 +19,11 @@ import './index.css'
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
-import { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
+import { timeString, roundBits, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
 import { blockData, BLOCK_COUNT, blockIds, Block } from "./js/blockData.js"
-import { createDatabase, loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
-import { shapes } from "./js/shapes.js"
+import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
+import { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } from "./js/shapes.js"
+import { inventory } from './js/inventory.js'
 import { createProgramObject } from "./js/glUtils.js"
 import { initTextures, textureMap, textureCoords } from './js/texture.js'
 import { getSkybox } from './js/sky'
@@ -31,8 +32,8 @@ import { Chunk } from "./js/chunk.js"
 import { Player } from "./js/player.js"
 
 window.blockData = blockData
-window.canvas = document.getElementById("overlay")
-window.ctx = window.canvas.getContext("2d")
+
+
 window.savebox = document.getElementById("savebox")
 window.boxCenterTop = document.getElementById("boxcentertop")
 window.saveDirections = document.getElementById("savedirections")
@@ -40,19 +41,10 @@ window.message = document.getElementById("message")
 window.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "window" as its namespace.
 window.quota = document.getElementById("quota")
 window.hoverbox = document.getElementById("onhover")
-window.canvas.width  = window.innerWidth
-window.canvas.height = window.innerHeight
+
 window.controlMap = {}
-window.sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function MineKhan() {
-	// Cache user-defined globals
-	const { canvas, savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap, sleep } = window
-	/**
-	 * @type {CanvasRenderingContext2D}
-	 */
-	const ctx = window.ctx
-
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
@@ -60,6 +52,19 @@ async function MineKhan() {
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
+
+	// Cache user-defined globals
+	const { savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
+	const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+	/**
+	 * @type {HTMLCanvasElement}
+	 */
+	const canvas = document.getElementById("overlay")
+	canvas.width  = window.innerWidth
+	canvas.height = window.innerHeight
+	const ctx = canvas.getContext("2d")
+	window.canvas = canvas
 
 	// Shh don't tell anyone I'm overriding native objects
 	String.prototype.hashCode = function() {
@@ -195,14 +200,7 @@ async function MineKhan() {
 		}
 	}
 
-	// Expose these functions to the global scope for debugging
-	win.saveToDB = saveToDB
-	win.loadFromDB = loadFromDB
-	win.createDatabase = createDatabase
-	win.deleteFromDB = deleteFromDB
-
 	// Globals
-	//{
 	let version = "Alpha 0.8.1"
 	let superflat = false
 	let details = true
@@ -230,17 +228,9 @@ async function MineKhan() {
 	let maxHeight = 255
 	let blockOutlines = false
 	let blockFill = true
-	const CUBE     = 0
-	const SLAB     = 0x100 // 9th bit
-	const STAIR    = 0x200 // 10th bit
-	const FLIP     = 0x400 // 11th bit
-	// const NORTH    = 0 // 12th and 13th bits for the 4 directions
-	const SOUTH    = 0x800
-	const EAST     = 0x1000
-	const WEST     = 0x1800
+
 	// const ROTATION = 0x1800 // Mask for the direction bits
 	let blockMode  = CUBE
-	let tex
 	let dirtBuffer
 	let texCoordsBuffers
 	let mainbg, dirtbg // Background images
@@ -261,6 +251,10 @@ async function MineKhan() {
 		"chat": () => {}
 	}
 	let html = {
+		play: {
+			enter: [document.getElementById("hotbar")],
+			exit: [document.getElementById("hotbar")]
+		},
 		pause: {
 			enter: [window.message],
 			exit: [window.savebox, window.saveDirections, window.message]
@@ -322,6 +316,14 @@ async function MineKhan() {
 				chatOutput.scroll(0, 10000000)
 			}
 		},
+		inventory: {
+			enter: [document.getElementById('inv-container')],
+			exit: [document.getElementById('inv-container'), hoverbox],
+			onenter: () => {
+				ctx.clearRect(0, 0, width, height) // Hide the GUI and text and stuff
+				inventory.playerStorage.render()
+			}
+		}
 	}
 
 	let screen = "main menu"
@@ -379,13 +381,6 @@ async function MineKhan() {
 		y: 0,
 		z: 0,
 	}
-	let inventory = {
-		hotbar: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-		main: [],
-		hotbarSlot: 0,
-		size: 40 * min(width, height) / 600,
-		holding: 0,
-	}
 
 	function setControl(name, key, shift = false, ctrl = false, alt = false) {
 		controlMap[name] = {
@@ -432,7 +427,7 @@ async function MineKhan() {
 	function play() {
 		canvas.onblur()
 		p.lastBreak = now
-		holding = inventory.hotbar[inventory.hotbarSlot]
+		holding = inventory.hotbar.hand.id
 		use3d()
 		getPointer()
 		fill(255, 255, 255)
@@ -444,8 +439,8 @@ async function MineKhan() {
 
 		crosshair()
 		hud(true)
+		inventory.hotbar.render()
 		hotbar()
-
 	}
 
 	/**
@@ -461,7 +456,7 @@ async function MineKhan() {
 	let skybox
 
 	function getPointer() {
-		if (canvas.requestPointerLock && !canvas.ontouchmove) {
+		if (canvas.requestPointerLock) {
 			canvas.requestPointerLock()
 		}
 	}
@@ -476,253 +471,55 @@ async function MineKhan() {
 	win.shapes = shapes
 
 	function initShapes() {
-		function mapCoords(rect, face) {
-			let x = rect.x
-			let y = rect.y
-			let z = rect.z
-			let w = rect.w
-			let h = rect.h
-			let tx = rect.tx
-			let ty = rect.ty
-			let tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h]
-			let pos = null
-			switch(face) {
-				case 0: // Bottom
-					pos = [x,y,z, x+w,y,z, x+w,y,z+h, x,y,z+h]
-					break
-				case 1: // Top
-					pos = [x,y,z, x+w,y,z, x+w,y,z-h, x,y,z-h]
-					break
-				case 2: // North
-					pos = [x,y,z, x-w,y,z, x-w,y-h,z, x,y-h,z]
-					break
-				case 3: // South
-					pos = [x,y,z, x+w,y,z, x+w,y-h,z, x,y-h,z]
-					break
-				case 4: // East
-					pos = [x,y,z, x,y,z+w, x,y-h,z+w, x,y-h,z]
-					break
-				case 5: // West
-					pos = [x,y,z, x,y,z-w, x,y-h,z-w, x,y-h,z]
-					break
-			}
-			pos = pos.map(c => c / 16 - 0.5)
-			let minmax = compareArr(pos, [])
-			pos.max = minmax.splice(3, 3)
-			pos.min = minmax
-			tex = tex.map(c => c / 16 / 16)
 
-			return {
-				pos: pos,
-				tex: tex
-			}
-		}
-
-		// 90 degree clockwise rotation; returns a new shape object
-		function rotate(shape) {
-			let verts = shape.verts
-			let texVerts = shape.texVerts
-			let cull = shape.cull
-			let pos = []
-			tex = []
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				pos[i] = []
-				tex[i] = []
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j]
-					let c = []
-					pos[i][j] = c
-					for (let k = 0; k < face.length; k += 3) {
-						c[k] = face[k + 2]
-						c[k + 1] = face[k + 1]
-						c[k + 2] = -face[k]
-					}
-
-					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-					if (i === 0) {
-						// Bottom
-						c.push(...c.splice(0, 3))
-						tex[i][j].push(...tex[i][j].splice(0, 2))
-					}
-					if (i === 1) {
-						// Top
-						c.unshift(...c.splice(-3, 3))
-						tex[i][j].unshift(...tex[i][j].splice(-2, 2))
-					}
-
-					let minmax = compareArr(c, [])
-					c.max = minmax.splice(3, 3)
-					c.min = minmax
-				}
-			}
-			let temp = tex[2] // North
-			tex[2] = tex[5] // North = West
-			tex[5] = tex[3] // West = South
-			tex[3] = tex[4] // South = East
-			tex[4] = temp // East = North
-
-			temp = pos[2] // North
-			pos[2] = pos[5] // North = West
-			pos[5] = pos[3] // West = South
-			pos[3] = pos[4] // South = East
-			pos[4] = temp // East = North
-
-			let cull2 = {
-				top: cull.top,
-				bottom: cull.bottom,
-				north: cull.west,
-				west: cull.south,
-				south: cull.east,
-				east: cull.north
-			}
-
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-			return {
-				verts: pos,
-				texVerts: tex,
-				cull: cull2,
-				rotate: true,
-				flip: shape.flip,
-				buffer: buffer,
-				size: shape.size,
-				varients: shape.varients
-			}
-		}
-
-		// Reflect over the y plane; returns a new shape object
-		function flip(shape) {
-			let verts = shape.verts
-			let texVerts = shape.texVerts
-			let cull = shape.cull
-			let pos = []
-			tex = []
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				pos[i] = []
-				tex[i] = []
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j].slice().reverse()
-					let c = []
-					pos[i][j] = c
-					for (let k = 0; k < face.length; k += 3) {
-						c[k] = face[k + 2]
-						c[k + 1] = -face[k + 1]
-						c[k + 2] = face[k]
-					}
-					let minmax = compareArr(c, [])
-					c.max = minmax.splice(3, 3)
-					c.min = minmax
-
-					tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-				}
-			}
-			let temp = pos[0] // Bottom
-			pos[0] = pos[1] // Bottom = Top
-			pos[1] = temp // Top = Bottom
-
-			temp = tex[0] // Bottom
-			tex[0] = tex[1] // Bottom = Top
-			tex[1] = temp // Top = Bottom
-
-			let cull2 = {
-				top: cull.bottom,
-				bottom: cull.top,
-				north: (cull.north & 1) << 1 | (cull.north & 2) >> 1,
-				west: (cull.west & 1) << 1 | (cull.west & 2) >> 1,
-				south: (cull.south & 1) << 1 | (cull.south & 2) >> 1,
-				east: (cull.east & 1) << 1 | (cull.east & 2) >> 1
-			}
-
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-			return {
-				verts: pos,
-				texVerts: tex,
-				cull: cull2,
-				rotate: shape.rotate,
-				flip: shape.flip,
-				buffer: buffer,
-				size: shape.size,
-				varients: shape.varients
-			}
-		}
-
+		// Create buffers for the hitbox outline shapes
 		for (let shape in shapes) {
 			let obj = shapes[shape]
-			let verts = obj.verts
-
-			// Populate the vertex coordinates
-			for (let i = 0; i < verts.length; i++) {
-				let side = verts[i]
-				let texArr = []
-				obj.texVerts.push(texArr)
-				for (let j = 0; j < side.length; j++) {
-					let face = side[j]
-					let mapped = mapCoords(face, i)
-					side[j] = mapped.pos
-					texArr.push(mapped.tex)
-				}
-			}
-
-			if (obj.rotate) {
-				let v = obj.varients
-				let east = rotate(obj)
-				let south = rotate(east)
-				let west = rotate(south)
-				v[0] = obj
-				v[2] = south
-				v[4] = east
-				v[6] = west
-			}
-			if (obj.flip) {
-				let v = obj.varients
-				v[1] = flip(obj)
-				if (obj.rotate) {
-					v[3] = flip(v[2])
-					v[5] = flip(v[4])
-					v[7] = flip(v[6])
-				}
-			}
-
 			obj.buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.verts.flat(2)), gl.STATIC_DRAW)
+			for (let i in obj.varients) {
+				let v = obj.varients[i]
+				v.buffer = gl.createBuffer()
+				gl.bindBuffer(gl.ARRAY_BUFFER, v.buffer)
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.verts.flat(2)), gl.STATIC_DRAW)
+			}
 		}
 
+		// Create blockData for each of the slabs and stairs varients
 		for (let i = 0; i < BLOCK_COUNT; i++) {
 			let baseBlock = blockData[i]
 			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
-
-			let slabBlock = Object.create(baseBlock)
-			slabBlock.transparent = true
-			let stairBlock = Object.create(baseBlock)
-			stairBlock.transparent = true
-			slabBlock.shape = shapes.slab
 			baseBlock.shape = shapes.cube
-			stairBlock.shape = shapes.stair
+
+			let slabBlock = Object.assign({}, baseBlock)
+			slabBlock.transparent = true
+			slabBlock.name += " Slab"
+			slabBlock.shape = shapes.slab
 			blockData[i | SLAB] = slabBlock
+
+			let stairBlock = Object.assign({}, baseBlock)
+			stairBlock.transparent = true
+			stairBlock.name += " Stairs"
+			stairBlock.shape = shapes.stair
+
 			blockData[i | STAIR] = stairBlock
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
-					let block = Object.create(baseBlock)
-					block.transparent = true
+					let block = Object.assign({}, slabBlock)
 					block.shape = v[j]
+					delete block.icon
 					blockData[i | SLAB | j << 10] = block
+
 				}
 			}
 			v = stairBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
-					let block = Object.create(baseBlock)
-					block.transparent = true
+					let block = Object.assign({}, stairBlock)
 					block.shape = v[j]
+					delete block.icon
 					blockData[i | STAIR | j << 10] = block
 				}
 			}
@@ -741,7 +538,7 @@ async function MineKhan() {
 	let hexagonVerts
 	let slabIconVerts
 	let stairIconVerts
-	let blockIcons
+
 	{
 		let s = Math.sqrt(3) / 2
 		let q = s / 2
@@ -768,15 +565,7 @@ async function MineKhan() {
 		]
 	}
 
-	/**
-	 * Draws the block icon for the given ID
-	 * @param {*} x X coordinate in pixels
-	 * @param {*} y Y coordinate in pixels (from the top)
-	 * @param {*} id Block ID for the icon to draw
-	 * @returns {void}
-	 */
-	let drawIcon = (x, y, id) => ctx.putImageData(blockIcons[id], x, y)
-	function renderIcon(x, y, id) {
+	function renderIcon(x, y, id, blockIcons, iconLengths) {
 		x = x * 2 / width - 1
 		y = y * 2 / height - 1
 		gl.uniform2f(glCache.uOffset, x, y)
@@ -788,18 +577,17 @@ async function MineKhan() {
 		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
 		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
 		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLES, 0, blockIcons.lengths[id])
+		gl.drawArrays(gl.TRIANGLES, 0, iconLengths[id])
 	}
 	function genIcons() {
-		let firstTime = false
-		if (!blockIcons) firstTime = true
+		const iconSize = 64 // We'll scale up or down while drawing them.
 
-		blockIcons = [null]
-		blockIcons.lengths = [0]
+		let blockIcons = [null]
+		let iconLengths = [0]
 		let texOrder = [1, 2, 3]
 		let shadows = [1, 0.4, 0.7]
-		let scaleY = (inventory.size - 5) / height
-		let scaleX = (inventory.size - 5) / width
+		let scaleY = (iconSize - 5) / height
+		let scaleX = (iconSize - 5) / width
 		for (let i = 1; i < BLOCK_COUNT; i++) {
 			let data = []
 			let block = blockData[i]
@@ -819,11 +607,11 @@ async function MineKhan() {
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 				blockIcons[i] = buffer
-				blockIcons.lengths[i] = 6
+				iconLengths[i] = 6
 				blockIcons[i | SLAB] = buffer
-				blockIcons.lengths[i | SLAB] = 6
+				iconLengths[i | SLAB] = 6
 				blockIcons[i | STAIR] = buffer
-				blockIcons.lengths[i | STAIR] = 6
+				iconLengths[i | STAIR] = 6
 				continue
 			}
 
@@ -842,7 +630,7 @@ async function MineKhan() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i] = buffer
-			blockIcons.lengths[i] = 6 * 3
+			iconLengths[i] = 6 * 3
 
 			// Slab icon
 			data = []
@@ -861,7 +649,7 @@ async function MineKhan() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i | SLAB] = buffer
-			blockIcons.lengths[i | SLAB] = 6 * 3
+			iconLengths[i | SLAB] = 6 * 3
 
 			// Stair icon
 			data = []
@@ -884,7 +672,7 @@ async function MineKhan() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
 			blockIcons[i | STAIR] = buffer
-			blockIcons.lengths[i | STAIR] = 6 * 6
+			iconLengths[i | STAIR] = 6 * 6
 		}
 
 		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
@@ -897,14 +685,13 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(1)
 		gl.enableVertexAttribArray(2)
 
-		const s = inventory.size | 0
+		const s = iconSize | 0
 		const limitX = gl.canvas.width / s | 0
 		const limitY = gl.canvas.height / s | 0
 		const limit = limitX * limitY
 		const total = (BLOCK_COUNT - 1) * 3
 		const pages = Math.ceil(total / limit)
 		const blocksPerPage = (limit / 3 | 0) * 3
-		const imageIcons = []
 
 		let masks = [CUBE, SLAB, STAIR]
 		let drawn = 1 // 0 = air
@@ -918,7 +705,7 @@ async function MineKhan() {
 				for (let k = 0; k < 3; k++) {
 					let x = (j + k) % limitX
 					let y = (j + k) / limitX | 0
-					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k])
+					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k], blockIcons, iconLengths)
 				}
 				drawn++
 				if (drawn === BLOCK_COUNT) break
@@ -934,17 +721,23 @@ async function MineKhan() {
 					let x = (j + k) % limitX
 					let y = (j + k) / limitX | 0
 					let id = pageStart + j/3 | masks[k]
-					imageIcons[id] = ctx.getImageData(x * s, y * s, s, s)
+
+					if (blockData[id]) {
+						const icon = document.createElement("canvas")
+						icon.width = s
+						icon.height = s
+						const c = icon.getContext("2d")
+						c.drawImage(ctx.canvas, x * s, y * s, s, s, 0, 0, s, s)
+						blockData[id].iconImg = icon
+					}
 				}
 			}
 		}
-		if (firstTime) console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
+		console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
 
 		// Yeet the buffers
-		delete blockIcons.lengths
 		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
-		blockIcons = imageIcons
 	}
 
 	//Generate buffers for every block face and store them
@@ -1504,7 +1297,7 @@ async function MineKhan() {
 		let pminX = floor(0.5 + p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
 		let pmaxX = ceil(-0.5 + p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
 		let pminY = max(floor(0.5 + p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
-		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), 255)
+		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), maxHeight)
 		let pminZ = floor(0.5 + p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
 		let pmaxZ = ceil(-0.5 + p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 
@@ -1742,9 +1535,9 @@ async function MineKhan() {
 			}
 		}
 	}
-	function newWorldBlock(block) {
+	function newWorldBlock() {
 		if(!hitBox.pos || !holding) return
-		let pos = hitBox.pos, x= pos[0], y = pos[1], z = pos[2]
+		let pos = hitBox.pos, [x, y, z] = pos
 		switch(hitBox.face) {
 			case "top":
 				y += 1
@@ -1765,11 +1558,12 @@ async function MineKhan() {
 				x += 1
 				break
 		}
-		if (!inBox(x, y, z, 1, 1, 1) && !world.getBlock(x, y, z)) {
+		let oldBlock = world.getBlock(x, y, z)
+		if (y < maxHeight && y >= 0 && !inBox(x, y, z, 1, 1, 1) && (!oldBlock || blockData[oldBlock].shape === shapes.flower) && oldBlock !== holding) {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff ? holding | block : holding)
+			changeWorldBlock(holding < 0xff && blockData[holding | blockMode] ? holding | blockMode : holding)
 		}
 	}
 
@@ -1983,7 +1777,7 @@ async function MineKhan() {
 			const command = commands.get(commandName)
 			chat(`Usage: ${command.usage}\nDescription: ${command.description}`, "lime")
 		}
-		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nPro tip: you can delete random autocomplete suggestions by `)
+		else chat(`/help shows command usage with /help <command name>. Syntax is like "/commandName <required> [optional=default]". So for example "/undo [username=yourself] <count>" means you can do "/undo 12" to undo your own last 12 block edits, or "/undo 1337 griefer 5000" to undo 1337 griefer's last 5000 block edits.\n\nCommands: ${commandList.map(command => `${command.slice(1)}`).join(", ")}`)
 	}, "/help <command name>", "Shows how to use a command", () => {
 		setAutocomplete(commandList.map(command => `/help ${command.slice(1)}`))
 	})
@@ -2092,8 +1886,8 @@ async function MineKhan() {
 		if (args[0]?.toLowerCase() === "sphere") shape = "sphere"
 		if (args[0]?.toLowerCase().startsWith("cyl")) shape = "cylinder"
 
-		const block = inventory.hotbar[inventory.hotbarSlot]
-		const name = blockData[block].name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+		const block = inventory.hotbar.hand.id
+		const name = inventory.hotbar.hand.name
 
 		let [start, end] = blockLog[currentUser.username].slice(-2)
 		let [x1, y1, z1] = start
@@ -2165,7 +1959,7 @@ async function MineKhan() {
 				await sleep(0) // Let the player watch the blocks change
 				let edited = 0
 				for (let x = x1 - offset; x <= x1 + offset; x++) {
-					for (let y = Math.max(y1 - offset, 1); y <= Math.min(y1 + offset, 255); y++) {
+					for (let y = Math.max(y1 - offset, 1); y <= Math.min(y1 + offset, maxHeight); y++) {
 						for (let z = z1 - offset; z <= z1 + offset; z++) {
 							let d = Math.hypot(x1 - x, y1 - y, z1 - z)
 							if (d <= radius && (solid || radius - d < 1.0) && world.getBlock(x, y, z) !== block) {
@@ -2293,7 +2087,7 @@ async function MineKhan() {
 				return
 			}
 			if (typeof msg.data !== "string" && screen === "multiplayer menu") {
-				world = new World(true)
+				world = new World(true) // Non-hosts can't use console commands since this isn't global.
 				world.loadSave(new Uint8Array(msg.data))
 				changeScene("loading")
 				return
@@ -2605,7 +2399,7 @@ async function MineKhan() {
 			let Z = (z >> 4) + this.offsetZ
 			// if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
 			// 	debugger
-			// 	if (y < 0 || y > 255) debugger
+			// 	if (y < 0 || y > maxHeight) debugger
 			// 	if (blockLight === 1) return this.chunks[x >> 4][z >> 4].getBlockLight(x & 15, y, z & 15)
 			// 	else if (blockLight === 0) return this.chunks[x >> 4][z >> 4].getSkyLight(x & 15, y, z & 15)
 			// 	else return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
@@ -2879,7 +2673,7 @@ async function MineKhan() {
 			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
 				lookingAt()
-				newWorldBlock(blockMode)
+				newWorldBlock()
 			}
 
 			initModelView(p)
@@ -3085,7 +2879,7 @@ async function MineKhan() {
 			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
 			for (let block of inventory.hotbar) bab.add(block, 16)
-			bab.add(inventory.hotbarSlot, 4)
+			bab.add(inventory.hotbar.index - inventory.hotbar.start, 4)
 			bab.add(p.flying, 1).add(p.spectator, 1)
 			bab.add(superflat, 1).add(caves, 1).add(details, 1)
 			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
@@ -3182,8 +2976,8 @@ async function MineKhan() {
 			p.z = reader.read(20, true)
 			p.rx = reader.read(11, true) / 100
 			p.ry = reader.read(11, true) / 100
-			for (let i = 0; i < 9; i++) inventory.hotbar[i] = reader.read(16)
-			inventory.hotbarSlot = reader.read(4)
+			for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
+			inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
 			p.flying = reader.read(1)
 			p.spectator = reader.read(1)
 
@@ -3560,7 +3354,7 @@ async function MineKhan() {
 		}
 
 		static draw() {
-			if (!hoverbox.className.includes("hidden")) hoverbox.classList.add("hidden")
+			if (screen !== "inventory" && screen !== "play") hoverbox.classList.add("hidden")
 			for (let button of Button.all) {
 				button.draw()
 			}
@@ -3778,8 +3572,8 @@ async function MineKhan() {
 		// Multiplayer buttons
 		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", () => changeScene("main menu"))
 		Button.add(mid - x2, height - 75, w2, 40, "Play Selected World", "multiplayer menu", () => {
-			world = new World()
-			win.world = world
+			// world = new World()
+			win.world = null
 
 			if (selectedWorld) {
 				initMultiplayer(selectedWorld)
@@ -3799,44 +3593,16 @@ async function MineKhan() {
 		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
 	}
 
-	function hotbar(highlight = inventory.hotbarSlot) {
-		if (p.spectator || screen !== "play" && screen !== "inventory") return
-		// If the hotbar needs to be rendered, then the selected block may have changed
+	function hotbar() {
+		if (p.spectator || screen !== "play") return
+		// The selected block has changed. Update lantern brightness
 		{
-			let heldLight = blockData[inventory.hotbar[inventory.hotbarSlot]].lightLevel / 15 || 0
+			let heldLight = blockData[holding].lightLevel / 15 || 0
 			gl.useProgram(program3D)
 			gl.uniform1f(glCache.uLantern, heldLight)
 			gl.useProgram(program3DFogless)
 			gl.uniform1f(glCache.uLanternFogless, heldLight)
 		}
-
-
-		let s = inventory.size
-		let x = width / 2 - 9 / 2 * s + 0.5 + 25
-		let y = height - s * 1.5 + 0.5
-
-		for(let i = 0; i < inventory.hotbar.length; i ++) {
-			if (inventory.hotbar[i]) {
-				drawIcon(x + i * s, y, inventory.hotbar[i])
-			}
-		}
-
-		ctx.strokeStyle = "rgb(0, 0, 0)"
-		ctx.lineWidth = 5
-		ctx.beginPath()
-		ctx.moveTo(x, y)
-		ctx.lineTo(x + s * 9, y)
-		ctx.moveTo(x, y + s)
-		ctx.lineTo(x + s * 9, y + s)
-		for(let i = 0; i <= 9; i++) {
-			ctx.moveTo(x + i * s, y)
-			ctx.lineTo(x + i * s, y + s)
-		}
-		ctx.stroke()
-
-		ctx.strokeStyle = "rgb(100, 100, 100)"
-		ctx.beginPath()
-		if (highlight >= 0) ctx.strokeRect(width / 2 - 9 / 2 * s + highlight * s + 25, height - s * 1.5, s, s)
 	}
 
 	function crosshair() {
@@ -3962,111 +3728,9 @@ async function MineKhan() {
 	sortedBlocks.shift() // Get rid of the air block in the array of sorted blocks
 	sortedBlocks.sort()
 
-	function drawInv() {
-		let x = 0
-		let y = 0
-		let s = inventory.size
-		let s2 = s / 2
-		let perRow = 14
-
-		ctx.clearRect(0, 0, width, height)
-
-		// Draw the blocks
-		if (settings.inventorySort === "name") {
-			for (let i = 0; i < BLOCK_COUNT - 1; i++) {
-				x = i % perRow * s + 51
-				y = (i / perRow | 0) * s + 51
-				drawIcon(x - s2, y - s2, sortedBlocks[i][1])
-			}
-		}
-		else if (settings.inventorySort === "blockid") {
-			for (let i = 1; i < BLOCK_COUNT; i++) {
-				x = (i - 1) % perRow * s + 51
-				y = ((i - 1) / perRow | 0) * s + 51
-				drawIcon(x - s2, y - s2, i)
-			}
-		}
-
-		// Draw the grid
-		ctx.lineWidth = 5
-		ctx.strokeStyle = "rgb(0, 0, 0)"
-		ctx.beginPath()
-		for (y = 0; y < 12; y++) {
-			ctx.moveTo(50.5 - s2, 50.5 - s2 + y * s)
-			ctx.lineTo(50.5 - s2 + s * perRow, 50.5 - s2 + y * s)
-		}
-		y--
-		for (x = 0; x < perRow + 1; x++) {
-			ctx.moveTo(50.5 - s2 + s * x, 50.5 - s2)
-			ctx.lineTo(50.5 - s2 + s * x, 50.5 - s2 + y * s)
-		}
-		ctx.stroke()
-
-		// Hotbar
-		x = width / 2 - 9 / 2 * s + 0.5 + 25
-		y = height - s * 1.5 + 0.5
-		let hoverName = ""
-		let overHot = (mouseX - x) / s | 0
-		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			hoverName = blockData[inventory.hotbar[overHot]].name
-			hotbar(overHot)
-		}
-		else hotbar(-1)
-
-		// Box highlight in inv
-		let overInv = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		if (overInv >= 0 && overInv < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			x = overInv % perRow * s + 50 - s2
-			y = (overInv / perRow | 0) * s + 50 - s2
-			ctx.strokeStyle = "rgb(100, 100, 100)"
-			ctx.beginPath()
-			ctx.strokeRect(x, y, s, s)
-			hoverName = settings.inventorySort === "name" ? sortedBlocks[overInv][0] : blockData[overInv + 1].name
-		}
-
-		// Item you're dragging
-		if (inventory.holding) {
-			drawIcon(mouseX - s2, mouseY - s2, inventory.holding)
-		}
-
-		// Tooltip for the item you're hovering over
-		if (hoverName) {
-			hoverName = hoverName.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-			ctx.fillStyle = "black"
-			const w = hoverName.length * charWidth + 5
-			const x = mouseX + w > width ? width - w : mouseX
-			ctx.fillRect(x, mouseY - 22, w, 24)
-			ctx.font = "20px monospace"
-			ctx.fillStyle = "white"
-			ctx.fillText(hoverName, x + 3, mouseY - 4)
-		}
-	}
 	function clickInv() {
-		let s = inventory.size
-		let s2 = s / 2
-		let perRow = 14
-		let over = round((mouseY - 50) / s) * perRow + round((mouseX - 50) / s)
-		let x = width / 2 - 9 / 2 * s + 25
-		let y = height - s * 1.5
-		let overHot = (mouseX - x) / s | 0
-		if (mouseX < x + 9 * s && mouseX > x && mouseY > y && mouseY < y + s) {
-			let temp = inventory.hotbar[overHot]
-			inventory.hotbar[overHot] = inventory.holding
-			inventory.holding = temp
-		}
-		else if (over >= 0 && over < BLOCK_COUNT - 1 && mouseX < 50 - s2 + perRow * s && mouseX > 50 - s2) {
-			if (settings.inventorySort === "name") {
-				inventory.holding = sortedBlocks[over][1]
-			}
-			else if (settings.inventorySort === "blockid") {
-				inventory.holding = over + 1
-			}
-		}
-		else {
-			inventory.holding = 0
-		}
-
-		drawScreens.inventory()
+		inventory.heldItem = null
+		document.body.style.cursor = ""
 	}
 
 	let unpauseDelay = 0
@@ -4117,26 +3781,14 @@ async function MineKhan() {
 					changeWorldBlock(0)
 				}
 
-				// holding = inventory.hotbar[inventory.hotbarSlot]
 				if(name === controlMap.placeBlock.key && holding) {
-					if (holding === 152 || holding === 153 || holding === 154) {
-						newWorldBlock(0)
-					}
-					else {
-						newWorldBlock(blockMode)
-					}
+					newWorldBlock()
 				}
 
 				if (name === controlMap.pickBlock.key && hitBox.pos) {
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
-					let index = inventory.hotbar.indexOf(block)
-					if (index >= 0) {
-						inventory.hotbarSlot = index
-					}
-					else {
-						inventory.hotbar[inventory.hotbarSlot] = block
-					}
-					holding = inventory.hotbar[inventory.hotbarSlot]
+					inventory.hotbar.pickBlock(block)
+					holding = inventory.hotbar.hand.id
 					hotbar()
 				}
 
@@ -4309,8 +3961,8 @@ async function MineKhan() {
 		controlEvent(code, e)
 
 		if (screen === "play" && Number(e.key)) {
-			inventory.hotbarSlot = e.key - 1
-			holding = inventory.hotbar[inventory.hotbarSlot]
+			inventory.hotbar.setPosition(e.key - 1)
+			holding = inventory.hotbar.hand.id
 			hotbar()
 		}
 	}
@@ -4352,21 +4004,11 @@ async function MineKhan() {
 	canvas.onwheel = e => {
 		e.preventDefault()
 		e.stopPropagation()
-		if (e.deltaY > 0) {
-			inventory.hotbarSlot++
+		if (screen === "play") {
+			inventory.hotbar.shiftPosition(e.deltaY)
+			holding = inventory.hotbar.hand.id
+			hotbar()
 		}
-		else if (e.deltaY < 0) {
-			inventory.hotbarSlot--
-		}
-		if (inventory.hotbarSlot > 8) {
-			inventory.hotbarSlot = 0
-		}
-		else if (inventory.hotbarSlot < 0) {
-			inventory.hotbarSlot = 8
-		}
-
-		holding = inventory.hotbar[inventory.hotbarSlot]
-		hotbar()
 	}
 	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
 	window.onresize = () => {
@@ -4379,9 +4021,7 @@ async function MineKhan() {
 		gl.viewport(0, 0, width, height)
 		initButtons()
 		initBackgrounds()
-		let oldSize = inventory.size
-		inventory.size = 5 + 40 * min(width, height) / 600
-		if (oldSize !== inventory.size) genIcons()
+		inventory.size = min(width, height) / 15 | 0
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
 
@@ -5120,6 +4760,9 @@ async function MineKhan() {
 		genIcons()
 		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
+		inventory.size = min(width, height) / 15 | 0
+		inventory.init(true)
+
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(window.location.search)
 		if (urlParams.has("target")) {
@@ -5222,14 +4865,7 @@ async function MineKhan() {
 
 			let progress = round(100 * sub / maxLoad)
 			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${sub} / ${maxLoad})`
-			// ctx.putImageData(dirtbg, 0, 0)
-			// fill(255)
-			// textSize(30)
-			// ctx.textAlign = "center"
-			// text(`Loading... ${progress}% complete (${sub} / ${maxLoad})`, width / 2, height / 2)
 		}
-
-		drawScreens.inventory = drawInv
 
 		drawScreens.pause = () => {
 			strokeWeight(1)

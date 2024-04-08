@@ -2,6 +2,10 @@ body {
 	overflow: hidden; /* Hide scrollbars */
 	background-color: black;
 }
+canvas:focus {
+	outline: none;
+}
+
 .world-select {
 	width: 99vw;
 	min-width: 300px;
@@ -66,7 +70,7 @@ input[type=text]:focus {
 	width: auto;
 	max-width: 400px;
 	position: absolute;
-	z-index: 1;
+	z-index: 11;
 	padding: 10px;
 	cursor: default;
 }
@@ -149,11 +153,18 @@ input[type=text]:focus {
 #inv-container {
 	position: absolute;
 	left: 50%;
-	top: 50px;
 	transform: translate(-50%, 0);
-	height: 80hv;
-	max-height: 500px;
-	width: fit-content;
-	overflow-y: scroll;
-	padding: 0;
+	z-index: 1;
+}
+#inv-scroll {
+	height: calc(100vh - (min(100vh, 100vw) / 3.25));
+	overflow-y: auto;
+	border-bottom: solid 2px lightgray;
+}
+#hotbar {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, 0);
+	bottom: 10px;
+	z-index: 0;
 }

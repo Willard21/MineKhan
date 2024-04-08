@@ -213,7 +213,6 @@ const texturesFunc = function (setPixel, getPixels) {
 		"blackstone": "0g0g6(ěHAìZwTZkMW;ŋH|BH4ČĩÑSÀwgi0]qÕJú2]ÃQ0ÀJÂôwPamüôJ^9^CÉiķıEĞh0Ďį4Iú0ČQ9ČÁByú|gaS4ŁNP3ySÃyĿ92]aE2úJÀŀF4ùþXŁÒkõACŀ{J]",
 		"blackstoneTop": "0g0g5AìZ(ěH;ŋHsTYkMW5yÆEëÑòirKñaIĈa%ĚìKI^TČÀ2]iik_0xpJR>ÎyõÎįrÒk_]8İ0ĉ2AĀa2+2QòrÂ2I]-ĨQiJiNíÀč1e4ùÎyoÛ2IÑĈTQSSxĚTP]õ",
 		"polishedBlackstone": "0g0g6|BH;ŋH(ěHkMWAìZsTY0ë840^5ih]ĊûEiJIíV1iúFkÒ0ĐĊEĐĊ82^IíÂBiúFkÏx2U4ĬB0XÑB?bBk9ÂAö4iÏüĀ{8ĊúÀđU5AóM^ý8ăiFq|EĐČþČUÂP$JP$",
-		"polishedBlackstoneBricks": "0g0g6(ěH|BH;ŋHwÁZAìZkMW4ĊÁEüî8wÂi0j8ČĈùAýT4iT55Â0kÁA5ù9wi8zöįŇ÷[tÛĽłÛĽŔEüûìiÁh4jIAÀìký9kë]wïAAiS85?1g2]z]8Ň÷+łöğAâłÉãŁł",
 		"gildedBlackstone": "0g0ga(ěHAìZwTZkMW;ŋHQKWŁSZégZZĜY|BH1iz2M45ÀgÔÀy04SÂ+hix6XTzÞ01wQäijg4Qi9úßlQQùhyRÁ*4ā3lijÀx0i*Ý1gRx0ix42ÔÁxhyixBx0lxgãN4QQ7gQ1î0āSm0QSÏi0iÞQP3,iwBÀPùz*Mxykh2OMzhÁg",
 		"basaltSide": "0g0g5|AZoûW-ŋYËâZ(ĪZ50ĪÙ(wðSĪÙ(iN0łÙ(ëA6łc-ëQ(ĩ1waÂ+icxaJ)ķÙxgùQëÎĨ2ë(ĀÚĩëë6rÚĠăù6rdírù+rTĚs0+2ìXkëQgëwĹì6ăgAħ46rÎXo",
 		"basaltTop": "0g0g7ËâZâľH|AZ)ĻWóEY;śZoûW0üÉA636mĹKÈŁč+ëeĪÀ{qì{ĀqĭhSÙJ&ħìØ5ìSĿdĀ0Ģý%ŋĐ4Ĥđ1Č5DÙįĞĈ?ġJħSKocëÈ0ĄĨwëO4ăTPëŝī(×~Ó6ĴëeÑĘ]Kwe(wS",
@@ -508,11 +507,13 @@ const blockData = [
 ]
 
 const BLOCK_COUNT = blockData.length
+const blockIds = {}
 
 // Set defaults on blockData
 for (let i = 1; i < BLOCK_COUNT; ++i) {
 	const data = blockData[i]
 	data.id = i
+	blockIds[data.name] = i
 
 	if ( !("textures" in data) ) {
 		data.textures = new Array(6).fill(data.name)
@@ -545,10 +546,8 @@ for (let i = 1; i < BLOCK_COUNT; ++i) {
 	data.icon ??= false
 	data.semiTrans ??= false
 	data.hideInterior ??= data.transparent
+	data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 }
-
-const blockIds = {}
-blockData.forEach(block => blockIds[block.name] = block.id)
 
 let Block = {
 	top: 0x4,
