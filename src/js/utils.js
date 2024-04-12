@@ -130,6 +130,10 @@ class BitArrayReader {
 	 */
 	constructor(array) {
 		this.data = array // Byte array; values are assumed to be under 256
+
+		/**
+		 * A pointer to the bit position of the reader; can be adjusted to read a different part of the array.
+		 */
 		this.bit = 0
 	}
 	read(bits, negative = false) {

@@ -390,10 +390,8 @@ const blockData = [
 	{ name: "quartzBricks" },
 	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.cube },
 	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.cube  },
-	/* Doors/trapdoors will hopefully get proper models one day...
-	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
-	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
-	*/
+	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.cube },
+	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.cube },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube  },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {

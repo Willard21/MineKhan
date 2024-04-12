@@ -1443,6 +1443,10 @@ class BitArrayReader {
 	 */
 	constructor(array) {
 		this.data = array // Byte array; values are assumed to be under 256
+
+		/**
+		 * A pointer to the bit position of the reader; can be adjusted to read a different part of the array.
+		 */
 		this.bit = 0
 	}
 	read(bits, negative = false) {
@@ -1878,10 +1882,8 @@ const blockData = [
 	{ name: "quartzBricks" },
 	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
-	/* Doors/trapdoors will hopefully get proper models one day...
-	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop" },
-	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom" },
-	*/
+	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
+	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
 	// I swear, if y'all don't stop asking about TNT every 5 minutes!
 	/* {
@@ -3420,6 +3422,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
 /* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(16);
+
 
 
 
@@ -3763,7 +3767,8 @@ class Chunk {
 	setBlock(x, y, z, blockID, user) {
 		if (user && !this.edited) {
 			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generated chunk
+			this.saveData = null
+			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 
 		if (semiTrans[blockID & 255]) {
@@ -3773,6 +3778,15 @@ class Chunk {
 			}
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
+	}
+	deleteBlock(x, y, z, user) {
+		if (user && !this.edited) {
+			this.edited = true
+			this.saveData = null
+			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
+		}
+		this.blocks[y * 256 + x * 16 + z] = 0
+		this.minY = y < this.minY ? y : this.minY
 	}
 
 	processBlocks() {
@@ -4185,14 +4199,6 @@ class Chunk {
 			index = this.renderLength++
 		}
 		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
-	}
-	deleteBlock(x, y, z, user) {
-		if (user && !this.edited) {
-			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generated chunk
-		}
-		this.blocks[y * 256 + x * 16 + z] = 0
-		this.minY = y < this.minY ? y : this.minY
 	}
 	getCaveData() {
 		if (this.caves || this.caveData) return
@@ -4742,35 +4748,243 @@ class Chunk {
 			// tick()
 		}
 	}
-	load() {
-		if (this.loaded) {
-			return
+	compressSection(blocks) {
+		let section = []
+		let blockSet = new Set()
+		for (let i = 0; i < 6; i++) section.push(new Int16Array(512).fill(-1))
+		for (let i in blocks) {
+			blockSet.add(blocks[i])
+			let y = i >> 6
+			let x = i >> 3 & 7
+			let z = i & 7
+
+			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
+			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
+			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
+			section[3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
+			section[4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
+			section[5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
 		}
-		const { world } = this
-		let chunkX = this.x >> 4
-		let chunkZ = this.z >> 4
-		let str = `${chunkX},${chunkZ}`
-		let load = world.loadFrom[str]
+
+		let palette = {}
+		let paletteBlocks = Array.from(blockSet)
+		paletteBlocks.forEach((block, index) => palette[block] = index)
+		let paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteBlocks.length)
+
+		let bestBAB = null
+		for (let i = 0; i < 6; i++) {
+			let bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+			bab.add(paletteBlocks.length, 9)
+			for (let block of paletteBlocks) bab.add(block, 16)
+
+			// Store the orientation so it can be loaded properly
+			let blocks = section[i]
+			bab.add(i, 3)
+
+			let run = null
+			let runs = []
+			let singles = []
+			for (let i = 0; i < blocks.length; i++) {
+				const block = blocks[i]
+				if (block >= 0) {
+					if (!run && i < blocks.length - 2 && blocks[i + 1] >= 0 && blocks[i + 2] >= 0) {
+						run = [i, []]
+						runs.push(run)
+					}
+					if (run) {
+						if (run[1].length && block === run[1].at(-1)[1]) run[1].at(-1)[0]++
+						else run[1].push([1, block])
+					}
+					else singles.push([i, blocks[i]])
+				}
+				else run = null
+			}
+
+			bab.add(runs.length, 8)
+			bab.add(singles.length, 9)
+			for (let [start, blocks] of runs) {
+				// Determine the number of bits needed to store the lengths of each block type
+				let maxBlocks = 0
+				for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
+				let lenBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(maxBlocks)
+
+				bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
+				for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
+			}
+			for (let [index, block] of singles) {
+				bab.add(index, 9).add(palette[block], paletteBits)
+			}
+			if (!bestBAB || bab.bitLength < bestBAB.bitLength) {
+				bestBAB = bab
+			}
+		}
+		return bestBAB
+	}
+	getSave() {
+		if (!this.originalBlocks.length) return
+
+		const bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+		if (this.edited || !this.saveData?.reader) {
+
+			// Find all the edited blocks and sort them into 8x8x8 sections
+			const sectionMap = {}
+			const { blocks, originalBlocks } = this
+			for (let i = 0; i < blocks.length; i++) {
+				if (blocks[i] !== originalBlocks[i]) {
+					let y = i >> 8
+					let x = (i >> 4 & 15) + this.x
+					let z = (i & 15) + this.z
+					let str = `${x>>3},${y>>3},${z>>3}` // 8x8x8 sections
+					if (!sectionMap[str]) {
+						sectionMap[str] = []
+					}
+					sectionMap[str][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+				}
+			}
+
+			// Compress edited blocks into binary
+			for (let [coords, section] of Object.entries(sectionMap)) {
+				let [sx, sy, sz] = coords.split(",").map(Number)
+				bab.add(sx, 16).add(sy, 5).add(sz, 16)
+
+				bab.append(this.compressSection(section))
+			}
+		}
+		else {
+			const { reader, startPos, endPos } = this.saveData
+			reader.bit = startPos
+			while (reader.bit < endPos) {
+				let len = Math.min(endPos - reader.bit, 8)
+				bab.add(reader.read(len), len)
+			}
+		}
+		return bab
+	}
+	loadFromBlocks(blocks) {
+		let last = 0
+		for (let j in blocks) {
+			last = +j
+			let block = blocks[last]
+			this.blocks[last] = block
+			if (!this.doubleRender && _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[block].semiTrans) {
+				this.doubleRender = true
+				if (!this.world.doubleRenderChunks.includes(this)) {
+					this.world.doubleRenderChunks.push(this)
+				}
+			}
+		}
+		if (last >> 8 > this.maxY) this.maxY = last >> 8
+	}
+	load() {
+		if (this.loaded) return
+		const chunkX = this.x >> 4
+		const chunkZ = this.z >> 4
+		const str = `${chunkX},${chunkZ}`
+		const load = this.world.loadFrom[str]
+
 		if (load) {
-			this.edited = true
+			delete this.world.loadFrom[str]
+			if (load.reader && !load.edits) this.saveData = {
+				reader: load.reader,
+				startPos: load.startPos,
+				endPos: load.endPos
+			}
 			this.originalBlocks = this.blocks.slice()
-			let last = 0
-			for (let j in load) {
-				last = +j
-				let block = load[last]
-				this.blocks[last] = block
-				if (!this.doubleRender && _blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[block].semiTrans) {
-					this.doubleRender = true
-					if (!this.world.doubleRenderChunks.includes(this)) {
-						this.world.doubleRenderChunks.push(this)
+
+			if (load.blocks) {
+				// The initial world load had to parse the blocks, so they were stored.
+				this.loadFromBlocks(load.blocks)
+			}
+			else if (load.reader) {
+				// The chunk was loaded, then later unloaded.
+				const getIndex = [
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 6 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
+				]
+				const { reader, startPos, endPos } = load
+
+				reader.bit = startPos
+				while (reader.bit < endPos) {
+					let x = reader.read(16, true) * 8
+					let y = reader.read(5, false) * 8
+					let z = reader.read(16, true) * 8
+
+					const paletteLen = reader.read(9)
+					const paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteLen)
+					const palette = []
+					for (let i = 0; i < paletteLen; i++) {
+						palette.push(reader.read(16))
+						if (_blockData_js__WEBPACK_IMPORTED_MODULE_1__.blockData[palette.at(-1)].semiTrans) {
+							this.doubleRender = true
+							if (!this.world.doubleRenderChunks.includes(this)) {
+								this.world.doubleRenderChunks.push(this)
+							}
+						}
+					}
+
+					const orientation = reader.read(3)
+
+					const cx = x >> 4
+					const cz = z >> 4
+
+					// Make them into local chunk coords
+					x = x !== cx * 16 ? 8 : 0
+					z = z !== cz * 16 ? 8 : 0
+
+					const runs = reader.read(8)
+					const singles = reader.read(9)
+					for (let j = 0; j < runs; j++) {
+						let index = reader.read(9)
+						const types = reader.read(9)
+						const lenSize = reader.read(4)
+						for (let k = 0; k < types; k++) {
+							const chain = reader.read(lenSize) + 1
+							const block = reader.read(paletteBits)
+							for (let l = 0; l < chain; l++) {
+								const i = getIndex[orientation](index, x, y, z)
+								this.blocks[i] = palette[block]
+								this.maxY = max(this.maxY, i >> 8)
+								index++
+							}
+						}
+					}
+					for (let j = 0; j < singles; j++) {
+						const index = reader.read(9)
+						const block = reader.read(paletteBits)
+						const i = getIndex[orientation](index, x, y, z)
+						this.blocks[i] = palette[block]
+						this.maxY = max(this.maxY, i >> 8)
 					}
 				}
 			}
-			if (last >> 8 > this.maxY) this.maxY = last >> 8
 
-			delete world.loadFrom[str]
+			// Edits happened while the chunk was unloaded.
+			if (load.edits) {
+				this.loadFromBlocks(load.edits)
+			}
 		}
 		this.loaded = true
+	}
+	unload() {
+		if (this.originalBlocks) {
+			const save = this.getSave()
+			if (save) {
+				const chunkX = this.x >> 4
+				const chunkZ = this.z >> 4
+				const str = `${chunkX},${chunkZ}`
+				this.world.loadFrom[str] = {
+					startPos: 0,
+					endPos: save.bitLength,
+					reader: new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayReader(save.array)
+				}
+			}
+		}
+		if (this.buffer) this.gl.deleteBuffer(this.buffer)
 	}
 }
 
@@ -5450,7 +5664,8 @@ async function MineKhan() {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.1"
+	let version = "Alpha 0.8.2"
+	// const versionNumber = 0x000802
 	let superflat = false
 	let details = true
 	let caves = true
@@ -5479,7 +5694,6 @@ async function MineKhan() {
 	let blockFill = true
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
-	let blockMode  = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE
 	let dirtBuffer
 	let texCoordsBuffers
 	let mainbg, dirtbg // Background images
@@ -5665,7 +5879,6 @@ async function MineKhan() {
 	setControl("superBreaker", "KeyB")
 	setControl("toggleSpectator", "KeyL")
 	setControl("zoom", "KeyZ")
-	setControl("cycleBlockShapes", "Enter")
 	setControl("sneak", "ShiftLeft")
 	setControl("dropItem", "Backspace")
 	setControl("breakBlock", "leftMouse")
@@ -5967,11 +6180,11 @@ async function MineKhan() {
 			// Now load all the icons off the canvas.
 			for (let j = 0; j < blocksPerPage; j += 3) {
 				for (let k = 0; k < 3; k++) {
-					let x = (j + k) % limitX
-					let y = (j + k) / limitX | 0
 					let id = pageStart + j/3 | masks[k]
 
 					if (_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[id]) {
+						const x = (j + k) % limitX
+						const y = (j + k) / limitX | 0
 						const icon = document.createElement("canvas")
 						icon.width = s
 						icon.height = s
@@ -6812,7 +7025,7 @@ async function MineKhan() {
 			pos[0] = x
 			pos[1] = y
 			pos[2] = z
-			changeWorldBlock(holding < 0xff && _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[holding | blockMode] ? holding | blockMode : holding)
+			changeWorldBlock(holding)
 		}
 	}
 
@@ -6860,17 +7073,25 @@ async function MineKhan() {
 	function fillReqs(x, z) {
 		// Chunks must all be loaded first.
 		let done = true
-		for (let i = x - 3; i <= x + 3; i++) {
-			for (let j = z - 3; j <= z + 3; j++) {
+		for (let i = x - 4; i <= x + 4; i++) {
+			for (let j = z - 4; j <= z + 4; j++) {
 				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
 				if (!chunk.generated) {
 					world.generateQueue.push(chunk)
 					done = false
 				}
 
-				if (!chunk.populated && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
+				if (!chunk.populated && i >= x - 3 && i <= x + 3 && j >= z - 3 && j <= z + 3) {
 					world.populateQueue.push(chunk)
 					done = false
+				}
+
+				if (!chunk.loaded && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
+					if (world.loadFrom[`${chunk.x >> 4},${chunk.z >> 4}`]) {
+						world.loadQueue.push(chunk)
+						done = false
+					}
+					else chunk.load()
 				}
 
 				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
@@ -7487,12 +7708,11 @@ async function MineKhan() {
 			this.populateQueue = []
 			this.generateQueue = []
 			this.lightingQueue = []
+			this.loadQueue = []
 			this.meshQueue = []
 			this.loadFrom = {}
-			this.loadKeys = []
 			this.loading = false
 			this.entities = []
-			this.eventQueue = []
 			this.lastChunk = ","
 			this.caves = caves
 			this.initTime = Date.now()
@@ -7507,8 +7727,8 @@ async function MineKhan() {
 		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
 		// }
 		updateBlock(x, y, z) {
-			let chunk = this.chunks[x >> 4] && this.chunks[x >> 4][z >> 4]
-			if (chunk && chunk.buffer) {
+			const chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
+			if (chunk.buffer) {
 				chunk.updateBlock(x & 15, y, z & 15, this)
 			}
 		}
@@ -7517,27 +7737,11 @@ async function MineKhan() {
 			let Z = (z >> 4) + this.offsetZ
 			return this.loaded[X * this.lwidth + Z]
 		}
-		getWorldBlock(x, y, z) {
-			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
-				return _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockIds.air
-			}
-			return this.chunks[x >> 4][z >> 4].getBlock(x & 15, y, z & 15)
-		}
 		getBlock(x, y, z) {
-			// let X = (x >> 4) + this.offsetX
-			// let Z = (z >> 4) + this.offsetZ
 			if (y > maxHeight) {
 				// debugger
 				return 0
 			}
-			// else if (y < 0) {
-			// 	debugger
-			// 	return blockIds.bedrock
-			// }
-			// else if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
-			// 	debugger
-			// 	return this.getWorldBlock(x, y, z)
-			// }
 			return this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].getBlock(x & 15, y, z & 15)
 		}
 		getSurfaceHeight(x, z) {
@@ -7563,13 +7767,17 @@ async function MineKhan() {
 			this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ].setBlock(x & 15, y, z & 15, blockID, false)
 		}
 		setBlock(x, y, z, blockID, lazy, remote, doNotLog) {
-			if (!this.chunks[x >> 4] || !this.chunks[x >> 4][z >> 4]) {
-				this.eventQueue.push([x, y, z, blockID])
-				return
-			}
-			let chunk = this.chunks[x >> 4][z >> 4]
-			if (!chunk.buffer && remote) {
-				this.eventQueue.push([x, y, z, blockID])
+
+			// Load get the chunk if it's loaded, otherwise just set the block in the load data.
+			const chunkX = (x >> 4) + this.offsetX
+			const chunkZ = (z >> 4) + this.offsetZ
+			let chunk = null
+			if (chunkX >= 0 && chunkX < this.lwidth && chunkZ >= 0 && chunkZ < this.lwidth) chunk = this.loaded[chunkX * this.lwidth + chunkZ]
+			if (!chunk?.loaded) {
+				const str = `${x >> 4},${z >> 4}`
+				if (!world.loadFrom[str]) world.loadFrom[str] = { edits: [] }
+				if (!world.loadFrom[str].edits) world.loadFrom[str].edits = []
+				world.loadFrom[str].edits[y * 256 + (x&15) * 16 + (z&15)] = blockID
 				return
 			}
 
@@ -7646,13 +7854,6 @@ async function MineKhan() {
 		getLight(x, y, z, blockLight) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			// if (X < 0 || X >= this.lwidth || Z < 0 || Z >= this.lwidth) {
-			// 	debugger
-			// 	if (y < 0 || y > maxHeight) debugger
-			// 	if (blockLight === 1) return this.chunks[x >> 4][z >> 4].getBlockLight(x & 15, y, z & 15)
-			// 	else if (blockLight === 0) return this.chunks[x >> 4][z >> 4].getSkyLight(x & 15, y, z & 15)
-			// 	else return this.chunks[x >> 4][z >> 4].getLight(x & 15, y, z & 15)
-			// }
 			if (blockLight === 1) return this.loaded[X * this.lwidth + Z].getBlockLight(x & 15, y, z & 15)
 			else if (blockLight === 0) return this.loaded[X * this.lwidth + Z].getSkyLight(x & 15, y, z & 15)
 			else return this.loaded[X * this.lwidth + Z].getLight(x & 15, y, z & 15)
@@ -7837,7 +8038,13 @@ async function MineKhan() {
 					doneWork = true
 				}
 
-				// All saved chunks are loaded, so spread light
+				// Load chunk
+				if (!doneWork && this.loadQueue.length) {
+					this.loadQueue.pop().load()
+					doneWork = true
+				}
+
+				// Spread light
 				if (!doneWork && this.lightingQueue.length) {
 					let chunk = this.lightingQueue.pop()
 					chunk.fillLight()
@@ -7869,54 +8076,9 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork/* && screen !== "loading"*/) await window.yieldThread()
+				if (doneWork) await window.yieldThread()
 			}
 			this.ticking = false
-		}
-		async load() {
-			if (this.loading || !this.loadKeys.length) return
-			this.loading = true
-
-			do {
-				let [cx, cz] = this.loadKeys.pop().split(",")
-				cx = +cx
-				cz = +cz
-
-				this.loadChunks(cx, cz, false, 4)
-
-				// Fill chunks with blocks
-				for (let x = cx - 2; x <= cx + 2; x++) {
-					for (let z = cz - 2; z <= cz + 2; z++) {
-						let chunk = this.chunks[x][z]
-						if (!chunk.generated) chunk.generate()
-					}
-				}
-
-				// Fill them with caves
-				if (caves) {
-					let promises = []
-					for (let x = cx - 1; x <= cx + 1; x++) {
-						for (let z = cz - 1; z <= cz + 1; z++) {
-							let chunk = this.chunks[x][z]
-							if (!chunk.caves) promises.push(chunk.carveCaves())
-						}
-					}
-					await Promise.all(promises)
-				}
-				else if (this.loadKeys % 50 === 0) await window.yieldThread() // Let the loading screen render if it needs to
-
-				// Fill them with details and ores
-				for (let x = cx - 1; x <= cx + 1; x++) {
-					for (let z = cz - 1; z <= cz + 1; z++) {
-						let chunk = this.chunks[x][z]
-						if (!chunk.populated) chunk.populate(details)
-					}
-				}
-
-				// Load blocks
-				this.chunks[cx][cz].load()
-			} while(this.loadKeys.length)
-			this.loading = false
 		}
 		render() {
 			// Was in tick(); moved here just for joseph lol
@@ -8019,8 +8181,7 @@ async function MineKhan() {
 
 			// gl.useProgram(program3D)
 		}
-		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 3) {
-			// let renderDistance = settings.renderDistance + 3
+		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 4) {
 			cx ??= p.x >> 4
 			cz ??= p.z >> 4
 			p.cx = cx
@@ -8038,30 +8199,36 @@ async function MineKhan() {
 			this.populateQueue.length = 0
 			this.generateQueue.length = 0
 
-			if (this.loaded.length > this.lwidth * this.lwidth) {
-				this.loaded.length = this.lwidth * this.lwidth
+			let chunks = new Map()
+			for (let i = this.loaded.length - 1; i >= 0; i--) {
+				const chunk = this.loaded[i]
+				const chunkX = chunk.x >> 4
+				const chunkZ = chunk.z >> 4
+				if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
+					chunk.unload()
+					delete chunk.blocks
+					this.loaded.splice(i, 1)
+				}
+				else chunks.set(`${chunkX},${chunkZ}`, chunk)
 			}
 
-			let i = 0
 			for (let x = minChunkX; x <= maxChunkX; x++) {
 				for (let z = minChunkZ; z <= maxChunkZ; z++) {
-					let chunk
-					if (!this.chunks[x]) {
-						this.chunks[x] = []
+					let chunk = chunks.get(`${x},${z}`)
+					if (!chunk) {
+						chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_20__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
+						this.loaded.push(chunk)
 					}
-					if (!this.chunks[x][z]) {
-						this.chunks[x][z] = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_20__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
-					}
-					chunk = this.chunks[x][z]
+
 					const cdx = (chunk.x >> 4) - cx
 					const cdz = (chunk.z >> 4) - cz
 					chunk.distSq = cdx * cdx + cdz * cdz
 					if (!chunk.buffer && renderFilter(chunk)) {
 						this.chunkGenQueue.push(chunk)
 					}
-					this.loaded[i++] = chunk
 				}
 			}
+			this.loaded.sort((a, b) => a.x - b.x || a.z - b.z)
 
 			if (sort) {
 				this.sortedChunks = this.loaded.filter(renderFilter)
@@ -8069,56 +8236,8 @@ async function MineKhan() {
 				this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 			}
 		}
+
 		getSaveString() {
-			let edited = []
-			for (let x in this.chunks) {
-				for (let z in this.chunks[x]) {
-					let chunk = this.chunks[x][z]
-					if (chunk.edited) {
-						edited.push(chunk)
-					}
-				}
-			}
-
-			let blockSet = new Set()
-			let sectionMap = {}
-			for (let chunk of edited) {
-				let changes = false
-				let blocks = chunk.blocks
-				let original = chunk.originalBlocks
-				for (let i = 0; i < blocks.length; i++) {
-					if (blocks[i] !== original[i]) {
-						blockSet.add(blocks[i])
-						changes = true
-						let y = i >> 8
-						let x = (i >> 4 & 15) + chunk.x
-						let z = (i & 15) + chunk.z
-						let str = `${x>>3},${y>>3},${z>>3}` // 8x8x8 sections
-						if (!sectionMap[str]) {
-							sectionMap[str] = []
-							for (let i = 0; i < 6; i++) sectionMap[str].push(new Int16Array(8*8*8).fill(-1))
-						}
-
-						// 6 copies of the chunk, all oriented in different directions so we can see which one compresses the most
-						sectionMap[str][0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
-						sectionMap[str][1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
-						sectionMap[str][2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
-						sectionMap[str][3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
-						sectionMap[str][4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
-						sectionMap[str][5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
-					}
-				}
-				if (!changes) {
-					chunk.edited = false
-				}
-			}
-
-			let blocks = Array.from(blockSet)
-			let palette = {}
-			blocks.forEach((block, index) => palette[block] = index)
-			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(blocks.length)
-
-			let ver = version.split(" ")[1].split(".").map(Number)
 
 			let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder()
 			bab.add(this.name.length, 8)
@@ -8131,62 +8250,31 @@ async function MineKhan() {
 			bab.add(_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.index - _js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.hotbar.start, 4)
 			bab.add(p.flying, 1).add(p.spectator, 1)
 			bab.add(superflat, 1).add(caves, 1).add(details, 1)
+			let ver = version.split(" ")[1].split(".").map(Number)
 			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
-			bab.add(blocks.length, 16)
-			for (let block of blocks) bab.add(block, 16)
 
-			let sections = Object.entries(sectionMap)
-			bab.add(sections.length, 32)
-			for (let [coords, section] of sections) {
-				let [sx, sy, sz] = coords.split(",").map(Number)
-				bab.add(sx, 16).add(sy, 5).add(sz, 16)
+			bab.add(0, 32) // 32 bits for the number of sections to save; obsolete - just go to the end.
+			for (let chunk of this.loaded) {
+				let chunkData = chunk.getSave()
+				if (chunkData) bab.append(chunkData)
+			}
 
-				// Determine the most compact orientation by checking all 6!
-				let bestBAB = null
-				for (let i = 0; i < 6; i++) {
-					let bab = new _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder()
+			// Chunks that aren't in the loaded area
+			for (let coords in this.loadFrom) {
+				const [x, z] = coords.split(",").map(n => n << 4)
+				const chunk = new _js_chunk_js__WEBPACK_IMPORTED_MODULE_20__.Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves)
 
-					let blocks = section[i]
-					bab.add(i, 3)
-
-					let run = null
-					let runs = []
-					let singles = []
-					for (let i = 0; i < blocks.length; i++) {
-						const block = blocks[i]
-						if (block >= 0) {
-							if (!run && i < blocks.length - 2 && blocks[i + 1] >= 0 && blocks[i + 2] >= 0) {
-								run = [i, []]
-								runs.push(run)
-							}
-							if (run) {
-								if (run[1].length && block === run[1].at(-1)[1]) run[1].at(-1)[0]++
-								else run[1].push([1, block])
-							}
-							else singles.push([i, blocks[i]])
-						}
-						else run = null
-					}
-
-					bab.add(runs.length, 8)
-					bab.add(singles.length, 9)
-					for (let [start, blocks] of runs) {
-						// Determine the number of bits needed to store the lengths of each block type
-						let maxBlocks = 0
-						for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
-						let lenBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(maxBlocks)
-
-						bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
-						for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
-					}
-					for (let [index, block] of singles) {
-						bab.add(index, 9).add(palette[block], paletteBits)
-					}
-					if (!bestBAB || bab.bitLength < bestBAB.bitLength) {
-						bestBAB = bab
-					}
+				if (this.version < "Alpha 0.8.2" || this.loadFrom[coords].edits) {
+					// Load the chunk and re-save it in the new version format
+					chunk.blocks.fill(-1)
+					chunk.originalBlocks = chunk.blocks.slice()
+					chunk.load()
 				}
-				bab.append(bestBAB)
+				else {
+					chunk.originalBlocks = { length: 1 } // Just get it to run the function
+					chunk.saveData = this.loadFrom[coords]
+				}
+				bab.append(chunk.getSave())
 			}
 			return bab.array
 		}
@@ -8233,19 +8321,18 @@ async function MineKhan() {
 			superflat = reader.read(1)
 			caves = reader.read(1)
 			details = reader.read(1)
-			this.version = "Alpha " + [reader.read(8), reader.read(8), reader.read(8)].join(".")
+			const version = reader.read(24)
+			this.version = "Alpha " + [version >> 16, version >> 8 & 0xff, version & 0xff].join(".")
 
-			let paletteLen = reader.read(16)
+			let paletteLen = 0
 			let palette = []
-			let paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(paletteLen)
-			for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+			let paletteBits = 0
+			if (version < 0x000802) {
+				paletteLen = reader.read(16)
+				paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(paletteLen)
+				for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+			}
 
-			// sectionMap[str][0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
-			// sectionMap[str][1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
-			// sectionMap[str][2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
-			// sectionMap[str][3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
-			// sectionMap[str][4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
-			// sectionMap[str][5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
 			const getIndex = [
 				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
 				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 3 & 7),
@@ -8255,12 +8342,22 @@ async function MineKhan() {
 				(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
 			]
 
-			let sectionCount = reader.read(32)
+			reader.read(32)
 			let chunks = {}
-			for (let i = 0; i < sectionCount; i++) {
+			let previousChunk = null
+			while (reader.bit < reader.data.length * 8 - 37) {
+				let startPos = reader.bit
 				let x = reader.read(16, true) * 8
 				let y = reader.read(5, false) * 8
 				let z = reader.read(16, true) * 8
+
+				if (version >= 0x000802) {
+					paletteLen = reader.read(9)
+					paletteBits = _js_utils_js__WEBPACK_IMPORTED_MODULE_12__.BitArrayBuilder.bits(paletteLen)
+					palette = []
+					for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+				}
+
 				let orientation = reader.read(3)
 
 				let cx = x >> 4
@@ -8273,9 +8370,19 @@ async function MineKhan() {
 				let ckey = `${cx},${cz}`
 				let chunk = chunks[ckey]
 				if (!chunk) {
-					chunk = []// new Int16Array(16*256*16).fill(-1)
-					chunks[ckey] = chunk
+					if (previousChunk) previousChunk.endPos = startPos
+					if (version >= 0x000802) {
+						chunks[ckey] = chunk = {
+							reader,
+							startPos,
+							blocks: [],
+							endPos: 0
+						}
+					}
+					else chunks[ckey] = chunk = { blocks: [] }
+					previousChunk = chunk
 				}
+
 				let runs = reader.read(8)
 				let singles = reader.read(9)
 				for (let j = 0; j < runs; j++) {
@@ -8286,7 +8393,7 @@ async function MineKhan() {
 						let chain = reader.read(lenSize) + 1
 						let block = reader.read(paletteBits)
 						for (let l = 0; l < chain; l++) {
-							chunk[getIndex[orientation](index, x, y, z)] = palette[block]
+							chunk.blocks[getIndex[orientation](index, x, y, z)] = palette[block]
 							index++
 						}
 					}
@@ -8294,12 +8401,14 @@ async function MineKhan() {
 				for (let j = 0; j < singles; j++) {
 					let index = reader.read(9)
 					let block = reader.read(paletteBits)
-					chunk[getIndex[orientation](index, x, y, z)] = palette[block]
+					chunk.blocks[getIndex[orientation](index, x, y, z)] = palette[block]
 				}
 			}
+			previousChunk.endPos = reader.bit
 
 			this.loadFrom = chunks
-			this.loadKeys = Object.keys(chunks)
+			// this.loadKeys = Object.keys(chunks)
+
 			// for (let pos in chunks) {
 			// 	let [x, z] = pos.split(",")
 			// 	this.loadFrom.push({
@@ -8341,8 +8450,8 @@ async function MineKhan() {
 				let cy = parseInt(blocks.shift(), 36)
 				let cz = parseInt(blocks.shift(), 36)
 				let str = `${cx},${cz}`
-				if (!chunks[str]) chunks[str] = []
-				let chunk = chunks[str]
+				if (!chunks[str]) chunks[str] = { blocks: [] }
+				let chunk = chunks[str].blocks
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36)
 					// Old index was 0xXYZ, new index is 0xYYXZ
@@ -8357,7 +8466,7 @@ async function MineKhan() {
 			}
 
 			this.loadFrom = chunks
-			this.loadKeys = Object.keys(chunks)
+			// this.loadKeys = Object.keys(chunks)
 		}
 	}
 
@@ -9015,11 +9124,6 @@ async function MineKhan() {
 
 	// For user controls that react immediately in the event handlers.
 	function controlEvent(name, event) {
-		if (name === controlMap.cycleBlockShapes.key) {
-			blockMode = blockMode === _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE ? _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB : blockMode === _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB ? _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR : _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.CUBE
-			hotbar()
-		}
-
 		if(screen === "play") {
 			if (document.pointerLockElement !== canvas) {
 				getPointer()
@@ -9133,9 +9237,6 @@ async function MineKhan() {
 			}
 			if (name === controlMap.openInventory.key) {
 				play()
-			}
-			if (name === controlMap.cycleBlockShapes.key) {
-				drawScreens.inventory()
 			}
 		}
 	}
@@ -9363,10 +9464,9 @@ async function MineKhan() {
 		// gl.depthFunc(gl.LESS)
 	}
 
-	let maxLoad = 1
 	function startLoad() {
 		ctx.putImageData(dirtbg, 0, 0)
-		maxLoad = world.loadKeys.length + 9
+		world.loadChunks()
 	}
 	function initWebgl() {
 		if (!win.gl) {
@@ -10080,7 +10180,6 @@ async function MineKhan() {
 			// This is really stupid, but it basically works by teleporting the player around to each chunk I'd like to load.
 			// If chunks loaded from a save aren't generated, they're deleted from the save, so this loads them all.
 
-			let sub = maxLoad - world.loadKeys.length - 9
 			let standing = true
 
 			let cx = p.x >> 4
@@ -10088,32 +10187,24 @@ async function MineKhan() {
 
 			for (let x = cx - 1; x <= cx + 1; x++) {
 				for (let z = cz - 1; z <= cz + 1; z++) {
-					if (!world.chunks[x] || !world.chunks[x][z] || !world.chunks[x][z].buffer) {
+					if (!world.getChunk(x * 16, z * 16).buffer) {
 						standing = false
-					}
-					else {
-						sub++
 					}
 				}
 			}
-			if (world.loadKeys.length || world.loading) {
-				world.load()
-				standing = false
-			}
-			else if (!standing) {
+			if (!standing) {
 				world.tick()
 			}
-
-			if (standing) {
+			else {
 				play()
-				if (maxLoad === 9 && p.y === 0 && !p.flying && !p.spectator) {
-					p.y = world.chunks[cx][cz].tops[(p.x & 15) * 16 + (p.z & 15)] + 2
+				if (p.y === 0 && !p.flying && !p.spectator) {
+					p.y = world.getChunk(p.x|0, p.z|0).tops[(p.x & 15) * 16 + (p.z & 15)] + 2
 				}
 				return
 			}
 
-			let progress = round(100 * sub / maxLoad)
-			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${sub} / ${maxLoad})`
+			let progress = round(100 * generatedChunks / 9)
+			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${generatedChunks} / 9)`
 		}
 
 		drawScreens.pause = () => {
@@ -10160,17 +10251,14 @@ async function MineKhan() {
 		window.parent.tickid = window.setTimeout(tickLoop, 50) // 20 TPS
 
 		if (world && screen === "play") {
-			controls()
-			runGravity()
-			resolveContactsAndUpdatePosition()
-			// if (p.y < 6.12) {
-			// 	console.log(p.y)
-			// }
-
 			let tickStart = performance.now()
 			world.tick()
 			analytics.ticks++
 			analytics.totalTickTime += performance.now() - tickStart
+
+			controls()
+			runGravity()
+			resolveContactsAndUpdatePosition()
 		}
 	}
 

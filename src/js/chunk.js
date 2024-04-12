@@ -1,6 +1,7 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { textureMap, textureCoords } from "./texture.js"
+import { BitArrayBuilder, BitArrayReader } from "./utils.js"
 // let world
 
 const { floor, max, abs } = Math
@@ -341,7 +342,8 @@ class Chunk {
 	setBlock(x, y, z, blockID, user) {
 		if (user && !this.edited) {
 			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generated chunk
+			this.saveData = null
+			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 
 		if (semiTrans[blockID & 255]) {
@@ -351,6 +353,15 @@ class Chunk {
 			}
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
+	}
+	deleteBlock(x, y, z, user) {
+		if (user && !this.edited) {
+			this.edited = true
+			this.saveData = null
+			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
+		}
+		this.blocks[y * 256 + x * 16 + z] = 0
+		this.minY = y < this.minY ? y : this.minY
 	}
 
 	processBlocks() {
@@ -763,14 +774,6 @@ class Chunk {
 			index = this.renderLength++
 		}
 		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
-	}
-	deleteBlock(x, y, z, user) {
-		if (user && !this.edited) {
-			this.edited = true
-			this.originalBlocks = this.blocks.slice() // save originally generated chunk
-		}
-		this.blocks[y * 256 + x * 16 + z] = 0
-		this.minY = y < this.minY ? y : this.minY
 	}
 	getCaveData() {
 		if (this.caves || this.caveData) return
@@ -1320,35 +1323,243 @@ class Chunk {
 			// tick()
 		}
 	}
-	load() {
-		if (this.loaded) {
-			return
+	compressSection(blocks) {
+		let section = []
+		let blockSet = new Set()
+		for (let i = 0; i < 6; i++) section.push(new Int16Array(512).fill(-1))
+		for (let i in blocks) {
+			blockSet.add(blocks[i])
+			let y = i >> 6
+			let x = i >> 3 & 7
+			let z = i & 7
+
+			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
+			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
+			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
+			section[3][(x & 7) << 6 | (z & 7) << 3 | y & 7] = blocks[i]
+			section[4][(z & 7) << 6 | (x & 7) << 3 | y & 7] = blocks[i]
+			section[5][(z & 7) << 6 | (y & 7) << 3 | x & 7] = blocks[i]
 		}
-		const { world } = this
-		let chunkX = this.x >> 4
-		let chunkZ = this.z >> 4
-		let str = `${chunkX},${chunkZ}`
-		let load = world.loadFrom[str]
+
+		let palette = {}
+		let paletteBlocks = Array.from(blockSet)
+		paletteBlocks.forEach((block, index) => palette[block] = index)
+		let paletteBits = BitArrayBuilder.bits(paletteBlocks.length)
+
+		let bestBAB = null
+		for (let i = 0; i < 6; i++) {
+			let bab = new BitArrayBuilder()
+			bab.add(paletteBlocks.length, 9)
+			for (let block of paletteBlocks) bab.add(block, 16)
+
+			// Store the orientation so it can be loaded properly
+			let blocks = section[i]
+			bab.add(i, 3)
+
+			let run = null
+			let runs = []
+			let singles = []
+			for (let i = 0; i < blocks.length; i++) {
+				const block = blocks[i]
+				if (block >= 0) {
+					if (!run && i < blocks.length - 2 && blocks[i + 1] >= 0 && blocks[i + 2] >= 0) {
+						run = [i, []]
+						runs.push(run)
+					}
+					if (run) {
+						if (run[1].length && block === run[1].at(-1)[1]) run[1].at(-1)[0]++
+						else run[1].push([1, block])
+					}
+					else singles.push([i, blocks[i]])
+				}
+				else run = null
+			}
+
+			bab.add(runs.length, 8)
+			bab.add(singles.length, 9)
+			for (let [start, blocks] of runs) {
+				// Determine the number of bits needed to store the lengths of each block type
+				let maxBlocks = 0
+				for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
+				let lenBits = BitArrayBuilder.bits(maxBlocks)
+
+				bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
+				for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
+			}
+			for (let [index, block] of singles) {
+				bab.add(index, 9).add(palette[block], paletteBits)
+			}
+			if (!bestBAB || bab.bitLength < bestBAB.bitLength) {
+				bestBAB = bab
+			}
+		}
+		return bestBAB
+	}
+	getSave() {
+		if (!this.originalBlocks.length) return
+
+		const bab = new BitArrayBuilder()
+		if (this.edited || !this.saveData?.reader) {
+
+			// Find all the edited blocks and sort them into 8x8x8 sections
+			const sectionMap = {}
+			const { blocks, originalBlocks } = this
+			for (let i = 0; i < blocks.length; i++) {
+				if (blocks[i] !== originalBlocks[i]) {
+					let y = i >> 8
+					let x = (i >> 4 & 15) + this.x
+					let z = (i & 15) + this.z
+					let str = `${x>>3},${y>>3},${z>>3}` // 8x8x8 sections
+					if (!sectionMap[str]) {
+						sectionMap[str] = []
+					}
+					sectionMap[str][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
+				}
+			}
+
+			// Compress edited blocks into binary
+			for (let [coords, section] of Object.entries(sectionMap)) {
+				let [sx, sy, sz] = coords.split(",").map(Number)
+				bab.add(sx, 16).add(sy, 5).add(sz, 16)
+
+				bab.append(this.compressSection(section))
+			}
+		}
+		else {
+			const { reader, startPos, endPos } = this.saveData
+			reader.bit = startPos
+			while (reader.bit < endPos) {
+				let len = Math.min(endPos - reader.bit, 8)
+				bab.add(reader.read(len), len)
+			}
+		}
+		return bab
+	}
+	loadFromBlocks(blocks) {
+		let last = 0
+		for (let j in blocks) {
+			last = +j
+			let block = blocks[last]
+			this.blocks[last] = block
+			if (!this.doubleRender && blockData[block].semiTrans) {
+				this.doubleRender = true
+				if (!this.world.doubleRenderChunks.includes(this)) {
+					this.world.doubleRenderChunks.push(this)
+				}
+			}
+		}
+		if (last >> 8 > this.maxY) this.maxY = last >> 8
+	}
+	load() {
+		if (this.loaded) return
+		const chunkX = this.x >> 4
+		const chunkZ = this.z >> 4
+		const str = `${chunkX},${chunkZ}`
+		const load = this.world.loadFrom[str]
+
 		if (load) {
-			this.edited = true
+			delete this.world.loadFrom[str]
+			if (load.reader && !load.edits) this.saveData = {
+				reader: load.reader,
+				startPos: load.startPos,
+				endPos: load.endPos
+			}
 			this.originalBlocks = this.blocks.slice()
-			let last = 0
-			for (let j in load) {
-				last = +j
-				let block = load[last]
-				this.blocks[last] = block
-				if (!this.doubleRender && blockData[block].semiTrans) {
-					this.doubleRender = true
-					if (!this.world.doubleRenderChunks.includes(this)) {
-						this.world.doubleRenderChunks.push(this)
+
+			if (load.blocks) {
+				// The initial world load had to parse the blocks, so they were stored.
+				this.loadFromBlocks(load.blocks)
+			}
+			else if (load.reader) {
+				// The chunk was loaded, then later unloaded.
+				const getIndex = [
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 6 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
+				]
+				const { reader, startPos, endPos } = load
+
+				reader.bit = startPos
+				while (reader.bit < endPos) {
+					let x = reader.read(16, true) * 8
+					let y = reader.read(5, false) * 8
+					let z = reader.read(16, true) * 8
+
+					const paletteLen = reader.read(9)
+					const paletteBits = BitArrayBuilder.bits(paletteLen)
+					const palette = []
+					for (let i = 0; i < paletteLen; i++) {
+						palette.push(reader.read(16))
+						if (blockData[palette.at(-1)].semiTrans) {
+							this.doubleRender = true
+							if (!this.world.doubleRenderChunks.includes(this)) {
+								this.world.doubleRenderChunks.push(this)
+							}
+						}
+					}
+
+					const orientation = reader.read(3)
+
+					const cx = x >> 4
+					const cz = z >> 4
+
+					// Make them into local chunk coords
+					x = x !== cx * 16 ? 8 : 0
+					z = z !== cz * 16 ? 8 : 0
+
+					const runs = reader.read(8)
+					const singles = reader.read(9)
+					for (let j = 0; j < runs; j++) {
+						let index = reader.read(9)
+						const types = reader.read(9)
+						const lenSize = reader.read(4)
+						for (let k = 0; k < types; k++) {
+							const chain = reader.read(lenSize) + 1
+							const block = reader.read(paletteBits)
+							for (let l = 0; l < chain; l++) {
+								const i = getIndex[orientation](index, x, y, z)
+								this.blocks[i] = palette[block]
+								this.maxY = max(this.maxY, i >> 8)
+								index++
+							}
+						}
+					}
+					for (let j = 0; j < singles; j++) {
+						const index = reader.read(9)
+						const block = reader.read(paletteBits)
+						const i = getIndex[orientation](index, x, y, z)
+						this.blocks[i] = palette[block]
+						this.maxY = max(this.maxY, i >> 8)
 					}
 				}
 			}
-			if (last >> 8 > this.maxY) this.maxY = last >> 8
 
-			delete world.loadFrom[str]
+			// Edits happened while the chunk was unloaded.
+			if (load.edits) {
+				this.loadFromBlocks(load.edits)
+			}
 		}
 		this.loaded = true
+	}
+	unload() {
+		if (this.originalBlocks) {
+			const save = this.getSave()
+			if (save) {
+				const chunkX = this.x >> 4
+				const chunkZ = this.z >> 4
+				const str = `${chunkX},${chunkZ}`
+				this.world.loadFrom[str] = {
+					startPos: 0,
+					endPos: save.bitLength,
+					reader: new BitArrayReader(save.array)
+				}
+			}
+		}
+		if (this.buffer) this.gl.deleteBuffer(this.buffer)
 	}
 }
 
