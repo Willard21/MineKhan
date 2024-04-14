@@ -20,7 +20,7 @@ import './index.css'
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
 import { timeString, roundBits, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
-import { blockData, BLOCK_COUNT, blockIds, Block } from "./js/blockData.js"
+import { blockData, BLOCK_COUNT, blockIds } from "./js/blockData.js"
 import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } from "./js/shapes.js"
 import { inventory } from './js/inventory.js'
@@ -485,7 +485,7 @@ async function MineKhan() {
 			}
 		}
 
-		// Create blockData for each of the slabs and stairs varients
+		// Create blockData for each of the block varients
 		for (let i = 0; i < BLOCK_COUNT; i++) {
 			let baseBlock = blockData[i]
 			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
@@ -495,14 +495,17 @@ async function MineKhan() {
 			slabBlock.transparent = true
 			slabBlock.name += " Slab"
 			slabBlock.shape = shapes.slab
+			slabBlock.flip = true
 			blockData[i | SLAB] = slabBlock
 
 			let stairBlock = Object.assign({}, baseBlock)
 			stairBlock.transparent = true
 			stairBlock.name += " Stairs"
 			stairBlock.shape = shapes.stair
-
+			stairBlock.rotate = true
+			stairBlock.flip = true
 			blockData[i | STAIR] = stairBlock
+
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -520,6 +523,21 @@ async function MineKhan() {
 					block.shape = v[j]
 					delete block.icon
 					blockData[i | STAIR | j << 10] = block
+				}
+			}
+
+			// Cubes; blocks like pumpkins and furnaces.
+			if (baseBlock.rotate) {
+				v = baseBlock.shape.varients
+				for (let j = 2; j < v.length; j += 2) {
+					if (v[j]) {
+						let block = Object.assign({}, baseBlock)
+						block.shape = v[j]
+						block.textures = blockData[i | j - 2 << 10].textures.slice() // Copy the previous block in the rotation
+						block.textures.push(...block.textures.splice(2, 1))
+						delete block.icon
+						blockData[i | j << 10] = block
+					}
 				}
 			}
 		}
@@ -618,8 +636,8 @@ async function MineKhan() {
 			for (let j = 0; j <= 11; j++) {
 				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
 				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 0) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
 
 				if (j % 4 === 2) data.push(...data.slice(-5))
@@ -634,7 +652,7 @@ async function MineKhan() {
 			// Slab icon
 			data = []
 			for (let j = 0; j <= 11; j++) {
-				let tex = textureCoords[textureMap[block.textures[texOrder[floor(j / 4)]]]]
+				let tex = block.textures[texOrder[floor(j / 4)]]
 
 				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
 				data.push(slabIconVerts[j * 2 + 1] * scaleY)
@@ -655,7 +673,7 @@ async function MineKhan() {
 			let v = stairIconVerts
 			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
-				let tex = textureCoords[textureMap[block.textures[texOrder[num]]]]
+				let tex = block.textures[texOrder[num]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scaleX)
@@ -1444,22 +1462,19 @@ async function MineKhan() {
 		}
 	}
 
-	function box2(sides, tex) {
+	function box2(tex) {
 		if (blockFill) {
-			let i = 0
-			for (let side in Block) {
-				if (sides & Block[side]) {
-					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
-					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+			for (let i = 0; i < 6; i++) {
+				gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
+				gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap[tex[i]]])
-					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+				// Gotta fix this. Maybe. Or not. Who knows?
+				// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap[tex[i]]])
+				// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
-					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
-					// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
-					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
-				}
-				i++
+				// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
+				// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
+				gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
 			}
 		}
 		if (blockOutlines) {
@@ -1499,14 +1514,15 @@ async function MineKhan() {
 			gl.useProgram(program3D)
 			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
-		box2(0xff, blockData[t].textures)
+		box2(blockData[t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && blockData[t].shape
-			if (t && shape.rotate) {
+			const data = blockData[t]
+			let shape = t && data.shape
+			if (t && data.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
 					if (p.ry < 3 * pi) {

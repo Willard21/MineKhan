@@ -1390,13 +1390,13 @@ class BitArrayBuilder {
 		this.data = [] // Byte array
 	}
 	add(num, bits) {
-		if (+num !== +num || +bits !== +bits || +bits < 0) throw "Broken"
+		if (isNaN(num) || isNaN(bits) || bits < 0) throw "Broken"
 		num &= -1 >>> 32 - bits
 		let index = this.bitLength >>> 3
 		let openBits = 8 - (this.bitLength & 7)
 		this.bitLength += bits
 		while (bits > 0) {
-			this.data[index] |= openBits >= bits ? num << openBits - bits : num >>> bits - openBits
+			this.data[index] |= (openBits >= bits ? num << openBits - bits : num >>> bits - openBits) & 255
 			bits -= openBits
 			index++
 			openBits = 8
@@ -1491,6 +1491,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
 
+const blockIds = {}
 
 const texturesFunc = function (setPixel, getPixels) {
 	return {
@@ -1720,6 +1721,76 @@ const texturesFunc = function (setPixel, getPixels) {
 		"poppy": "0g0g9000œĩZĀìYĤJYáëWxiHBÏH^NYFĩY00000000000000000000000000000000000000000000i000000jx(00001)Mw00001hi000000*K0000000Ý0000000Ý0000000Ý000005KëÓ00000ÀV0000005Ò000",
 		"cornflower": "0g0gb000ßWW?ĖYÏeYF;HSġY%ĊHöĤWÄ)ZÈâW<ŊH000000000000000000000000000000000011z00000xiNw00003QÂS000006Ý0000008ë0000000K00000ë0ë0000080ù00000aëù000000Đù0000006ù0000000K000",
 		"dandelion": "0g0g8000ZĜZZÃYřßHĥĊWlŗH^NYÄĊZ000000000000000000000000000000000000000000001w0000aÑ0000ÇIë000cQ00005Ĉ0001Għ0000LŁë0007Ĝ00006Ĉ00",
+		"jackOLantern": "0g0gaĬĸHčìWĉKYŉTZŉüYZ6HZïHZšWĽċHèŗZ0102g0i2O(3(j(jN4SV43Ã3RzSÄU5V(Sz*ÓÐ5ÓÀ(z*Ôà5GKOz*ÔÝlGÕOz)G(kÔã>zO>43Q)Oz**3À5*OzVVâÅVÒOzÄÔGGGÓÐw*ÐÔ7Ó6ëw)Oîz-ûNJ90ywyJ9JFwyJFJF",
+		"lantern": "0g0gc000<lWP@Hò>Wì2WAěZĨíWřQYŢCHZŤHZşYTBZ1yg000003Q(002h0iyx00150@GÑ00150,Ià005l0-Ăî00000-đî00150[Iá005l0iyx00000hģh00000ryę002h0Ěy#00150Ěy#00000ryę00000hģh0000000000000",
+		"carvedPumpkin": "0g0g8ĬĸHĉKYčìWŉTZŉüY$0WQSWèŗZ0g1S4TÚùĿ%íŀirQyĚx&#Ĕ+ķK%ńě,×Æ%ńě,ÙÉ%ńĘ,Úă%ĴĀOÚċ%Ġīe[r%ĺ>ĈÃÉ&łâĢńÉ&ŔĞłÚěxń+rÎĘxĽŚ%ŕŀŋÝ9wĆ[ŋř9ŋť~",
+		"pumpkinSide": "0g0g6ĬęHĉÀYđìWŉxZŉüYèŗZ0g1S4TÚùĿ%íŀßlzNRx&zA&SK%íł%ĞÆ%íł%ĞÉ%Ěł%ĞÉ%Ěł%ĘÉ%Ěł%ĘÉ%ĚłĕĚr%íĿĕĚł%óĿĕĚłxóħĕóħxķ0Ĉa1ČÂ9Ĉq?ČĹPČŁ|",
+		"pumpkinTop": "0g0g8ĬęHđìWŉxZŉüYĉÀYŉĈWĞgWKķH0gëw211yJFyI9AjdĈg0)ÂEmò9l0ëXg9đGùyĀPĉĖŉgĀ8İŜĘ4ìxx=Ņ]Àdo7ŗ4J{ČwíyÀ8ASxQ85ĊJF2IxwĿPyú9mĸ9Ěhwgh10T",
+		"cobweb": "0g0g4Į<W000ZZZŎĖYlVýUÒÃęÇÊïþÒÅÄlļUĀGÒÁãËËËrÔÁ=őļü?ÿė-Á}?ÿÇãÇąÅÔ^ÁUĺlĬÇÚÃĝÒÃĬÇlÇVU",
+	}
+}
+
+const textures = Object.keys(texturesFunc())
+console.log("Loading", textures.length, "textures")
+const textureMap = {}
+for (let i = 0; i < textures.length; i++) {
+	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
+	let texX = i & 15
+	let texY = i >> 4
+	let offsetX = texX * s
+	let offsetY = texY * s
+
+	textureMap[textures[i]] = new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s])
+}
+
+class BlockData {
+	id = 0
+	name = ""
+	textures = [new Float32Array()]
+	transparent = false
+	shadow = true
+	lightLevel = 0
+	solid = true
+	icon = ""
+	semiTrans = false
+	hideInterior = false
+	rotate = false
+
+	constructor(data, i) {
+		this.id = i
+		this.hideInterior = data.transparent ?? this.transparent
+		blockIds[data.name] = i
+
+		if ( !("textures" in data) ) {
+			data.textures = new Array(6).fill(data.name)
+		}
+		else if (typeof data.textures === "string") {
+			data.textures = new Array(6).fill(data.textures)
+		}
+		else {
+			const { textures } = data
+
+			if (textures.length === 3) {
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+			}
+			else if (textures.length === 2) {
+				// Top and bottom are the first texture, sides are the second.
+				textures[2] = textures[1]
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+				textures[1] = textures[0]
+			}
+		}
+		for (let i = 0; i < 6; i++) {
+			this.textures[i] = textureMap[data.textures[i]]
+		}
+		delete data.textures
+
+		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+		Object.assign(this, data)
 	}
 }
 
@@ -1727,7 +1798,7 @@ const blockData = [
 	{
 		name: "air",
 		id: 0,
-		textures: [],
+		textures: "nothing",
 		transparent: true,
 		shadow: false,
 		solid: false
@@ -1885,11 +1956,6 @@ const blockData = [
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
-	// I swear, if y'all don't stop asking about TNT every 5 minutes!
-	/* {
-        name: "tnt",
-        textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
 	{ name: "cherryPlanks" },
 	{
 		name: "cherryLog",
@@ -1908,7 +1974,8 @@ const blockData = [
 	{ name: "darkPrismarine" },
 	{
 		name: "seaLantern",
-		lightLevel: 15
+		lightLevel: 15,
+		shadow: false
 	},
 	{ name: "netherGoldOre" },
 	{
@@ -1994,50 +2061,48 @@ const blockData = [
 		icon: "dandelion",
 		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
 	},
-]
+	{
+		name: "cobweb",
+		textures: ["nothing", "cobweb"],
+		solid: false,
+		transparent: true,
+		hideInterior: false,
+		icon: "cobweb",
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
+	},
+	{
+		name: "pumpkin",
+		textures: ["pumpkinTop", "pumpkinSide"]
+	},
+	{
+		name: "carvedPumpkin",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "carvedPumpkin", "pumpkinSide", "pumpkinSide"],
+		rotate: true
+	},
+	{
+		name: "jackOLantern",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "jackOLantern", "pumpkinSide", "pumpkinSide"],
+		shadow: "false",
+		lightLevel: 15,
+		rotate: true
+	},
+	{
+		name: "lantern",
+		solid: false,
+		transparent: true,
+		shadow: false,
+		hideInterior: false,
+		lightLevel: 15,
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.lantern
+	},
+	// Removed because everyone wants them to explode, but they don't explode.
+	/* {
+        name: "tnt",
+        textures: ["tntBottom", "tntTop", "tntSide"]
+    },*/
+].map((data, i) => new BlockData(data, i))
 
 const BLOCK_COUNT = blockData.length
-const blockIds = {}
-
-// Set defaults on blockData
-for (let i = 1; i < BLOCK_COUNT; ++i) {
-	const data = blockData[i]
-	data.id = i
-	blockIds[data.name] = i
-
-	if ( !("textures" in data) ) {
-		data.textures = new Array(6).fill(data.name)
-	}
-	else if (typeof data.textures === "string") {
-		data.textures = new Array(6).fill(data.textures)
-	}
-	else {
-		const { textures } = data
-
-		if (textures.length === 3) {
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-		}
-		else if (textures.length === 2) {
-			// Top and bottom are the first texture, sides are the second.
-			textures[2] = textures[1]
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-			textures[1] = textures[0]
-		}
-	}
-
-	data.transparent ??= false
-	data.shadow ??= true
-	data.lightLevel ??= 0
-	data.solid ??= true
-	data.icon ??= false
-	data.semiTrans ??= false
-	data.hideInterior ??= data.transparent
-	data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-}
 
 let Block = {
 	top: 0x4,
@@ -2067,6 +2132,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(16);
 
+
+const textureAtlasWidth = 16 // That's 16 textures wide
 
 const CUBE     = 0
 const SLAB     = 0x100 // 9th bit
@@ -2118,9 +2185,11 @@ let shapes = {
 			west: 3
 		},
 		texVerts: [],
-		varients: [],
 		buffer: null,
-		size: 6
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: true,
 	},
 	slab: {
 		verts: [
@@ -2188,9 +2257,33 @@ let shapes = {
 			west: 0
 		},
 		texVerts: [],
+		buffer: null,
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: false
+	},
+	lantern: {
+		verts: [
+			[objectify(5,  0, 5, 6, 6, 0, 9)],
+			[objectify(6, 9, 10, 4, 4, 1, 10),objectify(5, 7, 11, 6, 6, 0, 9)],
+			[objectify(10, 9, 10, 4, 2, 1, 0),objectify(11, 7, 11, 6, 7, 0, 2),objectify(9.5, 11, 8, 3, 2, 11, 10),objectify(9.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(6, 9, 6, 4, 2, 1, 0),objectify(5, 7, 5, 6, 7, 0, 2),objectify(6.5, 11, 8, 3, 2, 11, 10),objectify(6.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(10, 9, 6, 4, 2, 1, 0),objectify(11, 7, 5, 6, 7, 0, 2),objectify(8, 14, 6.5, 3, 4, 11, 1)],
+			[objectify(6, 9, 10, 4, 2, 1, 0),objectify(5, 7, 11, 6, 7, 0, 2),objectify(8, 14, 9.5, 3, 4, 11, 1)]
+		],
+		cull: {
+			top: 0,
+			bottom: 3,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
 		varients: [],
 		buffer: null,
-		size: 6
+		size: 17,
 	},
 }
 
@@ -2228,7 +2321,7 @@ function mapCoords(rect, face) {
 	let minmax = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.compareArr)(pos, [])
 	pos.max = minmax.splice(3, 3)
 	pos.min = minmax
-	tex = tex.map(c => c / 16 / 16)
+	tex = tex.map(c => c / 16 / textureAtlasWidth)
 
 	return {
 		pos: pos,
@@ -2274,6 +2367,8 @@ function rotate(shape) {
 			c.min = minmax
 		}
 	}
+
+	// Make sure each direction has the correct number of faces and whatnot.
 	let temp = tex[2] // North
 	tex[2] = tex[5] // North = West
 	tex[5] = tex[3] // West = South
@@ -3067,18 +3162,17 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "initTextures": () => (/* binding */ initTextures),
-/* harmony export */   "textureAtlas": () => (/* binding */ textureAtlas),
 /* harmony export */   "textureCoords": () => (/* binding */ textureCoords),
 /* harmony export */   "textureMap": () => (/* binding */ textureMap)
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 
 
+/**
+ * Texture name to index map.
+ */
 const textureMap = {}
 const textureCoords = []
-
-let dirtTexture
-let textureAtlas
 
 function initTextures(gl, glCache) {
 	let textureSize = 256
@@ -3190,8 +3284,8 @@ function initTextures(gl, glCache) {
 		for (let i = 0; i < 256; i++) {
 			let texX = i & 15
 			let texY = i >> 4
-			let offsetX = texX * s
-			let offsetY = texY * s
+			let offsetX = texX * scale
+			let offsetY = texY * scale
 			textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
 		}
 
@@ -3223,7 +3317,7 @@ function initTextures(gl, glCache) {
 	}
 
 	// Big texture with everything in it
-	textureAtlas = gl.createTexture()
+	let textureAtlas = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE0)
 	gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
@@ -3236,7 +3330,7 @@ function initTextures(gl, glCache) {
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-	dirtTexture = gl.createTexture()
+	let dirtTexture = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE1)
 	gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
@@ -3421,9 +3515,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(16);
-
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(16);
 
 
 
@@ -4652,7 +4744,6 @@ class Chunk {
 			const shapeVerts = block.shape.verts
 			const shapeTexVerts = block.shape.texVerts
 
-			let texNum = 0
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
 					shadows = getShadows[n](blocks27)
@@ -4664,7 +4755,7 @@ class Chunk {
 					// Add vertices for a single rectangle.
 					for (let facei = 0; facei < directionalFaces.length; facei++) {
 						verts = directionalFaces[facei]
-						texVerts = _texture_js__WEBPACK_IMPORTED_MODULE_2__.textureCoords[_texture_js__WEBPACK_IMPORTED_MODULE_2__.textureMap[tex[texNum]]]
+						texVerts = tex[n]
 						tx = texVerts[0]
 						ty = texVerts[1]
 						texShapeVerts = shapeTexVerts[n][facei]
@@ -4707,7 +4798,6 @@ class Chunk {
 						index += 32
 					}
 				}
-				texNum++
 			}
 		}
 
@@ -4770,11 +4860,11 @@ class Chunk {
 		let palette = {}
 		let paletteBlocks = Array.from(blockSet)
 		paletteBlocks.forEach((block, index) => palette[block] = index)
-		let paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteBlocks.length)
+		let paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(paletteBlocks.length)
 
 		let bestBAB = null
 		for (let i = 0; i < 6; i++) {
-			let bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+			let bab = new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder()
 			bab.add(paletteBlocks.length, 9)
 			for (let block of paletteBlocks) bab.add(block, 16)
 
@@ -4807,7 +4897,7 @@ class Chunk {
 				// Determine the number of bits needed to store the lengths of each block type
 				let maxBlocks = 0
 				for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
-				let lenBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(maxBlocks)
+				let lenBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(maxBlocks)
 
 				bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
 				for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
@@ -4824,7 +4914,7 @@ class Chunk {
 	getSave() {
 		if (!this.originalBlocks.length) return
 
-		const bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+		const bab = new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder()
 		if (this.edited || !this.saveData?.reader) {
 
 			// Find all the edited blocks and sort them into 8x8x8 sections
@@ -4915,7 +5005,7 @@ class Chunk {
 					let z = reader.read(16, true) * 8
 
 					const paletteLen = reader.read(9)
-					const paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteLen)
+					const paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(paletteLen)
 					const palette = []
 					for (let i = 0; i < paletteLen; i++) {
 						palette.push(reader.read(16))
@@ -4980,7 +5070,7 @@ class Chunk {
 				this.world.loadFrom[str] = {
 					startPos: 0,
 					endPos: save.bitLength,
-					reader: new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayReader(save.array)
+					reader: new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayReader(save.array)
 				}
 			}
 		}
@@ -5084,14 +5174,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(22);
 
 
 
-
-
-const { round, floor, ceil, cos, min, max } = Math
+const { round, floor, ceil } = Math
 
 class Contacts {
 	constructor() {
@@ -5948,7 +6034,7 @@ async function MineKhan() {
 			}
 		}
 
-		// Create blockData for each of the slabs and stairs varients
+		// Create blockData for each of the block varients
 		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
 			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
@@ -5958,14 +6044,17 @@ async function MineKhan() {
 			slabBlock.transparent = true
 			slabBlock.name += " Slab"
 			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
+			slabBlock.flip = true
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = slabBlock
 
 			let stairBlock = Object.assign({}, baseBlock)
 			stairBlock.transparent = true
 			stairBlock.name += " Stairs"
 			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.stair
-
+			stairBlock.rotate = true
+			stairBlock.flip = true
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = stairBlock
+
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -5983,6 +6072,21 @@ async function MineKhan() {
 					block.shape = v[j]
 					delete block.icon
 					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR | j << 10] = block
+				}
+			}
+
+			// Cubes; blocks like pumpkins and furnaces.
+			if (baseBlock.rotate) {
+				v = baseBlock.shape.varients
+				for (let j = 2; j < v.length; j += 2) {
+					if (v[j]) {
+						let block = Object.assign({}, baseBlock)
+						block.shape = v[j]
+						block.textures = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | j - 2 << 10].textures.slice() // Copy the previous block in the rotation
+						block.textures.push(...block.textures.splice(2, 1))
+						delete block.icon
+						_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | j << 10] = block
+					}
 				}
 			}
 		}
@@ -6081,8 +6185,8 @@ async function MineKhan() {
 			for (let j = 0; j <= 11; j++) {
 				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
 				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 0) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
 
 				if (j % 4 === 2) data.push(...data.slice(-5))
@@ -6097,7 +6201,7 @@ async function MineKhan() {
 			// Slab icon
 			data = []
 			for (let j = 0; j <= 11; j++) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
+				let tex = block.textures[texOrder[floor(j / 4)]]
 
 				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
 				data.push(slabIconVerts[j * 2 + 1] * scaleY)
@@ -6118,7 +6222,7 @@ async function MineKhan() {
 			let v = stairIconVerts
 			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[num]]]]
+				let tex = block.textures[texOrder[num]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scaleX)
@@ -6907,22 +7011,19 @@ async function MineKhan() {
 		}
 	}
 
-	function box2(sides, tex) {
+	function box2(tex) {
 		if (blockFill) {
-			let i = 0
-			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block) {
-				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block[side]) {
-					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
-					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+			for (let i = 0; i < 6; i++) {
+				gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
+				gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[tex[i]]])
-					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+				// Gotta fix this. Maybe. Or not. Who knows?
+				// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap[tex[i]]])
+				// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
-					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
-					// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
-					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
-				}
-				i++
+				// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
+				// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
+				gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
 			}
 		}
 		if (blockOutlines) {
@@ -6962,14 +7063,15 @@ async function MineKhan() {
 			gl.useProgram(program3D)
 			gl.uniformMatrix4fv(glCache.uView, false, matrix)
 		}
-		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].textures)
+		box2(_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].shape
-			if (t && shape.rotate) {
+			const data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t]
+			let shape = t && data.shape
+			if (t && data.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
 					if (p.ry < 3 * pi) {

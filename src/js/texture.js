@@ -1,10 +1,10 @@
 import { texturesFunc } from "./blockData.js"
 
+/**
+ * Texture name to index map.
+ */
 const textureMap = {}
 const textureCoords = []
-
-let dirtTexture
-let textureAtlas
 
 function initTextures(gl, glCache) {
 	let textureSize = 256
@@ -116,8 +116,8 @@ function initTextures(gl, glCache) {
 		for (let i = 0; i < 256; i++) {
 			let texX = i & 15
 			let texY = i >> 4
-			let offsetX = texX * s
-			let offsetY = texY * s
+			let offsetX = texX * scale
+			let offsetY = texY * scale
 			textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
 		}
 
@@ -149,7 +149,7 @@ function initTextures(gl, glCache) {
 	}
 
 	// Big texture with everything in it
-	textureAtlas = gl.createTexture()
+	let textureAtlas = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE0)
 	gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
@@ -162,7 +162,7 @@ function initTextures(gl, glCache) {
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-	dirtTexture = gl.createTexture()
+	let dirtTexture = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE1)
 	gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
@@ -173,4 +173,4 @@ function initTextures(gl, glCache) {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 }
 
-export { initTextures, textureMap, textureCoords, textureAtlas }
+export { initTextures, textureMap, textureCoords }

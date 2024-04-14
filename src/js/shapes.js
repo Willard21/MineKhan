@@ -1,5 +1,7 @@
 import { compareArr } from "./utils"
 
+const textureAtlasWidth = 16 // That's 16 textures wide
+
 const CUBE     = 0
 const SLAB     = 0x100 // 9th bit
 const STAIR    = 0x200 // 10th bit
@@ -50,9 +52,11 @@ let shapes = {
 			west: 3
 		},
 		texVerts: [],
-		varients: [],
 		buffer: null,
-		size: 6
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: true,
 	},
 	slab: {
 		verts: [
@@ -120,9 +124,33 @@ let shapes = {
 			west: 0
 		},
 		texVerts: [],
+		buffer: null,
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: false
+	},
+	lantern: {
+		verts: [
+			[objectify(5,  0, 5, 6, 6, 0, 9)],
+			[objectify(6, 9, 10, 4, 4, 1, 10),objectify(5, 7, 11, 6, 6, 0, 9)],
+			[objectify(10, 9, 10, 4, 2, 1, 0),objectify(11, 7, 11, 6, 7, 0, 2),objectify(9.5, 11, 8, 3, 2, 11, 10),objectify(9.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(6, 9, 6, 4, 2, 1, 0),objectify(5, 7, 5, 6, 7, 0, 2),objectify(6.5, 11, 8, 3, 2, 11, 10),objectify(6.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(10, 9, 6, 4, 2, 1, 0),objectify(11, 7, 5, 6, 7, 0, 2),objectify(8, 14, 6.5, 3, 4, 11, 1)],
+			[objectify(6, 9, 10, 4, 2, 1, 0),objectify(5, 7, 11, 6, 7, 0, 2),objectify(8, 14, 9.5, 3, 4, 11, 1)]
+		],
+		cull: {
+			top: 0,
+			bottom: 3,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
 		varients: [],
 		buffer: null,
-		size: 6
+		size: 17,
 	},
 }
 
@@ -160,7 +188,7 @@ function mapCoords(rect, face) {
 	let minmax = compareArr(pos, [])
 	pos.max = minmax.splice(3, 3)
 	pos.min = minmax
-	tex = tex.map(c => c / 16 / 16)
+	tex = tex.map(c => c / 16 / textureAtlasWidth)
 
 	return {
 		pos: pos,
@@ -206,6 +234,8 @@ function rotate(shape) {
 			c.min = minmax
 		}
 	}
+
+	// Make sure each direction has the correct number of faces and whatnot.
 	let temp = tex[2] // North
 	tex[2] = tex[5] // North = West
 	tex[5] = tex[3] // West = South

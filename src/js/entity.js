@@ -1,9 +1,7 @@
 import { blockData } from "./blockData.js"
 import { roundBits } from "./utils.js"
-import { Matrix } from "./3Dutils.js"
-import { textureAtlas } from "./texture.js"
 
-const { round, floor, ceil, cos, min, max } = Math
+const { round, floor, ceil } = Math
 
 class Contacts {
 	constructor() {
