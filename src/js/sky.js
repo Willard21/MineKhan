@@ -117,7 +117,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		gl.uniform3f(uHorizon, horizonColor[0], horizonColor[1], horizonColor[2])
 		gl.uniformMatrix4fv(uView, false, view)
 
-		gl.depthFunc(gl.EQUAL)
+		gl.depthFunc(gl.LEQUAL)
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.vertexAttribPointer(aVertex, 3, gl.FLOAT, false, 0, 0)

@@ -1,5 +1,8 @@
 "use strict"
 
+// import css
+import './index.css'
+
 // GLSL Shader code
 import vertexShaderSrc3D from './shaders/blockVert.glsl'
 import fragmentShaderSrc3D from './shaders/blockFrag.glsl'
@@ -13,12 +16,9 @@ import fragmentShaderSrcEntity from './shaders/entityFrag.glsl'
 // Import Worker code
 import workerCode from './workers/Caves.js'
 
-// import css
-import './index.css'
-
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
-import { PVector, Matrix, Plane, cross, rotX, rotY, trans, transpose, copyArr } from "./js/3Dutils.js"
+import { PVector, Matrix, Plane, cross } from "./js/3Dutils.js"
 import { timeString, roundBits, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
 import { blockData, BLOCK_COUNT, blockIds } from "./js/blockData.js"
 import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
@@ -227,13 +227,11 @@ async function MineKhan() {
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
 	let maxHeight = 255
-	let blockOutlines = false
-	let blockFill = true
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
 	let dirtBuffer
 	let texCoordsBuffers
-	let mainbg, dirtbg // Background images
+	let dirtbg // Background images
 	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
 
@@ -258,6 +256,10 @@ async function MineKhan() {
 		pause: {
 			enter: [window.message],
 			exit: [window.savebox, window.saveDirections, window.message]
+		},
+		"main menu": {
+			onenter: () => document.getElementById("overlay").classList.add("background"),
+			onexit: () => document.getElementById("overlay").classList.remove("background")
 		},
 		"loadsave menu": {
 			enter: [window.worlds, window.boxCenterTop, quota],
@@ -762,8 +764,6 @@ async function MineKhan() {
 	let indexBuffer
 
 	let matrix = new Float32Array(16) // A temperary matrix that may store random data.
-	let projection = new Float32Array(16)
-	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
 	let defaultTransformation = new Matrix([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
@@ -943,61 +943,26 @@ async function MineKhan() {
 		}
 	}
 
-	function matMult() {
-		// Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
-		let proj = projection
-		let view = modelView
-		matrix[0] = proj[0] * view[0]
-		matrix[1] = proj[0] * view[1]
-		matrix[2] = proj[0] * view[2]
-		matrix[3] = proj[0] * view[3]
-		matrix[4] = proj[5] * view[4]
-		matrix[5] = proj[5] * view[5]
-		matrix[6] = proj[5] * view[6]
-		matrix[7] = proj[5] * view[7]
-		matrix[8] = proj[10] * view[8] + proj[11] * view[12]
-		matrix[9] = proj[10] * view[9] + proj[11] * view[13]
-		matrix[10] = proj[10] * view[10] + proj[11] * view[14]
-		matrix[11] = proj[10] * view[11] + proj[11] * view[15]
-		matrix[12] = proj[14] * view[8]
-		matrix[13] = proj[14] * view[9]
-		matrix[14] = proj[14] * view[10]
-		matrix[15] = proj[14] * view[11]
-	}
 
-	function FOV(fov) {
-		let tang = Math.tan(fov * 0.5 * Math.PI / 180)
-		let scale = 1 / tang
-		let near = 1
-		let far = 1000000
 
-		projection[0] = scale / width * height
-		projection[5] = scale
-		projection[10] = -far / (far - near)
-		projection[11] = -1
-		projection[14] = -far * near / (far - near)
-	}
+	// function FOV(fov) {
+	// 	let tang = Math.tan(fov * 0.5 * Math.PI / 180)
+	// 	let scale = 1 / tang
+	// 	let near = 1
+	// 	let far = 1000000
 
-	function initModelView(camera, x, y, z, rx, ry) {
+	// 	projection[0] = scale / width * height
+	// 	projection[5] = scale
+	// 	projection[10] = -far / (far - near)
+	// 	projection[11] = -1
+	// 	projection[14] = -far * near / (far - near)
+	// }
+
+	function initModelView(camera) {
 		if (camera) {
 			// Inside the game
 			camera.transform()
 			camera.getMatrix()
-
-			gl.useProgram(program3DFogless)
-			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			gl.useProgram(program3D)
-			gl.uniformMatrix4fv(glCache.uView, false, matrix)
-		}
-		else {
-			// On the home screen
-			copyArr(defaultModelView, modelView)
-			rotX(modelView, rx)
-			rotY(modelView, ry)
-			trans(modelView, -x, -y, -z)
-			matMult()
-			transpose(matrix)
 
 			gl.useProgram(program3DFogless)
 			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
@@ -1462,59 +1427,27 @@ async function MineKhan() {
 		}
 	}
 
-	function box2(tex) {
-		if (blockFill) {
-			for (let i = 0; i < 6; i++) {
-				gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
-				gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+	function drawHitbox(camera) {
+		// Get the transformation matrix in position
+		const [x, y, z] = hitBox.pos
+		camera.transformation.translate(x, y, z)
+		camera.getMatrix()
+		gl.useProgram(program3DFogless)
+		gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+		camera.transformation.translate(-x, -y, -z)
 
-				// Gotta fix this. Maybe. Or not. Who knows?
-				// gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap[tex[i]]])
-				// gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+		// Bind texture buffer with black texture
+		gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
+		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
-				// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
-				// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
-				gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
-			}
+		// Bind vertex buffer with the shape of the targeted block
+		gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
+		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+
+		// Draw them 1 face at a time to avoid drawing triangles
+		for (let i = 0; i < hitBox.shape.size; i++) {
+			gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 		}
-		if (blockOutlines) {
-			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
-			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
-			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
-
-			for (let i = 0; i < hitBox.shape.size; i++) {
-				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
-			}
-		}
-	}
-	function block2(x, y, z, t, camera) {
-		if (camera) {
-			camera.transformation.translate(x, y, z)
-			camera.getMatrix()
-			gl.useProgram(program3DFogless)
-			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			// gl.useProgram(program3D)
-			// gl.uniformMatrix4fv(glCache.uView, false, matrix)
-			camera.transformation.translate(-x, -y, -z)
-		}
-		else {
-			trans(modelView, x, y, z)
-			matMult()
-			trans(modelView, -x, -y, -z)
-			transpose(matrix)
-			// gl.useProgram(program3DFogless)
-			// gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			gl.useProgram(program3D)
-			gl.uniformMatrix4fv(glCache.uView, false, matrix)
-		}
-		box2(blockData[t].textures)
 	}
 
 	function changeWorldBlock(t) {
@@ -2709,11 +2642,7 @@ async function MineKhan() {
 			gl.disableVertexAttribArray(glCache.aShadow)
 			// gl.uniform3f(glCache.uPos, 0, 0, 0)
 			if (hitBox.pos) {
-				blockOutlines = true
-				blockFill = false
-				block2(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], 0, p)
-				blockOutlines = false
-				blockFill = true
+				drawHitbox(p)
 			}
 
 			// Render entities
@@ -4023,13 +3952,9 @@ async function MineKhan() {
 	}
 	function initWebgl() {
 		if (!win.gl) {
-			let canv = document.createElement('canvas')
+			let canv = document.getElementById("webgl-canvas")
 			canv.width = ctx.canvas.width
 			canv.height = ctx.canvas.height
-			canv.style.position = "absolute"
-			canv.style.zIndex = -1
-			canv.style.top = "0px"
-			canv.style.left = "0px"
 			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
 			if (!gl) {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
@@ -4142,260 +4067,13 @@ async function MineKhan() {
 		gl.cullFace(gl.BACK)
 
 		gl.lineWidth(2)
-		blockOutlines = false
 		gl.enable(gl.POLYGON_OFFSET_FILL)
 		gl.polygonOffset(1, 1)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
 	function initBackgrounds() {
-		// Home screen background
-		use3d()
-		gl.clearColor(0.25, 0.45, 0.7, 1.0)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		FOV(100)
-		const HALF_PI = Math.PI / 2
-		initModelView(null, 0, 0.5, 0, -HALF_PI / 25, -HALF_PI / 3)
-		gl.disableVertexAttribArray(glCache.aShadow)
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.vertexAttrib1f(glCache.aShadow, 1.0)
-		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
-		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
-
-		{
-			const blocks = Int8Array.of(
-				7, 4, 1, 7,
-				7, 4, 2, 7,
-				7, 4, 3, 7,
-				7, 4, 4, 7,
-				7, 5, 1, 7,
-				7, 5, 2, 7,
-				7, 5, 3, 7,
-				6, 4, 0, 7,
-				6, 4, 1, 7,
-				6, 4, 2, 7,
-				6, 4, 3, 7,
-				6, 4, 4, 7,
-				6, 5, 0, 7,
-				6, 5, 1, 7,
-				6, 5, 2, 7,
-				6, 5, 3, 7,
-				6, 5, 4, 7,
-				6, 6, 3, 7,
-				6, 6, 4, 7,
-				6, 7, 3, 7,
-				5, 0, -1, 1,
-				5, 0, 0, 1,
-				5, 0, 1, 1,
-				5, 0, 2, 1,
-				5, 1, 2, 29,
-				5, 2, 2, 29,
-				5, 3, 2, 29,
-				5, 4, 2, 29,
-				5, 5, 2, 29,
-				5, 6, 2, 29,
-				5, 4, 0, 7,
-				5, 4, 1, 7,
-				5, 4, 3, 7,
-				5, 4, 4, 7,
-				5, 5, 0, 7,
-				5, 5, 1, 7,
-				5, 5, 3, 7,
-				5, 5, 4, 7,
-				5, 6, 1, 7,
-				5, 6, 3, 7,
-				5, 7, 1, 7,
-				5, 7, 2, 7,
-				5, 7, 3, 7,
-				4, -1, -1, 1,
-				4, -1, 0, 1,
-				4, -1, 1, 1,
-				4, -1, 2, 1,
-				4, 0, 3, 1,
-				4, 0, 4, 1,
-				4, 0, 5, 1,
-				4, 0, 6, 1,
-				4, 0, 7, 1,
-				4, 0, 8, 1,
-				4, 0, 9, 1,
-				4, 0, 10, 1,
-				4, 4, 0, 7,
-				4, 4, 1, 7,
-				4, 4, 2, 7,
-				4, 4, 3, 7,
-				4, 4, 4, 7,
-				4, 5, 0, 7,
-				4, 5, 1, 7,
-				4, 5, 2, 7,
-				4, 5, 3, 7,
-				4, 5, 4, 7,
-				4, 6, 1, 7,
-				4, 6, 2, 7,
-				4, 6, 3, 7,
-				4, 7, 4, 7,
-				3, -1, -1, 1,
-				3, -1, 0, 1,
-				3, -1, 1, 1,
-				3, -1, 2, 1,
-				3, -1, 3, 1,
-				3, -1, 4, 1,
-				3, 0, 5, 1,
-				3, 0, 6, 1,
-				3, 0, 7, 1,
-				3, 0, 8, 1,
-				3, 0, 9, 1,
-				3, 0, 10, 1,
-				3, 4, 1, 7,
-				3, 4, 2, 7,
-				3, 4, 3, 7,
-				3, 4, 4, 7,
-				3, 5, 1, 7,
-				3, 5, 2, 7,
-				3, 5, 3, 7,
-				2, -1, -1, 1,
-				2, -1, 0, 1,
-				2, -1, 1, 1,
-				2, -1, 2, 1,
-				2, -1, 3, 1,
-				2, -1, 4, 1,
-				2, -1, 5, 1,
-				2, -1, 6, 1,
-				2, -1, 7, 1,
-				2, 0, 8, 1,
-				2, 0, 9, 1,
-				2, 0, 10, 1,
-				1, -2, -1, 1,
-				1, -2, 0, 1,
-				1, -2, 1, 1,
-				1, -2, 2, 1,
-				1, -2, 3, 1,
-				1, -1, 4, 1,
-				1, -1, 5, 1,
-				1, -1, 6, 1,
-				1, -1, 7, 1,
-				1, -1, 8, 1,
-				1, -1, 9, 1,
-				1, -1, 10, 1,
-				0, -2, -1, 1,
-				0, -2, 0, 1,
-				0, -2, 1, 1,
-				0, -2, 2, 1,
-				0, -2, 3, 1,
-				0, -2, 4, 1,
-				0, -2, 5, 1,
-				0, -1, 6, 1,
-				0, -1, 7, 1,
-				0, -1, 8, 1,
-				0, -1, 9, 1,
-				0, -1, 10, 1,
-				-1, -2, -1, 1,
-				-1, -2, 0, 1,
-				-1, -2, 1, 1,
-				-1, -2, 2, 1,
-				-1, -2, 3, 1,
-				-1, -2, 4, 1,
-				-1, -2, 5, 1,
-				-1, -2, 6, 1,
-				-1, -2, 7, 1,
-				-1, -1, 8, 1,
-				-1, -1, 9, 1,
-				-1, -1, 10, 1,
-				-2, -2, -1, 1,
-				-2, -2, 0, 1,
-				-2, -2, 1, 1,
-				-2, -2, 2, 1,
-				-2, -2, 3, 1,
-				-2, -2, 4, 1,
-				-2, -2, 5, 1,
-				-2, -2, 6, 1,
-				-2, -2, 7, 1,
-				-2, -2, 8, 1,
-				-2, -2, 9, 1,
-				-2, -1, 10, 1,
-				-3, -2, -1, 1,
-				-3, -2, 0, 1,
-				-3, -2, 1, 1,
-				-3, -2, 2, 1,
-				-3, -2, 3, 1,
-				-3, -2, 4, 1,
-				-3, -2, 5, 1,
-				-3, -2, 6, 1,
-				-3, -2, 7, 1,
-				-3, -2, 8, 1,
-				-3, -2, 9, 1,
-				-3, -2, 10, 1,
-				-3, -2, 11, 1,
-				-3, -2, 12, 1,
-				-4, -2, -1, 1,
-				-4, -2, 0, 1,
-				-4, -2, 1, 1,
-				-4, -2, 2, 1,
-				-4, -2, 3, 1,
-				-4, -2, 4, 1,
-				-4, -2, 5, 1,
-				-4, -2, 6, 1,
-				-4, -2, 7, 1,
-				-4, -2, 8, 1,
-				-4, -2, 9, 1,
-				-4, -2, 10, 1,
-				-4, -2, 11, 1,
-				-4, -2, 12, 1,
-				-5, -2, -1, 1,
-				-5, -2, 0, 1,
-				-5, -2, 1, 1,
-				-5, -2, 2, 1,
-				-5, -2, 3, 1,
-				-5, -2, 4, 1,
-				-5, -2, 5, 1,
-				-5, -2, 6, 1,
-				-5, -2, 7, 1,
-				-5, -2, 8, 1,
-				-5, -2, 9, 1,
-				-5, -2, 10, 1,
-				-5, -2, 11, 1,
-				-5, -2, 12, 1,
-				-6, -2, -1, 1,
-				-6, -2, 0, 1,
-				-6, -2, 1, 1,
-				-6, -2, 2, 1,
-				-6, -2, 3, 1,
-				-6, -2, 4, 1,
-				-6, -2, 5, 1,
-				-6, -2, 6, 1,
-				-6, -2, 7, 1,
-				-6, -2, 8, 1,
-				-6, -2, 9, 1,
-				-6, -2, 10, 1,
-				-6, -2, 11, 1,
-				-7, -2, 3, 1,
-				-7, -2, 4, 1,
-				-7, -2, 5, 1,
-				-7, -2, 6, 1,
-				-7, -2, 7, 1,
-				-7, -2, 8, 1,
-				-7, -2, 9, 1,
-				-8, -2, 2, 1,
-				-8, -2, 3, 1,
-				-8, -2, 4, 1,
-				-8, -2, 5, 1,
-				-8, -2, 6, 1,
-				-8, -2, 7, 1,
-				-8, -2, 8, 1
-			)
-
-			for (let i = 0; i < blocks.length; i += 4) {
-				block2(blocks[i + 0], blocks[i + 1], blocks[i + 2], blocks[i + 3])
-			}
-		}
-
-		gl.enableVertexAttribArray(glCache.aShadow)
-		gl.enableVertexAttribArray(glCache.aSkylight)
-		gl.enableVertexAttribArray(glCache.aBlocklight)
-
-		ctx.drawImage(gl.canvas, 0, 0)
-		mainbg = ctx.getImageData(0, 0, width, height)
-
 		// Dirt background
+		use3d()
 		use2d()
 		let aspect = width / height
 		let stack = height / 96
@@ -4660,7 +4338,6 @@ async function MineKhan() {
 
 		// Generate all the block icons
 		genIcons()
-		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
@@ -4714,7 +4391,7 @@ async function MineKhan() {
 		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
 
 		drawScreens["main menu"] = () => {
-			ctx.putImageData(mainbg, 0, 0)
+			ctx.clearRect(0, 0, width, height)
 			title()
 			fill(220)
 			ctx.font = "20px monospace"
