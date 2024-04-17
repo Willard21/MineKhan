@@ -77,13 +77,13 @@ class BitArrayBuilder {
 		this.data = [] // Byte array
 	}
 	add(num, bits) {
-		if (+num !== +num || +bits !== +bits || +bits < 0) throw "Broken"
+		if (isNaN(num) || isNaN(bits) || bits < 0) throw "Broken"
 		num &= -1 >>> 32 - bits
 		let index = this.bitLength >>> 3
 		let openBits = 8 - (this.bitLength & 7)
 		this.bitLength += bits
 		while (bits > 0) {
-			this.data[index] |= openBits >= bits ? num << openBits - bits : num >>> bits - openBits
+			this.data[index] |= (openBits >= bits ? num << openBits - bits : num >>> bits - openBits) & 255
 			bits -= openBits
 			index++
 			openBits = 8

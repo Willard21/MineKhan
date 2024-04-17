@@ -39,7 +39,13 @@ module.exports = {
 		rules: [
 			{
 				test: /\.css$/i,
-				use: ["style-loader", "css-loader"],
+				use: [{
+					loader: 'style-loader',
+					// options: {
+					// 	insert: 'head', // insert style tag inside of <head>
+					// 	injectType: 'singletonStyleTag'
+					// },
+				}, "css-loader"],
 			},
 			{
 				test: /\.(txt|glsl)$|workers(\/|\\)/i,

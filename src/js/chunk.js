@@ -1,6 +1,5 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
-import { textureMap, textureCoords } from "./texture.js"
 import { BitArrayBuilder, BitArrayReader } from "./utils.js"
 // let world
 
@@ -1227,7 +1226,6 @@ class Chunk {
 			const shapeVerts = block.shape.verts
 			const shapeTexVerts = block.shape.texVerts
 
-			let texNum = 0
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
 					shadows = getShadows[n](blocks27)
@@ -1239,7 +1237,7 @@ class Chunk {
 					// Add vertices for a single rectangle.
 					for (let facei = 0; facei < directionalFaces.length; facei++) {
 						verts = directionalFaces[facei]
-						texVerts = textureCoords[textureMap[tex[texNum]]]
+						texVerts = tex[n]
 						tx = texVerts[0]
 						ty = texVerts[1]
 						texShapeVerts = shapeTexVerts[n][facei]
@@ -1282,7 +1280,6 @@ class Chunk {
 						index += 32
 					}
 				}
-				texNum++
 			}
 		}
 

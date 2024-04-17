@@ -95,45 +95,62 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<!-- <link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin> -->
 		<link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
 		<!-- <link rel="manifest" href="https://willard.fun/manifest.json" /> -->
+		<style>
+			.hidden {
+				display: none !important;
+			}
+			.corner {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+			.background {
+				background-image: url('./background.webp');
+				background-size: cover;
+				background-position: center;
+			}
+		</style>
 	</head>
 	<body>
+		<!-- Text so that Google believes the page is loaded and to provide search terms. -->
 		<div id="background-text">
 			<h1>MineKhan</h1>
 			<p>Play MineKhan online! This game is a free Minecraft clone developed on <a href="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768">Khan Academy</a>, and later moved to my own website so that I could take advantage of multiplayer servers. The front-end code is completely open source and maintained on <a href="https://github.com/Willard21/MineKhan">GitHub</a>, where contributions are welcome.</p>
 		</div>
-	<canvas id="overlay" tabindex="0" width="600" height="600" style="position: absolute; top: 0px; left: 0px"></canvas>
-	<input type="text" id="savebox" class="hidden" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;">
-	<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
-	<div id="quota" class="hidden"></div>
-	<div id="onhover" class="hidden"></div>
-	<div id="chat" class="hidden"></div>
-	<input id="chatbar" class="hidden" list="commands">
-	<datalist id="commands">
-		<option>/ban</option>
- 		<option>/online</option>
-	</datalist>
-	<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
-		To share your world on KA, copy/paste the saveString<br>
-		from this box into the code on line 135.<br>
-		var loadString = "Your Code Here";<br>
-		Then save the program as a Spin-off.
-	</p>
-	<div class="world-select hidden" id="worlds"></div>
-	<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
-	<span class="hidden" id="loading-text"></span>
-	<div id="inv-container" class="hidden">
-		<div id="inv-scroll">
-			<!-- This is very very important: canvases need that tabindex thing to capture keyboard events. Idk why. But I spent hours trying to figure it out. -->
-			<canvas id="container" tabindex="0"></canvas>
+		<canvas id="overlay" tabindex="0" width="600" height="600" class="corner background"></canvas>
+		<canvas id="webgl-canvas" class="corner"></canvas>
+		<input type="text" id="savebox" class="hidden" spellcheck="false" style="position: absolute; top: 10px; left: 10px; z-index: 1;">
+		<input type="text" id="boxcentertop" class="hidden" spellcheck="false">
+		<div id="quota" class="hidden"></div>
+		<div id="onhover" class="hidden"></div>
+		<div id="chat" class="hidden"></div>
+		<input id="chatbar" class="hidden" list="commands">
+		<datalist id="commands">
+			<option>/ban</option>
+			<option>/online</option>
+		</datalist>
+		<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
+			To share your world on KA, copy/paste the saveString<br>
+			from this box into the code on line 135.<br>
+			var loadString = "Your Code Here";<br>
+			Then save the program as a Spin-off.
+		</p>
+		<div class="world-select hidden" id="worlds"></div>
+		<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
+		<span class="hidden" id="loading-text"></span>
+		<div id="inv-container" class="hidden">
+			<div id="inv-scroll">
+				<!-- This is very very important: canvases need that tabindex thing to capture keyboard events. Idk why. But I spent hours trying to figure it out. -->
+				<canvas id="container" tabindex="0"></canvas>
+			</div>
+			<canvas id="inventory" tabindex="0"></canvas>
 		</div>
-		<canvas id="inventory" tabindex="0"></canvas>
-	</div>
-	<canvas id="hotbar" class="hidden"></canvas>
-	<script>
-		// Khan Academy instructions:
-		// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
-		window.loadString = ""
-	</script>
+		<canvas id="hotbar" class="hidden"></canvas>
+		<script>
+			// Khan Academy instructions:
+			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
+			window.loadString = ""
+		</script>
 	<script defer src="main.js"></script></body>
 </html>
 

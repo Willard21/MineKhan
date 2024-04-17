@@ -1,6 +1,8 @@
 // This is for testing on localhost
 const express = require("express")
+const compression = require("compression")
 const app = express()
+app.use(compression({ threshold : 0 }))
 app.listen(4000)
 app.use('/', (req, res, next) => {
 	// Make SharedArrayBuffer and performance.measureUserAgentSpecificMemory() work

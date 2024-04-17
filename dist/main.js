@@ -9,99 +9,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\nuniform float uLantern;\r\n\r\nmat4 no_translate (mat4 mat) {\r\n\tmat4 nmat = mat;\r\n\tnmat[3].xyz = vec3(0.0);\r\n\r\n\treturn nmat;\r\n}\r\n\r\nvoid main() {\r\n\tvPosition = uPos - aVertex;\r\n\tvTexture = aTexture;\r\n\r\n\tgl_Position = uView * vec4(aVertex, 1.0);\r\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\r\n\tfloat dynamicLight = max(worldLight, uLantern - length(uPos - aVertex) / 10.0);\r\n\r\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\r\n\r\n\tfloat range = 8.0;//clamp(uDist / 5.0, 8.0, 24.0);\r\n\tvFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);\r\n}");
-
-/***/ }),
-/* 2 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n\tprecision highp float;\r\n#else\r\n\tprecision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nuniform bool uTrans;\r\nuniform vec3 uSky; // The horizon color\r\nuniform vec3 uSun; // The sun position\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\n\r\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\r\nvoid main(){\r\n\tvec3 dir = normalize(vPosition);\r\n\tfloat horizonal = 1.0 - abs(dir.y);\r\n    float sunDot = dot(dir, uSun);\r\n\tvec4 sky = vec4(mix(skyColor, uSky, horizonal * horizonal * (sunDot * 0.5 + 1.2)) * uTime, 1.0);\r\n\t\t// * max(smoothstep(-0.5, 0.2, uTime), 0.1);\r\n\r\n\tvec4 color = texture2D(uSampler, vTexture);\r\n\tgl_FragColor = mix(vec4(color.rgb * vShadow, color.a), sky, vFog);\r\n\tif (!uTrans && color.a != 1.0 || uTrans && (color.a == 1.0 || color.a == 0.0)) discard;\r\n}");
-
-/***/ }),
-/* 3 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\nattribute vec2  aTexture;\nattribute float aShadow;\nattribute float aSkylight;\nattribute float aBlocklight;\nvarying vec2  vTexture;\nvarying float vShadow;\nuniform mat4 uView;\nuniform vec3 uPos;\nuniform float uTime;\nuniform float uLantern;\n\nmat4 no_translate (mat4 mat) {\n\tmat4 nmat = mat;\n\tnmat[3].xyz = vec3(0.0);\n\n\treturn nmat;\n}\n\nvoid main() {\n\tvTexture = aTexture;\n\tgl_Position = uView * vec4(aVertex, 1.0);\n\n\tfloat dist = length(uPos - aVertex);\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\n\tfloat dynamicLight = max(worldLight, uLantern - dist / 10.0);\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\n}");
-
-/***/ }),
-/* 4 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\n\tprecision highp float;\n#else\n\tprecision mediump float;\n#endif\n\nuniform sampler2D uSampler;\nuniform bool uTrans;\nvarying float vShadow;\nvarying vec2 vTexture;\n\nvoid main(){\n\tvec4 color = texture2D(uSampler, vTexture);\n\tgl_FragColor = vec4(color.rgb * vShadow, color.a);\n\n\tif (!uTrans && gl_FragColor.a != 1.0 || uTrans && gl_FragColor.a == 1.0) discard;\n}");
-
-/***/ }),
-/* 5 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec2 aVertex;\r\nattribute vec2 aTexture;\r\nattribute float aShadow;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\nuniform vec2 uOffset;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    vShadow = aShadow;\r\n    gl_Position = vec4(aVertex.x + uOffset.x, aVertex.y + uOffset.y, 0.5, 1.0);\r\n}");
-
-/***/ }),
-/* 6 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * vShadow, color.a);\r\n}");
-
-/***/ }),
-/* 7 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nvarying vec2  vTexture;\r\nuniform mat4 uView;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n}");
-
-/***/ }),
-/* 8 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uLightLevel;\r\nvarying vec2 vTexture;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * uLightLevel, color.a);\r\n}");
-
-/***/ }),
-/* 9 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("async function Worker() {\n\t// Originally this stuff was generated in code\n\tconst GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])\n\tconst POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]\n\tconst DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]\n\tlet SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])\n\n\tlet data, positions, perm, perm3D, caves, gradients3D, sphere\n\tfunction seedNoise(seed, buffer) {\n\t\tpositions = new Int32Array(buffer, 0, 80)\n\t\tdata = new Float64Array(buffer, positions.byteLength, DATA.length)\n\t\tconst source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)\n\t\tperm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)\n\t\tperm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)\n\t\tgradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)\n\t\tcaves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)\n\t\tsphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)\n\n\t\tsphere.set(SPHERE)\n\t\tpositions.set(POSITIONS)\n\t\tdata.set(DATA)\n\t\tgradients3D.set(GRADIENTS_3D)\n\n\t\tfor (let i = 0; i < 256; i++) source[i] = i\n\t\tfor (let i = 0; i < 3; i++) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t}\n\t\tfor (let i = 255; i >= 0; i--) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t\tlet r = (seed + 31) % (i + 1)\n\t\t\tif (r < 0) r += i + 1\n\t\t\tperm[i] = source[r]\n\t\t\tperm3D[i] = perm[i] % 24 * 3\n\t\t\tsource[r] = source[i]\n\t\t}\n\t}\n\n\t/*\n\tconst { abs, floor } = Math\n\tconst NORM_3D = 1.0 / 206.0\n\tconst SQUISH_3D = 1 / 3\n\tconst STRETCH_3D = -1 / 6\n\tfunction noise(x, y, z) {\n\t\tconst stretchOffset = (x + y + z) * STRETCH_3D\n\t\tconst xs = x + stretchOffset\n\t\tconst ys = y + stretchOffset\n\t\tconst zs = z + stretchOffset\n\t\tconst xsb = floor(xs)\n\t\tconst ysb = floor(ys)\n\t\tconst zsb = floor(zs)\n\t\tconst xins = xs - xsb\n\t\tconst yins = ys - ysb\n\t\tconst zins = zs - zsb\n\t\tconst inSum = xins + yins + zins\n\n\t\tconst bits = yins - zins + 1\n\t\t| xins - yins + 1 << 1\n\t\t| xins - zins + 1 << 2\n\t\t| inSum << 3\n\t\t| inSum + zins << 5\n\t\t| inSum + yins << 7\n\t\t| inSum + xins << 9\n\n\t\tconst n = bits * 571183418275 + 1013904223 >>> 1\n\n\t\tlet c = positions[n % 80]\n\t\tif (c === -1) return 0\n\t\tlet value = 0\n\t\tconst squishOffset = (xsb + ysb + zsb) * SQUISH_3D\n\t\tconst dx0 = x - (xsb + squishOffset)\n\t\tconst dy0 = y - (ysb + squishOffset)\n\t\tconst dz0 = z - (zsb + squishOffset)\n\t\tconst count = c < 432 ? 6 : 8\n\t\tfor (let j = 0; j < count ; j++) {\n\t\t\tconst dx = dx0 + data[c]\n\t\t\tconst dy = dy0 + data[c+1]\n\t\t\tconst dz = dz0 + data[c+2]\n\t\t\tlet attn = 2 - dx * dx - dy * dy - dz * dz\n\t\t\tif (attn > 0) {\n\t\t\t\tlet i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]\n\t\t\t\tattn *= attn\n\t\t\t\tvalue += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)\n\t\t\t}\n\t\t\tc += 6\n\t\t}\n\n\t\treturn value * NORM_3D + 0.5\n\t}\n\tconst smooth = 0.02\n\tconst caveSize = 0.0055\n\tfunction isCave(x, y, z) {\n\t\t// Generate a 3D rigid multifractal noise shell.\n\t\t// Then generate another one with different coordinates.\n\t\t// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.\n\t\t// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.\n\t\t// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.\n\n\t\treturn abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize\n\t\t\t&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize\n\t}\n\t*/\n\n\t// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.\n\tconst program = new Uint8Array(atob(\"AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL\").split(\"\").map(c => c.charCodeAt(0))).buffer\n\n\tconst wasm = await WebAssembly.instantiate(program)\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))\n\n\tconst exports = wasm.instance.exports\n\tconst wasmCaves = exports.getCaves || exports.get_caves || exports.c\n\tconst wasmMemory = exports.memory || exports.a\n\n\tself.onmessage = function(e) {\n\t\tif (e.data && e.data.seed) {\n\t\t\tif (exports.seed_noise) exports.seed_noise(e.data.seed)\n\t\t\telse seedNoise(e.data.seed, wasmMemory.buffer)\n\t\t\tself.postMessage(e.data)\n\t\t}\n\t\tif (e.data && e.data.caves) {\n\t\t\tconst { x, z } = e.data\n\t\t\tconst ptr = wasmCaves(x, z)\n\t\t\t// const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)\n\t\t\tconst arr = new Int8Array(wasmMemory.buffer, ptr, 20992)\n\n\t\t\tlet air = []\n\t\t\tlet carve = []\n\t\t\tfor (let i = 512; i < arr.length; i++) {\n\t\t\t\tif (arr[i] === 1) carve.push(i)\n\t\t\t\telse if (arr[i] === 2) air.push(i)\n\t\t\t}\n\t\t\tlet airArr = new Uint16Array(air)\n\t\t\tlet carveArr = new Uint16Array(carve)\n\n\t\t\tself.postMessage({\n\t\t\t\tair: airArr,\n\t\t\t\tcarve: carveArr\n\t\t\t}, [airArr.buffer, carveArr.buffer])\n\t\t}\n\t}\n}\nWorker()");
-
-/***/ }),
-/* 10 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
 
             
 
@@ -117,7 +27,7 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_index_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
-/* 11 */
+/* 2 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -391,26 +301,26 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 12 */
+/* 3 */
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4);
 /* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
 // Imports
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n\tbackground-color: black;\r\n}\r\ncanvas:focus {\r\n\toutline: none;\r\n}\r\n\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n\tfont-family: monospace;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n\tfont-family: monospace;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n.hidden {\r\n\tdisplay: none !important;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 11;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat {\r\n\tposition: absolute;\r\n\tleft: 0px;\r\n\ttop: 100px;\r\n\theight: calc(100vh - 200px);\r\n\toverflow-y: auto;\r\n\toverflow-x: hidden;\r\n\tpadding-right: 20px;\r\n\twidth: 40vw;\r\n\tmin-width: 600px;\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat > div > span {\r\n\twhite-space: pre-wrap;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n}\r\n#chatbar {\r\n\tposition: absolute;\r\n\tleft: 30px;\r\n\tbottom: 0px;\r\n\theight: 20;\r\n\twidth: calc(100vw - 60px);\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n.message {\r\n\twidth: 100%;\r\n\tbackground-color: transparent;\r\n\tpadding: 10px;\r\n\tword-wrap: break-word;\r\n}\r\n/*\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n*/\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\twidth: 100vw;\r\n\theight: 100vh;\r\n\tz-index: -10;\r\n}\r\n#loading-text {\r\n\tposition: absolute;\r\n\ttop: 50%;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\ttext-align: center;\r\n\tcolor: #fff;\r\n\tfont-size: 30px;\r\n\tfont-family: monospace;\r\n}\r\n#inv-container {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tz-index: 1;\r\n}\r\n#inv-scroll {\r\n\theight: calc(100vh - (min(100vh, 100vw) / 3.25));\r\n\toverflow-y: auto;\r\n\tborder-bottom: solid 2px lightgray;\r\n}\r\n#hotbar {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tbottom: 10px;\r\n\tz-index: 0;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\r\n\toverflow: hidden; /* Hide scrollbars */\r\n\tbackground-color: black;\r\n}\r\ncanvas:focus {\r\n\toutline: none;\r\n}\r\n\r\n.world-select {\r\n\twidth: 99vw;\r\n\tmin-width: 300px;\r\n\theight: calc(100vh - 220px);\r\n\tposition: absolute;\r\n\tbottom: 120px;\r\n\toverflow-y: auto;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\tmargin: 0 auto;\r\n\tfont-family: monospace;\r\n}\r\n.world {\r\n\twidth: 250px;\r\n\theight: auto;\r\n\tborder: 1px solid black;\r\n\tfont-size: 18px;\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tcolor: rgb(180, 180, 180);\r\n\tmargin: 0 auto;\r\n\tmargin-top: 15px;\r\n\tpadding: 5px;\r\n\tcursor: pointer;\r\n}\r\nstrong {\r\n\tcolor: white;\r\n}\r\n.selected {\r\n\tborder: 3px solid white;\r\n\tpadding: 3px;\r\n}\r\ninput[type=text] {\r\n\tbackground-color: black;\r\n\tcaret-color: white;\r\n\tborder: 2px solid gray;\r\n\tcolor: white;\r\n\tfont-size: 24px;\r\n\tpadding-left: 12px;\r\n\tfont-family: monospace;\r\n}\r\ninput[type=text]:focus {\r\n\tborder: 2px solid lightgray;\r\n}\r\n#boxcentertop {\r\n\tz-index: 1;\r\n\twidth: 80vw;\r\n\tmax-width: 400px;\r\n\theight: 50px;\r\n\tposition: relative;\r\n\ttop: 30px;\r\n\tdisplay: block;\r\n\tmargin: 0 auto;\r\n}\r\n#onhover {\r\n\tbackground-color: rgba(0, 0, 0, 0.9);\r\n\tcolor: rgb(200, 200, 200);\r\n\tfont-family: 'Courier New', Courier, monospace;\r\n\tword-wrap: normal;\r\n\twidth: auto;\r\n\tmax-width: 400px;\r\n\tposition: absolute;\r\n\tz-index: 11;\r\n\tpadding: 10px;\r\n\tcursor: default;\r\n}\r\n#quota {\r\n\tdisplay: block;\r\n\tposition: absolute;\r\n\twidth: 99vw;\r\n\tmargin: 0 auto;\r\n\tbottom: 110px;\r\n\tz-index: 1;\r\n\tbackground-color: RGBA(0, 0, 0, 0.6);\r\n\tjustify-content: center;\r\n\ttext-align: center;\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat {\r\n\tposition: absolute;\r\n\tleft: 0px;\r\n\ttop: 100px;\r\n\theight: calc(100vh - 200px);\r\n\toverflow-y: auto;\r\n\toverflow-x: hidden;\r\n\tpadding-right: 20px;\r\n\twidth: 40vw;\r\n\tmin-width: 600px;\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n#chat > div > span {\r\n\twhite-space: pre-wrap;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n}\r\n#chatbar {\r\n\tposition: absolute;\r\n\tleft: 30px;\r\n\tbottom: 0px;\r\n\theight: 20;\r\n\twidth: calc(100vw - 60px);\r\n\tbackground-color: RGBA(0, 0, 0, 0.8);\r\n\tcolor: white;\r\n\tfont-family: monospace;\r\n}\r\n.message {\r\n\twidth: 100%;\r\n\tbackground-color: transparent;\r\n\tpadding: 10px;\r\n\tword-wrap: break-word;\r\n}\r\n/*\r\n@font-face {\r\n\tfont-family: 'VT323';\r\n\tfont-style: normal;\r\n\tfont-weight: 400;\r\n\tfont-display: swap;\r\n\tsrc: url(https://willard.fun/fonts/VT323.woff2) format('woff2');\r\n\tunicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\r\n}\r\n*/\r\n#background-text {\r\n\tposition: absolute;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\twidth: 100vw;\r\n\theight: 100vh;\r\n\tz-index: -10;\r\n}\r\n#loading-text {\r\n\tposition: absolute;\r\n\ttop: 50%;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\ttext-align: center;\r\n\tcolor: #fff;\r\n\tfont-size: 30px;\r\n\tfont-family: monospace;\r\n}\r\n#inv-container {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tz-index: 1;\r\n}\r\n#inv-scroll {\r\n\theight: calc(100vh - (min(100vh, 100vw) / 3.25));\r\n\toverflow-y: auto;\r\n\tborder-bottom: solid 2px lightgray;\r\n}\r\n#hotbar {\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttransform: translate(-50%, 0);\r\n\tbottom: 10px;\r\n\tz-index: 0;\r\n}\r\n/* 1918x1078 */\r\n/* #title-background {\r\n\tz-index: -2;\r\n\tposition: absolute;\r\n\tleft: 50%;\r\n\ttop: 50%;\r\n\ttransform: translate(-50%, -50%);\r\n\twidth: calc(1918/)\r\n} */\r\n#webgl-canvas {\r\n\tz-index: -1;\r\n}\r\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
 
 /***/ }),
-/* 13 */
+/* 4 */
 /***/ ((module) => {
 
 
@@ -479,6 +389,96 @@ module.exports = function (cssWithMappingToString) {
 
   return list;
 };
+
+/***/ }),
+/* 5 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nattribute float aShadow;\r\nattribute float aSkylight;\r\nattribute float aBlocklight;\r\nvarying vec2  vTexture;\r\nvarying float vShadow;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\nuniform mat4 uView;\r\nuniform float uDist;\r\nuniform vec3 uPos;\r\nuniform float uTime;\r\nuniform float uLantern;\r\n\r\nmat4 no_translate (mat4 mat) {\r\n\tmat4 nmat = mat;\r\n\tnmat[3].xyz = vec3(0.0);\r\n\r\n\treturn nmat;\r\n}\r\n\r\nvoid main() {\r\n\tvPosition = uPos - aVertex;\r\n\tvTexture = aTexture;\r\n\r\n\tgl_Position = uView * vec4(aVertex, 1.0);\r\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\r\n\tfloat dynamicLight = max(worldLight, uLantern - length(uPos - aVertex) / 10.0);\r\n\r\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\r\n\r\n\tfloat range = 8.0;//clamp(uDist / 5.0, 8.0, 24.0);\r\n\tvFog = clamp((length(uPos.xz - aVertex.xz) - uDist + range) / range, 0.0, 1.0);\r\n}");
+
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n\tprecision highp float;\r\n#else\r\n\tprecision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uTime;\r\nuniform bool uTrans;\r\nuniform vec3 uSky; // The horizon color\r\nuniform vec3 uSun; // The sun position\r\nvarying float vShadow;\r\nvarying vec2 vTexture;\r\nvarying float vFog;\r\nvarying vec3 vPosition;\r\n\r\nconst vec3 skyColor = vec3(0.25, 0.45, 0.7);\r\nvoid main(){\r\n\tvec3 dir = normalize(vPosition);\r\n\tfloat horizonal = 1.0 - abs(dir.y);\r\n    float sunDot = dot(dir, uSun);\r\n\tvec4 sky = vec4(mix(skyColor, uSky, horizonal * horizonal * (sunDot * 0.5 + 1.2)) * uTime, 1.0);\r\n\t\t// * max(smoothstep(-0.5, 0.2, uTime), 0.1);\r\n\r\n\tvec4 color = texture2D(uSampler, vTexture);\r\n\tgl_FragColor = mix(vec4(color.rgb * vShadow, color.a), sky, vFog);\r\n\tif (!uTrans && color.a != 1.0 || uTrans && (color.a == 1.0 || color.a == 0.0)) discard;\r\n}");
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\nattribute vec2  aTexture;\nattribute float aShadow;\nattribute float aSkylight;\nattribute float aBlocklight;\nvarying vec2  vTexture;\nvarying float vShadow;\nuniform mat4 uView;\nuniform vec3 uPos;\nuniform float uTime;\nuniform float uLantern;\n\nmat4 no_translate (mat4 mat) {\n\tmat4 nmat = mat;\n\tnmat[3].xyz = vec3(0.0);\n\n\treturn nmat;\n}\n\nvoid main() {\n\tvTexture = aTexture;\n\tgl_Position = uView * vec4(aVertex, 1.0);\n\n\tfloat dist = length(uPos - aVertex);\n\tfloat worldLight = max(aSkylight * uTime, aBlocklight);\n\tfloat dynamicLight = max(worldLight, uLantern - dist / 10.0);\n\tvShadow = aShadow * min(dynamicLight * 0.9 + 0.1, 1.0);\n}");
+
+/***/ }),
+/* 8 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\n\tprecision highp float;\n#else\n\tprecision mediump float;\n#endif\n\nuniform sampler2D uSampler;\nuniform bool uTrans;\nvarying float vShadow;\nvarying vec2 vTexture;\n\nvoid main(){\n\tvec4 color = texture2D(uSampler, vTexture);\n\tgl_FragColor = vec4(color.rgb * vShadow, color.a);\n\n\tif (!uTrans && gl_FragColor.a != 1.0 || uTrans && gl_FragColor.a == 1.0) discard;\n}");
+
+/***/ }),
+/* 9 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec2 aVertex;\r\nattribute vec2 aTexture;\r\nattribute float aShadow;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\nuniform vec2 uOffset;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    vShadow = aShadow;\r\n    gl_Position = vec4(aVertex.x + uOffset.x, aVertex.y + uOffset.y, 0.5, 1.0);\r\n}");
+
+/***/ }),
+/* 10 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nvarying vec2 vTexture;\r\nvarying float vShadow;\r\n\r\nvoid main() {\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * vShadow, color.a);\r\n}");
+
+/***/ }),
+/* 11 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("attribute vec3  aVertex;\r\nattribute vec2  aTexture;\r\nvarying vec2  vTexture;\r\nuniform mat4 uView;\r\n\r\nvoid main() {\r\n    vTexture = aTexture;\r\n    gl_Position = uView * vec4(aVertex, 1.0);\r\n}");
+
+/***/ }),
+/* 12 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("#ifdef GL_FRAGMENT_PRECISION_HIGH\r\n    precision highp float;\r\n#else\r\n    precision mediump float;\r\n#endif\r\n\r\nuniform sampler2D uSampler;\r\nuniform float uLightLevel;\r\nvarying vec2 vTexture;\r\n\r\nvoid main(){\r\n    vec4 color = texture2D(uSampler, vTexture);\r\n    gl_FragColor = vec4(color.rgb * uLightLevel, color.a);\r\n}");
+
+/***/ }),
+/* 13 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ("async function Worker() {\n\t// Originally this stuff was generated in code\n\tconst GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])\n\tconst POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]\n\tconst DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]\n\tlet SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])\n\n\tlet data, positions, perm, perm3D, caves, gradients3D, sphere\n\tfunction seedNoise(seed, buffer) {\n\t\tpositions = new Int32Array(buffer, 0, 80)\n\t\tdata = new Float64Array(buffer, positions.byteLength, DATA.length)\n\t\tconst source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)\n\t\tperm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)\n\t\tperm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)\n\t\tgradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)\n\t\tcaves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)\n\t\tsphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)\n\n\t\tsphere.set(SPHERE)\n\t\tpositions.set(POSITIONS)\n\t\tdata.set(DATA)\n\t\tgradients3D.set(GRADIENTS_3D)\n\n\t\tfor (let i = 0; i < 256; i++) source[i] = i\n\t\tfor (let i = 0; i < 3; i++) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t}\n\t\tfor (let i = 255; i >= 0; i--) {\n\t\t\tseed = seed * 1664525 + 1013904223 | 0\n\t\t\tlet r = (seed + 31) % (i + 1)\n\t\t\tif (r < 0) r += i + 1\n\t\t\tperm[i] = source[r]\n\t\t\tperm3D[i] = perm[i] % 24 * 3\n\t\t\tsource[r] = source[i]\n\t\t}\n\t}\n\n\t/*\n\tconst { abs, floor } = Math\n\tconst NORM_3D = 1.0 / 206.0\n\tconst SQUISH_3D = 1 / 3\n\tconst STRETCH_3D = -1 / 6\n\tfunction noise(x, y, z) {\n\t\tconst stretchOffset = (x + y + z) * STRETCH_3D\n\t\tconst xs = x + stretchOffset\n\t\tconst ys = y + stretchOffset\n\t\tconst zs = z + stretchOffset\n\t\tconst xsb = floor(xs)\n\t\tconst ysb = floor(ys)\n\t\tconst zsb = floor(zs)\n\t\tconst xins = xs - xsb\n\t\tconst yins = ys - ysb\n\t\tconst zins = zs - zsb\n\t\tconst inSum = xins + yins + zins\n\n\t\tconst bits = yins - zins + 1\n\t\t| xins - yins + 1 << 1\n\t\t| xins - zins + 1 << 2\n\t\t| inSum << 3\n\t\t| inSum + zins << 5\n\t\t| inSum + yins << 7\n\t\t| inSum + xins << 9\n\n\t\tconst n = bits * 571183418275 + 1013904223 >>> 1\n\n\t\tlet c = positions[n % 80]\n\t\tif (c === -1) return 0\n\t\tlet value = 0\n\t\tconst squishOffset = (xsb + ysb + zsb) * SQUISH_3D\n\t\tconst dx0 = x - (xsb + squishOffset)\n\t\tconst dy0 = y - (ysb + squishOffset)\n\t\tconst dz0 = z - (zsb + squishOffset)\n\t\tconst count = c < 432 ? 6 : 8\n\t\tfor (let j = 0; j < count ; j++) {\n\t\t\tconst dx = dx0 + data[c]\n\t\t\tconst dy = dy0 + data[c+1]\n\t\t\tconst dz = dz0 + data[c+2]\n\t\t\tlet attn = 2 - dx * dx - dy * dy - dz * dz\n\t\t\tif (attn > 0) {\n\t\t\t\tlet i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]\n\t\t\t\tattn *= attn\n\t\t\t\tvalue += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)\n\t\t\t}\n\t\t\tc += 6\n\t\t}\n\n\t\treturn value * NORM_3D + 0.5\n\t}\n\tconst smooth = 0.02\n\tconst caveSize = 0.0055\n\tfunction isCave(x, y, z) {\n\t\t// Generate a 3D rigid multifractal noise shell.\n\t\t// Then generate another one with different coordinates.\n\t\t// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.\n\t\t// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.\n\t\t// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.\n\n\t\treturn abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize\n\t\t\t&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize\n\t}\n\t*/\n\n\t// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.\n\tconst program = new Uint8Array(atob(\"AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL\").split(\"\").map(c => c.charCodeAt(0))).buffer\n\n\tconst wasm = await WebAssembly.instantiate(program)\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))\n\t// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))\n\n\tconst exports = wasm.instance.exports\n\tconst wasmCaves = exports.getCaves || exports.get_caves || exports.c\n\tconst wasmMemory = exports.memory || exports.a\n\n\tself.onmessage = function(e) {\n\t\tif (e.data && e.data.seed) {\n\t\t\tif (exports.seed_noise) exports.seed_noise(e.data.seed)\n\t\t\telse seedNoise(e.data.seed, wasmMemory.buffer)\n\t\t\tself.postMessage(e.data)\n\t\t}\n\t\tif (e.data && e.data.caves) {\n\t\t\tconst { x, z } = e.data\n\t\t\tconst ptr = wasmCaves(x, z)\n\t\t\t// const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)\n\t\t\tconst arr = new Int8Array(wasmMemory.buffer, ptr, 20992)\n\n\t\t\tlet air = []\n\t\t\tlet carve = []\n\t\t\tfor (let i = 512; i < arr.length; i++) {\n\t\t\t\tif (arr[i] === 1) carve.push(i)\n\t\t\t\telse if (arr[i] === 2) air.push(i)\n\t\t\t}\n\t\t\tlet airArr = new Uint16Array(air)\n\t\t\tlet carveArr = new Uint16Array(carve)\n\n\t\t\tself.postMessage({\n\t\t\t\tair: airArr,\n\t\t\t\tcarve: carveArr\n\t\t\t}, [airArr.buffer, carveArr.buffer])\n\t\t}\n\t}\n}\nWorker()");
 
 /***/ }),
 /* 14 */
@@ -993,12 +993,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "Matrix": () => (/* binding */ Matrix),
 /* harmony export */   "PVector": () => (/* binding */ PVector),
 /* harmony export */   "Plane": () => (/* binding */ Plane),
-/* harmony export */   "copyArr": () => (/* binding */ copyArr),
-/* harmony export */   "cross": () => (/* binding */ cross),
-/* harmony export */   "rotX": () => (/* binding */ rotX),
-/* harmony export */   "rotY": () => (/* binding */ rotY),
-/* harmony export */   "trans": () => (/* binding */ trans),
-/* harmony export */   "transpose": () => (/* binding */ transpose)
+/* harmony export */   "cross": () => (/* binding */ cross)
 /* harmony export */ });
 class PVector {
 	constructor(x, y, z) {
@@ -1216,87 +1211,6 @@ function cross(v1, v2, result) {
 	result.z = x * y2 - x2 * y
 }
 
-function trans(matrix, x, y, z) {
-	let a = matrix
-	a[3] += a[0] * x + a[1] * y + a[2] * z
-	a[7] += a[4] * x + a[5] * y + a[6] * z
-	a[11] += a[8] * x + a[9] * y + a[10] * z
-	a[15] += a[12] * x + a[13] * y + a[14] * z
-}
-
-function rotX(matrix, angle) {
-	// This function is basically multiplying 2 4x4 matrices together,
-	// but 1 of them has a bunch of 0's and 1's in it,
-	// so I removed all terms that multiplied by 0, and just left off the 1's.
-	// mat2 = [1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0, 0, 0, 0, 1]
-	let elems = matrix
-	let c = cos(angle)
-	let s = sin(angle)
-	let t = elems[1]
-	elems[1] = t * c + elems[2] * s
-	elems[2] = t * -s + elems[2] * c
-	t = elems[5]
-	elems[5] = t * c + elems[6] * s
-	elems[6] = t * -s + elems[6] * c
-	t = elems[9]
-	elems[9] = t * c + elems[10] * s
-	elems[10] = t * -s + elems[10] * c
-	t = elems[13]
-	elems[13] = t * c + elems[14] * s
-	elems[14] = t * -s + elems[14] * c
-}
-
-function rotY(matrix, angle) {
-	//source = c, 0, s, 0, 0, 1, 0, 0, -s, 0, c, 0, 0, 0, 0, 1
-	let c = cos(angle)
-	let s = sin(angle)
-	let elems = matrix
-	let t = elems[0]
-	elems[0] = t * c + elems[2] * -s
-	elems[2] = t * s + elems[2] * c
-	t = elems[4]
-	elems[4] = t * c + elems[6] * -s
-	elems[6] = t * s + elems[6] * c
-	t = elems[8]
-	elems[8] = t * c + elems[10] * -s
-	elems[10] = t * s + elems[10] * c
-	t = elems[12]
-	elems[12] = t * c + elems[14] * -s
-	elems[14] = t * s + elems[14] * c
-}
-
-function transpose(matrix) {
-	let temp = matrix[4]
-	matrix[4] = matrix[1]
-	matrix[1] = temp
-
-	temp = matrix[8]
-	matrix[8] = matrix[2]
-	matrix[2] = temp
-
-	temp = matrix[6]
-	matrix[6] = matrix[9]
-	matrix[9] = temp
-
-	temp = matrix[3]
-	matrix[3] = matrix[12]
-	matrix[12] = temp
-
-	temp = matrix[7]
-	matrix[7] = matrix[13]
-	matrix[13] = temp
-
-	temp = matrix[11]
-	matrix[11] = matrix[14]
-	matrix[14] = temp
-}
-
-function copyArr(a, b) {
-	for (let i = 0; i < a.length; i++) {
-		b[i] = a[i]
-	}
-}
-
 
 
 /***/ }),
@@ -1390,13 +1304,13 @@ class BitArrayBuilder {
 		this.data = [] // Byte array
 	}
 	add(num, bits) {
-		if (+num !== +num || +bits !== +bits || +bits < 0) throw "Broken"
+		if (isNaN(num) || isNaN(bits) || bits < 0) throw "Broken"
 		num &= -1 >>> 32 - bits
 		let index = this.bitLength >>> 3
 		let openBits = 8 - (this.bitLength & 7)
 		this.bitLength += bits
 		while (bits > 0) {
-			this.data[index] |= openBits >= bits ? num << openBits - bits : num >>> bits - openBits
+			this.data[index] |= (openBits >= bits ? num << openBits - bits : num >>> bits - openBits) & 255
 			bits -= openBits
 			index++
 			openBits = 8
@@ -1491,6 +1405,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _shapes_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
 
+const blockIds = {}
 
 const texturesFunc = function (setPixel, getPixels) {
 	return {
@@ -1720,6 +1635,76 @@ const texturesFunc = function (setPixel, getPixels) {
 		"poppy": "0g0g9000œĩZĀìYĤJYáëWxiHBÏH^NYFĩY00000000000000000000000000000000000000000000i000000jx(00001)Mw00001hi000000*K0000000Ý0000000Ý0000000Ý000005KëÓ00000ÀV0000005Ò000",
 		"cornflower": "0g0gb000ßWW?ĖYÏeYF;HSġY%ĊHöĤWÄ)ZÈâW<ŊH000000000000000000000000000000000011z00000xiNw00003QÂS000006Ý0000008ë0000000K00000ë0ë0000080ù00000aëù000000Đù0000006ù0000000K000",
 		"dandelion": "0g0g8000ZĜZZÃYřßHĥĊWlŗH^NYÄĊZ000000000000000000000000000000000000000000001w0000aÑ0000ÇIë000cQ00005Ĉ0001Għ0000LŁë0007Ĝ00006Ĉ00",
+		"jackOLantern": "0g0gaĬĸHčìWĉKYŉTZŉüYZ6HZïHZšWĽċHèŗZ0102g0i2O(3(j(jN4SV43Ã3RzSÄU5V(Sz*ÓÐ5ÓÀ(z*Ôà5GKOz*ÔÝlGÕOz)G(kÔã>zO>43Q)Oz**3À5*OzVVâÅVÒOzÄÔGGGÓÐw*ÐÔ7Ó6ëw)Oîz-ûNJ90ywyJ9JFwyJFJF",
+		"lantern": "0g0gc000<lWP@Hò>Wì2WAěZĨíWřQYŢCHZŤHZşYTBZ1yg000003Q(002h0iyx00150@GÑ00150,Ià005l0-Ăî00000-đî00150[Iá005l0iyx00000hģh00000ryę002h0Ěy#00150Ěy#00000ryę00000hģh0000000000000",
+		"carvedPumpkin": "0g0g8ĬĸHĉKYčìWŉTZŉüY$0WQSWèŗZ0g1S4TÚùĿ%íŀirQyĚx&#Ĕ+ķK%ńě,×Æ%ńě,ÙÉ%ńĘ,Úă%ĴĀOÚċ%Ġīe[r%ĺ>ĈÃÉ&łâĢńÉ&ŔĞłÚěxń+rÎĘxĽŚ%ŕŀŋÝ9wĆ[ŋř9ŋť~",
+		"pumpkinSide": "0g0g6ĬęHĉÀYđìWŉxZŉüYèŗZ0g1S4TÚùĿ%íŀßlzNRx&zA&SK%íł%ĞÆ%íł%ĞÉ%Ěł%ĞÉ%Ěł%ĘÉ%Ěł%ĘÉ%ĚłĕĚr%íĿĕĚł%óĿĕĚłxóħĕóħxķ0Ĉa1ČÂ9Ĉq?ČĹPČŁ|",
+		"pumpkinTop": "0g0g8ĬęHđìWŉxZŉüYĉÀYŉĈWĞgWKķH0gëw211yJFyI9AjdĈg0)ÂEmò9l0ëXg9đGùyĀPĉĖŉgĀ8İŜĘ4ìxx=Ņ]Àdo7ŗ4J{ČwíyÀ8ASxQ85ĊJF2IxwĿPyú9mĸ9Ěhwgh10T",
+		"cobweb": "0g0g4Į<W000ZZZŎĖYlVýUÒÃęÇÊïþÒÅÄlļUĀGÒÁãËËËrÔÁ=őļü?ÿė-Á}?ÿÇãÇąÅÔ^ÁUĺlĬÇÚÃĝÒÃĬÇlÇVU",
+	}
+}
+
+const textures = Object.keys(texturesFunc())
+console.log("Loading", textures.length, "textures")
+const textureMap = {}
+for (let i = 0; i < textures.length; i++) {
+	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
+	let texX = i & 15
+	let texY = i >> 4
+	let offsetX = texX * s
+	let offsetY = texY * s
+
+	textureMap[textures[i]] = new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s])
+}
+
+class BlockData {
+	id = 0
+	name = ""
+	textures = [new Float32Array()]
+	transparent = false
+	shadow = true
+	lightLevel = 0
+	solid = true
+	icon = ""
+	semiTrans = false
+	hideInterior = false
+	rotate = false
+
+	constructor(data, i) {
+		this.id = i
+		this.hideInterior = data.transparent ?? this.transparent
+		blockIds[data.name] = i
+
+		if ( !("textures" in data) ) {
+			data.textures = new Array(6).fill(data.name)
+		}
+		else if (typeof data.textures === "string") {
+			data.textures = new Array(6).fill(data.textures)
+		}
+		else {
+			const { textures } = data
+
+			if (textures.length === 3) {
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+			}
+			else if (textures.length === 2) {
+				// Top and bottom are the first texture, sides are the second.
+				textures[2] = textures[1]
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+				textures[1] = textures[0]
+			}
+		}
+		for (let i = 0; i < 6; i++) {
+			this.textures[i] = textureMap[data.textures[i]]
+		}
+		delete data.textures
+
+		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+		Object.assign(this, data)
 	}
 }
 
@@ -1727,7 +1712,7 @@ const blockData = [
 	{
 		name: "air",
 		id: 0,
-		textures: [],
+		textures: "nothing",
 		transparent: true,
 		shadow: false,
 		solid: false
@@ -1885,11 +1870,6 @@ const blockData = [
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.cube  },
-	// I swear, if y'all don't stop asking about TNT every 5 minutes!
-	/* {
-        name: "tnt",
-        textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
 	{ name: "cherryPlanks" },
 	{
 		name: "cherryLog",
@@ -1908,7 +1888,8 @@ const blockData = [
 	{ name: "darkPrismarine" },
 	{
 		name: "seaLantern",
-		lightLevel: 15
+		lightLevel: 15,
+		shadow: false
 	},
 	{ name: "netherGoldOre" },
 	{
@@ -1994,50 +1975,48 @@ const blockData = [
 		icon: "dandelion",
 		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
 	},
-]
+	{
+		name: "cobweb",
+		textures: ["nothing", "cobweb"],
+		solid: false,
+		transparent: true,
+		hideInterior: false,
+		icon: "cobweb",
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.flower
+	},
+	{
+		name: "pumpkin",
+		textures: ["pumpkinTop", "pumpkinSide"]
+	},
+	{
+		name: "carvedPumpkin",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "carvedPumpkin", "pumpkinSide", "pumpkinSide"],
+		rotate: true
+	},
+	{
+		name: "jackOLantern",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "jackOLantern", "pumpkinSide", "pumpkinSide"],
+		shadow: "false",
+		lightLevel: 15,
+		rotate: true
+	},
+	{
+		name: "lantern",
+		solid: false,
+		transparent: true,
+		shadow: false,
+		hideInterior: false,
+		lightLevel: 15,
+		shape: _shapes_js__WEBPACK_IMPORTED_MODULE_0__.shapes.lantern
+	},
+	// Removed because everyone wants them to explode, but they don't explode.
+	/* {
+        name: "tnt",
+        textures: ["tntBottom", "tntTop", "tntSide"]
+    },*/
+].map((data, i) => new BlockData(data, i))
 
 const BLOCK_COUNT = blockData.length
-const blockIds = {}
-
-// Set defaults on blockData
-for (let i = 1; i < BLOCK_COUNT; ++i) {
-	const data = blockData[i]
-	data.id = i
-	blockIds[data.name] = i
-
-	if ( !("textures" in data) ) {
-		data.textures = new Array(6).fill(data.name)
-	}
-	else if (typeof data.textures === "string") {
-		data.textures = new Array(6).fill(data.textures)
-	}
-	else {
-		const { textures } = data
-
-		if (textures.length === 3) {
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-		}
-		else if (textures.length === 2) {
-			// Top and bottom are the first texture, sides are the second.
-			textures[2] = textures[1]
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-			textures[1] = textures[0]
-		}
-	}
-
-	data.transparent ??= false
-	data.shadow ??= true
-	data.lightLevel ??= 0
-	data.solid ??= true
-	data.icon ??= false
-	data.semiTrans ??= false
-	data.hideInterior ??= data.transparent
-	data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-}
 
 let Block = {
 	top: 0x4,
@@ -2067,6 +2046,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(16);
 
+
+const textureAtlasWidth = 16 // That's 16 textures wide
 
 const CUBE     = 0
 const SLAB     = 0x100 // 9th bit
@@ -2118,9 +2099,11 @@ let shapes = {
 			west: 3
 		},
 		texVerts: [],
-		varients: [],
 		buffer: null,
-		size: 6
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: true,
 	},
 	slab: {
 		verts: [
@@ -2188,9 +2171,33 @@ let shapes = {
 			west: 0
 		},
 		texVerts: [],
+		buffer: null,
+		size: 6,
+		varients: [],
+		flip: false,
+		rotate: false
+	},
+	lantern: {
+		verts: [
+			[objectify(5,  0, 5, 6, 6, 0, 9)],
+			[objectify(6, 9, 10, 4, 4, 1, 10),objectify(5, 7, 11, 6, 6, 0, 9)],
+			[objectify(10, 9, 10, 4, 2, 1, 0),objectify(11, 7, 11, 6, 7, 0, 2),objectify(9.5, 11, 8, 3, 2, 11, 10),objectify(9.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(6, 9, 6, 4, 2, 1, 0),objectify(5, 7, 5, 6, 7, 0, 2),objectify(6.5, 11, 8, 3, 2, 11, 10),objectify(6.5, 16, 8, 3, 3, 11, 2)],
+			[objectify(10, 9, 6, 4, 2, 1, 0),objectify(11, 7, 5, 6, 7, 0, 2),objectify(8, 14, 6.5, 3, 4, 11, 1)],
+			[objectify(6, 9, 10, 4, 2, 1, 0),objectify(5, 7, 11, 6, 7, 0, 2),objectify(8, 14, 9.5, 3, 4, 11, 1)]
+		],
+		cull: {
+			top: 0,
+			bottom: 3,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
 		varients: [],
 		buffer: null,
-		size: 6
+		size: 17,
 	},
 }
 
@@ -2228,7 +2235,7 @@ function mapCoords(rect, face) {
 	let minmax = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.compareArr)(pos, [])
 	pos.max = minmax.splice(3, 3)
 	pos.min = minmax
-	tex = tex.map(c => c / 16 / 16)
+	tex = tex.map(c => c / 16 / textureAtlasWidth)
 
 	return {
 		pos: pos,
@@ -2274,6 +2281,8 @@ function rotate(shape) {
 			c.min = minmax
 		}
 	}
+
+	// Make sure each direction has the correct number of faces and whatnot.
 	let temp = tex[2] // North
 	tex[2] = tex[5] // North = West
 	tex[5] = tex[3] // West = South
@@ -3067,18 +3076,17 @@ function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "initTextures": () => (/* binding */ initTextures),
-/* harmony export */   "textureAtlas": () => (/* binding */ textureAtlas),
 /* harmony export */   "textureCoords": () => (/* binding */ textureCoords),
 /* harmony export */   "textureMap": () => (/* binding */ textureMap)
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 
 
+/**
+ * Texture name to index map.
+ */
 const textureMap = {}
 const textureCoords = []
-
-let dirtTexture
-let textureAtlas
 
 function initTextures(gl, glCache) {
 	let textureSize = 256
@@ -3190,8 +3198,8 @@ function initTextures(gl, glCache) {
 		for (let i = 0; i < 256; i++) {
 			let texX = i & 15
 			let texY = i >> 4
-			let offsetX = texX * s
-			let offsetY = texY * s
+			let offsetX = texX * scale
+			let offsetY = texY * scale
 			textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
 		}
 
@@ -3223,7 +3231,7 @@ function initTextures(gl, glCache) {
 	}
 
 	// Big texture with everything in it
-	textureAtlas = gl.createTexture()
+	let textureAtlas = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE0)
 	gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
@@ -3236,7 +3244,7 @@ function initTextures(gl, glCache) {
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-	dirtTexture = gl.createTexture()
+	let dirtTexture = gl.createTexture()
 	gl.activeTexture(gl.TEXTURE1)
 	gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
@@ -3379,7 +3387,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		gl.uniform3f(uHorizon, horizonColor[0], horizonColor[1], horizonColor[2])
 		gl.uniformMatrix4fv(uView, false, view)
 
-		gl.depthFunc(gl.EQUAL)
+		gl.depthFunc(gl.LEQUAL)
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.vertexAttribPointer(aVertex, 3, gl.FLOAT, false, 0, 0)
@@ -3421,9 +3429,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _random_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(17);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(16);
-
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(16);
 
 
 
@@ -4652,7 +4658,6 @@ class Chunk {
 			const shapeVerts = block.shape.verts
 			const shapeTexVerts = block.shape.texVerts
 
-			let texNum = 0
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
 					shadows = getShadows[n](blocks27)
@@ -4664,7 +4669,7 @@ class Chunk {
 					// Add vertices for a single rectangle.
 					for (let facei = 0; facei < directionalFaces.length; facei++) {
 						verts = directionalFaces[facei]
-						texVerts = _texture_js__WEBPACK_IMPORTED_MODULE_2__.textureCoords[_texture_js__WEBPACK_IMPORTED_MODULE_2__.textureMap[tex[texNum]]]
+						texVerts = tex[n]
 						tx = texVerts[0]
 						ty = texVerts[1]
 						texShapeVerts = shapeTexVerts[n][facei]
@@ -4707,7 +4712,6 @@ class Chunk {
 						index += 32
 					}
 				}
-				texNum++
 			}
 		}
 
@@ -4770,11 +4774,11 @@ class Chunk {
 		let palette = {}
 		let paletteBlocks = Array.from(blockSet)
 		paletteBlocks.forEach((block, index) => palette[block] = index)
-		let paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteBlocks.length)
+		let paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(paletteBlocks.length)
 
 		let bestBAB = null
 		for (let i = 0; i < 6; i++) {
-			let bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+			let bab = new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder()
 			bab.add(paletteBlocks.length, 9)
 			for (let block of paletteBlocks) bab.add(block, 16)
 
@@ -4807,7 +4811,7 @@ class Chunk {
 				// Determine the number of bits needed to store the lengths of each block type
 				let maxBlocks = 0
 				for (let block of blocks) maxBlocks = Math.max(maxBlocks, block[0])
-				let lenBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(maxBlocks)
+				let lenBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(maxBlocks)
 
 				bab.add(start, 9).add(blocks.length, 9).add(lenBits, 4)
 				for (let [count, block] of blocks) bab.add(count - 1, lenBits).add(palette[block], paletteBits)
@@ -4824,7 +4828,7 @@ class Chunk {
 	getSave() {
 		if (!this.originalBlocks.length) return
 
-		const bab = new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder()
+		const bab = new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder()
 		if (this.edited || !this.saveData?.reader) {
 
 			// Find all the edited blocks and sort them into 8x8x8 sections
@@ -4915,7 +4919,7 @@ class Chunk {
 					let z = reader.read(16, true) * 8
 
 					const paletteLen = reader.read(9)
-					const paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayBuilder.bits(paletteLen)
+					const paletteBits = _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayBuilder.bits(paletteLen)
 					const palette = []
 					for (let i = 0; i < paletteLen; i++) {
 						palette.push(reader.read(16))
@@ -4980,7 +4984,7 @@ class Chunk {
 				this.world.loadFrom[str] = {
 					startPos: 0,
 					endPos: save.bitLength,
-					reader: new _utils_js__WEBPACK_IMPORTED_MODULE_3__.BitArrayReader(save.array)
+					reader: new _utils_js__WEBPACK_IMPORTED_MODULE_2__.BitArrayReader(save.array)
 				}
 			}
 		}
@@ -5084,14 +5088,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _blockData_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
-/* harmony import */ var _3Dutils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
-/* harmony import */ var _texture_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(22);
 
 
 
-
-
-const { round, floor, ceil, cos, min, max } = Math
+const { round, floor, ceil } = Math
 
 class Contacts {
 	constructor() {
@@ -5439,16 +5439,16 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
-/* harmony import */ var _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
-/* harmony import */ var _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5);
-/* harmony import */ var _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6);
-/* harmony import */ var _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7);
-/* harmony import */ var _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(8);
-/* harmony import */ var _workers_Caves_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(9);
-/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(10);
+/* harmony import */ var _index_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5);
+/* harmony import */ var _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+/* harmony import */ var _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7);
+/* harmony import */ var _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(8);
+/* harmony import */ var _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9);
+/* harmony import */ var _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(10);
+/* harmony import */ var _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(11);
+/* harmony import */ var _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
+/* harmony import */ var _workers_Caves_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(13);
 /* harmony import */ var _js_random_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(14);
 /* harmony import */ var _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(15);
 /* harmony import */ var _js_utils_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(16);
@@ -5463,8 +5463,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _js_player_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(27);
 
 
-// GLSL Shader code
+// import css
 ;
+
+// GLSL Shader code
+
 
 
 
@@ -5474,9 +5477,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 // Import Worker code
-
-
-// import css
 
 
 // imports
@@ -5550,7 +5550,7 @@ async function MineKhan() {
 
 	{
 		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-		const workerURL = window.URL.createObjectURL(new Blob([_workers_Caves_js__WEBPACK_IMPORTED_MODULE_8__["default"]], { type: "text/javascript" }))
+		const workerURL = window.URL.createObjectURL(new Blob([_workers_Caves_js__WEBPACK_IMPORTED_MODULE_9__["default"]], { type: "text/javascript" }))
 		window.workers = []
 		const jobQueue = []
 		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
@@ -5690,13 +5690,11 @@ async function MineKhan() {
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
 	let maxHeight = 255
-	let blockOutlines = false
-	let blockFill = true
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
 	let dirtBuffer
 	let texCoordsBuffers
-	let mainbg, dirtbg // Background images
+	let dirtbg // Background images
 	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
 
@@ -5721,6 +5719,10 @@ async function MineKhan() {
 		pause: {
 			enter: [window.message],
 			exit: [window.savebox, window.saveDirections, window.message]
+		},
+		"main menu": {
+			onenter: () => document.getElementById("overlay").classList.add("background"),
+			onexit: () => document.getElementById("overlay").classList.remove("background")
 		},
 		"loadsave menu": {
 			enter: [window.worlds, window.boxCenterTop, quota],
@@ -5948,7 +5950,7 @@ async function MineKhan() {
 			}
 		}
 
-		// Create blockData for each of the slabs and stairs varients
+		// Create blockData for each of the block varients
 		for (let i = 0; i < _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.BLOCK_COUNT; i++) {
 			let baseBlock = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i]
 			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
@@ -5958,14 +5960,17 @@ async function MineKhan() {
 			slabBlock.transparent = true
 			slabBlock.name += " Slab"
 			slabBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.slab
+			slabBlock.flip = true
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.SLAB] = slabBlock
 
 			let stairBlock = Object.assign({}, baseBlock)
 			stairBlock.transparent = true
 			stairBlock.name += " Stairs"
 			stairBlock.shape = _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.shapes.stair
-
+			stairBlock.rotate = true
+			stairBlock.flip = true
 			_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR] = stairBlock
+
 			let v = slabBlock.shape.varients
 			for (let j = 0; j < v.length; j++) {
 				if (v[j]) {
@@ -5983,6 +5988,21 @@ async function MineKhan() {
 					block.shape = v[j]
 					delete block.icon
 					_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | _js_shapes_js__WEBPACK_IMPORTED_MODULE_15__.STAIR | j << 10] = block
+				}
+			}
+
+			// Cubes; blocks like pumpkins and furnaces.
+			if (baseBlock.rotate) {
+				v = baseBlock.shape.varients
+				for (let j = 2; j < v.length; j += 2) {
+					if (v[j]) {
+						let block = Object.assign({}, baseBlock)
+						block.shape = v[j]
+						block.textures = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | j - 2 << 10].textures.slice() // Copy the previous block in the rotation
+						block.textures.push(...block.textures.splice(2, 1))
+						delete block.icon
+						_js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[i | j << 10] = block
+					}
 				}
 			}
 		}
@@ -6081,8 +6101,8 @@ async function MineKhan() {
 			for (let j = 0; j <= 11; j++) {
 				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
 				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 0) % 8])
-				data.push(_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]][(j * 2 + 1) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 0) % 8])
+				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 1) % 8])
 				data.push(shadows[floor(j / 4)])
 
 				if (j % 4 === 2) data.push(...data.slice(-5))
@@ -6097,7 +6117,7 @@ async function MineKhan() {
 			// Slab icon
 			data = []
 			for (let j = 0; j <= 11; j++) {
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[floor(j / 4)]]]]
+				let tex = block.textures[texOrder[floor(j / 4)]]
 
 				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
 				data.push(slabIconVerts[j * 2 + 1] * scaleY)
@@ -6118,7 +6138,7 @@ async function MineKhan() {
 			let v = stairIconVerts
 			for (let j = 0; j <= 23; j++) {
 				let num = floor(j / 8)
-				let tex = _js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureCoords[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[block.textures[texOrder[num]]]]
+				let tex = block.textures[texOrder[num]]
 				let tx = tex[0]
 				let ty = tex[1]
 				data.push(-v[j * 5 + 0] * scaleX)
@@ -6207,8 +6227,6 @@ async function MineKhan() {
 	let indexBuffer
 
 	let matrix = new Float32Array(16) // A temperary matrix that may store random data.
-	let projection = new Float32Array(16)
-	let defaultModelView = new Float32Array([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 
 	let defaultTransformation = new _js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.Matrix([-10,0,0,0,0,10,0,0,0,0,-10,0,0,0,0,1])
 	class Camera {
@@ -6388,61 +6406,26 @@ async function MineKhan() {
 		}
 	}
 
-	function matMult() {
-		// Multiply the projection matrix by the view matrix; this is optimized specifically for these matrices by removing terms that are always 0.
-		let proj = projection
-		let view = modelView
-		matrix[0] = proj[0] * view[0]
-		matrix[1] = proj[0] * view[1]
-		matrix[2] = proj[0] * view[2]
-		matrix[3] = proj[0] * view[3]
-		matrix[4] = proj[5] * view[4]
-		matrix[5] = proj[5] * view[5]
-		matrix[6] = proj[5] * view[6]
-		matrix[7] = proj[5] * view[7]
-		matrix[8] = proj[10] * view[8] + proj[11] * view[12]
-		matrix[9] = proj[10] * view[9] + proj[11] * view[13]
-		matrix[10] = proj[10] * view[10] + proj[11] * view[14]
-		matrix[11] = proj[10] * view[11] + proj[11] * view[15]
-		matrix[12] = proj[14] * view[8]
-		matrix[13] = proj[14] * view[9]
-		matrix[14] = proj[14] * view[10]
-		matrix[15] = proj[14] * view[11]
-	}
 
-	function FOV(fov) {
-		let tang = Math.tan(fov * 0.5 * Math.PI / 180)
-		let scale = 1 / tang
-		let near = 1
-		let far = 1000000
 
-		projection[0] = scale / width * height
-		projection[5] = scale
-		projection[10] = -far / (far - near)
-		projection[11] = -1
-		projection[14] = -far * near / (far - near)
-	}
+	// function FOV(fov) {
+	// 	let tang = Math.tan(fov * 0.5 * Math.PI / 180)
+	// 	let scale = 1 / tang
+	// 	let near = 1
+	// 	let far = 1000000
 
-	function initModelView(camera, x, y, z, rx, ry) {
+	// 	projection[0] = scale / width * height
+	// 	projection[5] = scale
+	// 	projection[10] = -far / (far - near)
+	// 	projection[11] = -1
+	// 	projection[14] = -far * near / (far - near)
+	// }
+
+	function initModelView(camera) {
 		if (camera) {
 			// Inside the game
 			camera.transform()
 			camera.getMatrix()
-
-			gl.useProgram(program3DFogless)
-			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			gl.useProgram(program3D)
-			gl.uniformMatrix4fv(glCache.uView, false, matrix)
-		}
-		else {
-			// On the home screen
-			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.copyArr)(defaultModelView, modelView)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.rotX)(modelView, rx)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.rotY)(modelView, ry)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, -x, -y, -z)
-			matMult()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.transpose)(matrix)
 
 			gl.useProgram(program3DFogless)
 			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
@@ -6907,69 +6890,35 @@ async function MineKhan() {
 		}
 	}
 
-	function box2(sides, tex) {
-		if (blockFill) {
-			let i = 0
-			for (let side in _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block) {
-				if (sides & _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.Block[side]) {
-					gl.bindBuffer(gl.ARRAY_BUFFER, sideEdgeBuffers[i])
-					gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+	function drawHitbox(camera) {
+		// Get the transformation matrix in position
+		const [x, y, z] = hitBox.pos
+		camera.transformation.translate(x, y, z)
+		camera.getMatrix()
+		gl.useProgram(program3DFogless)
+		gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+		camera.transformation.translate(-x, -y, -z)
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap[tex[i]]])
-					gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
+		// Bind texture buffer with black texture
+		gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap.hitbox])
+		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
-					// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, sideEdgeBuffers[i])
-					// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap[tex[i]]])
-					gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
-				}
-				i++
-			}
+		// Bind vertex buffer with the shape of the targeted block
+		gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
+		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+
+		// Draw them 1 face at a time to avoid drawing triangles
+		for (let i = 0; i < hitBox.shape.size; i++) {
+			gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 		}
-		if (blockOutlines) {
-			// vertexAttribPointer(gl, glCache, "aVertex", program3D, "aVertex", 3, hitBox.shape.buffer)
-			// vertexAttribPointer(gl, glCache, "aTexture", program3D, "aTexture", 2, texCoordsBuffers[textureMap.hitbox])
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[_js_texture_js__WEBPACK_IMPORTED_MODULE_18__.textureMap.hitbox])
-			gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
-			gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
-
-			for (let i = 0; i < hitBox.shape.size; i++) {
-				gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
-			}
-		}
-	}
-	function block2(x, y, z, t, camera) {
-		if (camera) {
-			camera.transformation.translate(x, y, z)
-			camera.getMatrix()
-			gl.useProgram(program3DFogless)
-			gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			// gl.useProgram(program3D)
-			// gl.uniformMatrix4fv(glCache.uView, false, matrix)
-			camera.transformation.translate(-x, -y, -z)
-		}
-		else {
-			(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, x, y, z)
-			matMult()
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.trans)(modelView, -x, -y, -z)
-			;(0,_js_3Dutils_js__WEBPACK_IMPORTED_MODULE_11__.transpose)(matrix)
-			// gl.useProgram(program3DFogless)
-			// gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
-
-			gl.useProgram(program3D)
-			gl.uniformMatrix4fv(glCache.uView, false, matrix)
-		}
-		box2(0xff, _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].textures)
 	}
 
 	function changeWorldBlock(t) {
 		let pos = hitBox.pos
 		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			let shape = t && _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t].shape
-			if (t && shape.rotate) {
+			const data = _js_blockData_js__WEBPACK_IMPORTED_MODULE_13__.blockData[t]
+			let shape = t && data.shape
+			if (t && data.rotate) {
 				let pi = Math.PI / 4
 				if (p.ry > pi) { // If not north
 					if (p.ry < 3 * pi) {
@@ -8156,11 +8105,7 @@ async function MineKhan() {
 			gl.disableVertexAttribArray(glCache.aShadow)
 			// gl.uniform3f(glCache.uPos, 0, 0, 0)
 			if (hitBox.pos) {
-				blockOutlines = true
-				blockFill = false
-				block2(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], 0, p)
-				blockOutlines = false
-				blockFill = true
+				drawHitbox(p)
 			}
 
 			// Render entities
@@ -9470,13 +9415,9 @@ async function MineKhan() {
 	}
 	function initWebgl() {
 		if (!win.gl) {
-			let canv = document.createElement('canvas')
+			let canv = document.getElementById("webgl-canvas")
 			canv.width = ctx.canvas.width
 			canv.height = ctx.canvas.height
-			canv.style.position = "absolute"
-			canv.style.zIndex = -1
-			canv.style.top = "0px"
-			canv.style.left = "0px"
 			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
 			if (!gl) {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
@@ -9512,10 +9453,10 @@ async function MineKhan() {
 		modelView = new Float32Array(16)
 		glCache = {}
 		win.glCache = glCache
-		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_0__["default"], _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_1__["default"])
-		program3DFogless = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_2__["default"], _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_3__["default"])
-		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_4__["default"], _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_5__["default"])
-		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_6__["default"], _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_7__["default"])
+		program3D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVert_glsl__WEBPACK_IMPORTED_MODULE_1__["default"], _shaders_blockFrag_glsl__WEBPACK_IMPORTED_MODULE_2__["default"])
+		program3DFogless = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_blockVertFogless_glsl__WEBPACK_IMPORTED_MODULE_3__["default"], _shaders_blockFragFogless_glsl__WEBPACK_IMPORTED_MODULE_4__["default"])
+		program2D = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_2dVert_glsl__WEBPACK_IMPORTED_MODULE_5__["default"], _shaders_2dFrag_glsl__WEBPACK_IMPORTED_MODULE_6__["default"])
+		programEntity = (0,_js_glUtils_js__WEBPACK_IMPORTED_MODULE_17__.createProgramObject)(gl, _shaders_entityVert_glsl__WEBPACK_IMPORTED_MODULE_7__["default"], _shaders_entityFrag_glsl__WEBPACK_IMPORTED_MODULE_8__["default"])
 		skybox = (0,_js_sky__WEBPACK_IMPORTED_MODULE_19__.getSkybox)(gl, glCache, program3D, program3DFogless)
 
 		gl.useProgram(program2D)
@@ -9589,260 +9530,13 @@ async function MineKhan() {
 		gl.cullFace(gl.BACK)
 
 		gl.lineWidth(2)
-		blockOutlines = false
 		gl.enable(gl.POLYGON_OFFSET_FILL)
 		gl.polygonOffset(1, 1)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
 	function initBackgrounds() {
-		// Home screen background
-		use3d()
-		gl.clearColor(0.25, 0.45, 0.7, 1.0)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		FOV(100)
-		const HALF_PI = Math.PI / 2
-		initModelView(null, 0, 0.5, 0, -HALF_PI / 25, -HALF_PI / 3)
-		gl.disableVertexAttribArray(glCache.aShadow)
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.vertexAttrib1f(glCache.aShadow, 1.0)
-		gl.vertexAttrib1f(glCache.aSkylight, 1.0)
-		gl.vertexAttrib1f(glCache.aBlocklight, 1.0)
-
-		{
-			const blocks = Int8Array.of(
-				7, 4, 1, 7,
-				7, 4, 2, 7,
-				7, 4, 3, 7,
-				7, 4, 4, 7,
-				7, 5, 1, 7,
-				7, 5, 2, 7,
-				7, 5, 3, 7,
-				6, 4, 0, 7,
-				6, 4, 1, 7,
-				6, 4, 2, 7,
-				6, 4, 3, 7,
-				6, 4, 4, 7,
-				6, 5, 0, 7,
-				6, 5, 1, 7,
-				6, 5, 2, 7,
-				6, 5, 3, 7,
-				6, 5, 4, 7,
-				6, 6, 3, 7,
-				6, 6, 4, 7,
-				6, 7, 3, 7,
-				5, 0, -1, 1,
-				5, 0, 0, 1,
-				5, 0, 1, 1,
-				5, 0, 2, 1,
-				5, 1, 2, 29,
-				5, 2, 2, 29,
-				5, 3, 2, 29,
-				5, 4, 2, 29,
-				5, 5, 2, 29,
-				5, 6, 2, 29,
-				5, 4, 0, 7,
-				5, 4, 1, 7,
-				5, 4, 3, 7,
-				5, 4, 4, 7,
-				5, 5, 0, 7,
-				5, 5, 1, 7,
-				5, 5, 3, 7,
-				5, 5, 4, 7,
-				5, 6, 1, 7,
-				5, 6, 3, 7,
-				5, 7, 1, 7,
-				5, 7, 2, 7,
-				5, 7, 3, 7,
-				4, -1, -1, 1,
-				4, -1, 0, 1,
-				4, -1, 1, 1,
-				4, -1, 2, 1,
-				4, 0, 3, 1,
-				4, 0, 4, 1,
-				4, 0, 5, 1,
-				4, 0, 6, 1,
-				4, 0, 7, 1,
-				4, 0, 8, 1,
-				4, 0, 9, 1,
-				4, 0, 10, 1,
-				4, 4, 0, 7,
-				4, 4, 1, 7,
-				4, 4, 2, 7,
-				4, 4, 3, 7,
-				4, 4, 4, 7,
-				4, 5, 0, 7,
-				4, 5, 1, 7,
-				4, 5, 2, 7,
-				4, 5, 3, 7,
-				4, 5, 4, 7,
-				4, 6, 1, 7,
-				4, 6, 2, 7,
-				4, 6, 3, 7,
-				4, 7, 4, 7,
-				3, -1, -1, 1,
-				3, -1, 0, 1,
-				3, -1, 1, 1,
-				3, -1, 2, 1,
-				3, -1, 3, 1,
-				3, -1, 4, 1,
-				3, 0, 5, 1,
-				3, 0, 6, 1,
-				3, 0, 7, 1,
-				3, 0, 8, 1,
-				3, 0, 9, 1,
-				3, 0, 10, 1,
-				3, 4, 1, 7,
-				3, 4, 2, 7,
-				3, 4, 3, 7,
-				3, 4, 4, 7,
-				3, 5, 1, 7,
-				3, 5, 2, 7,
-				3, 5, 3, 7,
-				2, -1, -1, 1,
-				2, -1, 0, 1,
-				2, -1, 1, 1,
-				2, -1, 2, 1,
-				2, -1, 3, 1,
-				2, -1, 4, 1,
-				2, -1, 5, 1,
-				2, -1, 6, 1,
-				2, -1, 7, 1,
-				2, 0, 8, 1,
-				2, 0, 9, 1,
-				2, 0, 10, 1,
-				1, -2, -1, 1,
-				1, -2, 0, 1,
-				1, -2, 1, 1,
-				1, -2, 2, 1,
-				1, -2, 3, 1,
-				1, -1, 4, 1,
-				1, -1, 5, 1,
-				1, -1, 6, 1,
-				1, -1, 7, 1,
-				1, -1, 8, 1,
-				1, -1, 9, 1,
-				1, -1, 10, 1,
-				0, -2, -1, 1,
-				0, -2, 0, 1,
-				0, -2, 1, 1,
-				0, -2, 2, 1,
-				0, -2, 3, 1,
-				0, -2, 4, 1,
-				0, -2, 5, 1,
-				0, -1, 6, 1,
-				0, -1, 7, 1,
-				0, -1, 8, 1,
-				0, -1, 9, 1,
-				0, -1, 10, 1,
-				-1, -2, -1, 1,
-				-1, -2, 0, 1,
-				-1, -2, 1, 1,
-				-1, -2, 2, 1,
-				-1, -2, 3, 1,
-				-1, -2, 4, 1,
-				-1, -2, 5, 1,
-				-1, -2, 6, 1,
-				-1, -2, 7, 1,
-				-1, -1, 8, 1,
-				-1, -1, 9, 1,
-				-1, -1, 10, 1,
-				-2, -2, -1, 1,
-				-2, -2, 0, 1,
-				-2, -2, 1, 1,
-				-2, -2, 2, 1,
-				-2, -2, 3, 1,
-				-2, -2, 4, 1,
-				-2, -2, 5, 1,
-				-2, -2, 6, 1,
-				-2, -2, 7, 1,
-				-2, -2, 8, 1,
-				-2, -2, 9, 1,
-				-2, -1, 10, 1,
-				-3, -2, -1, 1,
-				-3, -2, 0, 1,
-				-3, -2, 1, 1,
-				-3, -2, 2, 1,
-				-3, -2, 3, 1,
-				-3, -2, 4, 1,
-				-3, -2, 5, 1,
-				-3, -2, 6, 1,
-				-3, -2, 7, 1,
-				-3, -2, 8, 1,
-				-3, -2, 9, 1,
-				-3, -2, 10, 1,
-				-3, -2, 11, 1,
-				-3, -2, 12, 1,
-				-4, -2, -1, 1,
-				-4, -2, 0, 1,
-				-4, -2, 1, 1,
-				-4, -2, 2, 1,
-				-4, -2, 3, 1,
-				-4, -2, 4, 1,
-				-4, -2, 5, 1,
-				-4, -2, 6, 1,
-				-4, -2, 7, 1,
-				-4, -2, 8, 1,
-				-4, -2, 9, 1,
-				-4, -2, 10, 1,
-				-4, -2, 11, 1,
-				-4, -2, 12, 1,
-				-5, -2, -1, 1,
-				-5, -2, 0, 1,
-				-5, -2, 1, 1,
-				-5, -2, 2, 1,
-				-5, -2, 3, 1,
-				-5, -2, 4, 1,
-				-5, -2, 5, 1,
-				-5, -2, 6, 1,
-				-5, -2, 7, 1,
-				-5, -2, 8, 1,
-				-5, -2, 9, 1,
-				-5, -2, 10, 1,
-				-5, -2, 11, 1,
-				-5, -2, 12, 1,
-				-6, -2, -1, 1,
-				-6, -2, 0, 1,
-				-6, -2, 1, 1,
-				-6, -2, 2, 1,
-				-6, -2, 3, 1,
-				-6, -2, 4, 1,
-				-6, -2, 5, 1,
-				-6, -2, 6, 1,
-				-6, -2, 7, 1,
-				-6, -2, 8, 1,
-				-6, -2, 9, 1,
-				-6, -2, 10, 1,
-				-6, -2, 11, 1,
-				-7, -2, 3, 1,
-				-7, -2, 4, 1,
-				-7, -2, 5, 1,
-				-7, -2, 6, 1,
-				-7, -2, 7, 1,
-				-7, -2, 8, 1,
-				-7, -2, 9, 1,
-				-8, -2, 2, 1,
-				-8, -2, 3, 1,
-				-8, -2, 4, 1,
-				-8, -2, 5, 1,
-				-8, -2, 6, 1,
-				-8, -2, 7, 1,
-				-8, -2, 8, 1
-			)
-
-			for (let i = 0; i < blocks.length; i += 4) {
-				block2(blocks[i + 0], blocks[i + 1], blocks[i + 2], blocks[i + 3])
-			}
-		}
-
-		gl.enableVertexAttribArray(glCache.aShadow)
-		gl.enableVertexAttribArray(glCache.aSkylight)
-		gl.enableVertexAttribArray(glCache.aBlocklight)
-
-		ctx.drawImage(gl.canvas, 0, 0)
-		mainbg = ctx.getImageData(0, 0, width, height)
-
 		// Dirt background
+		use3d()
 		use2d()
 		let aspect = width / height
 		let stack = height / 96
@@ -10107,7 +9801,6 @@ async function MineKhan() {
 
 		// Generate all the block icons
 		genIcons()
-		ctx.putImageData(mainbg, 0, 0) // prevent block flash
 
 		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.size = min(width, height) / 15 | 0
 		_js_inventory_js__WEBPACK_IMPORTED_MODULE_16__.inventory.init(true)
@@ -10161,7 +9854,7 @@ async function MineKhan() {
 		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
 
 		drawScreens["main menu"] = () => {
-			ctx.putImageData(mainbg, 0, 0)
+			ctx.clearRect(0, 0, width, height)
 			title()
 			fill(220)
 			ctx.font = "20px monospace"

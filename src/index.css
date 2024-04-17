@@ -59,9 +59,6 @@ input[type=text]:focus {
 	display: block;
 	margin: 0 auto;
 }
-.hidden {
-	display: none !important;
-}
 #onhover {
 	background-color: rgba(0, 0, 0, 0.9);
 	color: rgb(200, 200, 200);
@@ -167,4 +164,16 @@ input[type=text]:focus {
 	transform: translate(-50%, 0);
 	bottom: 10px;
 	z-index: 0;
+}
+/* 1918x1078 */
+/* #title-background {
+	z-index: -2;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: calc(1918/)
+} */
+#webgl-canvas {
+	z-index: -1;
 }

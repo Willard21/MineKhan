@@ -1,4 +1,5 @@
 import { shapes } from "./shapes.js"
+const blockIds = {}
 
 const texturesFunc = function (setPixel, getPixels) {
 	return {
@@ -228,6 +229,76 @@ const texturesFunc = function (setPixel, getPixels) {
 		"poppy": "0g0g9000œĩZĀìYĤJYáëWxiHBÏH^NYFĩY00000000000000000000000000000000000000000000i000000jx(00001)Mw00001hi000000*K0000000Ý0000000Ý0000000Ý000005KëÓ00000ÀV0000005Ò000",
 		"cornflower": "0g0gb000ßWW?ĖYÏeYF;HSġY%ĊHöĤWÄ)ZÈâW<ŊH000000000000000000000000000000000011z00000xiNw00003QÂS000006Ý0000008ë0000000K00000ë0ë0000080ù00000aëù000000Đù0000006ù0000000K000",
 		"dandelion": "0g0g8000ZĜZZÃYřßHĥĊWlŗH^NYÄĊZ000000000000000000000000000000000000000000001w0000aÑ0000ÇIë000cQ00005Ĉ0001Għ0000LŁë0007Ĝ00006Ĉ00",
+		"jackOLantern": "0g0gaĬĸHčìWĉKYŉTZŉüYZ6HZïHZšWĽċHèŗZ0102g0i2O(3(j(jN4SV43Ã3RzSÄU5V(Sz*ÓÐ5ÓÀ(z*Ôà5GKOz*ÔÝlGÕOz)G(kÔã>zO>43Q)Oz**3À5*OzVVâÅVÒOzÄÔGGGÓÐw*ÐÔ7Ó6ëw)Oîz-ûNJ90ywyJ9JFwyJFJF",
+		"lantern": "0g0gc000<lWP@Hò>Wì2WAěZĨíWřQYŢCHZŤHZşYTBZ1yg000003Q(002h0iyx00150@GÑ00150,Ià005l0-Ăî00000-đî00150[Iá005l0iyx00000hģh00000ryę002h0Ěy#00150Ěy#00000ryę00000hģh0000000000000",
+		"carvedPumpkin": "0g0g8ĬĸHĉKYčìWŉTZŉüY$0WQSWèŗZ0g1S4TÚùĿ%íŀirQyĚx&#Ĕ+ķK%ńě,×Æ%ńě,ÙÉ%ńĘ,Úă%ĴĀOÚċ%Ġīe[r%ĺ>ĈÃÉ&łâĢńÉ&ŔĞłÚěxń+rÎĘxĽŚ%ŕŀŋÝ9wĆ[ŋř9ŋť~",
+		"pumpkinSide": "0g0g6ĬęHĉÀYđìWŉxZŉüYèŗZ0g1S4TÚùĿ%íŀßlzNRx&zA&SK%íł%ĞÆ%íł%ĞÉ%Ěł%ĞÉ%Ěł%ĘÉ%Ěł%ĘÉ%ĚłĕĚr%íĿĕĚł%óĿĕĚłxóħĕóħxķ0Ĉa1ČÂ9Ĉq?ČĹPČŁ|",
+		"pumpkinTop": "0g0g8ĬęHđìWŉxZŉüYĉÀYŉĈWĞgWKķH0gëw211yJFyI9AjdĈg0)ÂEmò9l0ëXg9đGùyĀPĉĖŉgĀ8İŜĘ4ìxx=Ņ]Àdo7ŗ4J{ČwíyÀ8ASxQ85ĊJF2IxwĿPyú9mĸ9Ěhwgh10T",
+		"cobweb": "0g0g4Į<W000ZZZŎĖYlVýUÒÃęÇÊïþÒÅÄlļUĀGÒÁãËËËrÔÁ=őļü?ÿė-Á}?ÿÇãÇąÅÔ^ÁUĺlĬÇÚÃĝÒÃĬÇlÇVU",
+	}
+}
+
+const textures = Object.keys(texturesFunc())
+console.log("Loading", textures.length, "textures")
+const textureMap = {}
+for (let i = 0; i < textures.length; i++) {
+	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
+	let texX = i & 15
+	let texY = i >> 4
+	let offsetX = texX * s
+	let offsetY = texY * s
+
+	textureMap[textures[i]] = new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s])
+}
+
+class BlockData {
+	id = 0
+	name = ""
+	textures = [new Float32Array()]
+	transparent = false
+	shadow = true
+	lightLevel = 0
+	solid = true
+	icon = ""
+	semiTrans = false
+	hideInterior = false
+	rotate = false
+
+	constructor(data, i) {
+		this.id = i
+		this.hideInterior = data.transparent ?? this.transparent
+		blockIds[data.name] = i
+
+		if ( !("textures" in data) ) {
+			data.textures = new Array(6).fill(data.name)
+		}
+		else if (typeof data.textures === "string") {
+			data.textures = new Array(6).fill(data.textures)
+		}
+		else {
+			const { textures } = data
+
+			if (textures.length === 3) {
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+			}
+			else if (textures.length === 2) {
+				// Top and bottom are the first texture, sides are the second.
+				textures[2] = textures[1]
+				textures[3] = textures[2]
+				textures[4] = textures[2]
+				textures[5] = textures[2]
+				textures[1] = textures[0]
+			}
+		}
+		for (let i = 0; i < 6; i++) {
+			this.textures[i] = textureMap[data.textures[i]]
+		}
+		delete data.textures
+
+		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
+		Object.assign(this, data)
 	}
 }
 
@@ -235,7 +306,7 @@ const blockData = [
 	{
 		name: "air",
 		id: 0,
-		textures: [],
+		textures: "nothing",
 		transparent: true,
 		shadow: false,
 		solid: false
@@ -393,11 +464,6 @@ const blockData = [
 	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.cube },
 	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.cube },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube  },
-	// I swear, if y'all don't stop asking about TNT every 5 minutes!
-	/* {
-        name: "tnt",
-        textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
 	{ name: "cherryPlanks" },
 	{
 		name: "cherryLog",
@@ -416,7 +482,8 @@ const blockData = [
 	{ name: "darkPrismarine" },
 	{
 		name: "seaLantern",
-		lightLevel: 15
+		lightLevel: 15,
+		shadow: false
 	},
 	{ name: "netherGoldOre" },
 	{
@@ -502,50 +569,48 @@ const blockData = [
 		icon: "dandelion",
 		shape: shapes.flower
 	},
-]
+	{
+		name: "cobweb",
+		textures: ["nothing", "cobweb"],
+		solid: false,
+		transparent: true,
+		hideInterior: false,
+		icon: "cobweb",
+		shape: shapes.flower
+	},
+	{
+		name: "pumpkin",
+		textures: ["pumpkinTop", "pumpkinSide"]
+	},
+	{
+		name: "carvedPumpkin",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "carvedPumpkin", "pumpkinSide", "pumpkinSide"],
+		rotate: true
+	},
+	{
+		name: "jackOLantern",
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "jackOLantern", "pumpkinSide", "pumpkinSide"],
+		shadow: "false",
+		lightLevel: 15,
+		rotate: true
+	},
+	{
+		name: "lantern",
+		solid: false,
+		transparent: true,
+		shadow: false,
+		hideInterior: false,
+		lightLevel: 15,
+		shape: shapes.lantern
+	},
+	// Removed because everyone wants them to explode, but they don't explode.
+	/* {
+        name: "tnt",
+        textures: ["tntBottom", "tntTop", "tntSide"]
+    },*/
+].map((data, i) => new BlockData(data, i))
 
 const BLOCK_COUNT = blockData.length
-const blockIds = {}
-
-// Set defaults on blockData
-for (let i = 1; i < BLOCK_COUNT; ++i) {
-	const data = blockData[i]
-	data.id = i
-	blockIds[data.name] = i
-
-	if ( !("textures" in data) ) {
-		data.textures = new Array(6).fill(data.name)
-	}
-	else if (typeof data.textures === "string") {
-		data.textures = new Array(6).fill(data.textures)
-	}
-	else {
-		const { textures } = data
-
-		if (textures.length === 3) {
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-		}
-		else if (textures.length === 2) {
-			// Top and bottom are the first texture, sides are the second.
-			textures[2] = textures[1]
-			textures[3] = textures[2]
-			textures[4] = textures[2]
-			textures[5] = textures[2]
-			textures[1] = textures[0]
-		}
-	}
-
-	data.transparent ??= false
-	data.shadow ??= true
-	data.lightLevel ??= 0
-	data.solid ??= true
-	data.icon ??= false
-	data.semiTrans ??= false
-	data.hideInterior ??= data.transparent
-	data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
-}
 
 let Block = {
 	top: 0x4,
