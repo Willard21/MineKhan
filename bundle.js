@@ -77,8 +77,8 @@ async function main() {
 	}
 
 	const code = html.join("\n")
-		.replace(/<!--[\s\S]+?-->/gm, "").replace(/\/\*.+?\*\//gm, "")
-		.split("\n").map(line => line.trim()).filter(line => line && !line.startsWith("//")).join("\n")
+	// .replace(/<!--[\s\S]+?-->/gm, "").replace(/\/\*.+?\*\//gm, "")
+	// .split("\n").map(line => line.trim()).filter(line => line && !line.startsWith("//")).join("\n")
 	console.log("Code length:", code.length.toLocaleString())
 	f.writeFile("dist/index.html", code)
 }
