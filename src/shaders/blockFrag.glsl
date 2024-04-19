@@ -18,7 +18,7 @@ const vec3 skyColor = vec3(0.25, 0.45, 0.7);
 void main(){
 	vec3 dir = normalize(vPosition);
 	float horizonal = 1.0 - abs(dir.y);
-    float sunDot = dot(dir, uSun);
+	float sunDot = dot(dir, uSun);
 	vec4 sky = vec4(mix(skyColor, uSky, horizonal * horizonal * (sunDot * 0.5 + 1.2)) * uTime, 1.0);
 		// * max(smoothstep(-0.5, 0.2, uTime), 0.1);
 

@@ -777,7 +777,7 @@ class Chunk {
 	getCaveData() {
 		if (this.caves || this.caveData) return
 		this.caveData = new Promise(resolve => {
-			window.doWork({
+			window.parent.doWork({
 				caves: true,
 				x: this.x,
 				y: 0,

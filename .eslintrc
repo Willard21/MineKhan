@@ -1,7 +1,7 @@
 {
 	"extends": ["eslint:recommended"],
 	"parserOptions": {
-		"ecmaVersion": 2022,
+		"ecmaVersion": "latest",
 		"sourceType": "module",
 		"ecmaFeatures": {}
 	},
@@ -30,7 +30,7 @@
 		"no-unused-vars": ["error", { "args": "all" }],
 		"brace-style": [2, "stroustrup", { "allowSingleLine": false }],
 		"camelcase": [2, { "properties": "always" }],
-		"indent": [2, "tab", { "SwitchCase": 1 }],
+		"indent": ["error", "tab", { "SwitchCase": 1 }],
 		"max-nested-callbacks": [2, 10],
 		"no-mixed-spaces-and-tabs": [2, "smart-tabs"],
 		"no-spaced-func": 2,
@@ -58,8 +58,8 @@
 		"browser": true
 	},
 	"globals": {
-		"window": "readonly",
-		"document": "readonly",
-		"alert": "readonly"
+		"window": false,
+		"document": false,
+		"alert": false
 	}
 }

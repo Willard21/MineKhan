@@ -21,21 +21,21 @@ const hoverBox = document.getElementById("onhover")
 function displayHoverText(text, mouseX, mouseY) {
 	hoverBox.textContent = text
 	hoverBox.classList.remove("hidden")
-	if (mouseY < window.innerHeight / 2) {
+	if (mouseY < window.parent.innerHeight / 2) {
 		hoverBox.style.bottom = ""
 		hoverBox.style.top = mouseY + 10 + "px"
 	}
 	else {
 		hoverBox.style.top = ""
-		hoverBox.style.bottom = window.innerHeight - mouseY + 10 + "px"
+		hoverBox.style.bottom = window.parent.innerHeight - mouseY + 10 + "px"
 	}
-	if (mouseX < window.innerWidth / 2) {
+	if (mouseX < window.parent.innerWidth / 2) {
 		hoverBox.style.right = ""
 		hoverBox.style.left = mouseX + 10 + "px"
 	}
 	else {
 		hoverBox.style.left = ""
-		hoverBox.style.right = window.innerWidth - mouseX + 10 + "px"
+		hoverBox.style.right = window.parent.innerWidth - mouseX + 10 + "px"
 	}
 }
 
@@ -400,8 +400,8 @@ class InventoryManager {
 		storage.size = 36
 		storage.render(10, 10, this.iconSize)
 
-		containerCanvas.onkeydown = invCanvas.onkeydown = window.canvas.onkeydown
-		containerCanvas.onkeyup = invCanvas.onkeyup = window.canvas.onkeyup
+		containerCanvas.onkeydown = invCanvas.onkeydown = window.parent.canvas.onkeydown
+		containerCanvas.onkeyup = invCanvas.onkeyup = window.parent.canvas.onkeyup
 
 		invCanvas.onmousemove = e => storage.mouseMove(e)
 		invCanvas.onmousedown = () => {

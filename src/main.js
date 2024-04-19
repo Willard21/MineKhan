@@ -1,6 +1,3 @@
-"use strict"
-
-// import css
 import './index.css'
 
 // GLSL Shader code
@@ -31,40 +28,38 @@ import { Chunk } from "./js/chunk.js"
 // import { Item } from './js/item.js'
 import { Player } from "./js/player.js"
 
-window.blockData = blockData
 
-
-window.savebox = document.getElementById("savebox")
-window.boxCenterTop = document.getElementById("boxcentertop")
-window.saveDirections = document.getElementById("savedirections")
-window.message = document.getElementById("message")
-window.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "window" as its namespace.
-window.quota = document.getElementById("quota")
-window.hoverbox = document.getElementById("onhover")
-
-window.controlMap = {}
-
+const win = window.parent
 async function MineKhan() {
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
-	const win = window.parent
 	const chatOutput = document.getElementById("chat")
 	const chatInput = document.getElementById("chatbar")
 	let now = Date.now()
 
+	win.blockData = blockData
+	win.savebox = document.getElementById("savebox")
+	win.boxCenterTop = document.getElementById("boxcentertop")
+	win.saveDirections = document.getElementById("savedirections")
+	win.message = document.getElementById("message")
+	win.worlds = document.getElementById("worlds") // I have too many "worlds" variables. This one uses "win" as its namespace.
+	win.quota = document.getElementById("quota")
+	win.hoverbox = document.getElementById("onhover")
+	win.controlMap = {}
+
 	// Cache user-defined globals
-	const { savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = window
+	const { savebox, boxCenterTop, saveDirections, message, quota, hoverbox, loadString, controlMap } = win
 	const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 	/**
 	 * @type {HTMLCanvasElement}
 	 */
 	const canvas = document.getElementById("overlay")
-	canvas.width  = window.innerWidth
-	canvas.height = window.innerHeight
+	canvas.width  = win.innerWidth
+	canvas.height = win.innerHeight
 	const ctx = canvas.getContext("2d")
-	window.canvas = canvas
+	win.canvas = canvas
 
 	// Shh don't tell anyone I'm overriding native objects
 	String.prototype.hashCode = function() {
@@ -87,8 +82,8 @@ async function MineKhan() {
 
 	{
 		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-		const workerURL = window.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
-		window.workers = []
+		const workerURL = win.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+		win.workers = []
 		const jobQueue = []
 		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
 		for (let i = 0; i < workerCount; i++) { // Generate between 1 and (processors - 1) workers.
@@ -101,14 +96,14 @@ async function MineKhan() {
 					worker.resolve = resolve
 					worker.postMessage(data)
 				}
-				else window.workers.push(worker)
+				else win.workers.push(worker)
 			}
-			window.workers.push(worker)
+			win.workers.push(worker)
 		}
 
-		window.doWork = (data, resolve) => {
-			if (window.workers.length) {
-				let worker = window.workers.pop()
+		win.doWork = (data, resolve) => {
+			if (win.workers.length) {
+				let worker = win.workers.pop()
 				worker.resolve = resolve
 				worker.postMessage(data)
 			}
@@ -119,7 +114,7 @@ async function MineKhan() {
 		const channel = new MessageChannel()
 		let res
 		channel.port1.onmessage = () => res()
-		window.yieldThread = () => {
+		win.yieldThread = () => {
 			return new Promise(resolve => {
 				res = resolve
 				channel.port2.postMessage("")
@@ -133,8 +128,8 @@ async function MineKhan() {
 		worldSeed = seed
 		seedHash(seed)
 		noiseProfile.noiseSeed(seed)
-		while(window.workers.length) {
-			window.doWork({ seed })
+		while(win.workers.length) {
+			win.doWork({ seed })
 		}
 	}
 
@@ -221,8 +216,8 @@ async function MineKhan() {
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
-	let width = window.innerWidth
-	let height = window.innerHeight
+	let width = win.innerWidth
+	let height = win.innerHeight
 
 	if (height === 400) alert("Canvas is too small. Click the \"Settings\" button to the left of the \"Vote Up\" button under the editor and change the height to 600.")
 
@@ -254,24 +249,24 @@ async function MineKhan() {
 			exit: [document.getElementById("hotbar")]
 		},
 		pause: {
-			enter: [window.message],
-			exit: [window.savebox, window.saveDirections, window.message]
+			enter: [win.message],
+			exit: [win.savebox, win.saveDirections, win.message]
 		},
 		"main menu": {
 			onenter: () => document.getElementById("overlay").classList.add("background"),
 			onexit: () => document.getElementById("overlay").classList.remove("background")
 		},
 		"loadsave menu": {
-			enter: [window.worlds, window.boxCenterTop, quota],
-			exit: [window.worlds, window.boxCenterTop, quota],
+			enter: [win.worlds, win.boxCenterTop, quota],
+			exit: [win.worlds, win.boxCenterTop, quota],
 			onenter: () => {
-				window.boxCenterTop.placeholder = "Enter Save String (Optional)"
+				win.boxCenterTop.placeholder = "Enter Save String (Optional)"
 				if (navigator && navigator.storage && navigator.storage.estimate) {
 					navigator.storage.estimate().then(data => {
 						quota.innerText = `${data.usage.toLocaleString()} / ${data.quota.toLocaleString()} bytes (${(100 * data.usage / data.quota).toLocaleString(undefined, { maximumSignificantDigits: 2 })}%) of your quota used`
 					}).catch(console.error)
 				}
-				window.boxCenterTop.onmousedown = () => {
+				win.boxCenterTop.onmousedown = () => {
 					let elem = document.getElementsByClassName("selected")
 					if (elem && elem[0]) {
 						elem[0].classList.remove("selected")
@@ -281,15 +276,15 @@ async function MineKhan() {
 				}
 			},
 			onexit: () => {
-				window.boxCenterTop.onmousedown = null
+				win.boxCenterTop.onmousedown = null
 			}
 		},
 		"creation menu": {
-			enter: [window.boxCenterTop],
-			exit: [window.boxCenterTop],
+			enter: [win.boxCenterTop],
+			exit: [win.boxCenterTop],
 			onenter: () => {
-				window.boxCenterTop.placeholder = "Enter World Name"
-				window.boxCenterTop.value = ""
+				win.boxCenterTop.placeholder = "Enter World Name"
+				win.boxCenterTop.value = ""
 			}
 		},
 		loading: {
@@ -298,16 +293,16 @@ async function MineKhan() {
 			onenter: startLoad
 		},
 		editworld: {
-			enter: [window.boxCenterTop],
-			exit: [window.boxCenterTop],
+			enter: [win.boxCenterTop],
+			exit: [win.boxCenterTop],
 			onenter: () => {
-				window.boxCenterTop.placeholder = "Enter World Name"
-				window.boxCenterTop.value = ""
+				win.boxCenterTop.placeholder = "Enter World Name"
+				win.boxCenterTop.value = ""
 			}
 		},
 		"multiplayer menu": {
-			enter: [window.worlds],
-			exit: [window.worlds]
+			enter: [win.worlds],
+			exit: [win.worlds]
 		},
 		chat: {
 			enter: [chatInput, chatOutput],
@@ -752,7 +747,6 @@ async function MineKhan() {
 				}
 			}
 		}
-		console.log("Ignore that warning ^ on Chrome. It's a lie. Setting willReadFrequently to true made it 10x slower.")
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
 
 		// Yeet the buffers
@@ -1743,17 +1737,17 @@ async function MineKhan() {
 			chat("Please provide a username. Like /ban Willard", "tomato")
 			return
 		}
-		if (!window.ban) {
+		if (!win.ban) {
 			chat("This is a singleplayer world. There's nobody to ban.", "tomato")
 			return
 		}
-		window.ban(username)
+		win.ban(username)
 	}, "/ban <username>", "IP ban a player from your world until you close it.", () => {
 		setAutocomplete(Object.keys(playerPositions).map(player => `/ban ${player}`))
 	})
 	addCommand("online", () => {
-		if (window.online && multiplayer) {
-			window.online()
+		if (win.online && multiplayer) {
+			win.online()
 		}
 		else {
 			chat("You're all alone. Sorry.", "tomato")
@@ -2131,11 +2125,11 @@ async function MineKhan() {
 		}
 		multiplayer.onerror = multiplayer.onclose
 
-		window.online = function() {
+		win.online = function() {
 			multiplayer.send("fetchUsers")
 		}
 
-		window.ban = function(username) {
+		win.ban = function(username) {
 			if (!multiplayer) {
 				chat("Not in a multiplayer world.", "tomato")
 				return
@@ -2154,7 +2148,7 @@ async function MineKhan() {
 			}))
 		}
 
-		window.dists = () => {
+		win.dists = () => {
 			console.log(playerPositions)
 			console.log(playerDistances)
 			return playerEntities
@@ -2562,7 +2556,7 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork) await window.yieldThread()
+				if (doneWork) await win.yieldThread()
 			}
 			this.ticking = false
 		}
@@ -3251,7 +3245,7 @@ async function MineKhan() {
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			if (survival) {
-				window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
+				// window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
 				return
 			}
 			world = new World()
@@ -3294,7 +3288,7 @@ async function MineKhan() {
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
 			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}? This will also delete it from the cloud.`)) {
 				deleteFromDB(selectedWorld)
-				window.worlds.removeChild(document.getElementById(selectedWorld))
+				win.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
 				if (location.href.startsWith("https://willard.fun/")) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
 				selectedWorld = 0
@@ -3825,7 +3819,7 @@ async function MineKhan() {
 	canvas.oncontextmenu = function(e) {
 		e.preventDefault()
 	}
-	window.onbeforeunload = e => {
+	win.onbeforeunload = e => {
 		if (screen === "play" && Key.control) {
 			releasePointer()
 			e.preventDefault()
@@ -3843,9 +3837,9 @@ async function MineKhan() {
 		}
 	}
 	document.onwheel = () => {} // Shouldn't do anything, but it helps with a Khan Academy bug somewhat
-	window.onresize = () => {
-		width = window.innerWidth
-		height = window.innerHeight
+	win.onresize = () => {
+		width = win.innerWidth
+		height = win.innerHeight
 		canvas.height = height
 		canvas.width = width
 		gl.canvas.height = height
@@ -3917,16 +3911,16 @@ async function MineKhan() {
 
 	let pTouch = { x: 0, y: 0 }
 	canvas.addEventListener("touchstart", function(e) {
-	    pTouch.x = e.changedTouches[0].pageX
-	    pTouch.y = e.changedTouches[0].pageY
+		pTouch.x = e.changedTouches[0].pageX
+		pTouch.y = e.changedTouches[0].pageY
 	}, false)
 	canvas.addEventListener("touchmove", function(e) {
-	    e.movementY = e.changedTouches[0].pageY - pTouch.y
-	    e.movementX = e.changedTouches[0].pageX - pTouch.x
-	    pTouch.x = e.changedTouches[0].pageX
-	    pTouch.y = e.changedTouches[0].pageY
-	    mmoved(e)
-	    e.preventDefault()
+		e.movementY = e.changedTouches[0].pageY - pTouch.y
+		e.movementX = e.changedTouches[0].pageX - pTouch.x
+		pTouch.x = e.changedTouches[0].pageX
+		pTouch.y = e.changedTouches[0].pageY
+		mmoved(e)
+		e.preventDefault()
 	}, false)
 
 	function use2d() {
@@ -3960,7 +3954,7 @@ async function MineKhan() {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
 				throw "Error: Cannot play a WebGL game without WebGL."
 			}
-			glExtensions = {
+			win.glExtensions = glExtensions = {
 				"vertex_array_object": gl.getExtension("OES_vertex_array_object"),
 				"element_index_uint": gl.getExtension("OES_element_index_uint")
 			}
@@ -3981,6 +3975,7 @@ async function MineKhan() {
 		}
 		else {
 			gl = win.gl
+			glExtensions = win.glExtensions
 		}
 
 		if (!document.body.contains(gl.canvas)) {
@@ -4143,11 +4138,11 @@ async function MineKhan() {
 	}
 
 	function initWorldsMenu() {
-		while (window.worlds.firstChild) {
-			window.worlds.removeChild(window.worlds.firstChild)
+		while (win.worlds.firstChild) {
+			win.worlds.removeChild(win.worlds.firstChild)
 		}
 		selectedWorld = 0
-		window.boxCenterTop.value = ""
+		win.boxCenterTop.value = ""
 
 		const deselect = () => {
 			let elem = document.getElementsByClassName("selected")
@@ -4182,7 +4177,7 @@ async function MineKhan() {
 			if (cloud) div.innerHTML += `Cloud Save (${size.toLocaleString()} bytes)`
 			else div.innerHTML += `${size.toLocaleString()} bytes used`
 
-			window.worlds.appendChild(div)
+			win.worlds.appendChild(div)
 		}
 
 		worlds = {}
@@ -4233,8 +4228,8 @@ async function MineKhan() {
 				}
 			}
 
-			window.worlds.onclick = Button.draw
-			window.boxCenterTop.onkeyup = Button.draw
+			win.worlds.onclick = Button.draw
+			win.boxCenterTop.onkeyup = Button.draw
 		}).catch(e => console.error(e))
 
 		superflat = false
@@ -4243,11 +4238,11 @@ async function MineKhan() {
 	}
 
 	async function initMultiplayerMenu() {
-		while (window.worlds.firstChild) {
-			window.worlds.removeChild(window.worlds.firstChild)
+		while (win.worlds.firstChild) {
+			win.worlds.removeChild(win.worlds.firstChild)
 		}
 		selectedWorld = 0
-		window.boxCenterTop.value = ""
+		win.boxCenterTop.value = ""
 
 		const deselect = () => {
 			let elem = document.getElementsByClassName("selected")
@@ -4279,7 +4274,7 @@ async function MineKhan() {
 			div.innerHTML += version + br
 			if (password) div.innerHTML += "Password-protected" + br
 
-			window.worlds.appendChild(div)
+			win.worlds.appendChild(div)
 		}
 
 		worlds = {}
@@ -4288,8 +4283,8 @@ async function MineKhan() {
 			addWorld(data.name, data.host, data.online, data.target, data.version, !data.public)
 			worlds[data.target] = data
 		}
-		window.worlds.onclick = Button.draw
-		window.boxCenterTop.onkeyup = Button.draw
+		win.worlds.onclick = Button.draw
+		win.boxCenterTop.onkeyup = Button.draw
 
 		let refresh = setInterval(async () => {
 			if (screen !== "multiplayer menu") return clearInterval(refresh)
@@ -4312,8 +4307,6 @@ async function MineKhan() {
 	}
 
 	function initEverything() {
-		console.log("Initializing world.")
-
 		generatedChunks = 0
 
 		initPlayer()
@@ -4343,13 +4336,13 @@ async function MineKhan() {
 		inventory.init(true)
 
 		// See if a user followed a link here.
-		var urlParams = new URLSearchParams(window.location.search)
+		var urlParams = new URLSearchParams(win.location.search)
 		if (urlParams.has("target")) {
 			changeScene("multiplayer menu")
 			initMultiplayer(urlParams.get("target"))
 		}
 
-		if (window.parent.tickid) window.clearTimeout(window.parent.tickid)
+		if (win.tickid) win.clearTimeout(win.tickid)
 		tickLoop()
 	}
 
@@ -4478,7 +4471,7 @@ async function MineKhan() {
 	}, 100)
 
 	function tickLoop() {
-		window.parent.tickid = window.setTimeout(tickLoop, 50) // 20 TPS
+		win.tickid = win.setTimeout(tickLoop, 50) // 20 TPS
 
 		if (world && screen === "play") {
 			let tickStart = performance.now()
@@ -4540,11 +4533,11 @@ async function MineKhan() {
 	return renderLoop
 }
 
-window.onload = async function() {
-	var init = await MineKhan()
-	if (window.parent.raf) {
-		window.cancelAnimationFrame(window.parent.raf)
-		console.log("Canceled", window.parent.raf)
+(async function() {
+	if (win.raf) {
+		win.cancelAnimationFrame(win.raf)
+		console.log("Canceled", win.raf)
 	}
+	var init = await MineKhan()
 	init()
-}
+})()

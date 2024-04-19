@@ -1,3 +1,16 @@
+.hidden {
+	display: none !important;
+}
+.corner {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+.background {
+	background-image: url('./background.webp');
+	background-size: cover;
+	background-position: center;
+}
 body {
 	overflow: hidden; /* Hide scrollbars */
 	background-color: black;

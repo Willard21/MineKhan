@@ -95,21 +95,6 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<!-- <link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin> -->
 		<link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
 		<!-- <link rel="manifest" href="https://willard.fun/manifest.json" /> -->
-		<style>
-			.hidden {
-				display: none !important;
-			}
-			.corner {
-				position: absolute;
-				top: 0;
-				left: 0;
-			}
-			.background {
-				background-image: url('./background.webp');
-				background-size: cover;
-				background-position: center;
-			}
-		</style>
 	</head>
 	<body>
 		<!-- Text so that Google believes the page is loaded and to provide search terms. -->
@@ -149,7 +134,8 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 		<script>
 			// Khan Academy instructions:
 			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
-			window.loadString = ""
+			window.parent.loadString = ""
+			window.parent.exports = {}
 		</script>
 	</body>
 </html>

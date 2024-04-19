@@ -239,7 +239,6 @@ const texturesFunc = function (setPixel, getPixels) {
 }
 
 const textures = Object.keys(texturesFunc())
-console.log("Loading", textures.length, "textures")
 const textureMap = {}
 for (let i = 0; i < textures.length; i++) {
 	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
@@ -605,9 +604,9 @@ const blockData = [
 	},
 	// Removed because everyone wants them to explode, but they don't explode.
 	/* {
-        name: "tnt",
-        textures: ["tntBottom", "tntTop", "tntSide"]
-    },*/
+ 	name: "tnt",
+ 	textures: ["tntBottom", "tntTop", "tntSide"]
+	},*/
 ].map((data, i) => new BlockData(data, i))
 
 const BLOCK_COUNT = blockData.length
