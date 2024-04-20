@@ -80,6 +80,7 @@ async function MineKhan() {
 		return btoa(str)
 	}
 
+	let yieldThread
 	{
 		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
 		const workerURL = win.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
@@ -114,7 +115,7 @@ async function MineKhan() {
 		const channel = new MessageChannel()
 		let res
 		channel.port1.onmessage = () => res()
-		win.yieldThread = () => {
+		yieldThread = () => {
 			return new Promise(resolve => {
 				res = resolve
 				channel.port2.postMessage("")
@@ -2556,7 +2557,7 @@ async function MineKhan() {
 				}
 
 				// Yield the main thread to render passes
-				if (doneWork) await win.yieldThread()
+				if (doneWork) await yieldThread()
 			}
 			this.ticking = false
 		}
