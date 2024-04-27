@@ -1,4 +1,4 @@
-async function Worker() {
+async function worker() {
 	// Originally this stuff was generated in code
 	const GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])
 	const POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]
@@ -35,77 +35,10 @@ async function Worker() {
 		}
 	}
 
-	/*
-	const { abs, floor } = Math
-	const NORM_3D = 1.0 / 206.0
-	const SQUISH_3D = 1 / 3
-	const STRETCH_3D = -1 / 6
-	function noise(x, y, z) {
-		const stretchOffset = (x + y + z) * STRETCH_3D
-		const xs = x + stretchOffset
-		const ys = y + stretchOffset
-		const zs = z + stretchOffset
-		const xsb = floor(xs)
-		const ysb = floor(ys)
-		const zsb = floor(zs)
-		const xins = xs - xsb
-		const yins = ys - ysb
-		const zins = zs - zsb
-		const inSum = xins + yins + zins
-
-		const bits = yins - zins + 1
-		| xins - yins + 1 << 1
-		| xins - zins + 1 << 2
-		| inSum << 3
-		| inSum + zins << 5
-		| inSum + yins << 7
-		| inSum + xins << 9
-
-		const n = bits * 571183418275 + 1013904223 >>> 1
-
-		let c = positions[n % 80]
-		if (c === -1) return 0
-		let value = 0
-		const squishOffset = (xsb + ysb + zsb) * SQUISH_3D
-		const dx0 = x - (xsb + squishOffset)
-		const dy0 = y - (ysb + squishOffset)
-		const dz0 = z - (zsb + squishOffset)
-		const count = c < 432 ? 6 : 8
-		for (let j = 0; j < count ; j++) {
-			const dx = dx0 + data[c]
-			const dy = dy0 + data[c+1]
-			const dz = dz0 + data[c+2]
-			let attn = 2 - dx * dx - dy * dy - dz * dz
-			if (attn > 0) {
-				let i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]
-				attn *= attn
-				value += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)
-			}
-			c += 6
-		}
-
-		return value * NORM_3D + 0.5
-	}
-	const smooth = 0.02
-	const caveSize = 0.0055
-	function isCave(x, y, z) {
-		// Generate a 3D rigid multifractal noise shell.
-		// Then generate another one with different coordinates.
-		// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.
-		// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.
-		// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
-
-		return abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
-			&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize
-	}
-	*/
-
 	// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.
 	const program = new Uint8Array(atob("AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL").split("").map(c => c.charCodeAt(0))).buffer
 
 	const wasm = await WebAssembly.instantiate(program)
-	// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))
-	// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))
 
 	const exports = wasm.instance.exports
 	const wasmCaves = exports.getCaves || exports.get_caves || exports.c
@@ -139,4 +72,4 @@ async function Worker() {
 		}
 	}
 }
-Worker()
+worker()

@@ -52,7 +52,7 @@ const texturesFunc = function (setPixel, getPixels) {
 			}
 		},
 		hitbox: "0g0g100W",  // Black
-		nothing: "0g0g1000", // Transparent black
+		air: "0g0g1000", // Transparent black
 		"acaciaLog": "0g0g6ÖïYÇQYåĭYÁAWÇUZ÷nH50ķcyX6ħœcy4eSœ4i4{SQgNkQSīĘSÀSXTęgÀëïwT0ÀìXy1Tg5ķyh?g0ķwhko0x3gko4x3Ĉ/8Č5jĘ(wĈX1Àg0SĈj4iëSĊh42X",
 		"acaciaLogTop": "0g0gbÖïYVQYÁ)HPjZġîHĕàWĨěZöNYāRYĉÃW?3Y1xizNj1g4Q??ÒUQTAGIĀāāIÏkãÑQ?Q]>čXVVVVPÂ)üÆòĀï]Á*ïÅVVïÆTBüÆÇýýPÀ5üÆÇïï]À5üÆVVýÆÁlXÆñòýPÂBüVVVV]Â)ü?QQ@]Ã)ĀĀIIII>ČQV?ÄVQTgNxg0iz(",
 		"acaciaPlanks": "0g0g7ġîHĕàWĨěZāRYĉÃWöNYòiY4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂTAX40cùĪzSāAAā4ŁğãļłĞSA4PkiA9cë0PNgÐ0İAĽŔÉGËĞ",
@@ -238,10 +238,11 @@ const texturesFunc = function (setPixel, getPixels) {
 	}
 }
 
+// Compute texture coordinates so I can store them in blockData.textures.
 const textures = Object.keys(texturesFunc())
 const textureMap = {}
 for (let i = 0; i < textures.length; i++) {
-	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
+	const s = 1/16 // numberOfTexturesPerRowOfTheAtlas
 	let texX = i & 15
 	let texY = i >> 4
 	let offsetX = texX * s
@@ -262,11 +263,33 @@ class BlockData {
 	semiTrans = false
 	hideInterior = false
 	rotate = false
+	flip = false
+	iconImg = document.createElement("canvas")
+	shape = shapes.cube
+	uniqueShape = false
 
-	constructor(data, i) {
-		this.id = i
-		this.hideInterior = data.transparent ?? this.transparent
-		blockIds[data.name] = i
+	constructor(data, id, hasIcon = true) {
+		if (data instanceof BlockData) {
+			const canvas = this.iconImg
+			Object.assign(this, data)
+
+			this.id = id
+			if (!hasIcon) {
+				this.iconImg = null
+				this.icon = ""
+			}
+			else {
+				canvas.width = 64
+				canvas.height = 64
+				this.iconImg = canvas
+			}
+			return
+		}
+		if (data.shape) this.uniqueShape = true
+		this.iconImg.width = 64
+		this.iconImg.height = 64
+		this.id = id
+		blockIds[data.name] = id
 
 		if ( !("textures" in data) ) {
 			data.textures = new Array(6).fill(data.name)
@@ -302,33 +325,15 @@ class BlockData {
 }
 
 const blockData = [
-	{
-		name: "air",
-		id: 0,
-		textures: "nothing",
-		transparent: true,
-		shadow: false,
-		solid: false
-	},
-	{
-		name: "grass",
-		textures: ["dirt", "grassTop", "grassSide"],
-	},
+	{ name: "air", textures: "air", transparent: true, shadow: false, solid: false },
+	{ name: "grass", textures: ["dirt", "grassTop", "grassSide"] },
 	{ name: "dirt" },
 	{ name: "stone" },
 	{ name: "bedrock" },
 	{ name: "sand" },
 	{ name: "gravel" },
-	{
-		name: "leaves",
-		transparent: true,
-		hideInterior: false
-	},
-	{
-		name: "glass",
-		transparent: true,
-		shadow: false,
-	},
+	{ name: "leaves", transparent: true },
+	{ name: "glass", transparent: true, shadow: false, hideInterior: true },
 	{ name: "cobblestone" },
 	{ name: "mossyCobblestone" },
 	{ name: "stoneBricks" },
@@ -349,35 +354,17 @@ const blockData = [
 	{ name: "lapisBlock" },
 	{ name: "emeraldBlock" },
 	{ name: "oakPlanks" },
-	{
-		name: "oakLog",
-		textures: ["oakLogTop", "oakLog"],
-	},
+	{ name: "oakLog", textures: ["oakLogTop", "oakLog"] },
 	{ name: "acaciaPlanks" },
-	{
-		name: "acaciaLog",
-		textures: ["acaciaLogTop", "acaciaLog"],
-	},
+	{ name: "acaciaLog", textures: ["acaciaLogTop", "acaciaLog"] },
 	{ name: "birchPlanks" },
-	{
-		name: "birchLog",
-		textures: ["birchLogTop", "birchLog"],
-	},
+	{ name: "birchLog", textures: ["birchLogTop", "birchLog"] },
 	{ name: "darkOakPlanks" },
-	{
-		name: "darkOakLog",
-		textures: ["darkOakLogTop", "darkOakLog"],
-	},
+	{ name: "darkOakLog", textures: ["darkOakLogTop", "darkOakLog"] },
 	{ name: "junglePlanks" },
-	{
-		name: "jungleLog",
-		textures: ["jungleLogTop", "jungleLog"],
-	},
+	{ name: "jungleLog", textures: ["jungleLogTop", "jungleLog"] },
 	{ name: "sprucePlanks" },
-	{
-		name: "spruceLog",
-		textures: ["spruceLogTop", "spruceLog"],
-	},
+	{ name: "spruceLog", textures: ["spruceLogTop", "spruceLog"] },
 	{ name: "whiteWool" },
 	{ name: "orangeWool" },
 	{ name: "magentaWool" },
@@ -410,32 +397,17 @@ const blockData = [
 	{ name: "greenConcrete" },
 	{ name: "redConcrete" },
 	{ name: "blackConcrete" },
-	{
-		name: "bookshelf",
-		textures: ["oakPlanks", "bookshelf"]
-	},
+	{ name: "bookshelf", textures: ["oakPlanks", "bookshelf"] },
 	{ name: "netherrack" },
 	{ name: "soulSand" },
-	{
-		name: "glowstone",
-		lightLevel: 15
-	},
+	{ name: "glowstone", lightLevel: 15 },
 	{ name: "netherWartBlock" },
 	{ name: "netherBricks" },
 	{ name: "redNetherBricks" },
 	{ name: "netherQuartzOre" },
-	{
-		name: "quartzBlock",
-		textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"]
-	},
-	{
-		name: "quartzPillar",
-		textures: ["quartzPillarTop", "quartzPillar"]
-	},
-	{
-		name: "chiseledQuartzBlock",
-		textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"]
-	},
+	{ name: "quartzBlock", textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"] },
+	{ name: "quartzPillar", textures: ["quartzPillarTop", "quartzPillar"] },
+	{ name: "chiseledQuartzBlock", textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"] },
 	{ name: "chiseledStoneBricks" },
 	{ name: "smoothStone" },
 	{ name: "andesite" },
@@ -444,8 +416,8 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
-	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
+	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon", hideInterior: true },
+	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
 	{ name: "obsidian" },
 	{ name: "cryingObsidian", lightLevel: 10 },
@@ -458,16 +430,13 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.cube },
-	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.cube  },
-	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.cube },
-	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.cube },
-	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube  },
+	{ name: "oakDoorTop", solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.door },
+	{ name: "oakDoorBottom", solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.door },
+	{ name: "warpedDoorTop", solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.door },
+	{ name: "warpedDoorBottom", solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.door },
+	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube },
 	{ name: "cherryPlanks" },
-	{
-		name: "cherryLog",
-		textures: ["cherryLogTop", "cherryLog"],
-	},
+	{ name: "cherryLog", textures: ["cherryLogTop", "cherryLog"] },
 	{ name: "copperOre" },
 	{ name: "copperBlock" },
 	{ name: "cutCopper" },
@@ -479,51 +448,23 @@ const blockData = [
 	{ name: "oxidizedCutCopper" },
 	{ name: "prismarine" },
 	{ name: "darkPrismarine" },
-	{
-		name: "seaLantern",
-		lightLevel: 15,
-		shadow: false
-	},
+	{ name: "seaLantern", lightLevel: 15, shadow: false },
 	{ name: "netherGoldOre" },
-	{
-		name: "ancientDebris",
-		textures: ["ancientDebrisTop", "ancientDebrisSide"],
-	},
+	{ name: "ancientDebris", textures: ["ancientDebrisTop", "ancientDebrisSide"] },
 	{ name: "netheriteBlock" },
 	{ name: "soulSoil" },
-	{
-		name: "blackstone",
-		textures: ["blackstoneTop", "blackstone"],
-	},
+	{ name: "blackstone", textures: ["blackstoneTop", "blackstone"] },
 	{ name: "polishedBlackstone" },
 	{ name: "gildedBlackstone" },
-	{
-		name: "basalt",
-		textures: ["basaltTop", "basaltSide"],
-	},
-	{
-		name: "polishedBasalt",
-		textures: ["polishedBasaltTop", "polishedBasaltSide"],
-	},
-	{
-		name: "shroomlight",
-		lightLevel: 15
-	},
+	{ name: "basalt", textures: ["basaltTop", "basaltSide"] },
+	{ name: "polishedBasalt", textures: ["polishedBasaltTop", "polishedBasaltSide"] },
+	{ name: "shroomlight", lightLevel: 15 },
 	{ name: "crimsonPlanks" },
-	{
-		name: "crimsonStem",
-		textures: ["crimsonStemTop", "crimsonStem"],
-	},
+	{ name: "crimsonStem", textures: ["crimsonStemTop", "crimsonStem"] },
 	{ name: "warpedPlanks" },
-	{
-		name: "warpedStem",
-		textures: ["warpedStemTop", "warpedStem"],
-	},
+	{ name: "warpedStem", textures: ["warpedStemTop", "warpedStem"] },
 	{ name: "amethystBlock" },
-	{
-		name: "deepslate",
-		textures: ["deepslateTop", "deepslate"],
-	},
+	{ name: "deepslate", textures: ["deepslateTop", "deepslate"] },
 	{ name: "cobbledDeepslate" },
 	{ name: "polishedDeepslate" },
 	{ name: "deepslateBricks" },
@@ -540,67 +481,126 @@ const blockData = [
 	{ name: "deepslateRedstoneOre" },
 	{
 		name: "poppy",
-		textures: ["nothing", "poppy"],
+		textures: ["air", "poppy"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "poppy",
 		shape: shapes.flower
 	},
 	{
 		name: "cornflower",
-		textures: ["nothing", "cornflower"],
+		textures: ["air", "cornflower"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "cornflower",
 		shape: shapes.flower
 	},
 	{
 		name: "dandelion",
-		textures: ["nothing", "dandelion"],
+		textures: ["air", "dandelion"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "dandelion",
 		shape: shapes.flower
 	},
 	{
 		name: "cobweb",
-		textures: ["nothing", "cobweb"],
+		textures: ["air", "cobweb"],
 		solid: false,
 		transparent: true,
-		hideInterior: false,
 		icon: "cobweb",
 		shape: shapes.flower
 	},
-	{
-		name: "pumpkin",
-		textures: ["pumpkinTop", "pumpkinSide"]
-	},
-	{
-		name: "carvedPumpkin",
-		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "carvedPumpkin", "pumpkinSide", "pumpkinSide"],
-		rotate: true
-	},
+	{ name: "pumpkin", textures: ["pumpkinTop", "pumpkinSide"] },
+	{ name: "carvedPumpkin", textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "carvedPumpkin"], rotate: true, shape: shapes.cube },
 	{
 		name: "jackOLantern",
-		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "jackOLantern", "pumpkinSide", "pumpkinSide"],
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "jackOLantern"],
 		shadow: "false",
 		lightLevel: 15,
-		rotate: true
+		rotate: true,
+		shape: shapes.cube
 	},
 	{
 		name: "lantern",
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		lightLevel: 15,
 		shape: shapes.lantern
+	},
+	{
+		name: "oakFence",
+		textures: "oakPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "acaciaFence",
+		textures: "acaciaPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "birchFence",
+		textures: "birchPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "darkOakFence",
+		textures: "darkOakPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "jungleFence",
+		textures: "junglePlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "spruceFence",
+		textures: "sprucePlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "cherryFence",
+		textures: "cherryPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "netherBrickFence",
+		textures: "netherBricks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "crimsonFence",
+		textures: "crimsonPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "warpedFence",
+		textures: "warpedPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
 	},
 	// Removed because everyone wants them to explode, but they don't explode.
 	/* {
@@ -608,6 +608,7 @@ const blockData = [
  	textures: ["tntBottom", "tntTop", "tntSide"]
 	},*/
 ].map((data, i) => new BlockData(data, i))
+blockData[0].iconImg = null // Air doesn't need an icon.
 
 const BLOCK_COUNT = blockData.length
 
@@ -620,4 +621,4 @@ let Block = {
 	west: 0x1,
 }
 
-export { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block }
+export { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block, BlockData }

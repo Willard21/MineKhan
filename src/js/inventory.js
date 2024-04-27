@@ -13,6 +13,21 @@ const invCtx = invCanvas.getContext("2d")
 const containerCanvas = document.getElementById("container")
 const contCtx = containerCanvas.getContext("2d")
 
+const heldItemCanvas = document.createElement("canvas")
+heldItemCanvas.style.zIndex = 2
+heldItemCanvas.style.pointerEvents = "none"
+heldItemCanvas.width = 64
+heldItemCanvas.height = 64
+heldItemCanvas.className = "hidden corner"
+heldItemCanvas.id = "heldItem"
+document.body.append(heldItemCanvas)
+
+invCanvas.oncontextmenu = heldItemCanvas.oncontextmenu = containerCanvas.oncontextmenu = function(e) {
+	e.preventDefault()
+}
+
+const heldCtx = heldItemCanvas.getContext("2d")
+
 /**
  * @type {HTMLDivElement}
  */
@@ -215,13 +230,22 @@ class InventoryPage {
 	mouseClick(heldItem) {
 		if (this.hoverIndex === -1) return null
 		if (this.creative) {
+			if (heldItem?.id === this.items[this.hoverIndex].id) {
+				if (heldItem.stackSize < 64) heldItem.stackSize++
+				return heldItem
+			}
 			return this.items[this.hoverIndex].copy() // Discard the previously held item
 		}
 		let old = this.items[this.hoverIndex]
 		if (!heldItem && !old) return null
 		if (old?.id === heldItem?.id) {
 			old.stackSize += heldItem.stackSize
-			old = null
+			if (old.stackSize > 64) {
+				heldItem.stackSize = old.stackSize - 64
+				old.stackSize = 64
+				old = heldItem
+			}
+			else old = null
 		}
 		else this.items[this.hoverIndex] = heldItem || null
 
@@ -365,7 +389,7 @@ class InventoryManager {
 			for (let id in blockData) {
 				const block = blockData[id]
 				// eslint-disable-next-line no-prototype-builtins
-				if (!block.hasOwnProperty("iconImg")) continue
+				if (!block.iconImg) continue
 
 				let item = new InventoryItem(+id, block.name, 1, block.iconImg)
 
@@ -403,13 +427,19 @@ class InventoryManager {
 		containerCanvas.onkeydown = invCanvas.onkeydown = window.parent.canvas.onkeydown
 		containerCanvas.onkeyup = invCanvas.onkeyup = window.parent.canvas.onkeyup
 
-		invCanvas.onmousemove = e => storage.mouseMove(e)
+		invCanvas.onmousemove = e => {
+			storage.mouseMove(e)
+		}
 		invCanvas.onmousedown = () => {
 			this.heldItem = storage.mouseClick(this.heldItem)
+
 			if (this.heldItem) {
-				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+				heldItemCanvas.classList.remove("hidden")
+				heldCtx.clearRect(0, 0, this.iconSize, this.iconSize)
+				this.heldItem.render(heldCtx, 0, 0, this.iconSize)
 			}
-			else document.body.style.cursor = ""
+			else heldItemCanvas.classList.add("hidden")
+
 			for (let i = 0; i < this.hotbar.length; i++) {
 				this.hotbar[i] = storage.items[i + 27]?.id || 0
 			}
@@ -453,14 +483,11 @@ class InventoryManager {
 		else {
 			this.heldItem = this.containers[this.currentPage].mouseClick(this.heldItem)
 			if (this.heldItem) {
-				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+				heldItemCanvas.classList.remove("hidden")
+				heldCtx.clearRect(0, 0, this.iconSize, this.iconSize)
+				this.heldItem.render(heldCtx, 0, 0, this.iconSize)
 			}
-			else document.body.style.cursor = ""
-			// document.body.appendChild(this.heldItem.icon)
-			// this.heldItem.icon.style.zIndex = 2
-			// this.heldItem.icon.style.position = "absolute"
-			// this.heldItem.icon.style.left = (event.x - this.iconSize / 2 | 0) + "px"
-			// this.heldItem.icon.style.top = (event.y - this.iconSize / 2 | 0) + "px"
+			else heldItemCanvas.classList.add("hidden")
 		}
 	}
 
@@ -468,12 +495,13 @@ class InventoryManager {
 	 * @param {Number} newSize
 	 */
 	set size(newSize) {
-		this.iconSize = newSize
+		heldItemCanvas.width = heldItemCanvas.height = this.iconSize = newSize
 		if (this.playerStorage) {
 			this.playerStorage.render(10, 10, newSize)
 			this.render()
 		}
 	}
 }
+
 const inventory = new InventoryManager()
 export { InventoryItem, InventoryPage, InventoryManager, inventory }

@@ -45,6 +45,10 @@ const { cos, sin } = Math
 class Matrix {
 	constructor(arr) {
 		this.elements = new Float32Array(arr || 16)
+		// this.elements[0] = 1
+		// this.elements[5] = 1
+		// this.elements[10] = 1
+		// this.elements[15] = 1
 	}
 	translate(x, y, z) {
 		let a = this.elements
@@ -87,7 +91,7 @@ class Matrix {
 		elems[12] = t * c + elems[14] * -s
 		elems[14] = t * s + elems[14] * c
 	}
-	scale(x, y, z) {
+	scale(x, y = x, z = x) {
 		let a = this.elements
 		a[0] *= x
 		a[1] *= y

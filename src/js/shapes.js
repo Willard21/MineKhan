@@ -10,42 +10,58 @@ const SOUTH    = 0x800
 const EAST     = 0x1000
 const WEST     = 0x1800
 
-function objectify(x, y, z, width, height, textureX, textureY) {
-	return {
-		x: x,
-		y: y,
-		z: z,
-		w: width,
-		h: height,
-		tx: textureX,
-		ty: textureY
-	}
+/**
+ * Return the parameters as an array. Honestly just did this for an excuse to write out the parameters.
+ * @param {Number} x The X coordinate of the face with the top left corner of the texture
+ * @param {Number} y The Y coordinate of the face with the top left corner of the texture
+ * @param {Number} z The Z coordinate of the face with the top left corner of the texture
+ * @param {Number} width The width of the face/texture. Refers to deltaX if X changes, or deltaZ otherwise
+ * @param {Number} height The height of the face/texture. Refers to deltaY if Y changes, or deltaZ otherwise
+ * @param {Number} textureX The X coordinate of the texture at (x, y, z) on the face
+ * @param {Number} textureY The Y coordinate of the texture at (x, y, z) on the face
+ */
+function arrayify(x, y, z, width, height, textureX, textureY) {
+	return [x, y, z, width, height, textureX, textureY]
 }
 let shapes = {
-	/*
-		[
-			[(-x, -z), (+x, -z), (+x, +z), (-x, +z)], // minX = 0,  minZ = 2,  maxX = 6, maxZ = 8
-			[(-x, +z), (+x, +z), (+x, -z), (-x, -z)], // minX = 9,  minZ = 10, maxX = 3, maxZ = 4
-			[(+x, +y), (-x, +y), (-x, -y), (+x, -y)], // minX = 6,  minY = 7,  maxX = 0, maxY = 1
-			[(-x, +y), (+x, +y), (+x, -y), (-x, -y)], // minX = 9,  minY = 10, maxX = 3, maxY = 4
-			[(+y, -z), (+y, +z), (-y, +z), (-y, -z)], // minY = 10, minZ = 11, maxY = 4, maxZ = 5
-			[(+y, +z), (+y, -z), (-y, -z), (-y, +z)]  // minY = 7,  minZ = 8,  maxY = 1, maxZ = 2
-		]
-		*/
 	cube: {
 		verts: [
 			// x, y, z, width, height, textureX, textureY
 			// 0, 0, 0 is the corner on the top left of the texture
-			[objectify( 0,  0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 16, 16, 16, 16, 0, 0)], //top
-			[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-			[objectify( 0, 16,  0, 16, 16, 0, 0)], //south
-			[objectify(16, 16,  0, 16, 16, 0, 0)], //east
-			[objectify( 0, 16, 16, 16, 16, 0, 0)]  //west
+			[arrayify( 0,  0,  0, 16, 16, 0, 0)], //bottom
+			[arrayify( 0, 16, 16, 16, 16, 0, 0)], //top
+			[arrayify(16, 16, 16, 16, 16, 0, 0)], //north
+			[arrayify( 0, 16,  0, 16, 16, 0, 0)], //south
+			[arrayify(16, 16,  0, 16, 16, 0, 0)], //east
+			[arrayify( 0, 16, 16, 16, 16, 0, 0)]  //west
 		],
 		cull: {
-			top: 3,
-			bottom: 3,
+			top: 15,
+			bottom: 15,
+			north: 15,
+			south: 15,
+			east: 15,
+			west: 15
+		},
+		texVerts: [],
+		buffer: null,
+		size: 6,
+		variants: [],
+		flip: false,
+		rotate: true,
+	},
+	slab: {
+		verts: [
+			[arrayify( 0, 0,  0, 16, 16, 0, 0)], //bottom
+			[arrayify( 0, 8, 16, 16, 16, 0, 0)], //top
+			[arrayify(16, 8, 16, 16, 8, 0, 0)], //north
+			[arrayify( 0, 8,  0, 16, 8, 0, 0)], //south
+			[arrayify(16, 8,  0, 16, 8, 0, 0)], //east
+			[arrayify( 0, 8, 16, 16, 8, 0, 0)]  //west
+		],
+		cull: {
+			top: 0,
+			bottom: 15,
 			north: 3,
 			south: 3,
 			east: 3,
@@ -54,66 +70,116 @@ let shapes = {
 		texVerts: [],
 		buffer: null,
 		size: 6,
-		varients: [],
-		flip: false,
-		rotate: true,
-	},
-	slab: {
-		verts: [
-			[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 8, 16, 16, 16, 0, 0)], //top
-			[objectify(16, 8, 16, 16, 8, 0, 0)], //north
-			[objectify( 0, 8,  0, 16, 8, 0, 0)], //south
-			[objectify(16, 8,  0, 16, 8, 0, 0)], //east
-			[objectify( 0, 8, 16, 16, 8, 0, 0)]  //west
-		],
-		cull: {
-			top: 0,
-			bottom: 3,
-			north: 1,
-			south: 1,
-			east: 1,
-			west: 1
-		},
-		texVerts: [],
-		buffer: null,
-		size: 6,
-		varients: [],
+		variants: [],
 		flip: true,
 		rotate: false
 	},
 	stair: {
 		verts: [
-			[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 8,  8, 16, 8, 0, 8), objectify( 0, 16,  16, 16, 8, 0, 0)], //top
-			[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-			[objectify( 0, 8,  0, 16, 8, 0, 0), objectify( 0, 16,  8, 16, 8, 0, 0)], //south
-			[objectify(16, 8, 0, 8, 8, 8, 0), objectify(16, 16, 8, 8, 16, 0, 0)], //east
-			[objectify( 0, 8, 8, 8, 8, 0, 0), objectify( 0, 16, 16, 8, 16, 8, 0)]  //west
+			[[0,0,0,16,16,0,0]], // -y
+			[[0,8,16,8,16,8,0],[8,16,16,8,16,0,0]], // +y
+			[[8,8,16,8,8,0,0],[16,16,16,8,16,0,0]], // +z
+			[[0,8,0,8,8,0,0],[8,16,0,8,16,0,0]], // -z
+			[[16,16,0,16,16,0,0]], // +x
+			[[0,8,16,16,8,0,0],[8,16,16,16,8,0,0]] // -x
+		],
+		cull: {
+			top: 0b1100,
+			bottom: 15,
+			north: 15,
+			south: 3,
+			east: 0b0111,
+			west: 0b1011
+		},
+		texVerts: [],
+		buffer: null,
+		size: 10,
+		variants: [],
+		flip: true,
+		rotate: true
+	},
+	flower: {
+		verts: [
+			[],
+			[],
+			// [arrayify( 8,  0,  8,  2,  2,  0,  0)],
+			// [arrayify( 8, 16,  8,  2,  2,  0,  0)],
+			[arrayify(16, 16,  8, 16, 16,  0,  0)],
+			[arrayify( 0, 16,  8, 16, 16,  0,  0)],
+			[arrayify( 8, 16,  0, 16, 16,  0,  0)],
+			[arrayify( 8, 16, 16, 16, 16,  0,  0)]
 		],
 		cull: {
 			top: 0,
-			bottom: 3,
-			north: 3,
+			bottom: 0,
+			north: 0,
 			south: 0,
 			east: 0,
 			west: 0
 		},
 		texVerts: [],
 		buffer: null,
-		size: 10,
-		varients: [],
-		flip: true,
+		size: 4,
+		variants: [],
+		flip: false,
+		rotate: false
+	},
+	lantern: {
+		verts: [
+			[[5,1,5,6,6,0,9]],
+			[[5,8,11,6,6,0,9],[6,10,10,4,4,1,10]],
+			[[11,8,11,6,7,0,2],[10,10,10,4,2,1,0],[9.5,15,8,3,4,11,1]],
+			[[5,8,5,6,7,0,2],[6,10,6,4,2,1,0],[6.5,15,8,3,4,11,1]],
+			[[11,8,5,6,7,0,2],[10,10,6,4,2,1,0],[8,16,6.5,3,6,11,6]],
+			[[5,8,11,6,7,0,2],[6,10,10,4,2,1,0],[8,16,9.5,3,6,11,6]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 15,
+		variants: [],
+		flip: false,
+		rotate: false
+	},
+	door: {
+		verts: [
+			[[0,0,0,3,16,13,0]],
+			[[0,16,16,3,16,0,0]],
+			[[3,16,16,3,16,0,0]],
+			[[0,16,0,3,16,0,0]],
+			[[3,16,0,16,16,0,0]],
+			[[0,16,16,16,16,0,0]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 15,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 6,
+		variants: [],
+		flip: false,
 		rotate: true
 	},
-	flower: {
+	fence: {
 		verts: [
-			[objectify( 8,  0,  8,  2,  2,  0,  0)],
-			[objectify( 8, 16,  8,  2,  2,  0,  0)],
-			[objectify(16, 16,  8, 16, 16,  0,  0)],
-			[objectify( 0, 16,  8, 16, 16,  0,  0)],
-			[objectify( 8, 16,  0, 16, 16,  0,  0)],
-			[objectify( 8, 16, 16, 16, 16,  0,  0)]
+			[[6,0,6,4,4,6,6]],
+			[[6,16,10,4,4,6,6]],
+			[[10,16,10,4,16,6,0]],
+			[[6,16,6,4,16,6,0]],
+			[[10,16,6,4,16,6,0]],
+			[[6,16,10,4,16,6,0]]
 		],
 		cull: {
 			top: 0,
@@ -126,69 +192,64 @@ let shapes = {
 		texVerts: [],
 		buffer: null,
 		size: 6,
-		varients: [],
+		variants: [],
 		flip: false,
 		rotate: false
 	},
-	lantern: {
+	fenceSide: {
 		verts: [
-			[objectify(5,  0, 5, 6, 6, 0, 9)],
-			[objectify(6, 9, 10, 4, 4, 1, 10),objectify(5, 7, 11, 6, 6, 0, 9)],
-			[objectify(10, 9, 10, 4, 2, 1, 0),objectify(11, 7, 11, 6, 7, 0, 2),objectify(9.5, 11, 8, 3, 2, 11, 10),objectify(9.5, 16, 8, 3, 3, 11, 2)],
-			[objectify(6, 9, 6, 4, 2, 1, 0),objectify(5, 7, 5, 6, 7, 0, 2),objectify(6.5, 11, 8, 3, 2, 11, 10),objectify(6.5, 16, 8, 3, 3, 11, 2)],
-			[objectify(10, 9, 6, 4, 2, 1, 0),objectify(11, 7, 5, 6, 7, 0, 2),objectify(8, 14, 6.5, 3, 4, 11, 1)],
-			[objectify(6, 9, 10, 4, 2, 1, 0),objectify(5, 7, 11, 6, 7, 0, 2),objectify(8, 14, 9.5, 3, 4, 11, 1)]
+			[[7,12,0,2,9,7,0],[7,6,0,2,9,7,0]],
+			[[7,15,9,2,9,7,0],[7,9,9,2,9,7,0]],
+			[[9,15,9,2,3,7,1],[9,9,9,2,3,7,7]],
+			[],
+			[[9,15,0,9,3,0,1],[9,9,0,9,3,0,7]],
+			[[7,15,9,9,3,0,1],[7,9,9,9,3,0,7]]
 		],
 		cull: {
 			top: 0,
-			bottom: 3,
+			bottom: 0,
 			north: 0,
 			south: 0,
 			east: 0,
 			west: 0
 		},
 		texVerts: [],
-		varients: [],
 		buffer: null,
-		size: 17,
+		size: 10,
+		variants: [],
+		flip: false,
+		rotate: true
 	},
 }
 
 function mapCoords(rect, face) {
-	let x = rect.x
-	let y = rect.y
-	let z = rect.z
-	let w = rect.w
-	let h = rect.h
-	let tx = rect.tx
-	let ty = rect.ty
-	let tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h]
-	let pos = null
+	const [x, y, z, w, h, tx, ty] = rect
+	const tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h].map(c => c / 16 / textureAtlasWidth)
+	const pos = [x, y, z]
 	switch(face) {
 		case 0: // Bottom
-			pos = [x,y,z, x+w,y,z, x+w,y,z+h, x,y,z+h]
+			pos.push(x+w,y,z, x+w,y,z+h, x,y,z+h)
 			break
 		case 1: // Top
-			pos = [x,y,z, x+w,y,z, x+w,y,z-h, x,y,z-h]
+			pos.push(x+w,y,z, x+w,y,z-h, x,y,z-h)
 			break
 		case 2: // North
-			pos = [x,y,z, x-w,y,z, x-w,y-h,z, x,y-h,z]
+			pos.push(x-w,y,z, x-w,y-h,z, x,y-h,z)
 			break
 		case 3: // South
-			pos = [x,y,z, x+w,y,z, x+w,y-h,z, x,y-h,z]
+			pos.push(x+w,y,z, x+w,y-h,z, x,y-h,z)
 			break
 		case 4: // East
-			pos = [x,y,z, x,y,z+w, x,y-h,z+w, x,y-h,z]
+			pos.push(x,y,z+w, x,y-h,z+w, x,y-h,z)
 			break
 		case 5: // West
-			pos = [x,y,z, x,y,z-w, x,y-h,z-w, x,y-h,z]
+			pos.push(x,y,z-w, x,y-h,z-w, x,y-h,z)
 			break
 	}
-	pos = pos.map(c => c / 16 - 0.5)
+	for(let i = 0; i < 12; i++) pos[i] = (pos[i] - 8) / 16
 	let minmax = compareArr(pos, [])
 	pos.max = minmax.splice(3, 3)
 	pos.min = minmax
-	tex = tex.map(c => c / 16 / textureAtlasWidth)
 
 	return {
 		pos: pos,
@@ -269,7 +330,7 @@ function rotate(shape) {
 		flip: shape.flip,
 		buffer: null,
 		size: shape.size,
-		varients: shape.varients
+		variants: shape.variants
 	}
 }
 
@@ -329,7 +390,7 @@ function flip(shape) {
 		flip: shape.flip,
 		buffer: null,
 		size: shape.size,
-		varients: shape.varients
+		variants: shape.variants
 	}
 }
 
@@ -338,12 +399,12 @@ for (let shape in shapes) {
 	let verts = obj.verts
 
 	// Populate the vertex coordinates
-	for (let i = 0; i < verts.length; i++) {
-		let side = verts[i]
+	for (let i = 0; i < verts.length; i++) { // 6 directions
+		let side = verts[i] // Array of faces in this direction
 		let texArr = []
 		obj.texVerts.push(texArr)
-		for (let j = 0; j < side.length; j++) {
-			let face = side[j]
+		for (let j = 0; j < side.length; j++) { // Each face in this direction
+			let face = side[j] // Array of arrayified data
 			let mapped = mapCoords(face, i)
 			side[j] = mapped.pos
 			texArr.push(mapped.tex)
@@ -351,7 +412,7 @@ for (let shape in shapes) {
 	}
 
 	if (obj.rotate) {
-		let v = obj.varients
+		let v = obj.variants
 		let east = rotate(obj)
 		let south = rotate(east)
 		let west = rotate(south)
@@ -361,7 +422,7 @@ for (let shape in shapes) {
 		v[6] = west
 	}
 	if (obj.flip) {
-		let v = obj.varients
+		let v = obj.variants
 		v[1] = flip(obj)
 		if (obj.rotate) {
 			v[3] = flip(v[2])
@@ -374,5 +435,36 @@ for (let shape in shapes) {
 	// gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
 	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 }
+
+// Now that fenceSide is rotated, let's generate a bunch of fence variants
+{
+	const clone = obj => {
+		return {
+			verts: obj.verts.map(a => a.slice()),
+			texVerts: obj.texVerts.map(a => a.slice()),
+			cull: obj.cull,
+			rotate: false,
+			flip: false,
+			buffer: null,
+			size: obj.size,
+			variants: obj.variants
+		}
+	}
+	const v = shapes.fence.variants
+	for (let i = 0; i < 16; i++) {
+		let obj = clone(shapes.fence)
+		for (let j = 0; j < 4; j++) {
+			if (i & 1 << j) for (let k = 0; k < 6; k++) {
+				obj.verts[k].push(...shapes.fenceSide.variants[j * 2].verts[k])
+				obj.texVerts[k].push(...shapes.fenceSide.variants[j * 2].texVerts[k])
+			}
+		}
+		v.push(obj)
+	}
+
+	shapes.fence.texVerts = shapes.cube.texVerts
+	shapes.fence.verts = shapes.cube.verts
+}
+
 
 export { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST }

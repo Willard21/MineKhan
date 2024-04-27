@@ -5,6 +5,7 @@ const app = express()
 const fs = require('fs')
 const Path = require("path")
 const f = fs.promises
+const os = require('os')
 
 app.use(compression({ threshold : 0 }))
 app.listen(4000)
@@ -17,24 +18,30 @@ app.use('/', (req, res, next) => {
 app.use(express.static('dist'))
 console.log("Server started on http://localhost:4000")
 
+try {
+	// Only works on Linux, but it'll open the page.
+	require("child_process").exec("browse http://localhost:4000")
+}
+catch{}
+
 // Find the computer's network IP
-const nets = require('os').networkInterfaces()
+const nets = os.networkInterfaces()
 for (const name in nets) {
 	for (const net of nets[name]) {
 		if (net.address.includes(".") && !net.internal) console.log(`Other devices on your network can open the game on http://${net.address}:4000`)
 	}
 }
 
-async function bundle() {
+function bundle() {
 	let startTime = Date.now()
 	let files = {}
 	let cssFiles = []
 	let loading = new Set()
-	const loadFiles = async path => {
+	const loadFiles = path => {
 		if (path in files) return
 		if (loading.has(path)) throw new Error(`Dependency loop in ${path}!`)
 		loading.add(path)
-		let file = await f.readFile(path, "utf-8")
+		let file = fs.readFileSync(path, "utf-8")
 		const lines = file.split("\n")
 		for (let i = 0; i < lines.length; i++) {
 			const imp = lines[i].match(/^(\s*)import ((.+) from )?['"](.+)['"]/)
@@ -47,7 +54,7 @@ async function bundle() {
 				}
 				if (!p.includes(".")) p += ".js"
 
-				await loadFiles(p)
+				loadFiles(p)
 
 				let value = `window.parent.exports["${p}"]`
 				if (p.startsWith("src/shaders") || p.startsWith("src/workers")) {
@@ -66,9 +73,9 @@ async function bundle() {
 		loading.delete(path)
 	}
 
-	await loadFiles("src/main.js")
-	const html = await f.readFile("src/index.html", "utf-8").then(n => n.split("\n"))
-	const css = await Promise.all(cssFiles.map(path => f.readFile(path)))
+	loadFiles("src/main.js")
+	const html = fs.readFileSync("src/index.html", "utf-8").split("\n")
+	const css = cssFiles.map(path => fs.readFileSync(path, "utf-8"))
 	for (let i = html.length - 1; i >= 0; i--) {
 
 		// Insert <style>s in head

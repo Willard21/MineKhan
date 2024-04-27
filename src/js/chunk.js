@@ -1,6 +1,7 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { BitArrayBuilder, BitArrayReader } from "./utils.js"
+import { shapes } from "./shapes.js"
 // let world
 
 const { floor, max, abs } = Math
@@ -602,15 +603,13 @@ class Chunk {
 		}
 	}
 	generate() {
-		let trueX = this.x
-		let trueZ = this.z
+		if (this.generated) return
+		const cx = this.x
+		const cz = this.z
 
-		const { grass, dirt, stone, bedrock } = blockIds
+		const { grass, dirt, stone, bedrock, sand, water } = blockIds
 
-		if (this.generated) {
-			return
-		}
-
+		const waterHeight = this.maxY = 55
 		const smoothness = 0.01 // How close hills and valleys are together
 		const hilliness = 80 // Height of the hills
 		const extra = 30 // Extra blocks stacked onto the terrain
@@ -618,7 +617,16 @@ class Chunk {
 		let gen = 0
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				gen = superflat ? 4 : Math.round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + extra
+				if (superflat) gen = 4
+				else {
+					let n = noiseProfile.noise((cx + i) * smoothness, (cz + k) * smoothness)
+					gen = Math.round(n * hilliness + extra)
+					if (this.world.rivers) {
+						const m = (1 - abs(noiseProfile.noise((cz + k - 5432.123) * 0.003, (cx + i + 9182.543) * 0.003) - 0.5))**50
+						gen = Math.round((waterHeight - 5 - gen) * m + gen)
+					}
+				}
+
 				this.tops[i * 16 + k] = gen
 				if (gen > this.maxY) this.maxY = gen
 
@@ -628,12 +636,23 @@ class Chunk {
 				for (let max = (gen - 3) * 256; index < max; index += 256) {
 					this.blocks[index] = stone
 				}
-				this.blocks[index] = dirt
-				this.blocks[index + 256] = dirt
-				this.blocks[index + 512] = dirt
-				this.blocks[index + 768] = grass
+				if (gen > waterHeight || !this.world.rivers || superflat) {
+					this.blocks[index] = dirt
+					this.blocks[index + 256] = dirt
+					this.blocks[index + 512] = dirt
+					this.blocks[index + 768] = grass
+				}
+				else {
+					this.blocks[index] = sand
+					this.blocks[index + 256] = sand
+					this.blocks[index + 512] = sand
+					this.blocks[index + 768] = sand
+					for (index += 1024; index < (waterHeight + 1) * 256; index += 256) this.blocks[index] = water
+					if (gen <= waterHeight) this.doubleRender = true
+				}
 			}
 		}
+		if (this.doubleRender) this.world.doubleRenderChunks.push(this)
 		this.generated = true
 		this.getCaveData() // Queue up the multithreaded cave gen
 	}
@@ -650,6 +669,8 @@ class Chunk {
 		const chunkW = world.getChunk(x - 1, z).blocks
 		// let max = (maxY - 1) * 256
 		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
+
+		// Culling faces on chunk borders as needed
 		for (let y = 1; y <= maxY; y++) {
 			let indexN = y * 256
 			let indexS = indexN + 15
@@ -1223,8 +1244,17 @@ class Chunk {
 			// Preload any blocks that will be used for the shadows/lighting.
 			this.getSurroundingBlocks(loc, sides, blocks27, lights27)
 
-			const shapeVerts = block.shape.verts
-			const shapeTexVerts = block.shape.texVerts
+			let shapeVerts = block.shape.verts
+			let shapeTexVerts = block.shape.texVerts
+			if (block.shape === shapes.fence) {
+				let mask = 0
+				if (this.world.getBlock(worldX + 1, worldY, worldZ)) mask |= 8
+				if (this.world.getBlock(worldX - 1, worldY, worldZ)) mask |= 4
+				if (this.world.getBlock(worldX, worldY, worldZ + 1)) mask |= 2
+				if (this.world.getBlock(worldX, worldY, worldZ - 1)) mask |= 1
+				shapeVerts = shapes.fence.variants[mask].verts
+				shapeTexVerts = shapes.fence.variants[mask].texVerts
+			}
 
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
@@ -1330,7 +1360,7 @@ class Chunk {
 			let x = i >> 3 & 7
 			let z = i & 7
 
-			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
+			// 3 copies of the section, all oriented in different directions so we can see which one compresses the most
 			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
 			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
 			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
@@ -1438,6 +1468,10 @@ class Chunk {
 		for (let j in blocks) {
 			last = +j
 			let block = blocks[last]
+			if (!blockData[block]) {
+				if (blockData[block & 255]) block &= 255
+				else block = blockIds.pumpkin
+			}
 			this.blocks[last] = block
 			if (!this.doubleRender && blockData[block].semiTrans) {
 				this.doubleRender = true
@@ -1490,8 +1524,13 @@ class Chunk {
 					const paletteBits = BitArrayBuilder.bits(paletteLen)
 					const palette = []
 					for (let i = 0; i < paletteLen; i++) {
-						palette.push(reader.read(16))
-						if (blockData[palette.at(-1)].semiTrans) {
+						let block = reader.read(16)
+						if (!blockData[block]) {
+							if (blockData[block & 255]) block &= 255
+							else block = blockIds.pumpkin
+						}
+						palette.push(block)
+						if (blockData[block].semiTrans) {
 							this.doubleRender = true
 							if (!this.world.doubleRenderChunks.includes(this)) {
 								this.world.doubleRenderChunks.push(this)

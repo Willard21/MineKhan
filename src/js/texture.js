@@ -5,11 +5,14 @@ import { texturesFunc } from "./blockData.js"
  */
 const textureMap = {}
 const textureCoords = []
+const textureSize = 256
+const scale = 1 / 16
+const texturePixels = new Uint8Array(textureSize * textureSize * 4)
 
+/**
+ * @param {WebGLRenderingContext} gl
+ */
 function initTextures(gl, glCache) {
-	let textureSize = 256
-	let scale = 1 / 16
-	let texturePixels = new Uint8Array(textureSize * textureSize * 4)
 	const setPixel = function(textureNum, x, y, r, g, b, a) {
 		let texX = textureNum & 15
 		let texY = textureNum >> 4
@@ -41,6 +44,7 @@ function initTextures(gl, glCache) {
 		const colorCount = decodeByte(str.substr(4, 1))
 		const colors = []
 		const pixels = new Uint8ClampedArray(width * height * 4)
+		for (let i = 3; i < pixels.length; i += 4) pixels[i] = 255
 		let pixi = 0
 
 		for (let i = 0; i < colorCount; i++) {
@@ -148,29 +152,39 @@ function initTextures(gl, glCache) {
 		textureCoords[textureMap.hitbox] = arr
 	}
 
+	const makeTexture = (index, width, height, pixels, edge) => {
+		const texture = gl.createTexture()
+		gl.activeTexture(index)
+		gl.bindTexture(gl.TEXTURE_2D, texture)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+		gl.generateMipmap(gl.TEXTURE_2D)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, edge)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, edge)
+		return texture
+	}
+
 	// Big texture with everything in it
-	let textureAtlas = gl.createTexture()
-	gl.activeTexture(gl.TEXTURE0)
-	gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
-	gl.generateMipmap(gl.TEXTURE_2D)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	makeTexture(gl.TEXTURE0, textureSize, textureSize, texturePixels, gl.CLAMP_TO_EDGE)
 	gl.uniform1i(glCache.uSampler, 0)
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-	let dirtTexture = gl.createTexture()
-	gl.activeTexture(gl.TEXTURE1)
-	gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
-	gl.generateMipmap(gl.TEXTURE_2D)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	makeTexture(gl.TEXTURE1, 16, 16, dirtPixels, gl.REPEAT)
 }
 
-export { initTextures, textureMap, textureCoords }
+function animateTextures(gl) {
+	// const x = Math.random() * 16 | 0
+	// const y = Math.random() * 16 | 0
+
+	// const d = Math.random() * 0.25 + 0.65
+	// texturePixels[y * textureSize * 4 + x * 4 + 0] = 75 * d
+	// texturePixels[y * textureSize * 4 + x * 4 + 1] = 125 * d
+	// texturePixels[y * textureSize * 4 + x * 4 + 2] = 64 * d
+
+	// gl.activeTexture(gl.TEXTURE0) // Moved to play()
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
+}
+
+export { initTextures, textureMap, textureCoords, animateTextures }

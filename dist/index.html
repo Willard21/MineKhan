@@ -4,41 +4,37 @@
 	NOTE:
 The "Save" button saves your world to your local browser. Nobody else can see it. However, if you're on a public or shared computer, that save may be deleted unexpectedly. So it's a good idea to keep a safe copy of your save string somewhere where it won't be deleted.
 
-To share your save with other people, copy your world string into the "loadString" variable on line 189.
+To share your save with other people, copy your world string into the "loadString" variable on line 295.
 
 	Controls:
 
- * Right-click (or ctrl + left-click): place block
- * Left-click: Remove block
- * Middle-click: Pick block
+ * Mouse Right-click (or ctrl + left-click): place block
+ * Mouse Left-click: Remove block
+ * Mouse Middle-click: Pick block
  * Q: Sprint
+ * W-A-S-D: Walk around
  * Shift: Sneak
- * W: Walk forward
- * S: Walk backward
- * A: Walk left
- * D: Walk right
- * E: Open inventory
- * B: Toggle super Breaker
- * H: Toggle Hyper builder
+ * E: Open/Close inventory
+ * B: Toggle super (B)reaker
+ * H: Toggle (H)yper builder
  * Z: Zoom
  * L: Toggle Spectator mode
- * Enter: Toggle slab/stair mode
- * Arrow Keys: look around
- * P or Esc: pause/unpause
- * 1-9 navigate hotbar
- * Spacebar: jump
- * Double jump: toggle flight
- * Shift (flying): fly down
- * Space (flying): fly up
+ * Arrow Keys: Look around
+ * P or Esc: Pause/unpause
+ * 1-9: Navigate hotbar
+ * Spacebar: Jump
+ * Double jump: Toggle flight
+ * Shift (flying): Fly down
+ * Space (flying): Fly up
  * T: Open chat
  * ; (semicolon): Release the pointer without pausing (for screenshots)
- * Backspace or delete: drops the item you're holding right now
 
 	Notes and accreditation:
  * This program (MineKhan) was made by Willard (me). The original is https://www.khanacademy.org/cs/mc/5647155001376768 (just adding this so that spin-offs have it)
- * Zushah helped me with some of the menus in the 0.6 update via GitHub. https://www.khanacademy.org/profile/zushah77
+ * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub. https://www.khanacademy.org/profile/
+ * Zushah helped me with some of the menus in the 0.6 update, and added the flower models via GitHub. https://www.khanacademy.org/profile/zushah77
  * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
- * Danielkshin made the current main menu background. https://www.khanacademy.org/profile/danielkshin
+ * Danielkshin made an old main menu background. https://www.khanacademy.org/profile/danielkshin
 
  * This program originated as a spin-off of ScusCraft by ScusX.
  * It's 99% different code at this point, but I still never would have made it this far without his code for reference.
@@ -47,10 +43,6 @@ To share your save with other people, copy your world string into the "loadStrin
  * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
  * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
  * The real Minecraft game can be bought and downloaded at https://www.minecraft.net/en-us/
-
-
- * Chunks are kept in memory until you restart. So don't explore too far or memory usage will grow until it crashes unrecoverably.
-
 
 	To-Do:
  * A lot. Check out the GitHub repo if you'd like to collaborate on this.
@@ -63,22 +55,12 @@ The graphics in this project are done using WebGL, which is a web implementation
 It allows us to write shader programs that run right on the GPU, which means it can run as fast as any C++ game.
 The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even being using the GPU.
 
-To properly utilize WebGL like this program does, you need to make efficient use of Vertext Buffer Objects (VBOs).
-A VBO is an array that contains a whole bunch of vertices. Since WebGL can only render triangles and lines, these vertices are stored in multiples of 3.
-A vertex doesn't only include its world coordinates, though. It also includes its texture coordinates, and any other data you want the shaders to manipulate.
-In my case, every vertex has an X, Y, Z, textureX, textureY, and shadowIntensity. So 6 values for every block vertex in the world.
-
-A program can only draw 1 VBO per draw call. Since the texture data is attached to the vertex data, you can't switch textures between vertices.
-That means you either have to make seperate draw calls for each texture, or only use 1 texture. I do the latter.
-I make a single 256x256 pixel texture, and store each of the 16x16 block textures in a section of that big texture, and store the coordinates to it. This is informally called a "texture atlas".
-Then when I'm preparing my VBO, I send the texture coordinates along with the block coordinates so the shader knows how to map the 256x256 pixel texture onto the 16x16 pixel block face.
-
-I do this once for each chunk in the world, and store those VBOs so I can draw them every frame. If a block is edited in a chunk, then that VBO is replaced.
-Drawing a chunk after the VBO has been created is as simple as binding the buffer and calling "gl.drawArrays" once per chunk. The GPU takes care of the rest.
-
-I also use what's called Vertex Array Objects (VAOs) to re-use shared vertices. Since the GPU expects triangles, and I want to draw squares, I need to draw 2 triangles (6 vertices) per square.
-That means 2 of them are being re-used. The VAO lets me tell the GPU to use the cached vertex data instead of looking for a new one, which offers a small inprovement to GPU performance.
-This isn't entirely necessary, but it's considered best practice. Some OpenGL ES implementations require it, but WebGL 1 does not. I think WebGL 2 does, but that's not as well supported.
+To properly utilize WebGL like this program does, you need to make efficient use of buffers, which are arrays containing data on all the triangles that need to be rendered.
+Ideally you should be rendering less than 100 buffers per frame for the slowest computers to get a good framerate.
+To achieve this, you can store all the textures in 1 very big texture called a "texture atlas". Then, when you're constructing the buffer, you specify which part of the texture atlas to use for each triangle you're drawing.
+My buffers have 8 values for each vertex: X, Y, Z, textureX, textureY, ambient occlusion, sky light, and block light.
+I use 1 buffer per 16x16 chunk. I use "frustum culling" to only render chunks that are visible on the screen.
+I learned WebGL from https://webglfundamentals.org and just by playing around with it.
 -->
 
 <html lang="en-us">
@@ -104,10 +86,10 @@ This isn't entirely necessary, but it's considered best practice. Some OpenGL ES
 	top: 0;
 	left: 0;
 }
-.background {
-	background-image: url('./background.webp');
+#overlay {
 	background-size: cover;
 	background-position: center;
+	/* background-image: url('./background.webp'); -- Added and removed in the JS */
 }
 body {
 	overflow: hidden; /* Hide scrollbars */
@@ -181,6 +163,7 @@ input[type=text]:focus {
 	z-index: 11;
 	padding: 10px;
 	cursor: default;
+	user-select: none;
 }
 #quota {
 	display: block;
@@ -230,16 +213,6 @@ input[type=text]:focus {
 	padding: 10px;
 	word-wrap: break-word;
 }
-/*
-@font-face {
-	font-family: 'VT323';
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url(https://willard.fun/fonts/VT323.woff2) format('woff2');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-*/
 #background-text {
 	position: absolute;
 	left: 0;
@@ -276,15 +249,6 @@ input[type=text]:focus {
 	bottom: 10px;
 	z-index: 0;
 }
-/* 1918x1078 */
-/* #title-background {
-	z-index: -2;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	width: calc(1918/)
-} */
 #webgl-canvas {
 	z-index: -1;
 }
@@ -292,7 +256,7 @@ input[type=text]:focus {
 		</style>
 	</head>
 	<body>
-		<!-- Text so that Google believes the page is loaded and to provide search terms. -->
+		<!-- Text so that Lighthouse believes the page is loaded and to provide search terms. -->
 		<div id="background-text">
 			<h1>MineKhan</h1>
 			<p>Play MineKhan online! This game is a free Minecraft clone developed on <a href="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768">Khan Academy</a>, and later moved to my own website so that I could take advantage of multiplayer servers. The front-end code is completely open source and maintained on <a href="https://github.com/Willard21/MineKhan">GitHub</a>, where contributions are welcome.</p>
@@ -311,7 +275,7 @@ input[type=text]:focus {
 		</datalist>
 		<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 			To share your world on KA, copy/paste the saveString<br>
-			from this box into the code on line 135.<br>
+			from this box into the code on line 295.<br>
 			var loadString = "Your Code Here";<br>
 			Then save the program as a Spin-off.
 		</p>
@@ -449,17 +413,25 @@ void main(){
 }
 		</script>
 		<script id="src/shaders/2dVert.glsl" type="x-shader/x-vertex">
-attribute vec2 aVertex;
+attribute vec3 aVertex;
 attribute vec2 aTexture;
 attribute float aShadow;
 varying vec2 vTexture;
 varying float vShadow;
 uniform vec2 uOffset;
+uniform mat4 uView;
 
 void main() {
 	vTexture = aTexture;
 	vShadow = aShadow;
-	gl_Position = vec4(aVertex.x + uOffset.x, aVertex.y + uOffset.y, 0.5, 1.0);
+	vec4 pos;
+	if (uOffset.x != 0.0) pos = uView * vec4(aVertex, 1.0);
+	else {
+		pos.xy = aVertex.xy;
+		pos.z = 0.5;
+		pos.w = 1.0;
+	}
+	gl_Position = vec4(pos.x + uOffset.x, pos.y + uOffset.y, pos.z, 1.0);
 }
 		</script>
 		<script id="src/shaders/2dFrag.glsl" type="x-shader/x-fragment">
@@ -475,6 +447,7 @@ varying float vShadow;
 
 void main() {
 	vec4 color = texture2D(uSampler, vTexture);
+	if (color.a > 0.0 && color.a < 0.7) color.a = 0.7;
 	gl_FragColor = vec4(color.rgb * vShadow, color.a);
 }
 		</script>
@@ -506,7 +479,7 @@ void main(){
 }
 		</script>
 		<script id="src/workers/Caves.js" type="text/js">
-async function Worker() {
+async function worker() {
 	// Originally this stuff was generated in code
 	const GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])
 	const POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]
@@ -543,77 +516,10 @@ async function Worker() {
 		}
 	}
 
-	/*
-	const { abs, floor } = Math
-	const NORM_3D = 1.0 / 206.0
-	const SQUISH_3D = 1 / 3
-	const STRETCH_3D = -1 / 6
-	function noise(x, y, z) {
-		const stretchOffset = (x + y + z) * STRETCH_3D
-		const xs = x + stretchOffset
-		const ys = y + stretchOffset
-		const zs = z + stretchOffset
-		const xsb = floor(xs)
-		const ysb = floor(ys)
-		const zsb = floor(zs)
-		const xins = xs - xsb
-		const yins = ys - ysb
-		const zins = zs - zsb
-		const inSum = xins + yins + zins
-
-		const bits = yins - zins + 1
-		| xins - yins + 1 << 1
-		| xins - zins + 1 << 2
-		| inSum << 3
-		| inSum + zins << 5
-		| inSum + yins << 7
-		| inSum + xins << 9
-
-		const n = bits * 571183418275 + 1013904223 >>> 1
-
-		let c = positions[n % 80]
-		if (c === -1) return 0
-		let value = 0
-		const squishOffset = (xsb + ysb + zsb) * SQUISH_3D
-		const dx0 = x - (xsb + squishOffset)
-		const dy0 = y - (ysb + squishOffset)
-		const dz0 = z - (zsb + squishOffset)
-		const count = c < 432 ? 6 : 8
-		for (let j = 0; j < count ; j++) {
-			const dx = dx0 + data[c]
-			const dy = dy0 + data[c+1]
-			const dz = dz0 + data[c+2]
-			let attn = 2 - dx * dx - dy * dy - dz * dz
-			if (attn > 0) {
-				let i = perm3D[(perm[xsb + data[c+3] & 0xFF] + (ysb + data[c+4]) & 0xFF) + (zsb + data[c+5]) & 0xFF]
-				attn *= attn
-				value += attn * attn * (gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz)
-			}
-			c += 6
-		}
-
-		return value * NORM_3D + 0.5
-	}
-	const smooth = 0.02
-	const caveSize = 0.0055
-	function isCave(x, y, z) {
-		// Generate a 3D rigid multifractal noise shell.
-		// Then generate another one with different coordinates.
-		// Overlay them on top of each other, and the overlapping edges should form a cave-like structure.
-		// This is extremely slow, and requires generating 1 or 2 noise values for every single block in the world.
-		// TODO: replace with a crawler system of some sort, that will never rely on a head position in un-generated chunks.
-
-		return abs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
-			&& abs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize
-	}
-	*/
-
 	// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.
 	const program = new Uint8Array(atob("AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL").split("").map(c => c.charCodeAt(0))).buffer
 
 	const wasm = await WebAssembly.instantiate(program)
-	// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//caves.wasm'))
-	// const wasm = await WebAssembly.instantiateStreaming(fetch('http://localhost:4000//wasm_bg.wasm'))
 
 	const exports = wasm.instance.exports
 	const wasmCaves = exports.getCaves || exports.get_caves || exports.c
@@ -647,7 +553,7 @@ async function Worker() {
 		}
 	}
 }
-Worker()
+worker()
 		</script>
 		<script id="src/js/random.js" type="application/javascript">
 {const { imul, floor } = Math
@@ -1189,6 +1095,10 @@ const { cos, sin } = Math
 class Matrix {
 	constructor(arr) {
 		this.elements = new Float32Array(arr || 16)
+		// this.elements[0] = 1
+		// this.elements[5] = 1
+		// this.elements[10] = 1
+		// this.elements[15] = 1
 	}
 	translate(x, y, z) {
 		let a = this.elements
@@ -1231,7 +1141,7 @@ class Matrix {
 		elems[12] = t * c + elems[14] * -s
 		elems[14] = t * s + elems[14] * c
 	}
-	scale(x, y, z) {
+	scale(x, y = x, z = x) {
 		let a = this.elements
 		a[0] *= x
 		a[1] *= y
@@ -1503,7 +1413,7 @@ class BitArrayReader {
 		let openBits = 32 - bits
 		let { data, bit } = this
 		this.bit += bits // Move pointer
-		if (bit > data.length * 8) {
+		if (bit > data.length * 8 || bit < 0) {
 			throw "You done messed up A-A-Ron"
 		}
 
@@ -1540,42 +1450,58 @@ const SOUTH    = 0x800
 const EAST     = 0x1000
 const WEST     = 0x1800
 
-function objectify(x, y, z, width, height, textureX, textureY) {
-	return {
-		x: x,
-		y: y,
-		z: z,
-		w: width,
-		h: height,
-		tx: textureX,
-		ty: textureY
-	}
+/**
+ * Return the parameters as an array. Honestly just did this for an excuse to write out the parameters.
+ * @param {Number} x The X coordinate of the face with the top left corner of the texture
+ * @param {Number} y The Y coordinate of the face with the top left corner of the texture
+ * @param {Number} z The Z coordinate of the face with the top left corner of the texture
+ * @param {Number} width The width of the face/texture. Refers to deltaX if X changes, or deltaZ otherwise
+ * @param {Number} height The height of the face/texture. Refers to deltaY if Y changes, or deltaZ otherwise
+ * @param {Number} textureX The X coordinate of the texture at (x, y, z) on the face
+ * @param {Number} textureY The Y coordinate of the texture at (x, y, z) on the face
+ */
+function arrayify(x, y, z, width, height, textureX, textureY) {
+	return [x, y, z, width, height, textureX, textureY]
 }
 let shapes = {
-	/*
-		[
-			[(-x, -z), (+x, -z), (+x, +z), (-x, +z)], // minX = 0,  minZ = 2,  maxX = 6, maxZ = 8
-			[(-x, +z), (+x, +z), (+x, -z), (-x, -z)], // minX = 9,  minZ = 10, maxX = 3, maxZ = 4
-			[(+x, +y), (-x, +y), (-x, -y), (+x, -y)], // minX = 6,  minY = 7,  maxX = 0, maxY = 1
-			[(-x, +y), (+x, +y), (+x, -y), (-x, -y)], // minX = 9,  minY = 10, maxX = 3, maxY = 4
-			[(+y, -z), (+y, +z), (-y, +z), (-y, -z)], // minY = 10, minZ = 11, maxY = 4, maxZ = 5
-			[(+y, +z), (+y, -z), (-y, -z), (-y, +z)]  // minY = 7,  minZ = 8,  maxY = 1, maxZ = 2
-		]
-		*/
 	cube: {
 		verts: [
 			// x, y, z, width, height, textureX, textureY
 			// 0, 0, 0 is the corner on the top left of the texture
-			[objectify( 0,  0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 16, 16, 16, 16, 0, 0)], //top
-			[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-			[objectify( 0, 16,  0, 16, 16, 0, 0)], //south
-			[objectify(16, 16,  0, 16, 16, 0, 0)], //east
-			[objectify( 0, 16, 16, 16, 16, 0, 0)]  //west
+			[arrayify( 0,  0,  0, 16, 16, 0, 0)], //bottom
+			[arrayify( 0, 16, 16, 16, 16, 0, 0)], //top
+			[arrayify(16, 16, 16, 16, 16, 0, 0)], //north
+			[arrayify( 0, 16,  0, 16, 16, 0, 0)], //south
+			[arrayify(16, 16,  0, 16, 16, 0, 0)], //east
+			[arrayify( 0, 16, 16, 16, 16, 0, 0)]  //west
 		],
 		cull: {
-			top: 3,
-			bottom: 3,
+			top: 15,
+			bottom: 15,
+			north: 15,
+			south: 15,
+			east: 15,
+			west: 15
+		},
+		texVerts: [],
+		buffer: null,
+		size: 6,
+		variants: [],
+		flip: false,
+		rotate: true,
+	},
+	slab: {
+		verts: [
+			[arrayify( 0, 0,  0, 16, 16, 0, 0)], //bottom
+			[arrayify( 0, 8, 16, 16, 16, 0, 0)], //top
+			[arrayify(16, 8, 16, 16, 8, 0, 0)], //north
+			[arrayify( 0, 8,  0, 16, 8, 0, 0)], //south
+			[arrayify(16, 8,  0, 16, 8, 0, 0)], //east
+			[arrayify( 0, 8, 16, 16, 8, 0, 0)]  //west
+		],
+		cull: {
+			top: 0,
+			bottom: 15,
 			north: 3,
 			south: 3,
 			east: 3,
@@ -1584,66 +1510,116 @@ let shapes = {
 		texVerts: [],
 		buffer: null,
 		size: 6,
-		varients: [],
-		flip: false,
-		rotate: true,
-	},
-	slab: {
-		verts: [
-			[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 8, 16, 16, 16, 0, 0)], //top
-			[objectify(16, 8, 16, 16, 8, 0, 0)], //north
-			[objectify( 0, 8,  0, 16, 8, 0, 0)], //south
-			[objectify(16, 8,  0, 16, 8, 0, 0)], //east
-			[objectify( 0, 8, 16, 16, 8, 0, 0)]  //west
-		],
-		cull: {
-			top: 0,
-			bottom: 3,
-			north: 1,
-			south: 1,
-			east: 1,
-			west: 1
-		},
-		texVerts: [],
-		buffer: null,
-		size: 6,
-		varients: [],
+		variants: [],
 		flip: true,
 		rotate: false
 	},
 	stair: {
 		verts: [
-			[objectify( 0, 0,  0, 16, 16, 0, 0)], //bottom
-			[objectify( 0, 8,  8, 16, 8, 0, 8), objectify( 0, 16,  16, 16, 8, 0, 0)], //top
-			[objectify(16, 16, 16, 16, 16, 0, 0)], //north
-			[objectify( 0, 8,  0, 16, 8, 0, 0), objectify( 0, 16,  8, 16, 8, 0, 0)], //south
-			[objectify(16, 8, 0, 8, 8, 8, 0), objectify(16, 16, 8, 8, 16, 0, 0)], //east
-			[objectify( 0, 8, 8, 8, 8, 0, 0), objectify( 0, 16, 16, 8, 16, 8, 0)]  //west
+			[[0,0,0,16,16,0,0]], // -y
+			[[0,8,16,8,16,8,0],[8,16,16,8,16,0,0]], // +y
+			[[8,8,16,8,8,0,0],[16,16,16,8,16,0,0]], // +z
+			[[0,8,0,8,8,0,0],[8,16,0,8,16,0,0]], // -z
+			[[16,16,0,16,16,0,0]], // +x
+			[[0,8,16,16,8,0,0],[8,16,16,16,8,0,0]] // -x
+		],
+		cull: {
+			top: 0b1100,
+			bottom: 15,
+			north: 15,
+			south: 3,
+			east: 0b0111,
+			west: 0b1011
+		},
+		texVerts: [],
+		buffer: null,
+		size: 10,
+		variants: [],
+		flip: true,
+		rotate: true
+	},
+	flower: {
+		verts: [
+			[],
+			[],
+			// [arrayify( 8,  0,  8,  2,  2,  0,  0)],
+			// [arrayify( 8, 16,  8,  2,  2,  0,  0)],
+			[arrayify(16, 16,  8, 16, 16,  0,  0)],
+			[arrayify( 0, 16,  8, 16, 16,  0,  0)],
+			[arrayify( 8, 16,  0, 16, 16,  0,  0)],
+			[arrayify( 8, 16, 16, 16, 16,  0,  0)]
 		],
 		cull: {
 			top: 0,
-			bottom: 3,
-			north: 3,
+			bottom: 0,
+			north: 0,
 			south: 0,
 			east: 0,
 			west: 0
 		},
 		texVerts: [],
 		buffer: null,
-		size: 10,
-		varients: [],
-		flip: true,
+		size: 4,
+		variants: [],
+		flip: false,
+		rotate: false
+	},
+	lantern: {
+		verts: [
+			[[5,1,5,6,6,0,9]],
+			[[5,8,11,6,6,0,9],[6,10,10,4,4,1,10]],
+			[[11,8,11,6,7,0,2],[10,10,10,4,2,1,0],[9.5,15,8,3,4,11,1]],
+			[[5,8,5,6,7,0,2],[6,10,6,4,2,1,0],[6.5,15,8,3,4,11,1]],
+			[[11,8,5,6,7,0,2],[10,10,6,4,2,1,0],[8,16,6.5,3,6,11,6]],
+			[[5,8,11,6,7,0,2],[6,10,10,4,2,1,0],[8,16,9.5,3,6,11,6]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 15,
+		variants: [],
+		flip: false,
+		rotate: false
+	},
+	door: {
+		verts: [
+			[[0,0,0,3,16,13,0]],
+			[[0,16,16,3,16,0,0]],
+			[[3,16,16,3,16,0,0]],
+			[[0,16,0,3,16,0,0]],
+			[[3,16,0,16,16,0,0]],
+			[[0,16,16,16,16,0,0]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 15,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 6,
+		variants: [],
+		flip: false,
 		rotate: true
 	},
-	flower: {
+	fence: {
 		verts: [
-			[objectify( 8,  0,  8,  2,  2,  0,  0)],
-			[objectify( 8, 16,  8,  2,  2,  0,  0)],
-			[objectify(16, 16,  8, 16, 16,  0,  0)],
-			[objectify( 0, 16,  8, 16, 16,  0,  0)],
-			[objectify( 8, 16,  0, 16, 16,  0,  0)],
-			[objectify( 8, 16, 16, 16, 16,  0,  0)]
+			[[6,0,6,4,4,6,6]],
+			[[6,16,10,4,4,6,6]],
+			[[10,16,10,4,16,6,0]],
+			[[6,16,6,4,16,6,0]],
+			[[10,16,6,4,16,6,0]],
+			[[6,16,10,4,16,6,0]]
 		],
 		cull: {
 			top: 0,
@@ -1656,69 +1632,64 @@ let shapes = {
 		texVerts: [],
 		buffer: null,
 		size: 6,
-		varients: [],
+		variants: [],
 		flip: false,
 		rotate: false
 	},
-	lantern: {
+	fenceSide: {
 		verts: [
-			[objectify(5,  0, 5, 6, 6, 0, 9)],
-			[objectify(6, 9, 10, 4, 4, 1, 10),objectify(5, 7, 11, 6, 6, 0, 9)],
-			[objectify(10, 9, 10, 4, 2, 1, 0),objectify(11, 7, 11, 6, 7, 0, 2),objectify(9.5, 11, 8, 3, 2, 11, 10),objectify(9.5, 16, 8, 3, 3, 11, 2)],
-			[objectify(6, 9, 6, 4, 2, 1, 0),objectify(5, 7, 5, 6, 7, 0, 2),objectify(6.5, 11, 8, 3, 2, 11, 10),objectify(6.5, 16, 8, 3, 3, 11, 2)],
-			[objectify(10, 9, 6, 4, 2, 1, 0),objectify(11, 7, 5, 6, 7, 0, 2),objectify(8, 14, 6.5, 3, 4, 11, 1)],
-			[objectify(6, 9, 10, 4, 2, 1, 0),objectify(5, 7, 11, 6, 7, 0, 2),objectify(8, 14, 9.5, 3, 4, 11, 1)]
+			[[7,12,0,2,9,7,0],[7,6,0,2,9,7,0]],
+			[[7,15,9,2,9,7,0],[7,9,9,2,9,7,0]],
+			[[9,15,9,2,3,7,1],[9,9,9,2,3,7,7]],
+			[],
+			[[9,15,0,9,3,0,1],[9,9,0,9,3,0,7]],
+			[[7,15,9,9,3,0,1],[7,9,9,9,3,0,7]]
 		],
 		cull: {
 			top: 0,
-			bottom: 3,
+			bottom: 0,
 			north: 0,
 			south: 0,
 			east: 0,
 			west: 0
 		},
 		texVerts: [],
-		varients: [],
 		buffer: null,
-		size: 17,
+		size: 10,
+		variants: [],
+		flip: false,
+		rotate: true
 	},
 }
 
 function mapCoords(rect, face) {
-	let x = rect.x
-	let y = rect.y
-	let z = rect.z
-	let w = rect.w
-	let h = rect.h
-	let tx = rect.tx
-	let ty = rect.ty
-	let tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h]
-	let pos = null
+	const [x, y, z, w, h, tx, ty] = rect
+	const tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h].map(c => c / 16 / textureAtlasWidth)
+	const pos = [x, y, z]
 	switch(face) {
 		case 0: // Bottom
-			pos = [x,y,z, x+w,y,z, x+w,y,z+h, x,y,z+h]
+			pos.push(x+w,y,z, x+w,y,z+h, x,y,z+h)
 			break
 		case 1: // Top
-			pos = [x,y,z, x+w,y,z, x+w,y,z-h, x,y,z-h]
+			pos.push(x+w,y,z, x+w,y,z-h, x,y,z-h)
 			break
 		case 2: // North
-			pos = [x,y,z, x-w,y,z, x-w,y-h,z, x,y-h,z]
+			pos.push(x-w,y,z, x-w,y-h,z, x,y-h,z)
 			break
 		case 3: // South
-			pos = [x,y,z, x+w,y,z, x+w,y-h,z, x,y-h,z]
+			pos.push(x+w,y,z, x+w,y-h,z, x,y-h,z)
 			break
 		case 4: // East
-			pos = [x,y,z, x,y,z+w, x,y-h,z+w, x,y-h,z]
+			pos.push(x,y,z+w, x,y-h,z+w, x,y-h,z)
 			break
 		case 5: // West
-			pos = [x,y,z, x,y,z-w, x,y-h,z-w, x,y-h,z]
+			pos.push(x,y,z-w, x,y-h,z-w, x,y-h,z)
 			break
 	}
-	pos = pos.map(c => c / 16 - 0.5)
+	for(let i = 0; i < 12; i++) pos[i] = (pos[i] - 8) / 16
 	let minmax = compareArr(pos, [])
 	pos.max = minmax.splice(3, 3)
 	pos.min = minmax
-	tex = tex.map(c => c / 16 / textureAtlasWidth)
 
 	return {
 		pos: pos,
@@ -1799,7 +1770,7 @@ function rotate(shape) {
 		flip: shape.flip,
 		buffer: null,
 		size: shape.size,
-		varients: shape.varients
+		variants: shape.variants
 	}
 }
 
@@ -1859,7 +1830,7 @@ function flip(shape) {
 		flip: shape.flip,
 		buffer: null,
 		size: shape.size,
-		varients: shape.varients
+		variants: shape.variants
 	}
 }
 
@@ -1868,12 +1839,12 @@ for (let shape in shapes) {
 	let verts = obj.verts
 
 	// Populate the vertex coordinates
-	for (let i = 0; i < verts.length; i++) {
-		let side = verts[i]
+	for (let i = 0; i < verts.length; i++) { // 6 directions
+		let side = verts[i] // Array of faces in this direction
 		let texArr = []
 		obj.texVerts.push(texArr)
-		for (let j = 0; j < side.length; j++) {
-			let face = side[j]
+		for (let j = 0; j < side.length; j++) { // Each face in this direction
+			let face = side[j] // Array of arrayified data
 			let mapped = mapCoords(face, i)
 			side[j] = mapped.pos
 			texArr.push(mapped.tex)
@@ -1881,7 +1852,7 @@ for (let shape in shapes) {
 	}
 
 	if (obj.rotate) {
-		let v = obj.varients
+		let v = obj.variants
 		let east = rotate(obj)
 		let south = rotate(east)
 		let west = rotate(south)
@@ -1891,7 +1862,7 @@ for (let shape in shapes) {
 		v[6] = west
 	}
 	if (obj.flip) {
-		let v = obj.varients
+		let v = obj.variants
 		v[1] = flip(obj)
 		if (obj.rotate) {
 			v[3] = flip(v[2])
@@ -1904,6 +1875,37 @@ for (let shape in shapes) {
 	// gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
 	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 }
+
+// Now that fenceSide is rotated, let's generate a bunch of fence variants
+{
+	const clone = obj => {
+		return {
+			verts: obj.verts.map(a => a.slice()),
+			texVerts: obj.texVerts.map(a => a.slice()),
+			cull: obj.cull,
+			rotate: false,
+			flip: false,
+			buffer: null,
+			size: obj.size,
+			variants: obj.variants
+		}
+	}
+	const v = shapes.fence.variants
+	for (let i = 0; i < 16; i++) {
+		let obj = clone(shapes.fence)
+		for (let j = 0; j < 4; j++) {
+			if (i & 1 << j) for (let k = 0; k < 6; k++) {
+				obj.verts[k].push(...shapes.fenceSide.variants[j * 2].verts[k])
+				obj.texVerts[k].push(...shapes.fenceSide.variants[j * 2].texVerts[k])
+			}
+		}
+		v.push(obj)
+	}
+
+	shapes.fence.texVerts = shapes.cube.texVerts
+	shapes.fence.verts = shapes.cube.verts
+}
+
 
 window.parent.exports["src/js/shapes.js"] = { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST }}
 		</script>
@@ -1962,7 +1964,7 @@ const texturesFunc = function (setPixel, getPixels) {
 			}
 		},
 		hitbox: "0g0g100W",  // Black
-		nothing: "0g0g1000", // Transparent black
+		air: "0g0g1000", // Transparent black
 		"acaciaLog": "0g0g6ÖïYÇQYåĭYÁAWÇUZ÷nH50ķcyX6ħœcy4eSœ4i4{SQgNkQSīĘSÀSXTęgÀëïwT0ÀìXy1Tg5ķyh?g0ķwhko0x3gko4x3Ĉ/8Č5jĘ(wĈX1Àg0SĈj4iëSĊh42X",
 		"acaciaLogTop": "0g0gbÖïYVQYÁ)HPjZġîHĕàWĨěZöNYāRYĉÃW?3Y1xizNj1g4Q??ÒUQTAGIĀāāIÏkãÑQ?Q]>čXVVVVPÂ)üÆòĀï]Á*ïÅVVïÆTBüÆÇýýPÀ5üÆÇïï]À5üÆVVýÆÁlXÆñòýPÂBüVVVV]Â)ü?QQ@]Ã)ĀĀIIII>ČQV?ÄVQTgNxg0iz(",
 		"acaciaPlanks": "0g0g7ġîHĕàWĨěZāRYĉÃWöNYòiY4AJ9Aî0ÿ80ùAw2cJi3ãğãğËĖaAüP2KwoÐXë1ùí_0jAŁľãŁŁŕ92ÂTAX40cùĪzSāAAā4ŁğãļłĞSA4PkiA9cë0PNgÐ0İAĽŔÉGËĞ",
@@ -2148,10 +2150,11 @@ const texturesFunc = function (setPixel, getPixels) {
 	}
 }
 
+// Compute texture coordinates so I can store them in blockData.textures.
 const textures = Object.keys(texturesFunc())
 const textureMap = {}
 for (let i = 0; i < textures.length; i++) {
-	const s = 1/16 // 1 / numberOfTexturesPerRowOfTheAtlas
+	const s = 1/16 // numberOfTexturesPerRowOfTheAtlas
 	let texX = i & 15
 	let texY = i >> 4
 	let offsetX = texX * s
@@ -2172,11 +2175,33 @@ class BlockData {
 	semiTrans = false
 	hideInterior = false
 	rotate = false
+	flip = false
+	iconImg = document.createElement("canvas")
+	shape = shapes.cube
+	uniqueShape = false
 
-	constructor(data, i) {
-		this.id = i
-		this.hideInterior = data.transparent ?? this.transparent
-		blockIds[data.name] = i
+	constructor(data, id, hasIcon = true) {
+		if (data instanceof BlockData) {
+			const canvas = this.iconImg
+			Object.assign(this, data)
+
+			this.id = id
+			if (!hasIcon) {
+				this.iconImg = null
+				this.icon = ""
+			}
+			else {
+				canvas.width = 64
+				canvas.height = 64
+				this.iconImg = canvas
+			}
+			return
+		}
+		if (data.shape) this.uniqueShape = true
+		this.iconImg.width = 64
+		this.iconImg.height = 64
+		this.id = id
+		blockIds[data.name] = id
 
 		if ( !("textures" in data) ) {
 			data.textures = new Array(6).fill(data.name)
@@ -2212,33 +2237,15 @@ class BlockData {
 }
 
 const blockData = [
-	{
-		name: "air",
-		id: 0,
-		textures: "nothing",
-		transparent: true,
-		shadow: false,
-		solid: false
-	},
-	{
-		name: "grass",
-		textures: ["dirt", "grassTop", "grassSide"],
-	},
+	{ name: "air", textures: "air", transparent: true, shadow: false, solid: false },
+	{ name: "grass", textures: ["dirt", "grassTop", "grassSide"] },
 	{ name: "dirt" },
 	{ name: "stone" },
 	{ name: "bedrock" },
 	{ name: "sand" },
 	{ name: "gravel" },
-	{
-		name: "leaves",
-		transparent: true,
-		hideInterior: false
-	},
-	{
-		name: "glass",
-		transparent: true,
-		shadow: false,
-	},
+	{ name: "leaves", transparent: true },
+	{ name: "glass", transparent: true, shadow: false, hideInterior: true },
 	{ name: "cobblestone" },
 	{ name: "mossyCobblestone" },
 	{ name: "stoneBricks" },
@@ -2259,35 +2266,17 @@ const blockData = [
 	{ name: "lapisBlock" },
 	{ name: "emeraldBlock" },
 	{ name: "oakPlanks" },
-	{
-		name: "oakLog",
-		textures: ["oakLogTop", "oakLog"],
-	},
+	{ name: "oakLog", textures: ["oakLogTop", "oakLog"] },
 	{ name: "acaciaPlanks" },
-	{
-		name: "acaciaLog",
-		textures: ["acaciaLogTop", "acaciaLog"],
-	},
+	{ name: "acaciaLog", textures: ["acaciaLogTop", "acaciaLog"] },
 	{ name: "birchPlanks" },
-	{
-		name: "birchLog",
-		textures: ["birchLogTop", "birchLog"],
-	},
+	{ name: "birchLog", textures: ["birchLogTop", "birchLog"] },
 	{ name: "darkOakPlanks" },
-	{
-		name: "darkOakLog",
-		textures: ["darkOakLogTop", "darkOakLog"],
-	},
+	{ name: "darkOakLog", textures: ["darkOakLogTop", "darkOakLog"] },
 	{ name: "junglePlanks" },
-	{
-		name: "jungleLog",
-		textures: ["jungleLogTop", "jungleLog"],
-	},
+	{ name: "jungleLog", textures: ["jungleLogTop", "jungleLog"] },
 	{ name: "sprucePlanks" },
-	{
-		name: "spruceLog",
-		textures: ["spruceLogTop", "spruceLog"],
-	},
+	{ name: "spruceLog", textures: ["spruceLogTop", "spruceLog"] },
 	{ name: "whiteWool" },
 	{ name: "orangeWool" },
 	{ name: "magentaWool" },
@@ -2320,32 +2309,17 @@ const blockData = [
 	{ name: "greenConcrete" },
 	{ name: "redConcrete" },
 	{ name: "blackConcrete" },
-	{
-		name: "bookshelf",
-		textures: ["oakPlanks", "bookshelf"]
-	},
+	{ name: "bookshelf", textures: ["oakPlanks", "bookshelf"] },
 	{ name: "netherrack" },
 	{ name: "soulSand" },
-	{
-		name: "glowstone",
-		lightLevel: 15
-	},
+	{ name: "glowstone", lightLevel: 15 },
 	{ name: "netherWartBlock" },
 	{ name: "netherBricks" },
 	{ name: "redNetherBricks" },
 	{ name: "netherQuartzOre" },
-	{
-		name: "quartzBlock",
-		textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"]
-	},
-	{
-		name: "quartzPillar",
-		textures: ["quartzPillarTop", "quartzPillar"]
-	},
-	{
-		name: "chiseledQuartzBlock",
-		textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"]
-	},
+	{ name: "quartzBlock", textures: ["quartzBlockBottom", "quartzBlockTop", "quartzBlockSide"] },
+	{ name: "quartzPillar", textures: ["quartzPillarTop", "quartzPillar"] },
+	{ name: "chiseledQuartzBlock", textures: ["chiseledQuartzBlock", "chiseledQuartzBlockTop"] },
 	{ name: "chiseledStoneBricks" },
 	{ name: "smoothStone" },
 	{ name: "andesite" },
@@ -2354,8 +2328,8 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon" },
-	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: false },
+	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon", hideInterior: true },
+	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
 	{ name: "obsidian" },
 	{ name: "cryingObsidian", lightLevel: 10 },
@@ -2368,16 +2342,13 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", textures: ["nothing", "oakDoorTop"], solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.cube },
-	{ name: "oakDoorBottom", textures: ["nothing", "oakDoorBottom"], solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.cube  },
-	{ name: "warpedDoorTop", textures: ["nothing", "warpedDoorTop"], solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.cube },
-	{ name: "warpedDoorBottom", textures: ["nothing", "warpedDoorBottom"], solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.cube },
-	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube  },
+	{ name: "oakDoorTop", solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.door },
+	{ name: "oakDoorBottom", solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.door },
+	{ name: "warpedDoorTop", solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.door },
+	{ name: "warpedDoorBottom", solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.door },
+	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube },
 	{ name: "cherryPlanks" },
-	{
-		name: "cherryLog",
-		textures: ["cherryLogTop", "cherryLog"],
-	},
+	{ name: "cherryLog", textures: ["cherryLogTop", "cherryLog"] },
 	{ name: "copperOre" },
 	{ name: "copperBlock" },
 	{ name: "cutCopper" },
@@ -2389,51 +2360,23 @@ const blockData = [
 	{ name: "oxidizedCutCopper" },
 	{ name: "prismarine" },
 	{ name: "darkPrismarine" },
-	{
-		name: "seaLantern",
-		lightLevel: 15,
-		shadow: false
-	},
+	{ name: "seaLantern", lightLevel: 15, shadow: false },
 	{ name: "netherGoldOre" },
-	{
-		name: "ancientDebris",
-		textures: ["ancientDebrisTop", "ancientDebrisSide"],
-	},
+	{ name: "ancientDebris", textures: ["ancientDebrisTop", "ancientDebrisSide"] },
 	{ name: "netheriteBlock" },
 	{ name: "soulSoil" },
-	{
-		name: "blackstone",
-		textures: ["blackstoneTop", "blackstone"],
-	},
+	{ name: "blackstone", textures: ["blackstoneTop", "blackstone"] },
 	{ name: "polishedBlackstone" },
 	{ name: "gildedBlackstone" },
-	{
-		name: "basalt",
-		textures: ["basaltTop", "basaltSide"],
-	},
-	{
-		name: "polishedBasalt",
-		textures: ["polishedBasaltTop", "polishedBasaltSide"],
-	},
-	{
-		name: "shroomlight",
-		lightLevel: 15
-	},
+	{ name: "basalt", textures: ["basaltTop", "basaltSide"] },
+	{ name: "polishedBasalt", textures: ["polishedBasaltTop", "polishedBasaltSide"] },
+	{ name: "shroomlight", lightLevel: 15 },
 	{ name: "crimsonPlanks" },
-	{
-		name: "crimsonStem",
-		textures: ["crimsonStemTop", "crimsonStem"],
-	},
+	{ name: "crimsonStem", textures: ["crimsonStemTop", "crimsonStem"] },
 	{ name: "warpedPlanks" },
-	{
-		name: "warpedStem",
-		textures: ["warpedStemTop", "warpedStem"],
-	},
+	{ name: "warpedStem", textures: ["warpedStemTop", "warpedStem"] },
 	{ name: "amethystBlock" },
-	{
-		name: "deepslate",
-		textures: ["deepslateTop", "deepslate"],
-	},
+	{ name: "deepslate", textures: ["deepslateTop", "deepslate"] },
 	{ name: "cobbledDeepslate" },
 	{ name: "polishedDeepslate" },
 	{ name: "deepslateBricks" },
@@ -2450,67 +2393,126 @@ const blockData = [
 	{ name: "deepslateRedstoneOre" },
 	{
 		name: "poppy",
-		textures: ["nothing", "poppy"],
+		textures: ["air", "poppy"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "poppy",
 		shape: shapes.flower
 	},
 	{
 		name: "cornflower",
-		textures: ["nothing", "cornflower"],
+		textures: ["air", "cornflower"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "cornflower",
 		shape: shapes.flower
 	},
 	{
 		name: "dandelion",
-		textures: ["nothing", "dandelion"],
+		textures: ["air", "dandelion"],
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		icon: "dandelion",
 		shape: shapes.flower
 	},
 	{
 		name: "cobweb",
-		textures: ["nothing", "cobweb"],
+		textures: ["air", "cobweb"],
 		solid: false,
 		transparent: true,
-		hideInterior: false,
 		icon: "cobweb",
 		shape: shapes.flower
 	},
-	{
-		name: "pumpkin",
-		textures: ["pumpkinTop", "pumpkinSide"]
-	},
-	{
-		name: "carvedPumpkin",
-		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "carvedPumpkin", "pumpkinSide", "pumpkinSide"],
-		rotate: true
-	},
+	{ name: "pumpkin", textures: ["pumpkinTop", "pumpkinSide"] },
+	{ name: "carvedPumpkin", textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "carvedPumpkin"], rotate: true, shape: shapes.cube },
 	{
 		name: "jackOLantern",
-		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "jackOLantern", "pumpkinSide", "pumpkinSide"],
+		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "jackOLantern"],
 		shadow: "false",
 		lightLevel: 15,
-		rotate: true
+		rotate: true,
+		shape: shapes.cube
 	},
 	{
 		name: "lantern",
 		solid: false,
 		transparent: true,
 		shadow: false,
-		hideInterior: false,
 		lightLevel: 15,
 		shape: shapes.lantern
+	},
+	{
+		name: "oakFence",
+		textures: "oakPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "acaciaFence",
+		textures: "acaciaPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "birchFence",
+		textures: "birchPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "darkOakFence",
+		textures: "darkOakPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "jungleFence",
+		textures: "junglePlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "spruceFence",
+		textures: "sprucePlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "cherryFence",
+		textures: "cherryPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "netherBrickFence",
+		textures: "netherBricks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "crimsonFence",
+		textures: "crimsonPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
+	},
+	{
+		name: "warpedFence",
+		textures: "warpedPlanks",
+		transparent: true,
+		shadow: false,
+		shape: shapes.fence
 	},
 	// Removed because everyone wants them to explode, but they don't explode.
 	/* {
@@ -2518,6 +2520,7 @@ const blockData = [
  	textures: ["tntBottom", "tntTop", "tntSide"]
 	},*/
 ].map((data, i) => new BlockData(data, i))
+blockData[0].iconImg = null // Air doesn't need an icon.
 
 const BLOCK_COUNT = blockData.length
 
@@ -2530,7 +2533,7 @@ let Block = {
 	west: 0x1,
 }
 
-window.parent.exports["src/js/blockData.js"] = { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block }}
+window.parent.exports["src/js/blockData.js"] = { texturesFunc, blockData, BLOCK_COUNT, blockIds, Block, BlockData }}
 		</script>
 		<script id="src/js/indexDB.js" type="application/javascript">
 {async function createDatabase() {
@@ -2618,6 +2621,21 @@ const invCtx = invCanvas.getContext("2d")
 */
 const containerCanvas = document.getElementById("container")
 const contCtx = containerCanvas.getContext("2d")
+
+const heldItemCanvas = document.createElement("canvas")
+heldItemCanvas.style.zIndex = 2
+heldItemCanvas.style.pointerEvents = "none"
+heldItemCanvas.width = 64
+heldItemCanvas.height = 64
+heldItemCanvas.className = "hidden corner"
+heldItemCanvas.id = "heldItem"
+document.body.append(heldItemCanvas)
+
+invCanvas.oncontextmenu = heldItemCanvas.oncontextmenu = containerCanvas.oncontextmenu = function(e) {
+	e.preventDefault()
+}
+
+const heldCtx = heldItemCanvas.getContext("2d")
 
 /**
  * @type {HTMLDivElement}
@@ -2821,13 +2839,22 @@ class InventoryPage {
 	mouseClick(heldItem) {
 		if (this.hoverIndex === -1) return null
 		if (this.creative) {
+			if (heldItem?.id === this.items[this.hoverIndex].id) {
+				if (heldItem.stackSize < 64) heldItem.stackSize++
+				return heldItem
+			}
 			return this.items[this.hoverIndex].copy() // Discard the previously held item
 		}
 		let old = this.items[this.hoverIndex]
 		if (!heldItem && !old) return null
 		if (old?.id === heldItem?.id) {
 			old.stackSize += heldItem.stackSize
-			old = null
+			if (old.stackSize > 64) {
+				heldItem.stackSize = old.stackSize - 64
+				old.stackSize = 64
+				old = heldItem
+			}
+			else old = null
 		}
 		else this.items[this.hoverIndex] = heldItem || null
 
@@ -2971,7 +2998,7 @@ class InventoryManager {
 			for (let id in blockData) {
 				const block = blockData[id]
 				// eslint-disable-next-line no-prototype-builtins
-				if (!block.hasOwnProperty("iconImg")) continue
+				if (!block.iconImg) continue
 
 				let item = new InventoryItem(+id, block.name, 1, block.iconImg)
 
@@ -3009,13 +3036,19 @@ class InventoryManager {
 		containerCanvas.onkeydown = invCanvas.onkeydown = window.parent.canvas.onkeydown
 		containerCanvas.onkeyup = invCanvas.onkeyup = window.parent.canvas.onkeyup
 
-		invCanvas.onmousemove = e => storage.mouseMove(e)
+		invCanvas.onmousemove = e => {
+			storage.mouseMove(e)
+		}
 		invCanvas.onmousedown = () => {
 			this.heldItem = storage.mouseClick(this.heldItem)
+
 			if (this.heldItem) {
-				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+				heldItemCanvas.classList.remove("hidden")
+				heldCtx.clearRect(0, 0, this.iconSize, this.iconSize)
+				this.heldItem.render(heldCtx, 0, 0, this.iconSize)
 			}
-			else document.body.style.cursor = ""
+			else heldItemCanvas.classList.add("hidden")
+
 			for (let i = 0; i < this.hotbar.length; i++) {
 				this.hotbar[i] = storage.items[i + 27]?.id || 0
 			}
@@ -3059,14 +3092,11 @@ class InventoryManager {
 		else {
 			this.heldItem = this.containers[this.currentPage].mouseClick(this.heldItem)
 			if (this.heldItem) {
-				document.body.style.cursor = `url(${this.heldItem.icon.toDataURL()}) ${this.iconSize / 2 | 0} ${this.iconSize / 2 | 0}, default`
+				heldItemCanvas.classList.remove("hidden")
+				heldCtx.clearRect(0, 0, this.iconSize, this.iconSize)
+				this.heldItem.render(heldCtx, 0, 0, this.iconSize)
 			}
-			else document.body.style.cursor = ""
-			// document.body.appendChild(this.heldItem.icon)
-			// this.heldItem.icon.style.zIndex = 2
-			// this.heldItem.icon.style.position = "absolute"
-			// this.heldItem.icon.style.left = (event.x - this.iconSize / 2 | 0) + "px"
-			// this.heldItem.icon.style.top = (event.y - this.iconSize / 2 | 0) + "px"
+			else heldItemCanvas.classList.add("hidden")
 		}
 	}
 
@@ -3074,13 +3104,14 @@ class InventoryManager {
 	 * @param {Number} newSize
 	 */
 	set size(newSize) {
-		this.iconSize = newSize
+		heldItemCanvas.width = heldItemCanvas.height = this.iconSize = newSize
 		if (this.playerStorage) {
 			this.playerStorage.render(10, 10, newSize)
 			this.render()
 		}
 	}
 }
+
 const inventory = new InventoryManager()
 window.parent.exports["src/js/inventory.js"] = { InventoryItem, InventoryPage, InventoryManager, inventory }}
 		</script>
@@ -3154,11 +3185,14 @@ window.parent.exports["src/js/glUtils.js"] = { createProgramObject, uniformMatri
  */
 const textureMap = {}
 const textureCoords = []
+const textureSize = 256
+const scale = 1 / 16
+const texturePixels = new Uint8Array(textureSize * textureSize * 4)
 
+/**
+ * @param {WebGLRenderingContext} gl
+ */
 function initTextures(gl, glCache) {
-	let textureSize = 256
-	let scale = 1 / 16
-	let texturePixels = new Uint8Array(textureSize * textureSize * 4)
 	const setPixel = function(textureNum, x, y, r, g, b, a) {
 		let texX = textureNum & 15
 		let texY = textureNum >> 4
@@ -3190,6 +3224,7 @@ function initTextures(gl, glCache) {
 		const colorCount = decodeByte(str.substr(4, 1))
 		const colors = []
 		const pixels = new Uint8ClampedArray(width * height * 4)
+		for (let i = 3; i < pixels.length; i += 4) pixels[i] = 255
 		let pixi = 0
 
 		for (let i = 0; i < colorCount; i++) {
@@ -3297,32 +3332,42 @@ function initTextures(gl, glCache) {
 		textureCoords[textureMap.hitbox] = arr
 	}
 
+	const makeTexture = (index, width, height, pixels, edge) => {
+		const texture = gl.createTexture()
+		gl.activeTexture(index)
+		gl.bindTexture(gl.TEXTURE_2D, texture)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+		gl.generateMipmap(gl.TEXTURE_2D)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, edge)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, edge)
+		return texture
+	}
+
 	// Big texture with everything in it
-	let textureAtlas = gl.createTexture()
-	gl.activeTexture(gl.TEXTURE0)
-	gl.bindTexture(gl.TEXTURE_2D, textureAtlas)
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
-	gl.generateMipmap(gl.TEXTURE_2D)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	makeTexture(gl.TEXTURE0, textureSize, textureSize, texturePixels, gl.CLAMP_TO_EDGE)
 	gl.uniform1i(glCache.uSampler, 0)
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
-	let dirtTexture = gl.createTexture()
-	gl.activeTexture(gl.TEXTURE1)
-	gl.bindTexture(gl.TEXTURE_2D, dirtTexture)
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 16, 16, 0, gl.RGBA, gl.UNSIGNED_BYTE, dirtPixels)
-	gl.generateMipmap(gl.TEXTURE_2D)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	makeTexture(gl.TEXTURE1, 16, 16, dirtPixels, gl.REPEAT)
 }
 
-window.parent.exports["src/js/texture.js"] = { initTextures, textureMap, textureCoords }}
+function animateTextures(gl) {
+	// const x = Math.random() * 16 | 0
+	// const y = Math.random() * 16 | 0
+
+	// const d = Math.random() * 0.25 + 0.65
+	// texturePixels[y * textureSize * 4 + x * 4 + 0] = 75 * d
+	// texturePixels[y * textureSize * 4 + x * 4 + 1] = 125 * d
+	// texturePixels[y * textureSize * 4 + x * 4 + 2] = 64 * d
+
+	// gl.activeTexture(gl.TEXTURE0) // Moved to play()
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
+}
+
+window.parent.exports["src/js/texture.js"] = { initTextures, textureMap, textureCoords, animateTextures }}
 		</script>
 		<script id="src/shaders/skyFrag.glsl" type="x-shader/x-fragment">
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -3335,55 +3380,6 @@ uniform vec3 uSun;
 uniform vec3 uHorizon;
 varying vec3 position;
 
-/*
-float rand3D(in vec3 co) {
-	return fract(sin(dot(co.xyz ,vec3(12.9898,78.233,144.7272))) * 43758.5453);
-}
-float simple_interpolate(in float a, in float b, in float x) {
-	return a + smoothstep(0.0,1.0,x) * (b-a);
-}
-float interpolatedNoise3D(in float x, in float y, in float z) {
-	float integer_x = x - fract(x);
-	float fractional_x = x - integer_x;
-
-	float integer_y = y - fract(y);
-	float fractional_y = y - integer_y;
-
-	float integer_z = z - fract(z);
-	float fractional_z = z - integer_z;
-
-	float v1 = rand3D(vec3(integer_x, integer_y, integer_z));
-	float v2 = rand3D(vec3(integer_x+1.0, integer_y, integer_z));
-	float v3 = rand3D(vec3(integer_x, integer_y+1.0, integer_z));
-	float v4 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z));
-
-	float v5 = rand3D(vec3(integer_x, integer_y, integer_z+1.0));
-	float v6 = rand3D(vec3(integer_x+1.0, integer_y, integer_z+1.0));
-	float v7 = rand3D(vec3(integer_x, integer_y+1.0, integer_z+1.0));
-	float v8 = rand3D(vec3(integer_x+1.0, integer_y +1.0, integer_z+1.0));
-
-	float i1 = simple_interpolate(v1,v5, fractional_z);
-	float i2 = simple_interpolate(v2,v6, fractional_z);
-	float i3 = simple_interpolate(v3,v7, fractional_z);
-	float i4 = simple_interpolate(v4,v8, fractional_z);
-
-	float ii1 = simple_interpolate(i1,i2,fractional_x);
-	float ii2 = simple_interpolate(i3,i4,fractional_x);
-
-	return simple_interpolate(ii1 , ii2 , fractional_y);
-}
-float Noise3D(in vec3 coord, in float wavelength) {
-	return interpolatedNoise3D(coord.x/wavelength, coord.y/wavelength, coord.z/wavelength);
-}
-float noise(vec3 p, float frequency) {
-	float sum = 0.0;
-	for (float i = 0.0; i < 5.0; i++) {
-		sum += Noise3D(p * frequency * pow(2.0, i), 1.0) / pow(2.0, i);
-	}
-	return sum * 0.5;
-}
-*/
-
 const vec3 skyColor = vec3(0.25, 0.45, 0.7);
 const vec3 sunColor = vec3(1.0, 1.0, 0.7);
 const vec3 moonColor = vec3(0.7);
@@ -3393,14 +3389,9 @@ void main (void) {
 
 	float sunDot = dot(dir, uSun);
 	vec3 col = mix(skyColor, uHorizon, horizonal * horizonal * (sunDot * 0.5 + 1.2)); // Mix the sky and the horizon
-	
-
-	// float cloud = noise(position + uTime * 0.02, 10.0);
-	// col = mix(col, vec3(1.0), cloud);
 
 	// The sky starts getting darker when it's 30% above the horizon, then reachest max darkness at 50% below the horizon
-	col *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.3);
-	// col *= clamp((-uSun.y + 0.5) / 0.8, 0.1, 1.0);
+	col *= max(smoothstep(-0.5, 0.3, -uSun.y), 0.1);
 
 	// Draw the sun
 	float sun = 1.0 - max(sunDot * 50.0 - 49.0, 0.0);
@@ -3485,8 +3476,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		 1,  1, -1, // 3
 		 1, -1, -1, // 4
 		-1, -1, -1, // 1
-	].map(n => n * 1))
-
+	])
 
 	const buffer = gl.createBuffer()
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -3523,7 +3513,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		]
 
 		const sun = [sin/mag, cos/mag, sin/mag]
-		const skyBrightness = Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.3)
+		const skyBrightness = Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.1)
 
 		// Set uniform for program3DFogless
 		gl.useProgram(program3DFogless)
@@ -3562,6 +3552,7 @@ window.parent.exports["src/js/sky.js"] = { getSkybox }}
 {const { random, randomSeed, hash, noiseProfile } = window.parent.exports["src/js/random.js"]
 const { blockData, blockIds, Block } = window.parent.exports["src/js/blockData.js"]
 const { BitArrayBuilder, BitArrayReader } = window.parent.exports["src/js/utils.js"]
+const { shapes } = window.parent.exports["src/js/shapes.js"]
 // let world
 
 const { floor, max, abs } = Math
@@ -4163,15 +4154,13 @@ class Chunk {
 		}
 	}
 	generate() {
-		let trueX = this.x
-		let trueZ = this.z
+		if (this.generated) return
+		const cx = this.x
+		const cz = this.z
 
-		const { grass, dirt, stone, bedrock } = blockIds
+		const { grass, dirt, stone, bedrock, sand, water } = blockIds
 
-		if (this.generated) {
-			return
-		}
-
+		const waterHeight = this.maxY = 55
 		const smoothness = 0.01 // How close hills and valleys are together
 		const hilliness = 80 // Height of the hills
 		const extra = 30 // Extra blocks stacked onto the terrain
@@ -4179,7 +4168,16 @@ class Chunk {
 		let gen = 0
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				gen = superflat ? 4 : Math.round(noiseProfile.noise((trueX + i) * smoothness, (trueZ + k) * smoothness) * hilliness) + extra
+				if (superflat) gen = 4
+				else {
+					let n = noiseProfile.noise((cx + i) * smoothness, (cz + k) * smoothness)
+					gen = Math.round(n * hilliness + extra)
+					if (this.world.rivers) {
+						const m = (1 - abs(noiseProfile.noise((cz + k - 5432.123) * 0.003, (cx + i + 9182.543) * 0.003) - 0.5))**50
+						gen = Math.round((waterHeight - 5 - gen) * m + gen)
+					}
+				}
+
 				this.tops[i * 16 + k] = gen
 				if (gen > this.maxY) this.maxY = gen
 
@@ -4189,12 +4187,23 @@ class Chunk {
 				for (let max = (gen - 3) * 256; index < max; index += 256) {
 					this.blocks[index] = stone
 				}
-				this.blocks[index] = dirt
-				this.blocks[index + 256] = dirt
-				this.blocks[index + 512] = dirt
-				this.blocks[index + 768] = grass
+				if (gen > waterHeight || !this.world.rivers || superflat) {
+					this.blocks[index] = dirt
+					this.blocks[index + 256] = dirt
+					this.blocks[index + 512] = dirt
+					this.blocks[index + 768] = grass
+				}
+				else {
+					this.blocks[index] = sand
+					this.blocks[index + 256] = sand
+					this.blocks[index + 512] = sand
+					this.blocks[index + 768] = sand
+					for (index += 1024; index < (waterHeight + 1) * 256; index += 256) this.blocks[index] = water
+					if (gen <= waterHeight) this.doubleRender = true
+				}
 			}
 		}
+		if (this.doubleRender) this.world.doubleRenderChunks.push(this)
 		this.generated = true
 		this.getCaveData() // Queue up the multithreaded cave gen
 	}
@@ -4211,6 +4220,8 @@ class Chunk {
 		const chunkW = world.getChunk(x - 1, z).blocks
 		// let max = (maxY - 1) * 256
 		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
+
+		// Culling faces on chunk borders as needed
 		for (let y = 1; y <= maxY; y++) {
 			let indexN = y * 256
 			let indexS = indexN + 15
@@ -4784,8 +4795,17 @@ class Chunk {
 			// Preload any blocks that will be used for the shadows/lighting.
 			this.getSurroundingBlocks(loc, sides, blocks27, lights27)
 
-			const shapeVerts = block.shape.verts
-			const shapeTexVerts = block.shape.texVerts
+			let shapeVerts = block.shape.verts
+			let shapeTexVerts = block.shape.texVerts
+			if (block.shape === shapes.fence) {
+				let mask = 0
+				if (this.world.getBlock(worldX + 1, worldY, worldZ)) mask |= 8
+				if (this.world.getBlock(worldX - 1, worldY, worldZ)) mask |= 4
+				if (this.world.getBlock(worldX, worldY, worldZ + 1)) mask |= 2
+				if (this.world.getBlock(worldX, worldY, worldZ - 1)) mask |= 1
+				shapeVerts = shapes.fence.variants[mask].verts
+				shapeTexVerts = shapes.fence.variants[mask].texVerts
+			}
 
 			for (let n = 0; n < 6; n++) {
 				if (sides & blockMasks[n]) {
@@ -4891,7 +4911,7 @@ class Chunk {
 			let x = i >> 3 & 7
 			let z = i & 7
 
-			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
+			// 3 copies of the section, all oriented in different directions so we can see which one compresses the most
 			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
 			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
 			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
@@ -4999,6 +5019,10 @@ class Chunk {
 		for (let j in blocks) {
 			last = +j
 			let block = blocks[last]
+			if (!blockData[block]) {
+				if (blockData[block & 255]) block &= 255
+				else block = blockIds.pumpkin
+			}
 			this.blocks[last] = block
 			if (!this.doubleRender && blockData[block].semiTrans) {
 				this.doubleRender = true
@@ -5051,8 +5075,13 @@ class Chunk {
 					const paletteBits = BitArrayBuilder.bits(paletteLen)
 					const palette = []
 					for (let i = 0; i < paletteLen; i++) {
-						palette.push(reader.read(16))
-						if (blockData[palette.at(-1)].semiTrans) {
+						let block = reader.read(16)
+						if (!blockData[block]) {
+							if (blockData[block & 255]) block &= 255
+							else block = blockIds.pumpkin
+						}
+						palette.push(block)
+						if (blockData[block].semiTrans) {
 							this.doubleRender = true
 							if (!this.world.doubleRenderChunks.includes(this)) {
 								this.world.doubleRenderChunks.push(this)
@@ -5482,19 +5511,19 @@ const fragmentShaderSrc2D = document.getElementById("src/shaders/2dFrag.glsl").t
 const vertexShaderSrcEntity = document.getElementById("src/shaders/entityVert.glsl").textContent
 const fragmentShaderSrcEntity = document.getElementById("src/shaders/entityFrag.glsl").textContent
 
-// Import Worker code
+// Import WebWorker code
 const workerCode = document.getElementById("src/workers/Caves.js").textContent
 
 // imports
 const { seedHash, randomSeed, noiseProfile } = window.parent.exports["src/js/random.js"]
 const { PVector, Matrix, Plane, cross } = window.parent.exports["src/js/3Dutils.js"]
 const { timeString, roundBits, BitArrayBuilder, BitArrayReader } = window.parent.exports["src/js/utils.js"]
-const { blockData, BLOCK_COUNT, blockIds } = window.parent.exports["src/js/blockData.js"]
+const { blockData, BLOCK_COUNT, blockIds, BlockData } = window.parent.exports["src/js/blockData.js"]
 const { loadFromDB, saveToDB, deleteFromDB } = window.parent.exports["src/js/indexDB.js"]
 const { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } = window.parent.exports["src/js/shapes.js"]
-const { inventory } = window.parent.exports["src/js/inventory.js"]
+const { InventoryItem, inventory } = window.parent.exports["src/js/inventory.js"]
 const { createProgramObject } = window.parent.exports["src/js/glUtils.js"]
-const { initTextures, textureMap, textureCoords } = window.parent.exports["src/js/texture.js"]
+const { initTextures, textureMap, textureCoords, animateTextures } = window.parent.exports["src/js/texture.js"]
 const { getSkybox } = window.parent.exports["src/js/sky.js"]
 const { Chunk } = window.parent.exports["src/js/chunk.js"]
 // import { Item } from './js/item.js'
@@ -5554,8 +5583,21 @@ async function MineKhan() {
 
 	let yieldThread
 	{
-		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-		const workerURL = win.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+		// await yieldThread() will pause the current task until the event loop is cleared
+		const channel = new MessageChannel()
+		let res
+		channel.port1.onmessage = () => res()
+		yieldThread = () => {
+			return new Promise(resolve => {
+				res = resolve
+				channel.port2.postMessage("")
+			})
+		}
+	}
+
+	// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
+	if (!win.workers) {
+		const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
 		win.workers = []
 		const jobQueue = []
 		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
@@ -5581,17 +5623,6 @@ async function MineKhan() {
 				worker.postMessage(data)
 			}
 			else jobQueue.push([data, resolve])
-		}
-
-		// await window.yieldThread() will pause the current task until the event loop is cleared
-		const channel = new MessageChannel()
-		let res
-		channel.port1.onmessage = () => res()
-		yieldThread = () => {
-			return new Promise(resolve => {
-				res = resolve
-				channel.port2.postMessage("")
-			})
 		}
 	}
 
@@ -5669,8 +5700,7 @@ async function MineKhan() {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.2"
-	// const versionNumber = 0x000802
+	let version = "Alpha 0.8.1"
 	let superflat = false
 	let details = true
 	let caves = true
@@ -5685,7 +5715,7 @@ async function MineKhan() {
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
 		reach: 5,
 		showDebug: 3,
-		inventorySort: "blockid"
+		// inventorySort: "blockid"
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
@@ -5697,9 +5727,13 @@ async function MineKhan() {
 	let maxHeight = 255
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
+	let background = "url(./background.webp)"
+	if (location.origin === "https://www.kasandbox.org") background = "url(https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png)"
+	else if (!location.origin.includes("localhost") && location.origin !== "file://") background = "url(https://willard.fun/minekhan/background.webp)"
+	canvas.style.backgroundImage = background
+
 	let dirtBuffer
 	let texCoordsBuffers
-	let dirtbg // Background images
 	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
 
@@ -5726,8 +5760,13 @@ async function MineKhan() {
 			exit: [win.savebox, win.saveDirections, win.message]
 		},
 		"main menu": {
-			onenter: () => document.getElementById("overlay").classList.add("background"),
-			onexit: () => document.getElementById("overlay").classList.remove("background")
+			onenter: () => {
+				canvas.style.backgroundImage = background
+			},
+			onexit: () => {
+				canvas.style.backgroundImage = ""
+				dirt()
+			}
 		},
 		"loadsave menu": {
 			enter: [win.worlds, win.boxCenterTop, quota],
@@ -5903,9 +5942,7 @@ async function MineKhan() {
 		textSize(20)
 		canvas.focus()
 		changeScene("play")
-
 		ctx.clearRect(0, 0, width, height)
-
 		crosshair()
 		hud(true)
 		inventory.hotbar.render()
@@ -5947,66 +5984,67 @@ async function MineKhan() {
 			obj.buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.verts.flat(2)), gl.STATIC_DRAW)
-			for (let i in obj.varients) {
-				let v = obj.varients[i]
+			for (let i in obj.variants) {
+				let v = obj.variants[i]
 				v.buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, v.buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.verts.flat(2)), gl.STATIC_DRAW)
 			}
 		}
 
-		// Create blockData for each of the block varients
-		for (let i = 0; i < BLOCK_COUNT; i++) {
-			let baseBlock = blockData[i]
-			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
-			baseBlock.shape = shapes.cube
+		// Create blockData for each of the block variants
+		for (let id = 1; id < BLOCK_COUNT; id++) {
+			let baseBlock = blockData[id]
+			if (baseBlock.shape === shapes.door) baseBlock.rotate = true
 
-			let slabBlock = Object.assign({}, baseBlock)
-			slabBlock.transparent = true
-			slabBlock.name += " Slab"
-			slabBlock.shape = shapes.slab
-			slabBlock.flip = true
-			blockData[i | SLAB] = slabBlock
-
-			let stairBlock = Object.assign({}, baseBlock)
-			stairBlock.transparent = true
-			stairBlock.name += " Stairs"
-			stairBlock.shape = shapes.stair
-			stairBlock.rotate = true
-			stairBlock.flip = true
-			blockData[i | STAIR] = stairBlock
-
-			let v = slabBlock.shape.varients
-			for (let j = 0; j < v.length; j++) {
-				if (v[j]) {
-					let block = Object.assign({}, slabBlock)
-					block.shape = v[j]
-					delete block.icon
-					blockData[i | SLAB | j << 10] = block
-
+			if (!baseBlock.uniqueShape) {
+				const slabBlock = new BlockData(baseBlock, id | SLAB, true)
+				slabBlock.transparent = true
+				slabBlock.name += " Slab"
+				slabBlock.shape = shapes.slab
+				slabBlock.flip = true
+				blockData[id | SLAB] = slabBlock
+				let v = slabBlock.shape.variants
+				for (let j = 1; j < v.length; j++) {
+					if (v[j]) {
+						let block = new BlockData(slabBlock, id | SLAB | j << 10, false)
+						block.shape = v[j]
+						blockData[id | SLAB | j << 10] = block
+					}
 				}
-			}
-			v = stairBlock.shape.varients
-			for (let j = 0; j < v.length; j++) {
-				if (v[j]) {
-					let block = Object.assign({}, stairBlock)
-					block.shape = v[j]
-					delete block.icon
-					blockData[i | STAIR | j << 10] = block
+
+				const stairBlock = new BlockData(baseBlock, id | STAIR, true)
+				stairBlock.transparent = true
+				stairBlock.name += " Stairs"
+				stairBlock.shape = shapes.stair
+				stairBlock.rotate = true
+				stairBlock.flip = true
+				blockData[id | STAIR] = stairBlock
+				v = stairBlock.shape.variants
+				for (let j = 1; j < v.length; j++) {
+					if (v[j]) {
+						let block = new BlockData(stairBlock, id | STAIR | j << 10, false)
+						block.shape = v[j]
+						blockData[id | STAIR | j << 10] = block
+					}
 				}
 			}
 
 			// Cubes; blocks like pumpkins and furnaces.
 			if (baseBlock.rotate) {
-				v = baseBlock.shape.varients
+				const [ny, py, pz, nz, px, nx] = baseBlock.textures
+				const orders = [
+					[ny, py, nz, pz, nx, px], // Opposite
+					[ny, py, nx, px, pz, nz],
+					[ny, py, px, nx, nz, pz],
+				]
+				const v = baseBlock.shape.variants
 				for (let j = 2; j < v.length; j += 2) {
 					if (v[j]) {
-						let block = Object.assign({}, baseBlock)
+						let block = new BlockData(baseBlock, id | j << 10, false)
 						block.shape = v[j]
-						block.textures = blockData[i | j - 2 << 10].textures.slice() // Copy the previous block in the rotation
-						block.textures.push(...block.textures.splice(2, 1))
-						delete block.icon
-						blockData[i | j << 10] = block
+						block.textures = orders[j / 2 - 1]
+						blockData[id | j << 10] = block
 					}
 				}
 			}
@@ -6022,208 +6060,127 @@ async function MineKhan() {
 		indexOrder[i + 5] = 3 + j
 	}
 
-	let hexagonVerts
-	let slabIconVerts
-	let stairIconVerts
-
-	{
-		let s = Math.sqrt(3) / 2
-		let q = s / 2
-
-		hexagonVerts = new Float32Array([
-			0, 1, s, 0.5, 0, 0, -s, 0.5,
-			-s, 0.5, 0, 0, 0, -1, -s, -0.5,
-			0, 0, s, 0.5, s, -0.5, 0, -1,
-		])
-
-		slabIconVerts = new Float32Array([
-			0,  0.5, s,  0,   0, -0.5, -s,  0,
-			-s, 0,   0, -0.5, 0, -1,   -s, -0.5,
-			0, -0.5, s,  0,   s, -0.5,  0, -1,
-		])
-
-		stairIconVerts = [
-			-s,0.5,0,0,1,         0,1,1,0,1,         q,0.75,1,0.5,1,    -q,0.25,0,0.5,1,    // top of the top step
-			-q,-0.25,0,0,1,       q,0.25,1,0,1,      s,0,1,0.5,1,        0,-0.5,0,0.5,1,    // top of the bottom step
-			-q,0.25,0,0,0.6,      q,0.75,1,0,0.6,    q,0.25,1,0.5,0.6,  -q,-0.25,0,0.5,0.6, // front of the top step
-			0,-0.5,0,0,0.6,       s,0,1,0,0.6,       s,-0.5,1,0.5,0.6,   0,-1,0,0.5,0.6,    // front of the bottom step
-			-s,0.5,0,0,0.8,      -q,0.25,0.5,0,0.8, -q,-0.75,0.5,1,0.8, -s,-0.5,0,1,0.8,    // side of the top step
-			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
-		]
-	}
-
-	function renderIcon(x, y, id, blockIcons, iconLengths) {
-		x = x * 2 / width - 1
-		y = y * 2 / height - 1
-		gl.uniform2f(glCache.uOffset, x, y)
-
-		let buffer = blockIcons[id]
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-
-		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
-		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
-		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLES, 0, iconLengths[id])
-	}
 	function genIcons() {
-		const iconSize = 64 // We'll scale up or down while drawing them.
+		let start = Date.now()
 
-		let blockIcons = [null]
-		let iconLengths = [0]
-		let texOrder = [1, 2, 3]
-		let shadows = [1, 0.4, 0.7]
-		let scaleY = (iconSize - 5) / height
-		let scaleX = (iconSize - 5) / width
-		for (let i = 1; i < BLOCK_COUNT; i++) {
-			let data = []
-			let block = blockData[i]
+		let shadows = [1, 1, 0.4, 0.4, 0.7, 0.7]
 
-			// Square icon
-			if (block.icon) {
-				let tex = textureCoords[textureMap[block.icon]]
-				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
-				data.push(scaleX * 0.9, scaleY * 0.9, tex[2], tex[3], 1) // 2
-				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
-
-				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
-				data.push(-scaleX * 0.9, -scaleY * 0.9, tex[6], tex[7], 1) // 4
-				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
-
-				let buffer = gl.createBuffer()
-				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-				blockIcons[i] = buffer
-				iconLengths[i] = 6
-				blockIcons[i | SLAB] = buffer
-				iconLengths[i | SLAB] = 6
-				blockIcons[i | STAIR] = buffer
-				iconLengths[i | STAIR] = 6
-				continue
-			}
-
-			// Cube icon
-			for (let j = 0; j <= 11; j++) {
-				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
-				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 0) % 8])
-				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 1) % 8])
-				data.push(shadows[floor(j / 4)])
-
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i] = buffer
-			iconLengths[i] = 6 * 3
-
-			// Slab icon
-			data = []
-			for (let j = 0; j <= 11; j++) {
-				let tex = block.textures[texOrder[floor(j / 4)]]
-
-				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
-				data.push(slabIconVerts[j * 2 + 1] * scaleY)
-				data.push(tex[(j * 2 + 0) % 8])
-				data.push(tex[(j * 2 + 1) % 8])
-				data.push(shadows[floor(j / 4)])
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | SLAB] = buffer
-			iconLengths[i | SLAB] = 6 * 3
-
-			// Stair icon
-			data = []
-			let v = stairIconVerts
-			for (let j = 0; j <= 23; j++) {
-				let num = floor(j / 8)
-				let tex = block.textures[texOrder[num]]
-				let tx = tex[0]
-				let ty = tex[1]
-				data.push(-v[j * 5 + 0] * scaleX)
-				data.push(v[j * 5 + 1] * scaleY)
-				// data.push(0.1666666)
-				data.push(tx + v[j * 5 + 2] / 16)
-				data.push(ty + v[j * 5 + 3] / 16)
-				data.push(shadows[num])
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | STAIR] = buffer
-			iconLengths[i | STAIR] = 6 * 6
-		}
-
-		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
-		// Now we draw them all on the canvas at once.
-		gl.useProgram(program2D)
+		use2d()
 		gl.uniform1i(glCache.uSampler2, 0)
-		gl.disableVertexAttribArray(3)
-		gl.disableVertexAttribArray(4)
-		gl.enableVertexAttribArray(0)
-		gl.enableVertexAttribArray(1)
-		gl.enableVertexAttribArray(2)
 
-		const s = iconSize | 0
-		const limitX = gl.canvas.width / s | 0
-		const limitY = gl.canvas.height / s | 0
+		const limitX = gl.canvas.width >> 6
+		const limitY = gl.canvas.height >> 6
 		const limit = limitX * limitY
 		const total = (BLOCK_COUNT - 1) * 3
 		const pages = Math.ceil(total / limit)
-		const blocksPerPage = (limit / 3 | 0) * 3
 
 		let masks = [CUBE, SLAB, STAIR]
 		let drawn = 1 // 0 = air
 
-		let start = Date.now()
+		const mat = new Matrix()
+		mat.identity()
+		mat.scale(70 / width, 70 / height, 1)
+		mat.rotX(Math.PI / 4)
+		mat.rotY(Math.PI / 4)
+
+		mat.transpose()
+		gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+
+		// Draw as many icons as possible on a canvas the size of the screen, then clear it and continue
 		for (let i = 0; i < pages; i++) {
+
+			// Draw icons to the WebGL canvas
+			let blocksPerPage = (limit / 3 | 0) * 3
 			gl.clearColor(0, 0, 0, 0)
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			let pageStart = drawn
 			for (let j = 0; j < blocksPerPage; j += 3) {
 				for (let k = 0; k < 3; k++) {
-					let x = (j + k) % limitX
-					let y = (j + k) / limitX | 0
-					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k], blockIcons, iconLengths)
+					const id = drawn | masks[k]
+					if (blockData[id]?.iconImg) {
+						const x = ((j + k) % limitX * 128 + 64) / width - 1
+						const y = 1 - (((j + k) / limitX | 0) * 128 + 64) / height
+
+						gl.uniform2f(glCache.uOffset, x, y)
+
+						const shape = blockData[id].shape === shapes.fence ? shapes.fence.variants[3] : blockData[id].shape
+						// if (blockData[id].shape === shapes.fence) {
+						// Coordinates
+						gl.bindBuffer(gl.ARRAY_BUFFER, shape.buffer)
+						gl.vertexAttribPointer(glCache.aVertex2, 3, gl.FLOAT, false, 12, 0)
+
+						// Textures
+						const texture = []
+						const shade = []
+						new Float32Array(shape.texVerts.flat(3))
+						for (let i = 0; i < shape.texVerts.length; i++) { // Direction index
+							for (let j = 0; j < shape.texVerts[i].length; j++) { // Face index for the direction
+								for (let k = 0; k < 8; k++) { // x,y pairs of the 4 corners
+									texture.push(shape.texVerts[i][j][k] + blockData[id].textures[i][k & 1])
+								}
+								shade.push(shadows[i], shadows[i], shadows[i], shadows[i])
+							}
+						}
+						const texBuffer = gl.createBuffer()
+						gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer)
+						gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texture), gl.STATIC_DRAW)
+						gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 8, 0)
+
+						// Shading
+						const shadeBuffer = gl.createBuffer()
+						gl.bindBuffer(gl.ARRAY_BUFFER, shadeBuffer)
+						gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shade), gl.STATIC_DRAW)
+						gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 4, 0)
+
+						if (shape === shapes.lantern || shape === shapes.flower) {
+							mat.transpose()
+							mat.scale(2)
+							mat.transpose()
+							gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+						}
+
+						// Index buffer and draw
+						gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+						gl.drawElements(gl.TRIANGLES, 6 * shade.length / 4, gl.UNSIGNED_INT, 0)
+
+						// Free GPU memory
+						gl.deleteBuffer(shadeBuffer)
+						gl.deleteBuffer(texBuffer)
+
+						if (shape === shapes.lantern || shape === shapes.flower) {
+							mat.transpose()
+							mat.scale(1/2)
+							mat.transpose()
+							gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+						}
+					}
 				}
 				drawn++
-				if (drawn === BLOCK_COUNT) break
+				if (drawn === BLOCK_COUNT) {
+					blocksPerPage = j + 3
+					break
+				}
 			}
 
-			// Page is full, now copy it onto the 2D canvas
+			// WebGL canvas is full, now copy it onto the 2D canvas
 			ctx.clearRect(0, 0, width, height)
 			ctx.drawImage(gl.canvas, 0, 0)
 
-			// Now load all the icons off the canvas.
+			// Now copy all the icons from the big 2D canvas to the little icon canvases
 			for (let j = 0; j < blocksPerPage; j += 3) {
 				for (let k = 0; k < 3; k++) {
 					let id = pageStart + j/3 | masks[k]
 
-					if (blockData[id]) {
+					if (blockData[id]?.iconImg) {
 						const x = (j + k) % limitX
 						const y = (j + k) / limitX | 0
-						const icon = document.createElement("canvas")
-						icon.width = s
-						icon.height = s
-						const c = icon.getContext("2d")
-						c.drawImage(ctx.canvas, x * s, y * s, s, s, 0, 0, s, s)
-						blockData[id].iconImg = icon
+						const c = blockData[id].iconImg.getContext("2d")
+						c.drawImage(ctx.canvas, x * 64, y * 64, 64, 64, 0, 0, 64, 64)
 					}
 				}
 			}
 		}
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
-
-		// Yeet the buffers
-		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
 	}
 
 	//Generate buffers for every block face and store them
@@ -6295,13 +6252,13 @@ async function MineKhan() {
 		}
 		transform() {
 			let diff = (performance.now() - this.lastUpdate) / 50
-			if (diff > 1) diff = 1
+			if (diff > 1 || isNaN(diff)) diff = 1
 			let x = (this.x - this.px) * diff + this.px
 			let y = (this.y - this.py) * diff + this.py
 			let z = (this.z - this.pz) * diff + this.pz
 			this.transformation.copyMatrix(defaultTransformation)
-			this.transformation.rotX(this.rx)
-			this.transformation.rotY(this.ry)
+			if (this.rx) this.transformation.rotX(this.rx)
+			if (this.ry) this.transformation.rotY(this.ry)
 			this.transformation.translate(-x, -y, -z)
 		}
 		getMatrix() {
@@ -6924,16 +6881,17 @@ async function MineKhan() {
 			let shape = t && data.shape
 			if (t && data.rotate) {
 				let pi = Math.PI / 4
-				if (p.ry > pi) { // If not north
-					if (p.ry < 3 * pi) {
-						t |= WEST
-					}
-					else if (p.ry < 5 * pi) {
-						t |= SOUTH
-					}
-					else if (p.ry < 7 * pi) {
-						t |= EAST
-					}
+				if (p.ry <= pi || p.ry >= 7 * pi) {
+					t |= WEST
+				}
+				else if (p.ry < 3 * pi) {
+					t |= SOUTH
+				}
+				else if (p.ry < 5 * pi) {
+					t |= EAST
+				}
+				else if (p.ry < 7 * pi) {
+					// t |= SOUTH
 				}
 			}
 
@@ -7672,6 +7630,7 @@ async function MineKhan() {
 			this.tickCount = 0
 			this.settings = settings
 			this.lastTick = performance.now()
+			this.rivers = true
 			// this.memory = memory
 			// this.freeMemory = []
 		}
@@ -8039,6 +7998,7 @@ async function MineKhan() {
 				lookingAt()
 				newWorldBlock()
 			}
+			animateTextures(gl)
 
 			initModelView(p)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -8191,18 +8151,21 @@ async function MineKhan() {
 			let bab = new BitArrayBuilder()
 			bab.add(this.name.length, 8)
 			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
+			version.split(" ")[1].split(".").map(n => bab.add(+n, 8))
+
 			bab.add(worldSeed, 32)
 			bab.add(this.tickCount, 32)
-			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
+			bab.add(round(p.x), 20).add(Math.min(round(p.y), 511), 9).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
-			for (let block of inventory.hotbar) bab.add(block, 16)
-			bab.add(inventory.hotbar.index - inventory.hotbar.start, 4)
 			bab.add(p.flying, 1).add(p.spectator, 1)
-			bab.add(superflat, 1).add(caves, 1).add(details, 1)
-			let ver = version.split(" ")[1].split(".").map(Number)
-			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
+			bab.add(superflat, 1).add(caves, 1).add(details, 1).add(this.rivers, 1)
 
-			bab.add(0, 32) // 32 bits for the number of sections to save; obsolete - just go to the end.
+			for (let i = 0; i < inventory.playerStorage.size; i++) {
+				const item = inventory.playerStorage.items[i]
+				bab.add(item?.id || 0, 16).add(item?.stackSize - 1 || 0, 6)
+			}
+			bab.add(inventory.hotbar.index - inventory.hotbar.start, 4)
+
 			for (let chunk of this.loaded) {
 				let chunkData = chunk.getSave()
 				if (chunkData) bab.append(chunkData)
@@ -8213,7 +8176,7 @@ async function MineKhan() {
 				const [x, z] = coords.split(",").map(n => n << 4)
 				const chunk = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves)
 
-				if (this.version < "Alpha 0.8.2" || this.loadFrom[coords].edits) {
+				if (this.version < "Alpha 0.8.1" || this.loadFrom[coords].edits) {
 					// Load the chunk and re-save it in the new version format
 					chunk.blocks.fill(-1)
 					chunk.originalBlocks = chunk.blocks.slice()
@@ -8249,38 +8212,76 @@ async function MineKhan() {
 				}
 			}
 
-			let reader = new BitArrayReader(data)
+			const reader = new BitArrayReader(data)
 
-			let nameLen = reader.read(8)
+			const nameLen = reader.read(8)
 			this.name = ""
 			for (let i = 0; i < nameLen; i++) this.name += String.fromCharCode(reader.read(8))
-			setSeed(reader.read(32))
-			this.tickCount = reader.read(32)
 
-			p.x = reader.read(20, true)
-			p.y = reader.read(8)
-			p.z = reader.read(20, true)
-			p.rx = reader.read(11, true) / 100
-			p.ry = reader.read(11, true) / 100
-			for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
-			inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
-			p.flying = reader.read(1)
-			p.spectator = reader.read(1)
-
-			superflat = reader.read(1)
-			caves = reader.read(1)
-			details = reader.read(1)
-			const version = reader.read(24)
-			this.version = "Alpha " + [version >> 16, version >> 8 & 0xff, version & 0xff].join(".")
+			// Check for old version; hopefully there's never a false-positive.
+			reader.bit += 287
+			let version = reader.read(24)
+			reader.bit -= 311
 
 			let paletteLen = 0
 			let palette = []
 			let paletteBits = 0
-			if (version < 0x000802) {
+
+			if (version === 0x800) {
+				// Alpha 0.8.0
+				this.rivers = false
+				setSeed(reader.read(32))
+				this.tickCount = reader.read(32)
+
+				p.x = reader.read(20, true)
+				p.y = reader.read(8)
+				p.z = reader.read(20, true)
+				p.rx = reader.read(11, true) / 100
+				p.ry = reader.read(11, true) / 100
+				for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
+				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
+				p.flying = reader.read(1)
+				p.spectator = reader.read(1)
+
+				superflat = reader.read(1)
+				caves = reader.read(1)
+				details = reader.read(1)
+
+				reader.bit += 24 // Version; we already have that.
+
 				paletteLen = reader.read(16)
 				paletteBits = BitArrayBuilder.bits(paletteLen)
 				for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+
+				reader.bit += 32 // Section count; no longer used since I realized I can just read to the end.
 			}
+			else {
+				// Current saves
+				version = reader.read(24)
+				setSeed(reader.read(32))
+				this.tickCount = reader.read(32)
+
+				p.x = reader.read(20, true)
+				p.y = reader.read(9)
+				p.z = reader.read(20, true)
+				p.rx = reader.read(11, true) / 100
+				p.ry = reader.read(11, true) / 100
+				p.flying = reader.read(1)
+				p.spectator = reader.read(1)
+				superflat = reader.read(1)
+				caves = reader.read(1)
+				details = reader.read(1)
+				this.rivers = reader.read(1)
+
+				for (let i = 0; i < 36; i++) {
+					let id = reader.read(16)
+					let stack = reader.read(6) + 1
+					inventory.playerStorage.setItem(id ? new InventoryItem(id, blockData[id].name, stack, blockData[id].iconImg) : null, i)
+				}
+				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
+			}
+
+			this.version = "Alpha " + [version >> 16, version >> 8 & 0xff, version & 0xff].join(".")
 
 			const getIndex = [
 				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
@@ -8291,7 +8292,8 @@ async function MineKhan() {
 				(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
 			]
 
-			reader.read(32)
+			if (reader.bit >= reader.data.length * 8 - 37) return // Empty save. We're done.
+
 			let chunks = {}
 			let previousChunk = null
 			while (reader.bit < reader.data.length * 8 - 37) {
@@ -8300,7 +8302,7 @@ async function MineKhan() {
 				let y = reader.read(5, false) * 8
 				let z = reader.read(16, true) * 8
 
-				if (version >= 0x000802) {
+				if (version > 0x800) {
 					paletteLen = reader.read(9)
 					paletteBits = BitArrayBuilder.bits(paletteLen)
 					palette = []
@@ -8320,7 +8322,7 @@ async function MineKhan() {
 				let chunk = chunks[ckey]
 				if (!chunk) {
 					if (previousChunk) previousChunk.endPos = startPos
-					if (version >= 0x000802) {
+					if (version >= 0x801) {
 						chunks[ckey] = chunk = {
 							reader,
 							startPos,
@@ -8356,19 +8358,9 @@ async function MineKhan() {
 			previousChunk.endPos = reader.bit
 
 			this.loadFrom = chunks
-			// this.loadKeys = Object.keys(chunks)
-
-			// for (let pos in chunks) {
-			// 	let [x, z] = pos.split(",")
-			// 	this.loadFrom.push({
-			// 		x: +x,
-			// 		y: 0,
-			// 		z: +z,
-			// 		blocks: chunks[pos]
-			// 	})
-			// }
 		}
 		loadOldSave(str) {
+			this.rivers = false
 			let data = str.split(";")
 
 			this.name = data.shift()
@@ -8697,6 +8689,12 @@ async function MineKhan() {
 			initMultiplayerMenu()
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
+		if (height <= 600) {
+			Button.add(width / 2, height / 2 + 145, 400, 40, "Full Screen", "main menu", () => {
+				const w = window.open(null)
+				w.document.write(document.children[0].outerHTML)
+			})
+		}
 
 		// Creation menu buttons
 		Button.add(width / 2, 135, 300, 40, ["World Type: Normal", "World Type: Superflat"], "creation menu", r => superflat = r === "World Type: Superflat")
@@ -8715,9 +8713,10 @@ async function MineKhan() {
 			return superflat
 		})
 		Button.add(width / 2, 285, 300, 40, ["Game Mode: Creative", "Game Mode: Survival"], "creation menu", r => survival = r === "Game Mode: Survival")
-		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
+		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Ender dragon blocks? Maybe? Hmmmmmmmmmm...")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			if (survival) {
+				alert("Lol no.")
 				// window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
 				return
 			}
@@ -8862,17 +8861,6 @@ async function MineKhan() {
 			world = null
 		})
 
-		// Options buttons
-		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
-		Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
-			if (settings.inventorySort === "name") {
-				settings.inventorySort = "blockid"
-			}
-			else if (settings.inventorySort === "blockid") {
-				settings.inventorySort = "name"
-			}
-		})
-
 		// Comingsoon menu buttons
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
 
@@ -8887,21 +8875,33 @@ async function MineKhan() {
 			}
 		}, () => !selectedWorld)
 
+		// Options buttons
+		const optionsBottom = height >= 550 ? 500 : height - 50
+		// Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
+		// 	if (settings.inventorySort === "name") {
+		// 		settings.inventorySort = "blockid"
+		// 	}
+		// 	else if (settings.inventorySort === "blockid") {
+		// 		settings.inventorySort = "name"
+		// 	}
+		// })
+
 		// Settings Sliders
-		Slider.add(width/2, 245, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
-		Slider.add(width/2, 305, width / 3, 40, "options", "FOV", 30, 110, "fov", val => {
+		Slider.add(width/2, optionsBottom - 60 * 4, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
+		Slider.add(width/2, optionsBottom - 60 * 3, width / 3, 40, "options", "FOV", 30, 110, "fov", val => {
 			p.FOV(val)
 			if (world) {
 				p.setDirection()
 				world.render()
 			}
 		})
-		Slider.add(width/2, 365, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
-		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
+		Slider.add(width/2, optionsBottom - 60 * 2, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
+		Slider.add(width/2, optionsBottom - 60, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
+		Button.add(width / 2, optionsBottom, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
 	}
 
 	function hotbar() {
-		if (p.spectator || screen !== "play") return
+		if (screen !== "play") return
 		// The selected block has changed. Update lantern brightness
 		{
 			let heldLight = blockData[holding].lightLevel / 15 || 0
@@ -9037,7 +9037,7 @@ async function MineKhan() {
 
 	function clickInv() {
 		inventory.heldItem = null
-		document.body.style.cursor = ""
+		document.getElementById("heldItem")?.classList.add("hidden")
 	}
 
 	let unpauseDelay = 0
@@ -9068,6 +9068,11 @@ async function MineKhan() {
 			Button.draw()
 			Slider.draw()
 			Slider.drag()
+		}
+		if (screen === "inventory") {
+			const heldItemCanvas = document.getElementById("heldItem")
+			heldItemCanvas.style.left = (event.x - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.top = (event.y - inventory.iconSize / 2 | 0) + "px"
 		}
 	}
 
@@ -9315,11 +9320,12 @@ async function MineKhan() {
 		height = win.innerHeight
 		canvas.height = height
 		canvas.width = width
+		if (!gl) return
 		gl.canvas.height = height
 		gl.canvas.width = width
 		gl.viewport(0, 0, width, height)
 		initButtons()
-		initBackgrounds()
+		initDirt()
 		inventory.size = min(width, height) / 15 | 0
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
@@ -9399,9 +9405,12 @@ async function MineKhan() {
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.enableVertexAttribArray(glCache.aVertex2)
+		gl.enableVertexAttribArray(glCache.aTexture2)
+		gl.enableVertexAttribArray(glCache.aShadow2)
 		gl.useProgram(program2D)
-		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset
-		// gl.depthFunc(gl.ALWAYS)
+		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset from rendering icons
+		gl.depthFunc(gl.ALWAYS)
 	}
 	function use3d() {
 		gl.useProgram(program3D)
@@ -9410,11 +9419,40 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
+		gl.activeTexture(gl.TEXTURE0)
 		// gl.depthFunc(gl.LESS)
 	}
 
+	const dirt = () => {
+		ctx.clearRect(0, 0, width, height) // Don't draw over the beautful dirt
+
+		use2d()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		gl.uniform1i(glCache.uSampler2, 1) // Dirt texture
+		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
+		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
+		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+	}
+	function initDirt() {
+		// Dirt background
+		let aspect = width / height
+		let stack = height / 96
+		let bright = 0.4
+		if (!dirtBuffer) dirtBuffer = gl.createBuffer()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		let bgCoords = new Float32Array([
+			-1, -1, 0, stack, bright,
+			1, -1, stack * aspect, stack, bright,
+			1, 1, stack * aspect, 0, bright,
+			-1, 1, 0, 0, bright
+		])
+		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
+		dirt()
+	}
+
 	function startLoad() {
-		ctx.putImageData(dirtbg, 0, 0)
+		dirt()
 		world.loadChunks()
 	}
 	function initWebgl() {
@@ -9422,7 +9460,7 @@ async function MineKhan() {
 			let canv = document.getElementById("webgl-canvas")
 			canv.width = ctx.canvas.width
 			canv.height = ctx.canvas.height
-			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
+			win.gl = gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
 			if (!gl) {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
 				throw "Error: Cannot play a WebGL game without WebGL."
@@ -9438,69 +9476,62 @@ async function MineKhan() {
 			gl.enable(gl.DEPTH_TEST)
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-			win.gl = gl
 
-			// const availableExtensions = gl.getSupportedExtensions()
-			// for (let i = 0; i < availableExtensions.length; i++) {
-			// 	const extensionName = availableExtensions[i]
-			// 	glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
-			// }
+			win.glCache = glCache = {}
+			program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
+			program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
+			program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
+			programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
+			skybox = getSkybox(gl, glCache, program3D, program3DFogless)
+
+			gl.useProgram(program2D)
+			glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
+			glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
+			glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
+			glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
+			glCache.aShadow2 = gl.getAttribLocation(program2D, "aShadow")
+
+			gl.useProgram(programEntity)
+			glCache.uSamplerEntity = gl.getUniformLocation(programEntity, "uSampler")
+			glCache.uLightLevelEntity = gl.getUniformLocation(programEntity, "uLightLevel")
+			glCache.uViewEntity = gl.getUniformLocation(programEntity, "uView")
+			glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
+			glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
+
+			gl.useProgram(program3DFogless)
+			glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
+			glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
+			glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
+			glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
+			glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
+			glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
+
+			gl.useProgram(program3D)
+			glCache.uView = gl.getUniformLocation(program3D, "uView")
+			glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
+			glCache.uPos = gl.getUniformLocation(program3D, "uPos")
+			glCache.uDist = gl.getUniformLocation(program3D, "uDist")
+			glCache.uTime = gl.getUniformLocation(program3D, "uTime")
+			glCache.uSky = gl.getUniformLocation(program3D, "uSky")
+			glCache.uSun = gl.getUniformLocation(program3D, "uSun")
+			glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
+			glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
+			glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
+			glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
+			glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
+			glCache.aTexture = gl.getAttribLocation(program3D, "aTexture")
+			glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
+
+			win.glPrograms = { program2D, program3D, program3DFogless, programEntity, skybox }
 		}
 		else {
-			gl = win.gl
-			glExtensions = win.glExtensions
-		}
-
-		if (!document.body.contains(gl.canvas)) {
-			document.body.append(gl.canvas)
+			({ gl, glCache, glExtensions } = win.gl);
+			({ program2D, program3D, program3DFogless, programEntity, skybox } = win.glPrograms)
+			document.getElementById("webgl-canvas").remove() // There can be 1
+			document.body.prepend(gl.canvas)
 		}
 
 		modelView = new Float32Array(16)
-		glCache = {}
-		win.glCache = glCache
-		program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
-		program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
-		program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
-		programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
-		skybox = getSkybox(gl, glCache, program3D, program3DFogless)
-
-		gl.useProgram(program2D)
-		glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
-		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
-		glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
-		glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
-		glCache.aShadow2 = gl.getAttribLocation(program2D, "aShadow")
-
-		gl.useProgram(programEntity)
-		glCache.uSamplerEntity = gl.getUniformLocation(programEntity, "uSampler")
-		glCache.uLightLevelEntity = gl.getUniformLocation(programEntity, "uLightLevel")
-		glCache.uViewEntity = gl.getUniformLocation(programEntity, "uView")
-		glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
-		glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
-
-		gl.useProgram(program3DFogless)
-		glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
-		glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
-		glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
-		glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
-		glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
-		glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
-
-		gl.useProgram(program3D)
-		glCache.uView = gl.getUniformLocation(program3D, "uView")
-		glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
-		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
-		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
-		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
-		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
-		glCache.uSun = gl.getUniformLocation(program3D, "uSun")
-		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
-		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
-		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
-		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
-		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
-		glCache.aTexture = gl.getAttribLocation(program3D, "aTexture")
-		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 		gl.uniform1f(glCache.uDist, 1000)
 		gl.uniform1i(glCache.uTrans, 0)
@@ -9539,44 +9570,12 @@ async function MineKhan() {
 		gl.polygonOffset(1, 1)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
-	function initBackgrounds() {
-		// Dirt background
-		use3d()
-		use2d()
-		let aspect = width / height
-		let stack = height / 96
-		let bright = 0.4
-		if (dirtBuffer) {
-			gl.deleteBuffer(dirtBuffer)
-		}
-		dirtBuffer = gl.createBuffer()
-		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
-		let bgCoords = new Float32Array([
-			-1, -1, 0, stack, bright,
-			1, -1, stack * aspect, stack, bright,
-			1, 1, stack * aspect, 0, bright,
-			-1, 1, 0, 0, bright
-		])
-		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
-		gl.uniform1i(glCache.uSampler2, 1)
-		gl.clearColor(0, 0, 0, 1)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
-		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
-		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-		// pixels = new Uint8Array(width * height * 4)
-		// gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		// dirtbg = ctx.createImageData(width, height)
-		// dirtbg.data.set(pixels)
-		ctx.drawImage(gl.canvas, 0, 0)
-		dirtbg = ctx.getImageData(0, 0, width, height)
-	}
+
 	function initPlayer() {
 		p = new Camera()
 		p.speed = 0.11
 		p.velocity = new PVector(0, 0, 0)
-		p.pos = new Float32Array(3)
+		// p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
 		p.flySpeed = 3.75
 		p.x = 8
@@ -9785,14 +9784,15 @@ async function MineKhan() {
 		initPlayer()
 		initWebgl()
 
-		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 183240)) {
+		if (win.location.origin === "https://www.kasandbox.org" && (loadString || document.children[0].innerHTML.length !== 314419)) {
 			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
 			// If you're making significant changes and want to remove this, then you can.
 			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("")
 		}
 
-		initBackgrounds()
+		genIcons() // Generate all the block icons
+		initDirt()
 
 		drawScreens[screen]()
 		Button.draw()
@@ -9801,9 +9801,6 @@ async function MineKhan() {
 		p.FOV(settings.fov)
 		initWorldsMenu()
 		initButtons()
-
-		// Generate all the block icons
-		genIcons()
 
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
@@ -9828,6 +9825,7 @@ async function MineKhan() {
 			strokeWeight(1)
 			ctx.textAlign = 'center'
 
+			const scale = Math.min(width / 600, 1.5)
 			for (let i = 0; i < 15; i++) {
 				if (i < 12) {
 					fill(i * 10)
@@ -9836,25 +9834,14 @@ async function MineKhan() {
 					fill(125)
 				}
 
-				if (i < 10) {
-					ctx.font = "bold 12" + i.toString() + "px " + font
-				}
-				else if (i > 9) {
-					ctx.font = "bold 1" + (20 + i).toString() + "px " + font
-				}
+				ctx.font = `bold ${80 * scale + i}px ${font}`
 				text(title, width / 2, 158 - i)
 
-				if (i < 8) {
-					ctx.font = "bold 3" + (2 + i / 4).toString() + "px " + font
-				}
-				else if (i > 7) {
-					ctx.font = "bold " + (32 + i / 4).toString() + "px " + font
-				}
-				text(subtext, width / 2, 190 - i / 2)
+				ctx.font = `bold ${32 * scale + i/4}px ${font}`
+				text(subtext, width / 2, 140 + 60 * scale - i / 2)
 			}
 		}
 		const clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height)
-		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
 
 		drawScreens["main menu"] = () => {
 			ctx.clearRect(0, 0, width, height)
@@ -9906,21 +9893,20 @@ async function MineKhan() {
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
-			// ctx.drawImage(gl.canvas, 0, 0)
 		}
 
 		drawScreens.options = () => {
-			dirt()
+			clear()
 		}
 		drawScreens["creation menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
 			text("Create New World", width / 2, 20)
 		}
 		drawScreens["loadsave menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
@@ -9928,7 +9914,7 @@ async function MineKhan() {
 		}
 		drawScreens.editworld = dirt
 		drawScreens["multiplayer menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
@@ -9963,12 +9949,10 @@ async function MineKhan() {
 		let frameFPS = Math.round(10000/(time - prevTime)) / 10
 		prevTime = time
 
+		if (!gl && window.innerWidth && window.innerHeight) initEverything()
+
 		now = Date.now()
 		let frameStart = performance.now()
-		if (!gl) {
-			initEverything()
-			releasePointer()
-		}
 
 		if (screen === "play" || screen === "loading") {
 			try {

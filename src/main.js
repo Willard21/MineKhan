@@ -10,19 +10,19 @@ import fragmentShaderSrc2D from './shaders/2dFrag.glsl'
 import vertexShaderSrcEntity from './shaders/entityVert.glsl'
 import fragmentShaderSrcEntity from './shaders/entityFrag.glsl'
 
-// Import Worker code
+// Import WebWorker code
 import workerCode from './workers/Caves.js'
 
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross } from "./js/3Dutils.js"
 import { timeString, roundBits, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
-import { blockData, BLOCK_COUNT, blockIds } from "./js/blockData.js"
+import { blockData, BLOCK_COUNT, blockIds, BlockData } from "./js/blockData.js"
 import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } from "./js/shapes.js"
-import { inventory } from './js/inventory.js'
+import { InventoryItem, inventory } from './js/inventory.js'
 import { createProgramObject } from "./js/glUtils.js"
-import { initTextures, textureMap, textureCoords } from './js/texture.js'
+import { initTextures, textureMap, textureCoords, animateTextures } from './js/texture.js'
 import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
 // import { Item } from './js/item.js'
@@ -82,8 +82,21 @@ async function MineKhan() {
 
 	let yieldThread
 	{
-		// I'm throwing stuff in the window scope since I can't be bothered to figure out how all this fancy import export stuff works
-		const workerURL = win.URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+		// await yieldThread() will pause the current task until the event loop is cleared
+		const channel = new MessageChannel()
+		let res
+		channel.port1.onmessage = () => res()
+		yieldThread = () => {
+			return new Promise(resolve => {
+				res = resolve
+				channel.port2.postMessage("")
+			})
+		}
+	}
+
+	// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
+	if (!win.workers) {
+		const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
 		win.workers = []
 		const jobQueue = []
 		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
@@ -109,17 +122,6 @@ async function MineKhan() {
 				worker.postMessage(data)
 			}
 			else jobQueue.push([data, resolve])
-		}
-
-		// await window.yieldThread() will pause the current task until the event loop is cleared
-		const channel = new MessageChannel()
-		let res
-		channel.port1.onmessage = () => res()
-		yieldThread = () => {
-			return new Promise(resolve => {
-				res = resolve
-				channel.port2.postMessage("")
-			})
 		}
 	}
 
@@ -197,8 +199,7 @@ async function MineKhan() {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.2"
-	// const versionNumber = 0x000802
+	let version = "Alpha 0.8.1"
 	let superflat = false
 	let details = true
 	let caves = true
@@ -213,7 +214,7 @@ async function MineKhan() {
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
 		reach: 5,
 		showDebug: 3,
-		inventorySort: "blockid"
+		// inventorySort: "blockid"
 	}
 	let generatedChunks
 	let mouseX, mouseY, mouseDown
@@ -225,9 +226,13 @@ async function MineKhan() {
 	let maxHeight = 255
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
+	let background = "url(./background.webp)"
+	if (location.origin === "https://www.kasandbox.org") background = "url(https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png)"
+	else if (!location.origin.includes("localhost") && location.origin !== "file://") background = "url(https://willard.fun/minekhan/background.webp)"
+	canvas.style.backgroundImage = background
+
 	let dirtBuffer
 	let texCoordsBuffers
-	let dirtbg // Background images
 	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
 
@@ -254,8 +259,13 @@ async function MineKhan() {
 			exit: [win.savebox, win.saveDirections, win.message]
 		},
 		"main menu": {
-			onenter: () => document.getElementById("overlay").classList.add("background"),
-			onexit: () => document.getElementById("overlay").classList.remove("background")
+			onenter: () => {
+				canvas.style.backgroundImage = background
+			},
+			onexit: () => {
+				canvas.style.backgroundImage = ""
+				dirt()
+			}
 		},
 		"loadsave menu": {
 			enter: [win.worlds, win.boxCenterTop, quota],
@@ -431,9 +441,7 @@ async function MineKhan() {
 		textSize(20)
 		canvas.focus()
 		changeScene("play")
-
 		ctx.clearRect(0, 0, width, height)
-
 		crosshair()
 		hud(true)
 		inventory.hotbar.render()
@@ -475,66 +483,67 @@ async function MineKhan() {
 			obj.buffer = gl.createBuffer()
 			gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.verts.flat(2)), gl.STATIC_DRAW)
-			for (let i in obj.varients) {
-				let v = obj.varients[i]
+			for (let i in obj.variants) {
+				let v = obj.variants[i]
 				v.buffer = gl.createBuffer()
 				gl.bindBuffer(gl.ARRAY_BUFFER, v.buffer)
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.verts.flat(2)), gl.STATIC_DRAW)
 			}
 		}
 
-		// Create blockData for each of the block varients
-		for (let i = 0; i < BLOCK_COUNT; i++) {
-			let baseBlock = blockData[i]
-			if (baseBlock.shape) continue // If it's already been hard-coded, don't create slab or stair versions.
-			baseBlock.shape = shapes.cube
+		// Create blockData for each of the block variants
+		for (let id = 1; id < BLOCK_COUNT; id++) {
+			let baseBlock = blockData[id]
+			if (baseBlock.shape === shapes.door) baseBlock.rotate = true
 
-			let slabBlock = Object.assign({}, baseBlock)
-			slabBlock.transparent = true
-			slabBlock.name += " Slab"
-			slabBlock.shape = shapes.slab
-			slabBlock.flip = true
-			blockData[i | SLAB] = slabBlock
-
-			let stairBlock = Object.assign({}, baseBlock)
-			stairBlock.transparent = true
-			stairBlock.name += " Stairs"
-			stairBlock.shape = shapes.stair
-			stairBlock.rotate = true
-			stairBlock.flip = true
-			blockData[i | STAIR] = stairBlock
-
-			let v = slabBlock.shape.varients
-			for (let j = 0; j < v.length; j++) {
-				if (v[j]) {
-					let block = Object.assign({}, slabBlock)
-					block.shape = v[j]
-					delete block.icon
-					blockData[i | SLAB | j << 10] = block
-
+			if (!baseBlock.uniqueShape) {
+				const slabBlock = new BlockData(baseBlock, id | SLAB, true)
+				slabBlock.transparent = true
+				slabBlock.name += " Slab"
+				slabBlock.shape = shapes.slab
+				slabBlock.flip = true
+				blockData[id | SLAB] = slabBlock
+				let v = slabBlock.shape.variants
+				for (let j = 1; j < v.length; j++) {
+					if (v[j]) {
+						let block = new BlockData(slabBlock, id | SLAB | j << 10, false)
+						block.shape = v[j]
+						blockData[id | SLAB | j << 10] = block
+					}
 				}
-			}
-			v = stairBlock.shape.varients
-			for (let j = 0; j < v.length; j++) {
-				if (v[j]) {
-					let block = Object.assign({}, stairBlock)
-					block.shape = v[j]
-					delete block.icon
-					blockData[i | STAIR | j << 10] = block
+
+				const stairBlock = new BlockData(baseBlock, id | STAIR, true)
+				stairBlock.transparent = true
+				stairBlock.name += " Stairs"
+				stairBlock.shape = shapes.stair
+				stairBlock.rotate = true
+				stairBlock.flip = true
+				blockData[id | STAIR] = stairBlock
+				v = stairBlock.shape.variants
+				for (let j = 1; j < v.length; j++) {
+					if (v[j]) {
+						let block = new BlockData(stairBlock, id | STAIR | j << 10, false)
+						block.shape = v[j]
+						blockData[id | STAIR | j << 10] = block
+					}
 				}
 			}
 
 			// Cubes; blocks like pumpkins and furnaces.
 			if (baseBlock.rotate) {
-				v = baseBlock.shape.varients
+				const [ny, py, pz, nz, px, nx] = baseBlock.textures
+				const orders = [
+					[ny, py, nz, pz, nx, px], // Opposite
+					[ny, py, nx, px, pz, nz],
+					[ny, py, px, nx, nz, pz],
+				]
+				const v = baseBlock.shape.variants
 				for (let j = 2; j < v.length; j += 2) {
 					if (v[j]) {
-						let block = Object.assign({}, baseBlock)
+						let block = new BlockData(baseBlock, id | j << 10, false)
 						block.shape = v[j]
-						block.textures = blockData[i | j - 2 << 10].textures.slice() // Copy the previous block in the rotation
-						block.textures.push(...block.textures.splice(2, 1))
-						delete block.icon
-						blockData[i | j << 10] = block
+						block.textures = orders[j / 2 - 1]
+						blockData[id | j << 10] = block
 					}
 				}
 			}
@@ -550,208 +559,127 @@ async function MineKhan() {
 		indexOrder[i + 5] = 3 + j
 	}
 
-	let hexagonVerts
-	let slabIconVerts
-	let stairIconVerts
-
-	{
-		let s = Math.sqrt(3) / 2
-		let q = s / 2
-
-		hexagonVerts = new Float32Array([
-			0, 1, s, 0.5, 0, 0, -s, 0.5,
-			-s, 0.5, 0, 0, 0, -1, -s, -0.5,
-			0, 0, s, 0.5, s, -0.5, 0, -1,
-		])
-
-		slabIconVerts = new Float32Array([
-			0,  0.5, s,  0,   0, -0.5, -s,  0,
-			-s, 0,   0, -0.5, 0, -1,   -s, -0.5,
-			0, -0.5, s,  0,   s, -0.5,  0, -1,
-		])
-
-		stairIconVerts = [
-			-s,0.5,0,0,1,         0,1,1,0,1,         q,0.75,1,0.5,1,    -q,0.25,0,0.5,1,    // top of the top step
-			-q,-0.25,0,0,1,       q,0.25,1,0,1,      s,0,1,0.5,1,        0,-0.5,0,0.5,1,    // top of the bottom step
-			-q,0.25,0,0,0.6,      q,0.75,1,0,0.6,    q,0.25,1,0.5,0.6,  -q,-0.25,0,0.5,0.6, // front of the top step
-			0,-0.5,0,0,0.6,       s,0,1,0,0.6,       s,-0.5,1,0.5,0.6,   0,-1,0,0.5,0.6,    // front of the bottom step
-			-s,0.5,0,0,0.8,      -q,0.25,0.5,0,0.8, -q,-0.75,0.5,1,0.8, -s,-0.5,0,1,0.8,    // side of the top step
-			-q,-0.25,0.5,0.5,0.8, 0,-0.5,1,0.5,0.8,  0,-1,1,1,0.8,      -q,-0.75,0.5,1,0.8, // side of the bottom step
-		]
-	}
-
-	function renderIcon(x, y, id, blockIcons, iconLengths) {
-		x = x * 2 / width - 1
-		y = y * 2 / height - 1
-		gl.uniform2f(glCache.uOffset, x, y)
-
-		let buffer = blockIcons[id]
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-
-		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
-		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
-		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLES, 0, iconLengths[id])
-	}
 	function genIcons() {
-		const iconSize = 64 // We'll scale up or down while drawing them.
+		let start = Date.now()
 
-		let blockIcons = [null]
-		let iconLengths = [0]
-		let texOrder = [1, 2, 3]
-		let shadows = [1, 0.4, 0.7]
-		let scaleY = (iconSize - 5) / height
-		let scaleX = (iconSize - 5) / width
-		for (let i = 1; i < BLOCK_COUNT; i++) {
-			let data = []
-			let block = blockData[i]
+		let shadows = [1, 1, 0.4, 0.4, 0.7, 0.7]
 
-			// Square icon
-			if (block.icon) {
-				let tex = textureCoords[textureMap[block.icon]]
-				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
-				data.push(scaleX * 0.9, scaleY * 0.9, tex[2], tex[3], 1) // 2
-				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
-
-				data.push(-scaleX * 0.9, scaleY * 0.9, tex[0], tex[1], 1) // 1
-				data.push(-scaleX * 0.9, -scaleY * 0.9, tex[6], tex[7], 1) // 4
-				data.push(scaleX * 0.9, -scaleY * 0.9, tex[4], tex[5], 1) // 3
-
-				let buffer = gl.createBuffer()
-				gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-				blockIcons[i] = buffer
-				iconLengths[i] = 6
-				blockIcons[i | SLAB] = buffer
-				iconLengths[i | SLAB] = 6
-				blockIcons[i | STAIR] = buffer
-				iconLengths[i | STAIR] = 6
-				continue
-			}
-
-			// Cube icon
-			for (let j = 0; j <= 11; j++) {
-				data.push(-hexagonVerts[j * 2 + 0] * scaleX)
-				data.push(hexagonVerts[j * 2 + 1] * scaleY)
-				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 0) % 8])
-				data.push(block.textures[texOrder[floor(j / 4)]][(j * 2 + 1) % 8])
-				data.push(shadows[floor(j / 4)])
-
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			let buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i] = buffer
-			iconLengths[i] = 6 * 3
-
-			// Slab icon
-			data = []
-			for (let j = 0; j <= 11; j++) {
-				let tex = block.textures[texOrder[floor(j / 4)]]
-
-				data.push(-slabIconVerts[j * 2 + 0] * scaleX)
-				data.push(slabIconVerts[j * 2 + 1] * scaleY)
-				data.push(tex[(j * 2 + 0) % 8])
-				data.push(tex[(j * 2 + 1) % 8])
-				data.push(shadows[floor(j / 4)])
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | SLAB] = buffer
-			iconLengths[i | SLAB] = 6 * 3
-
-			// Stair icon
-			data = []
-			let v = stairIconVerts
-			for (let j = 0; j <= 23; j++) {
-				let num = floor(j / 8)
-				let tex = block.textures[texOrder[num]]
-				let tx = tex[0]
-				let ty = tex[1]
-				data.push(-v[j * 5 + 0] * scaleX)
-				data.push(v[j * 5 + 1] * scaleY)
-				// data.push(0.1666666)
-				data.push(tx + v[j * 5 + 2] / 16)
-				data.push(ty + v[j * 5 + 3] / 16)
-				data.push(shadows[num])
-				if (j % 4 === 2) data.push(...data.slice(-5))
-				if (j % 4 === 3) data.push(...data.slice(-25, -20))
-			}
-			buffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-			blockIcons[i | STAIR] = buffer
-			iconLengths[i | STAIR] = 6 * 6
-		}
-
-		// You know... I totally could've just used 4 vertex/shadow buffers, then swapped the texture buffers... Oh well.
-		// Now we draw them all on the canvas at once.
-		gl.useProgram(program2D)
+		use2d()
 		gl.uniform1i(glCache.uSampler2, 0)
-		gl.disableVertexAttribArray(3)
-		gl.disableVertexAttribArray(4)
-		gl.enableVertexAttribArray(0)
-		gl.enableVertexAttribArray(1)
-		gl.enableVertexAttribArray(2)
 
-		const s = iconSize | 0
-		const limitX = gl.canvas.width / s | 0
-		const limitY = gl.canvas.height / s | 0
+		const limitX = gl.canvas.width >> 6
+		const limitY = gl.canvas.height >> 6
 		const limit = limitX * limitY
 		const total = (BLOCK_COUNT - 1) * 3
 		const pages = Math.ceil(total / limit)
-		const blocksPerPage = (limit / 3 | 0) * 3
 
 		let masks = [CUBE, SLAB, STAIR]
 		let drawn = 1 // 0 = air
 
-		let start = Date.now()
+		const mat = new Matrix()
+		mat.identity()
+		mat.scale(70 / width, 70 / height, 1)
+		mat.rotX(Math.PI / 4)
+		mat.rotY(Math.PI / 4)
+
+		mat.transpose()
+		gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+
+		// Draw as many icons as possible on a canvas the size of the screen, then clear it and continue
 		for (let i = 0; i < pages; i++) {
+
+			// Draw icons to the WebGL canvas
+			let blocksPerPage = (limit / 3 | 0) * 3
 			gl.clearColor(0, 0, 0, 0)
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			let pageStart = drawn
 			for (let j = 0; j < blocksPerPage; j += 3) {
 				for (let k = 0; k < 3; k++) {
-					let x = (j + k) % limitX
-					let y = (j + k) / limitX | 0
-					renderIcon(x * s + s/2, height - y * s - s/2, drawn | masks[k], blockIcons, iconLengths)
+					const id = drawn | masks[k]
+					if (blockData[id]?.iconImg) {
+						const x = ((j + k) % limitX * 128 + 64) / width - 1
+						const y = 1 - (((j + k) / limitX | 0) * 128 + 64) / height
+
+						gl.uniform2f(glCache.uOffset, x, y)
+
+						const shape = blockData[id].shape === shapes.fence ? shapes.fence.variants[3] : blockData[id].shape
+						// if (blockData[id].shape === shapes.fence) {
+						// Coordinates
+						gl.bindBuffer(gl.ARRAY_BUFFER, shape.buffer)
+						gl.vertexAttribPointer(glCache.aVertex2, 3, gl.FLOAT, false, 12, 0)
+
+						// Textures
+						const texture = []
+						const shade = []
+						new Float32Array(shape.texVerts.flat(3))
+						for (let i = 0; i < shape.texVerts.length; i++) { // Direction index
+							for (let j = 0; j < shape.texVerts[i].length; j++) { // Face index for the direction
+								for (let k = 0; k < 8; k++) { // x,y pairs of the 4 corners
+									texture.push(shape.texVerts[i][j][k] + blockData[id].textures[i][k & 1])
+								}
+								shade.push(shadows[i], shadows[i], shadows[i], shadows[i])
+							}
+						}
+						const texBuffer = gl.createBuffer()
+						gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer)
+						gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texture), gl.STATIC_DRAW)
+						gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 8, 0)
+
+						// Shading
+						const shadeBuffer = gl.createBuffer()
+						gl.bindBuffer(gl.ARRAY_BUFFER, shadeBuffer)
+						gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shade), gl.STATIC_DRAW)
+						gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 4, 0)
+
+						if (shape === shapes.lantern || shape === shapes.flower) {
+							mat.transpose()
+							mat.scale(2)
+							mat.transpose()
+							gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+						}
+
+						// Index buffer and draw
+						gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+						gl.drawElements(gl.TRIANGLES, 6 * shade.length / 4, gl.UNSIGNED_INT, 0)
+
+						// Free GPU memory
+						gl.deleteBuffer(shadeBuffer)
+						gl.deleteBuffer(texBuffer)
+
+						if (shape === shapes.lantern || shape === shapes.flower) {
+							mat.transpose()
+							mat.scale(1/2)
+							mat.transpose()
+							gl.uniformMatrix4fv(gl.getUniformLocation(program2D, "uView"), false, mat.elements)
+						}
+					}
 				}
 				drawn++
-				if (drawn === BLOCK_COUNT) break
+				if (drawn === BLOCK_COUNT) {
+					blocksPerPage = j + 3
+					break
+				}
 			}
 
-			// Page is full, now copy it onto the 2D canvas
+			// WebGL canvas is full, now copy it onto the 2D canvas
 			ctx.clearRect(0, 0, width, height)
 			ctx.drawImage(gl.canvas, 0, 0)
 
-			// Now load all the icons off the canvas.
+			// Now copy all the icons from the big 2D canvas to the little icon canvases
 			for (let j = 0; j < blocksPerPage; j += 3) {
 				for (let k = 0; k < 3; k++) {
 					let id = pageStart + j/3 | masks[k]
 
-					if (blockData[id]) {
+					if (blockData[id]?.iconImg) {
 						const x = (j + k) % limitX
 						const y = (j + k) / limitX | 0
-						const icon = document.createElement("canvas")
-						icon.width = s
-						icon.height = s
-						const c = icon.getContext("2d")
-						c.drawImage(ctx.canvas, x * s, y * s, s, s, 0, 0, s, s)
-						blockData[id].iconImg = icon
+						const c = blockData[id].iconImg.getContext("2d")
+						c.drawImage(ctx.canvas, x * 64, y * 64, 64, 64, 0, 0, 64, 64)
 					}
 				}
 			}
 		}
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
-
-		// Yeet the buffers
-		for (let i in blockIcons) if (blockIcons[i]) gl.deleteBuffer(blockIcons[i])
 	}
 
 	//Generate buffers for every block face and store them
@@ -823,13 +751,13 @@ async function MineKhan() {
 		}
 		transform() {
 			let diff = (performance.now() - this.lastUpdate) / 50
-			if (diff > 1) diff = 1
+			if (diff > 1 || isNaN(diff)) diff = 1
 			let x = (this.x - this.px) * diff + this.px
 			let y = (this.y - this.py) * diff + this.py
 			let z = (this.z - this.pz) * diff + this.pz
 			this.transformation.copyMatrix(defaultTransformation)
-			this.transformation.rotX(this.rx)
-			this.transformation.rotY(this.ry)
+			if (this.rx) this.transformation.rotX(this.rx)
+			if (this.ry) this.transformation.rotY(this.ry)
 			this.transformation.translate(-x, -y, -z)
 		}
 		getMatrix() {
@@ -1452,16 +1380,17 @@ async function MineKhan() {
 			let shape = t && data.shape
 			if (t && data.rotate) {
 				let pi = Math.PI / 4
-				if (p.ry > pi) { // If not north
-					if (p.ry < 3 * pi) {
-						t |= WEST
-					}
-					else if (p.ry < 5 * pi) {
-						t |= SOUTH
-					}
-					else if (p.ry < 7 * pi) {
-						t |= EAST
-					}
+				if (p.ry <= pi || p.ry >= 7 * pi) {
+					t |= WEST
+				}
+				else if (p.ry < 3 * pi) {
+					t |= SOUTH
+				}
+				else if (p.ry < 5 * pi) {
+					t |= EAST
+				}
+				else if (p.ry < 7 * pi) {
+					// t |= SOUTH
 				}
 			}
 
@@ -2200,6 +2129,7 @@ async function MineKhan() {
 			this.tickCount = 0
 			this.settings = settings
 			this.lastTick = performance.now()
+			this.rivers = true
 			// this.memory = memory
 			// this.freeMemory = []
 		}
@@ -2567,6 +2497,7 @@ async function MineKhan() {
 				lookingAt()
 				newWorldBlock()
 			}
+			animateTextures(gl)
 
 			initModelView(p)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
@@ -2719,18 +2650,21 @@ async function MineKhan() {
 			let bab = new BitArrayBuilder()
 			bab.add(this.name.length, 8)
 			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
+			version.split(" ")[1].split(".").map(n => bab.add(+n, 8))
+
 			bab.add(worldSeed, 32)
 			bab.add(this.tickCount, 32)
-			bab.add(round(p.x), 20).add(Math.min(round(p.y), 255), 8).add(round(p.z), 20)
+			bab.add(round(p.x), 20).add(Math.min(round(p.y), 511), 9).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
-			for (let block of inventory.hotbar) bab.add(block, 16)
-			bab.add(inventory.hotbar.index - inventory.hotbar.start, 4)
 			bab.add(p.flying, 1).add(p.spectator, 1)
-			bab.add(superflat, 1).add(caves, 1).add(details, 1)
-			let ver = version.split(" ")[1].split(".").map(Number)
-			bab.add(ver[0], 8).add(ver[1], 8).add(ver[2], 8)
+			bab.add(superflat, 1).add(caves, 1).add(details, 1).add(this.rivers, 1)
 
-			bab.add(0, 32) // 32 bits for the number of sections to save; obsolete - just go to the end.
+			for (let i = 0; i < inventory.playerStorage.size; i++) {
+				const item = inventory.playerStorage.items[i]
+				bab.add(item?.id || 0, 16).add(item?.stackSize - 1 || 0, 6)
+			}
+			bab.add(inventory.hotbar.index - inventory.hotbar.start, 4)
+
 			for (let chunk of this.loaded) {
 				let chunkData = chunk.getSave()
 				if (chunkData) bab.append(chunkData)
@@ -2741,7 +2675,7 @@ async function MineKhan() {
 				const [x, z] = coords.split(",").map(n => n << 4)
 				const chunk = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves)
 
-				if (this.version < "Alpha 0.8.2" || this.loadFrom[coords].edits) {
+				if (this.version < "Alpha 0.8.1" || this.loadFrom[coords].edits) {
 					// Load the chunk and re-save it in the new version format
 					chunk.blocks.fill(-1)
 					chunk.originalBlocks = chunk.blocks.slice()
@@ -2777,38 +2711,76 @@ async function MineKhan() {
 				}
 			}
 
-			let reader = new BitArrayReader(data)
+			const reader = new BitArrayReader(data)
 
-			let nameLen = reader.read(8)
+			const nameLen = reader.read(8)
 			this.name = ""
 			for (let i = 0; i < nameLen; i++) this.name += String.fromCharCode(reader.read(8))
-			setSeed(reader.read(32))
-			this.tickCount = reader.read(32)
 
-			p.x = reader.read(20, true)
-			p.y = reader.read(8)
-			p.z = reader.read(20, true)
-			p.rx = reader.read(11, true) / 100
-			p.ry = reader.read(11, true) / 100
-			for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
-			inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
-			p.flying = reader.read(1)
-			p.spectator = reader.read(1)
-
-			superflat = reader.read(1)
-			caves = reader.read(1)
-			details = reader.read(1)
-			const version = reader.read(24)
-			this.version = "Alpha " + [version >> 16, version >> 8 & 0xff, version & 0xff].join(".")
+			// Check for old version; hopefully there's never a false-positive.
+			reader.bit += 287
+			let version = reader.read(24)
+			reader.bit -= 311
 
 			let paletteLen = 0
 			let palette = []
 			let paletteBits = 0
-			if (version < 0x000802) {
+
+			if (version === 0x800) {
+				// Alpha 0.8.0
+				this.rivers = false
+				setSeed(reader.read(32))
+				this.tickCount = reader.read(32)
+
+				p.x = reader.read(20, true)
+				p.y = reader.read(8)
+				p.z = reader.read(20, true)
+				p.rx = reader.read(11, true) / 100
+				p.ry = reader.read(11, true) / 100
+				for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
+				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
+				p.flying = reader.read(1)
+				p.spectator = reader.read(1)
+
+				superflat = reader.read(1)
+				caves = reader.read(1)
+				details = reader.read(1)
+
+				reader.bit += 24 // Version; we already have that.
+
 				paletteLen = reader.read(16)
 				paletteBits = BitArrayBuilder.bits(paletteLen)
 				for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+
+				reader.bit += 32 // Section count; no longer used since I realized I can just read to the end.
 			}
+			else {
+				// Current saves
+				version = reader.read(24)
+				setSeed(reader.read(32))
+				this.tickCount = reader.read(32)
+
+				p.x = reader.read(20, true)
+				p.y = reader.read(9)
+				p.z = reader.read(20, true)
+				p.rx = reader.read(11, true) / 100
+				p.ry = reader.read(11, true) / 100
+				p.flying = reader.read(1)
+				p.spectator = reader.read(1)
+				superflat = reader.read(1)
+				caves = reader.read(1)
+				details = reader.read(1)
+				this.rivers = reader.read(1)
+
+				for (let i = 0; i < 36; i++) {
+					let id = reader.read(16)
+					let stack = reader.read(6) + 1
+					inventory.playerStorage.setItem(id ? new InventoryItem(id, blockData[id].name, stack, blockData[id].iconImg) : null, i)
+				}
+				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
+			}
+
+			this.version = "Alpha " + [version >> 16, version >> 8 & 0xff, version & 0xff].join(".")
 
 			const getIndex = [
 				(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
@@ -2819,7 +2791,8 @@ async function MineKhan() {
 				(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
 			]
 
-			reader.read(32)
+			if (reader.bit >= reader.data.length * 8 - 37) return // Empty save. We're done.
+
 			let chunks = {}
 			let previousChunk = null
 			while (reader.bit < reader.data.length * 8 - 37) {
@@ -2828,7 +2801,7 @@ async function MineKhan() {
 				let y = reader.read(5, false) * 8
 				let z = reader.read(16, true) * 8
 
-				if (version >= 0x000802) {
+				if (version > 0x800) {
 					paletteLen = reader.read(9)
 					paletteBits = BitArrayBuilder.bits(paletteLen)
 					palette = []
@@ -2848,7 +2821,7 @@ async function MineKhan() {
 				let chunk = chunks[ckey]
 				if (!chunk) {
 					if (previousChunk) previousChunk.endPos = startPos
-					if (version >= 0x000802) {
+					if (version >= 0x801) {
 						chunks[ckey] = chunk = {
 							reader,
 							startPos,
@@ -2884,19 +2857,9 @@ async function MineKhan() {
 			previousChunk.endPos = reader.bit
 
 			this.loadFrom = chunks
-			// this.loadKeys = Object.keys(chunks)
-
-			// for (let pos in chunks) {
-			// 	let [x, z] = pos.split(",")
-			// 	this.loadFrom.push({
-			// 		x: +x,
-			// 		y: 0,
-			// 		z: +z,
-			// 		blocks: chunks[pos]
-			// 	})
-			// }
 		}
 		loadOldSave(str) {
+			this.rivers = false
 			let data = str.split(";")
 
 			this.name = data.shift()
@@ -3225,6 +3188,12 @@ async function MineKhan() {
 			initMultiplayerMenu()
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
+		if (height <= 600) {
+			Button.add(width / 2, height / 2 + 145, 400, 40, "Full Screen", "main menu", () => {
+				const w = window.open(null)
+				w.document.write(document.children[0].outerHTML)
+			})
+		}
 
 		// Creation menu buttons
 		Button.add(width / 2, 135, 300, 40, ["World Type: Normal", "World Type: Superflat"], "creation menu", r => superflat = r === "World Type: Superflat")
@@ -3243,9 +3212,10 @@ async function MineKhan() {
 			return superflat
 		})
 		Button.add(width / 2, 285, 300, 40, ["Game Mode: Creative", "Game Mode: Survival"], "creation menu", r => survival = r === "Game Mode: Survival")
-		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Coming soon\n\nPlease stop asking for mobs. Adding them will take a very long time. I know a lot of people want them, so just be patient.")
+		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Ender dragon blocks? Maybe? Hmmmmmmmmmm...")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			if (survival) {
+				alert("Lol no.")
 				// window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
 				return
 			}
@@ -3390,17 +3360,6 @@ async function MineKhan() {
 			world = null
 		})
 
-		// Options buttons
-		Button.add(width / 2, 500, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
-		Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
-			if (settings.inventorySort === "name") {
-				settings.inventorySort = "blockid"
-			}
-			else if (settings.inventorySort === "blockid") {
-				settings.inventorySort = "name"
-			}
-		})
-
 		// Comingsoon menu buttons
 		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
 
@@ -3415,21 +3374,33 @@ async function MineKhan() {
 			}
 		}, () => !selectedWorld)
 
+		// Options buttons
+		const optionsBottom = height >= 550 ? 500 : height - 50
+		// Button.add(width/2, 185, width / 3, 40, () => `Sort Inventory By: ${settings.inventorySort === "name" ? "Name" : "Block ID"}`, "options", () => {
+		// 	if (settings.inventorySort === "name") {
+		// 		settings.inventorySort = "blockid"
+		// 	}
+		// 	else if (settings.inventorySort === "blockid") {
+		// 		settings.inventorySort = "name"
+		// 	}
+		// })
+
 		// Settings Sliders
-		Slider.add(width/2, 245, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
-		Slider.add(width/2, 305, width / 3, 40, "options", "FOV", 30, 110, "fov", val => {
+		Slider.add(width/2, optionsBottom - 60 * 4, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
+		Slider.add(width/2, optionsBottom - 60 * 3, width / 3, 40, "options", "FOV", 30, 110, "fov", val => {
 			p.FOV(val)
 			if (world) {
 				p.setDirection()
 				world.render()
 			}
 		})
-		Slider.add(width/2, 365, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
-		Slider.add(width/2, 425, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
+		Slider.add(width/2, optionsBottom - 60 * 2, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
+		Slider.add(width/2, optionsBottom - 60, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
+		Button.add(width / 2, optionsBottom, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
 	}
 
 	function hotbar() {
-		if (p.spectator || screen !== "play") return
+		if (screen !== "play") return
 		// The selected block has changed. Update lantern brightness
 		{
 			let heldLight = blockData[holding].lightLevel / 15 || 0
@@ -3565,7 +3536,7 @@ async function MineKhan() {
 
 	function clickInv() {
 		inventory.heldItem = null
-		document.body.style.cursor = ""
+		document.getElementById("heldItem")?.classList.add("hidden")
 	}
 
 	let unpauseDelay = 0
@@ -3596,6 +3567,11 @@ async function MineKhan() {
 			Button.draw()
 			Slider.draw()
 			Slider.drag()
+		}
+		if (screen === "inventory") {
+			const heldItemCanvas = document.getElementById("heldItem")
+			heldItemCanvas.style.left = (event.x - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.top = (event.y - inventory.iconSize / 2 | 0) + "px"
 		}
 	}
 
@@ -3843,11 +3819,12 @@ async function MineKhan() {
 		height = win.innerHeight
 		canvas.height = height
 		canvas.width = width
+		if (!gl) return
 		gl.canvas.height = height
 		gl.canvas.width = width
 		gl.viewport(0, 0, width, height)
 		initButtons()
-		initBackgrounds()
+		initDirt()
 		inventory.size = min(width, height) / 15 | 0
 		use3d()
 		p.FOV(p.currentFov + 0.0001)
@@ -3927,9 +3904,12 @@ async function MineKhan() {
 	function use2d() {
 		gl.disableVertexAttribArray(glCache.aSkylight)
 		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.enableVertexAttribArray(glCache.aVertex2)
+		gl.enableVertexAttribArray(glCache.aTexture2)
+		gl.enableVertexAttribArray(glCache.aShadow2)
 		gl.useProgram(program2D)
-		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset
-		// gl.depthFunc(gl.ALWAYS)
+		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset from rendering icons
+		gl.depthFunc(gl.ALWAYS)
 	}
 	function use3d() {
 		gl.useProgram(program3D)
@@ -3938,11 +3918,40 @@ async function MineKhan() {
 		gl.enableVertexAttribArray(glCache.aShadow)
 		gl.enableVertexAttribArray(glCache.aSkylight)
 		gl.enableVertexAttribArray(glCache.aBlocklight)
+		gl.activeTexture(gl.TEXTURE0)
 		// gl.depthFunc(gl.LESS)
 	}
 
+	const dirt = () => {
+		ctx.clearRect(0, 0, width, height) // Don't draw over the beautful dirt
+
+		use2d()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		gl.uniform1i(glCache.uSampler2, 1) // Dirt texture
+		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
+		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
+		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+	}
+	function initDirt() {
+		// Dirt background
+		let aspect = width / height
+		let stack = height / 96
+		let bright = 0.4
+		if (!dirtBuffer) dirtBuffer = gl.createBuffer()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		let bgCoords = new Float32Array([
+			-1, -1, 0, stack, bright,
+			1, -1, stack * aspect, stack, bright,
+			1, 1, stack * aspect, 0, bright,
+			-1, 1, 0, 0, bright
+		])
+		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
+		dirt()
+	}
+
 	function startLoad() {
-		ctx.putImageData(dirtbg, 0, 0)
+		dirt()
 		world.loadChunks()
 	}
 	function initWebgl() {
@@ -3950,7 +3959,7 @@ async function MineKhan() {
 			let canv = document.getElementById("webgl-canvas")
 			canv.width = ctx.canvas.width
 			canv.height = ctx.canvas.height
-			gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
+			win.gl = gl = canv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false })
 			if (!gl) {
 				alert("Error: WebGL not detected. Please enable WebGL and/or \"hardware acceleration\" in your browser settings.")
 				throw "Error: Cannot play a WebGL game without WebGL."
@@ -3966,69 +3975,62 @@ async function MineKhan() {
 			gl.enable(gl.DEPTH_TEST)
 			gl.enable(gl.BLEND)
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-			win.gl = gl
 
-			// const availableExtensions = gl.getSupportedExtensions()
-			// for (let i = 0; i < availableExtensions.length; i++) {
-			// 	const extensionName = availableExtensions[i]
-			// 	glExtensions[extensionName.replace(/[A-Z]+_/g, "")] = gl.getExtension(extensionName)
-			// }
+			win.glCache = glCache = {}
+			program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
+			program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
+			program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
+			programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
+			skybox = getSkybox(gl, glCache, program3D, program3DFogless)
+
+			gl.useProgram(program2D)
+			glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
+			glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
+			glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
+			glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
+			glCache.aShadow2 = gl.getAttribLocation(program2D, "aShadow")
+
+			gl.useProgram(programEntity)
+			glCache.uSamplerEntity = gl.getUniformLocation(programEntity, "uSampler")
+			glCache.uLightLevelEntity = gl.getUniformLocation(programEntity, "uLightLevel")
+			glCache.uViewEntity = gl.getUniformLocation(programEntity, "uView")
+			glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
+			glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
+
+			gl.useProgram(program3DFogless)
+			glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
+			glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
+			glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
+			glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
+			glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
+			glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
+
+			gl.useProgram(program3D)
+			glCache.uView = gl.getUniformLocation(program3D, "uView")
+			glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
+			glCache.uPos = gl.getUniformLocation(program3D, "uPos")
+			glCache.uDist = gl.getUniformLocation(program3D, "uDist")
+			glCache.uTime = gl.getUniformLocation(program3D, "uTime")
+			glCache.uSky = gl.getUniformLocation(program3D, "uSky")
+			glCache.uSun = gl.getUniformLocation(program3D, "uSun")
+			glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
+			glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
+			glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
+			glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
+			glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
+			glCache.aTexture = gl.getAttribLocation(program3D, "aTexture")
+			glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
+
+			win.glPrograms = { program2D, program3D, program3DFogless, programEntity, skybox }
 		}
 		else {
-			gl = win.gl
-			glExtensions = win.glExtensions
-		}
-
-		if (!document.body.contains(gl.canvas)) {
-			document.body.append(gl.canvas)
+			({ gl, glCache, glExtensions } = win.gl);
+			({ program2D, program3D, program3DFogless, programEntity, skybox } = win.glPrograms)
+			document.getElementById("webgl-canvas").remove() // There can be 1
+			document.body.prepend(gl.canvas)
 		}
 
 		modelView = new Float32Array(16)
-		glCache = {}
-		win.glCache = glCache
-		program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
-		program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
-		program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
-		programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
-		skybox = getSkybox(gl, glCache, program3D, program3DFogless)
-
-		gl.useProgram(program2D)
-		glCache.uOffset = gl.getUniformLocation(program2D, "uOffset")
-		glCache.uSampler2 = gl.getUniformLocation(program2D, "uSampler")
-		glCache.aTexture2 = gl.getAttribLocation(program2D, "aTexture")
-		glCache.aVertex2 = gl.getAttribLocation(program2D, "aVertex")
-		glCache.aShadow2 = gl.getAttribLocation(program2D, "aShadow")
-
-		gl.useProgram(programEntity)
-		glCache.uSamplerEntity = gl.getUniformLocation(programEntity, "uSampler")
-		glCache.uLightLevelEntity = gl.getUniformLocation(programEntity, "uLightLevel")
-		glCache.uViewEntity = gl.getUniformLocation(programEntity, "uView")
-		glCache.aTextureEntity = gl.getAttribLocation(programEntity, "aTexture")
-		glCache.aVertexEntity = gl.getAttribLocation(programEntity, "aVertex")
-
-		gl.useProgram(program3DFogless)
-		glCache.uViewFogless = gl.getUniformLocation(program3DFogless, "uView")
-		glCache.uSamplerFogless = gl.getUniformLocation(program3DFogless, "uSampler")
-		glCache.uPosFogless = gl.getUniformLocation(program3DFogless, "uPos")
-		glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
-		glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
-		glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
-
-		gl.useProgram(program3D)
-		glCache.uView = gl.getUniformLocation(program3D, "uView")
-		glCache.uSampler = gl.getUniformLocation(program3D, "uSampler")
-		glCache.uPos = gl.getUniformLocation(program3D, "uPos")
-		glCache.uDist = gl.getUniformLocation(program3D, "uDist")
-		glCache.uTime = gl.getUniformLocation(program3D, "uTime")
-		glCache.uSky = gl.getUniformLocation(program3D, "uSky")
-		glCache.uSun = gl.getUniformLocation(program3D, "uSun")
-		glCache.uTrans = gl.getUniformLocation(program3D, "uTrans")
-		glCache.uLantern = gl.getUniformLocation(program3D, "uLantern")
-		glCache.aShadow = gl.getAttribLocation(program3D, "aShadow")
-		glCache.aSkylight = gl.getAttribLocation(program3D, "aSkylight")
-		glCache.aBlocklight = gl.getAttribLocation(program3D, "aBlocklight")
-		glCache.aTexture = gl.getAttribLocation(program3D, "aTexture")
-		glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 		gl.uniform1f(glCache.uDist, 1000)
 		gl.uniform1i(glCache.uTrans, 0)
@@ -4067,44 +4069,12 @@ async function MineKhan() {
 		gl.polygonOffset(1, 1)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
-	function initBackgrounds() {
-		// Dirt background
-		use3d()
-		use2d()
-		let aspect = width / height
-		let stack = height / 96
-		let bright = 0.4
-		if (dirtBuffer) {
-			gl.deleteBuffer(dirtBuffer)
-		}
-		dirtBuffer = gl.createBuffer()
-		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
-		let bgCoords = new Float32Array([
-			-1, -1, 0, stack, bright,
-			1, -1, stack * aspect, stack, bright,
-			1, 1, stack * aspect, 0, bright,
-			-1, 1, 0, 0, bright
-		])
-		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
-		gl.uniform1i(glCache.uSampler2, 1)
-		gl.clearColor(0, 0, 0, 1)
-		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
-		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
-		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-		// pixels = new Uint8Array(width * height * 4)
-		// gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-		// dirtbg = ctx.createImageData(width, height)
-		// dirtbg.data.set(pixels)
-		ctx.drawImage(gl.canvas, 0, 0)
-		dirtbg = ctx.getImageData(0, 0, width, height)
-	}
+
 	function initPlayer() {
 		p = new Camera()
 		p.speed = 0.11
 		p.velocity = new PVector(0, 0, 0)
-		p.pos = new Float32Array(3)
+		// p.pos = new Float32Array(3)
 		p.sprintSpeed = 1.5
 		p.flySpeed = 3.75
 		p.x = 8
@@ -4313,14 +4283,15 @@ async function MineKhan() {
 		initPlayer()
 		initWebgl()
 
-		if (win.location.origin === "https://www.kasandbox.org" && (loadString || MineKhan.toString().length !== 183240)) {
+		if (win.location.origin === "https://www.kasandbox.org" && (loadString || document.children[0].innerHTML.length !== 314419)) {
 			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
 			// If you're making significant changes and want to remove this, then you can.
 			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
 			message.innerHTML = '.oot lanigiro eht tuo kcehc ot>rb<erus eb ,siht ekil uoy fI>rb<.dralliW yb >a/<nahKeniM>"wen_"=tegrat "8676731005517465/cm/sc/gro.ymedacanahk.www//:sptth"=ferh a< fo>rb<ffo-nips a si margorp sihT'.split("").reverse().join("")
 		}
 
-		initBackgrounds()
+		genIcons() // Generate all the block icons
+		initDirt()
 
 		drawScreens[screen]()
 		Button.draw()
@@ -4329,9 +4300,6 @@ async function MineKhan() {
 		p.FOV(settings.fov)
 		initWorldsMenu()
 		initButtons()
-
-		// Generate all the block icons
-		genIcons()
 
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
@@ -4356,6 +4324,7 @@ async function MineKhan() {
 			strokeWeight(1)
 			ctx.textAlign = 'center'
 
+			const scale = Math.min(width / 600, 1.5)
 			for (let i = 0; i < 15; i++) {
 				if (i < 12) {
 					fill(i * 10)
@@ -4364,25 +4333,14 @@ async function MineKhan() {
 					fill(125)
 				}
 
-				if (i < 10) {
-					ctx.font = "bold 12" + i.toString() + "px " + font
-				}
-				else if (i > 9) {
-					ctx.font = "bold 1" + (20 + i).toString() + "px " + font
-				}
+				ctx.font = `bold ${80 * scale + i}px ${font}`
 				text(title, width / 2, 158 - i)
 
-				if (i < 8) {
-					ctx.font = "bold 3" + (2 + i / 4).toString() + "px " + font
-				}
-				else if (i > 7) {
-					ctx.font = "bold " + (32 + i / 4).toString() + "px " + font
-				}
-				text(subtext, width / 2, 190 - i / 2)
+				ctx.font = `bold ${32 * scale + i/4}px ${font}`
+				text(subtext, width / 2, 140 + 60 * scale - i / 2)
 			}
 		}
 		const clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height)
-		const dirt = () => ctx.putImageData(dirtbg, 0, 0)
 
 		drawScreens["main menu"] = () => {
 			ctx.clearRect(0, 0, width, height)
@@ -4434,21 +4392,20 @@ async function MineKhan() {
 		drawScreens.pause = () => {
 			strokeWeight(1)
 			clear()
-			// ctx.drawImage(gl.canvas, 0, 0)
 		}
 
 		drawScreens.options = () => {
-			dirt()
+			clear()
 		}
 		drawScreens["creation menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
 			text("Create New World", width / 2, 20)
 		}
 		drawScreens["loadsave menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
@@ -4456,7 +4413,7 @@ async function MineKhan() {
 		}
 		drawScreens.editworld = dirt
 		drawScreens["multiplayer menu"] = () => {
-			dirt()
+			clear()
 			ctx.textAlign = 'center'
 			textSize(20)
 			fill(255)
@@ -4491,12 +4448,10 @@ async function MineKhan() {
 		let frameFPS = Math.round(10000/(time - prevTime)) / 10
 		prevTime = time
 
+		if (!gl && window.innerWidth && window.innerHeight) initEverything()
+
 		now = Date.now()
 		let frameStart = performance.now()
-		if (!gl) {
-			initEverything()
-			releasePointer()
-		}
 
 		if (screen === "play" || screen === "loading") {
 			try {

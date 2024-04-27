@@ -56,8 +56,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		 1,  1, -1, // 3
 		 1, -1, -1, // 4
 		-1, -1, -1, // 1
-	].map(n => n * 1))
-
+	])
 
 	const buffer = gl.createBuffer()
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -94,7 +93,7 @@ function getSkybox(gl, glCache, program3D, program3DFogless) {
 		]
 
 		const sun = [sin/mag, cos/mag, sin/mag]
-		const skyBrightness = Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.3)
+		const skyBrightness = Math.max(smoothstep(-0.5, 0.3, -cos/mag), 0.1)
 
 		// Set uniform for program3DFogless
 		gl.useProgram(program3DFogless)

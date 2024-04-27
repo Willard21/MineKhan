@@ -140,7 +140,7 @@ class BitArrayReader {
 		let openBits = 32 - bits
 		let { data, bit } = this
 		this.bit += bits // Move pointer
-		if (bit > data.length * 8) {
+		if (bit > data.length * 8 || bit < 0) {
 			throw "You done messed up A-A-Ron"
 		}
 
