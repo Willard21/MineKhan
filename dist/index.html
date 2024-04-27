@@ -5447,7 +5447,7 @@ class Player extends Entity {
 		for (let n = 0; n < 6; n++) {
 			let directionalFaces = shapeVerts[n]
 			for (let facei = 0; facei < directionalFaces.length; facei++) {
-				let texVerts = textureCoords[textureMap[tex[texNum]]]
+				let texVerts = tex[texNum]
 				let tx = texVerts[0]
 				let ty = texVerts[1]
 				let texShapeVerts = shapeTexVerts[n][facei]
