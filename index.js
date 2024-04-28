@@ -1,34 +1,41 @@
-// This is for testing on localhost
-const express = require("express")
-const compression = require("compression")
-const app = express()
+
+
 const fs = require('fs')
 const Path = require("path")
 const f = fs.promises
 const os = require('os')
 
-app.use(compression({ threshold : 0 }))
-app.listen(4000)
-app.use('/', (req, res, next) => {
-	// Make SharedArrayBuffer and performance.measureUserAgentSpecificMemory() work (for !!SCIENCE!!)
-	res.header('Cross-Origin-Opener-Policy', 'same-origin')
-	res.header('Cross-Origin-Embedder-Policy', 'require-corp')
-	next()
-})
-app.use(express.static('dist'))
-console.log("Server started on http://localhost:4000")
+const cmd = process.argv[2]?.toLowerCase() || ""
+const buildPath = cmd === "production" ? "../../public/minekhan/index.html" : cmd === "beta" ? "../../public/minekhan/beta/index.html" : "dist/index.html"
 
-try {
-	// Only works on Linux, but it'll open the page.
-	require("child_process").exec("browse http://localhost:4000")
-}
-catch{}
+if (!cmd) {
+	// This is for testing on localhost
+	const express = require("express")
+	const compression = require("compression")
+	const app = express()
+	app.use(compression({ threshold : 0 }))
+	app.listen(4000)
+	app.use('/', (req, res, next) => {
+		// Make SharedArrayBuffer and performance.measureUserAgentSpecificMemory() work (for !!SCIENCE!!)
+		res.header('Cross-Origin-Opener-Policy', 'same-origin')
+		res.header('Cross-Origin-Embedder-Policy', 'require-corp')
+		next()
+	})
+	app.use(express.static('dist'))
+	console.log("Server started on http://localhost:4000")
 
-// Find the computer's network IP
-const nets = os.networkInterfaces()
-for (const name in nets) {
-	for (const net of nets[name]) {
-		if (net.address.includes(".") && !net.internal) console.log(`Other devices on your network can open the game on http://${net.address}:4000`)
+	try {
+		// Only works on Linux, but it'll open the page.
+		require("child_process").exec("browse http://localhost:4000")
+	}
+	catch{}
+
+	// Find the computer's network IP
+	const nets = os.networkInterfaces()
+	for (const name in nets) {
+		for (const net of nets[name]) {
+			if (net.address.includes(".") && !net.internal) console.log(`Other devices on your network can open the game on http://${net.address}:4000`)
+		}
 	}
 }
 
@@ -111,7 +118,7 @@ function bundle() {
 	// .replace(/<!--[\s\S]+?-->/gm, "").replace(/\/\*.+?\*\//gm, "")
 	// .split("\n").map(line => line.trim()).filter(line => line && !line.startsWith("//")).join("\n")
 	console.log("\n" + new Date().toISOString(), "\nCode Length:", code.length.toLocaleString(), "\nCompile Time:", (Date.now() - startTime).toLocaleString(), "ms")
-	f.writeFile("dist/index.html", code)
+	f.writeFile(buildPath, code)
 }
 
 bundle()

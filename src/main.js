@@ -326,7 +326,7 @@ async function MineKhan() {
 		},
 		inventory: {
 			enter: [document.getElementById('inv-container')],
-			exit: [document.getElementById('inv-container'), hoverbox],
+			exit: [document.getElementById('inv-container'), hoverbox, document.getElementById('heldItem')],
 			onenter: () => {
 				ctx.clearRect(0, 0, width, height) // Hide the GUI and text and stuff
 				inventory.playerStorage.render()
