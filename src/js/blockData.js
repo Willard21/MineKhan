@@ -418,7 +418,7 @@ const blockData = [
 	{ name: "polishedGranite" },
 	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon", hideInterior: true },
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
-	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
+	{ name: "lava", textures: "lavaStill", transparent: true, solid: false, lightLevel: 15 },
 	{ name: "obsidian" },
 	{ name: "cryingObsidian", lightLevel: 10 },
 	{ name: "endStone" },
