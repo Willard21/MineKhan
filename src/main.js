@@ -3190,7 +3190,7 @@ async function MineKhan() {
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
 		if (height <= 600) {
 			Button.add(width / 2, height / 2 + 145, 400, 40, "Full Screen", "main menu", () => {
-				const w = window.open(null)
+				const w = window.open()
 				w.document.write(document.children[0].outerHTML)
 			})
 		}
