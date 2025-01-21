@@ -22,7 +22,7 @@ import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } from "./js/shapes.js"
 import { InventoryItem, inventory } from './js/inventory.js'
 import { createProgramObject } from "./js/glUtils.js"
-import { initTextures, textureMap, textureCoords, animateTextures } from './js/texture.js'
+import { initTextures, animateTextures, hitboxTextureCoords } from './js/texture.js'
 import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
 // import { Item } from './js/item.js'
@@ -30,7 +30,7 @@ import { Player } from "./js/player.js"
 
 
 const win = window.parent
-async function MineKhan() {
+const MineKhan = async () => {
 	// cache global objects locally.
 	const { Math, performance, Date, document, console } = window
 	const { cos, sin, round, floor, ceil, min, max, abs, sqrt } = Math
@@ -125,16 +125,10 @@ async function MineKhan() {
 		}
 	}
 
-	let world, worldSeed
-
-	function setSeed(seed) {
-		worldSeed = seed
-		seedHash(seed)
-		noiseProfile.noiseSeed(seed)
-		while(win.workers.length) {
-			win.doWork({ seed })
-		}
-	}
+	/**
+	 * @type {World}
+	 */
+	let world
 
 	let fill = function(r, g, b) {
 		if (g === undefined) {
@@ -150,11 +144,11 @@ async function MineKhan() {
 		}
 		ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`
 	}
-	// function line(x1, y1, x2, y2) {
+	// const line = (x1, y1, x2, y2) => {
 	// 	ctx.moveTo(x1, y1)
 	// 	ctx.lineTo(x2, y2)
 	// }
-	function text(txt, x, y, h) {
+	const text = (txt, x, y, h) => {
 		h = h || 0
 
 		let lines = txt.split("\n")
@@ -162,7 +156,7 @@ async function MineKhan() {
 			ctx.fillText(lines[i], x, y + h * i)
 		}
 	}
-	function textSize(size) {
+	const textSize = (size) => {
 		ctx.font = size + 'px Monospace' // VT323
 	}
 	let strokeWeight = function(num) {
@@ -176,7 +170,7 @@ async function MineKhan() {
 	}
 	randomSeed(Math.random() * 10000000 | 0)
 
-	async function save() {
+	const save = async () => {
 		let saveObj = {
 			id: world.id,
 			edited: now,
@@ -199,10 +193,22 @@ async function MineKhan() {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.1"
+	let version = "Alpha 0.8.2"
 	let superflat = false
 	let details = true
 	let caves = true
+
+	/**
+	 * @type {WebGLRenderingContext}*/
+	let gl
+	/**
+	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
+	let glExtensions
+
+	/**
+	 * @type {(time: Number, view: Matrix) => {}}
+	 */
+	let skybox
 
 	win.blockData = blockData
 	win.blockIds = blockIds
@@ -227,14 +233,65 @@ async function MineKhan() {
 
 	// const ROTATION = 0x1800 // Mask for the direction bits
 	let background = "url(./background.webp)"
-	if (location.origin === "https://www.kasandbox.org") background = "url(https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png)"
+	if (location.origin === "https://www.kasandbox.org") background = "url(https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/latest.png)"
 	else if (!location.origin.includes("localhost") && location.origin !== "file://") background = "url(https://willard.fun/minekhan/background.webp)"
 	canvas.style.backgroundImage = background
 
 	let dirtBuffer
-	let texCoordsBuffers
 	let bigArray = win.bigArray || new Float32Array(1000000)
 	win.bigArray = bigArray
+
+	const use2d = () => {
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.enableVertexAttribArray(glCache.aVertex2)
+		gl.enableVertexAttribArray(glCache.aTexture2)
+		gl.enableVertexAttribArray(glCache.aShadow2)
+		gl.useProgram(program2D)
+		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset from rendering icons
+		gl.depthFunc(gl.ALWAYS)
+	}
+	const use3d = () => {
+		gl.useProgram(program3D)
+		gl.enableVertexAttribArray(glCache.aVertex)
+		gl.enableVertexAttribArray(glCache.aTexture)
+		gl.enableVertexAttribArray(glCache.aShadow)
+		gl.enableVertexAttribArray(glCache.aSkylight)
+		gl.enableVertexAttribArray(glCache.aBlocklight)
+		gl.activeTexture(gl.TEXTURE0)
+		// gl.depthFunc(gl.LESS)
+	}
+	const dirt = () => {
+		ctx.clearRect(0, 0, width, height) // Don't draw over the beautful dirt
+
+		use2d()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		gl.uniform1i(glCache.uSampler2, 1) // Dirt texture
+		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
+		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
+		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+	}
+	const initDirt = () => {
+		// Dirt background
+		let aspect = width / height
+		let stack = height / 96
+		let bright = 0.4
+		if (!dirtBuffer) dirtBuffer = gl.createBuffer()
+		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
+		let bgCoords = new Float32Array([
+			-1, -1, 0, stack, bright,
+			1, -1, stack * aspect, stack, bright,
+			1, 1, stack * aspect, 0, bright,
+			-1, 1, 0, 0, bright
+		])
+		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
+		dirt()
+	}
+	const startLoad = () => {
+		dirt()
+		world.loadChunks()
+	}
 
 	// Callback functions for all the screens; will define them further down the page
 	let drawScreens = {
@@ -336,7 +393,7 @@ async function MineKhan() {
 
 	let screen = "main menu"
 	let previousScreen = screen
-	function changeScene(newScene) {
+	const changeScene = (newScene) => {
 		document.getElementById('background-text').classList.add('hidden')
 		if (screen === "options") {
 			saveToDB("settings", settings).catch(e => console.error(e))
@@ -371,8 +428,6 @@ async function MineKhan() {
 	let hitBox = {}
 	let holding = 0
 	let Key = {}
-	let modelView = win.modelView || new Float32Array(16)
-	win.modelView = modelView
 	let glCache
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
@@ -390,7 +445,7 @@ async function MineKhan() {
 		z: 0,
 	}
 
-	function setControl(name, key, shift = false, ctrl = false, alt = false) {
+	const setControl = (name, key, shift = false, ctrl = false, alt = false) => {
 		controlMap[name] = {
 			key,
 			shift,
@@ -431,7 +486,7 @@ async function MineKhan() {
 	setControl("pickBlock", "middleMouse")
 	//}
 
-	function play() {
+	const play = () => {
 		canvas.onblur()
 		p.lastBreak = now
 		holding = inventory.hotbar.hand.id
@@ -448,24 +503,12 @@ async function MineKhan() {
 		hotbar()
 	}
 
-	/**
-	 * @type {WebGLRenderingContext}*/
-	let gl
-	/**
-	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
-	let glExtensions
-
-	/**
-	 * @type {(time: Number, view: Matrix) => {}}
-	 */
-	let skybox
-
-	function getPointer() {
+	const getPointer = () => {
 		if (canvas.requestPointerLock) {
 			canvas.requestPointerLock()
 		}
 	}
-	function releasePointer() {
+	const releasePointer = () => {
 		if (document.exitPointerLock) {
 			document.exitPointerLock()
 		}
@@ -475,9 +518,9 @@ async function MineKhan() {
 
 	win.shapes = shapes
 
-	function initShapes() {
+	const initShapes = () => {
 
-		// Create buffers for the hitbox outline shapes
+		// Create buffers for the hitbox outline shapes and icon geometry
 		for (let shape in shapes) {
 			let obj = shapes[shape]
 			obj.buffer = gl.createBuffer()
@@ -530,6 +573,7 @@ async function MineKhan() {
 			}
 
 			// Cubes; blocks like pumpkins and furnaces.
+			const v = baseBlock.shape.variants
 			if (baseBlock.rotate) {
 				const [ny, py, pz, nz, px, nx] = baseBlock.textures
 				const orders = [
@@ -537,12 +581,21 @@ async function MineKhan() {
 					[ny, py, nx, px, pz, nz],
 					[ny, py, px, nx, nz, pz],
 				]
-				const v = baseBlock.shape.variants
 				for (let j = 2; j < v.length; j += 2) {
 					if (v[j]) {
 						let block = new BlockData(baseBlock, id | j << 10, false)
 						block.shape = v[j]
 						block.textures = orders[j / 2 - 1]
+						blockData[id | j << 10] = block
+					}
+				}
+			}
+			if (baseBlock.flip) {
+				for (let j = 1; j < v.length; j += 2) {
+					if (v[j]) {
+						let block = new BlockData(baseBlock, id | j << 10, false)
+						block.shape = v[j]
+						block.textures = v[j-1].textures || block.textures
 						blockData[id | j << 10] = block
 					}
 				}
@@ -559,12 +612,13 @@ async function MineKhan() {
 		indexOrder[i + 5] = 3 + j
 	}
 
-	function genIcons() {
+	const genIcons = () => {
 		let start = Date.now()
 
 		let shadows = [1, 1, 0.4, 0.4, 0.7, 0.7]
 
 		use2d()
+		gl.depthFunc(gl.LESS)
 		gl.uniform1i(glCache.uSampler2, 0)
 
 		const limitX = gl.canvas.width >> 6
@@ -578,7 +632,7 @@ async function MineKhan() {
 
 		const mat = new Matrix()
 		mat.identity()
-		mat.scale(70 / width, 70 / height, 1)
+		mat.scale(70 / width, 70 / height, -1)
 		mat.rotX(Math.PI / 4)
 		mat.rotY(Math.PI / 4)
 
@@ -682,8 +736,6 @@ async function MineKhan() {
 		console.log("Block icons drawn and extracted in:", Date.now() - start, "ms")
 	}
 
-	//Generate buffers for every block face and store them
-	let sideEdgeBuffers
 	let indexBuffer
 
 	let matrix = new Float32Array(16) // A temperary matrix that may store random data.
@@ -866,22 +918,7 @@ async function MineKhan() {
 		}
 	}
 
-
-
-	// function FOV(fov) {
-	// 	let tang = Math.tan(fov * 0.5 * Math.PI / 180)
-	// 	let scale = 1 / tang
-	// 	let near = 1
-	// 	let far = 1000000
-
-	// 	projection[0] = scale / width * height
-	// 	projection[5] = scale
-	// 	projection[10] = -far / (far - near)
-	// 	projection[11] = -1
-	// 	projection[14] = -far * near / (far - near)
-	// }
-
-	function initModelView(camera) {
+	const initModelView = (camera) => {
 		if (camera) {
 			// Inside the game
 			camera.transform()
@@ -895,20 +932,19 @@ async function MineKhan() {
 		}
 	}
 
-	function rayTrace(x, y, z, shape) {
+	const rayTrace = (x, y, z, shape) => {
 		let cf, cd = 1e9 // Closest face and distance
 		let m // Absolute distance to intersection point
 		let ix, iy, iz // Intersection coords
 		let minX, minY, minZ, maxX, maxY, maxZ, min, max //Bounds of face coordinates
-		let east = p.direction.x < 0
-		let top = p.direction.y < 0
-		let north = p.direction.z < 0
+		let dx = p.direction.x < 0
+		let dy = p.direction.y < 0
+		let dz = p.direction.z < 0
 		let verts = shape.verts
 		let faces = verts[0]
 
 		// Top and bottom faces
-
-		if (top) {
+		if (dy) {
 			faces = verts[1]
 		}
 		if (p.direction.y) {
@@ -924,13 +960,13 @@ async function MineKhan() {
 				iz = m * p.direction.z + p.z
 				if (m > 0 && m < cd && ix >= x + minX && ix <= x + maxX && iz >= z + minZ && iz <= z + maxZ) {
 					cd = m // Ray crosses bottom face
-					cf = top ? "top" : "bottom"
+					cf = dy ? "top" : "bottom"
 				}
 			}
 		}
 
 		// West and East faces
-		if (east) {
+		if (dx) {
 			faces = verts[4]
 		}
 		else {
@@ -949,13 +985,13 @@ async function MineKhan() {
 				iz = m * p.direction.z + p.z
 				if (m > 0 && m < cd && iy >= y + minY && iy <= y + maxY && iz >= z + minZ && iz <= z + maxZ) {
 					cd = m
-					cf = east ? "east" : "west"
+					cf = dx ? "east" : "west"
 				}
 			}
 		}
 
 		// South and North faces
-		if (north) {
+		if (dz) {
 			faces = verts[2]
 		}
 		else {
@@ -974,26 +1010,30 @@ async function MineKhan() {
 				iy = m * p.direction.y + p.y
 				if (m > 0 && m < cd && ix >= x + minX && ix <= x + maxX && iy >= y + minY && iy <= y + maxY) {
 					cd = m
-					cf = north ? "north" : "south"
+					cf = dz ? "north" : "south"
 				}
 			}
 		}
 		return [cd, cf]
 	}
-	function runRayTrace(x, y, z) {
+	const runRayTrace = (x, y, z) => {
 		let block = world.getBlock(x, y, z)
 		if (block) {
-			let rt = rayTrace(x, y, z, blockData[block].shape)
+			let shape = blockData[block].shape
+			if (shape.getShape) {
+				shape = shape.getShape(x, y, z, world, blockData)
+			}
+			let rt = rayTrace(x, y, z, shape)
 
 			if (rt[1] && rt[0] < hitBox.closest) {
 				hitBox.closest = rt[0]
 				hitBox.face = rt[1]
 				hitBox.pos = [x, y, z]
-				hitBox.shape = blockData[block].shape
+				hitBox.shape = shape
 			}
 		}
 	}
-	function lookingAt() {
+	const lookingAt = () => {
 		// Checks blocks in front of the player to see which one they're looking at
 		hitBox.pos = null
 		hitBox.closest = 1e9
@@ -1057,152 +1097,60 @@ async function MineKhan() {
 			minX = maxX
 		}
 	}
-	let inBox = function(x, y, z, w, h, d) {
-		let iy = roundBits(y - h/2 - p.topH)
-		let ih = roundBits(h + p.bottomH + p.topH)
-		let ix = x - w/2 - p.w
-		let iw = w + p.w*2
-		let iz = z - d/2 - p.w
-		let id = d + p.w*2
-		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y < roundBits(iy + ih) && p.z < iz + id
-	}
-	let onBox = function(x, y, z, w, h, d) {
-		let iy = roundBits(y - h/2 - p.topH)
-		let ih = roundBits(h + p.bottomH + p.topH)
-		let ix = roundBits(x - w/2 - p.w)
-		let iw = roundBits(w + p.w*2)
-		let iz = roundBits(z - d/2 - p.w)
-		let id = roundBits(d + p.w*2)
-		return p.x > ix && p.y > iy && p.z > iz && p.x < ix + iw && p.y <= iy + ih && p.z < iz + id
-	}
-	function collided(x, y, z, vx, vy, vz, block) {
-		if(p.spectator && block !== blockIds.bedrock) {
+
+	const collide = (faces, compare = max, index = 0, offset = 0) => {
+		if (p.spectator) {
+			if (p2.y === 2 && index === 1 && faces.length && p.velocity.y <= 0) return 0.5 + p.bottomH // Stop them at bottom bedrock
 			return false
 		}
-		let verts = blockData[block].shape.verts
-		let px = roundBits(p.x - p.w - x)
-		let py = roundBits(p.y - p.bottomH - y)
-		let pz = roundBits(p.z - p.w - z)
-		let pxx = roundBits(p.x + p.w - x)
-		let pyy = roundBits(p.y + p.topH - y)
-		let pzz = roundBits(p.z + p.w - z)
-		let minX, minY, minZ, maxX, maxY, maxZ, min, max
-
-		// Top and bottom faces
-		let faces = verts[0]
-		if (vy <= 0) {
-			faces = verts[1]
-		}
-		if (!vx && !vz) {
-			let col = false
-			for (let face of faces) {
-				min = face.min
-				minX = min[0]
-				minZ = min[2]
-				max = face.max
-				maxX = max[0]
-				maxZ = max[2]
-				if (face[1] > py && face[1] < pyy && minX < pxx && maxX > px && minZ < pzz && maxZ > pz) {
-					col = true
-					if (vy <= 0) {
-						p.onGround = true
-						p.y = round((face[1] + y + p.bottomH) * 10000) / 10000
-						p.velocity.y = 0
-					}
-					else {
-						p.y = face[1] + y - p.topH - 0.01
-					}
-				}
+		let col = false
+		let pos = 0
+		for (let face of faces) {
+			const [minX, minY, minZ, maxX, maxY, maxZ] = face
+			const cy = index === 1 ? p.minY() <= maxY : p.minY() < maxY // Collide with the floor when perfectly level with it
+			let colliding = p.minX() < maxX && p.maxX() > minX && cy && p.maxY() > minY && p.minZ() < maxZ && p.maxZ() > minZ
+			if (colliding) {
+				pos = col ? compare(pos, face[index] + offset) : face[index] + offset
+				col = true
 			}
-			return col
 		}
 
-		// West and East faces
-		if (vx < 0) {
-			faces = verts[4]
-		}
-		else if (vx > 0) {
-			faces = verts[5]
-		}
-		if (vx) {
-			let col = false
-			for (let face of faces) {
-				min = face.min
-				minZ = min[2]
-				minY = min[1]
-				max = face.max
-				maxZ = max[2]
-				maxY = max[1]
-				if (face[0] > px && face[0] < pxx && minY < pyy && maxY > py && minZ < pzz && maxZ > pz) {
-					if (maxY - py > 0.5 || !p.onGround) {
-						p.canStepX = false
-						p.x = x + face[0] + (vx < 0 ? p.w : -p.w) * 1.001
-					}
-					col = true
-				}
-			}
-			return col
-		}
-
-		// South and North faces
-		if (vz < 0) {
-			faces = verts[2]
-		}
-		else if (vz > 0) {
-			faces = verts[3]
-		}
-		if (vz) {
-			let col = false
-			for (let face of faces) {
-				min = face.min
-				minX = min[0]
-				minY = min[1]
-				max = face.max
-				maxX = max[0]
-				maxY = max[1]
-				if (face[2] > pz && face[2] < pzz && minY < pyy && maxY > py && minX < pxx && maxX > px) {
-					if (maxY - py > 0.5 || !p.onGround) {
-						p.canStepZ = false
-						p.z = z + face[2] + (vz < 0 ? p.w : -p.w) * 1.001
-					}
-					col = true
-				}
-			}
-			return col
-		}
-		throw "Test"
+		return col && pos
 	}
+
 	let contacts = {
-		array: [],
-		size: 0,
-		add: function(x, y, z, block) {
-			if (this.size === this.array.length) {
-				this.array.push([x, y, z, block])
+		faces: [[], [], [], [], [], []],
+		add: function(x, y, z, verts) {
+			for (let dir = 0; dir < 6; dir++) {
+				for (let i = 0; i < verts[dir].length; i++) {
+					const face = verts[dir][i]
+					const minX = roundBits(min(face[0], face[6]) + x - p2.x)
+					const maxX = roundBits(max(face[0], face[6]) + x - p2.x)
+					const minY = roundBits(min(face[1], face[7]) + y - p2.y)
+					const maxY = roundBits(max(face[1], face[7]) + y - p2.y)
+					const minZ = roundBits(min(face[2], face[8]) + z - p2.z)
+					const maxZ = roundBits(max(face[2], face[8]) + z - p2.z)
+					this.faces[dir].push([minX, minY, minZ, maxX, maxY, maxZ])
+				}
 			}
-			else {
-				this.array[this.size][0] = x
-				this.array[this.size][1] = y
-				this.array[this.size][2] = z
-				this.array[this.size][3] = block
-			}
-			this.size++
 		},
 		clear: function() {
-			this.size = 0
+			for (let i = 0; i < 6; i++) this.faces[i].length = 0
 		},
 	}
 	let resolveContactsAndUpdatePosition = function() {
-		if (p.y < 0) p.y = 70
+		if (p.y < 0) p.y = 70 // Keep players out of the void; there's no way out.
+
 		let mag = p.velocity.mag()
 		let steps = Math.ceil(mag / p.w)
-		const VX = p.velocity.x / steps
-		const VY = p.velocity.y / steps
-		const VZ = p.velocity.z / steps
+		let VX = p.velocity.x / steps
+		let VY = p.velocity.y / steps
+		let VZ = p.velocity.z / steps
 
 		let pminX = floor(0.5 + p.x - p.w + (p.velocity.x < 0 ? p.velocity.x : 0))
 		let pmaxX = ceil(-0.5 + p.x + p.w + (p.velocity.x > 0 ? p.velocity.x : 0))
 		let pminY = max(floor(0.5 + p.y - p.bottomH + (p.velocity.y < 0 ? p.velocity.y : 0)), 0)
-		let pmaxY = min(ceil(-0.5 + p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), maxHeight)
+		let pmaxY = min(ceil(p.y + p.topH + (p.velocity.y > 0 ? p.velocity.y : 0)), maxHeight) // Half a block higher than necessary to ensure half-steps up work
 		let pminZ = floor(0.5 + p.z - p.w + (p.velocity.z < 0 ? p.velocity.z : 0))
 		let pmaxZ = ceil(-0.5 + p.z + p.w + (p.velocity.z > 0 ? p.velocity.z : 0))
 
@@ -1210,8 +1158,13 @@ async function MineKhan() {
 			for (let x = pminX; x <= pmaxX; x++) {
 				for (let z = pminZ; z <= pmaxZ; z++) {
 					let block = world.getBlock(x, y, z)
-					if (blockData[block].solid) {
-						contacts.add(x, y, z, block)
+					const data = blockData[block]
+					if (data.solid) {
+						let shape = data.shape
+						if (shape.getShape) {
+							shape = shape.getShape(x, y, z, world, blockData)
+						}
+						contacts.add(x, y, z, shape.verts)
 					}
 				}
 			}
@@ -1221,95 +1174,92 @@ async function MineKhan() {
 		p.px = p.x
 		p.py = p.y
 		p.pz = p.z
+		p.onGround = false
 		for (let j = 1; j <= steps; j++) {
 			let px = p.x
 			let pz = p.z
 
 			// Check collisions in the Y direction
-			p.onGround = false
-			p.canStepX = false
-			p.canStepZ = false
 			p.y += VY
-			for (let i = 0; i < contacts.size; i++) {
-				let [x, y, z, block] = contacts.array[i]
-				if (collided(x, y, z, 0, VY, 0, block)) {
+			if (VY > 0) {
+				let npy = collide(contacts.faces[0], min, 1, p2.y - p.topH - 0.01)
+				if (npy !== false) {
+					p.y = npy
 					p.velocity.y = 0
-					// hasCollided = true
-					// It doesn't matter that it checked the top blocks first.
-					// Slabs are technically level with cubes, but they're shorter.
-					// So if it checks a slab before checking a cube, exiting early
-					// could prevent the player from colliding with the cube.
-					// break <-- In other words, don't do this.
 				}
 			}
-
-			// Stepping works by letting you walk inside short hitboxes that you collide with in the x or z directions.
-			// Since collisions in the Y direction are checked first, you won't step until the next frame.
-			if (p.onGround) {
-				p.canStepX = true
-				p.canStepZ = true
-			}
-
-			var sneakLock = false, sneakSafe = false
-			if (p.sneaking) {
-				for (let i = 0; i < contacts.size; i++) {
-					let [x, y, z] = contacts.array[i]
-					if (onBox(x, y, z, 1, 1, 1)) {
-						sneakLock = true
-						break
-					}
+			else {
+				let npy = collide(contacts.faces[1], max, 1, p2.y + p.bottomH)
+				if (npy !== false) {
+					p.onGround = true
+					p.y = npy
+					p.velocity.y = 0
 				}
 			}
 
 			// Check collisions in the X direction
-			p.x += VX
-			for (let i = 0; i < contacts.size; i++) {
-				let [x, y, z, block] = contacts.array[i]
-				if (collided(x, y, z, VX, 0, 0, block)) {
-					if (p.canStepX && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
-						continue
+			if (VX) {
+				p.x += VX
+				let npx
+				if (VX > 0) npx = collide(contacts.faces[5], min, 0, p2.x - p.w)
+				else        npx = collide(contacts.faces[4], max, 0, p2.x + p.w)
+				if (npx !== false) {
+					if (p.onGround) {
+						// See if we can step up
+						p.y += 0.5
+						if (collide(contacts.faces[0]) === false) {
+							if (VX > 0) npx = collide(contacts.faces[5], min, 0, p2.x - p.w)
+							else        npx = collide(contacts.faces[4], max, 0, p2.x + p.w)
+						}
+						p.y -= 0.5
 					}
-					if (p.canStepX) p.x -= VX // Wasn't handled in `collided` since it thought it could step.
-					p.velocity.x = 0
-					// hasCollided = true
-					break
+					if (npx !== false) {
+						p.x = npx
+						p.velocity.x = 0
+					}
 				}
-				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
-					sneakSafe = true
-				}
-			}
 
-			if (sneakLock && !sneakSafe) {
-				p.x = px
-				p.velocity.x = 0
-				// hasCollided = true
+				if (p.sneaking && p.onGround) {
+					if (collide(contacts.faces[1], max, 1, p2.y + p.bottomH) === false) {
+						p.x = px
+						p.velocity.x = 0
+					}
+				}
 			}
-			sneakSafe = false
 
 			// Check collisions in the Z direction
-			p.z += VZ
-			for (let i = 0; i < contacts.size; i++) {
-				let [x, y, z, block] = contacts.array[i]
-				if (collided(x, y, z, 0, 0, VZ, block)) {
-					if (p.canStepZ && !world.getBlock(x, y + 1, z) && !world.getBlock(x, y + 2, z)) {
-						continue
+			if (VZ) {
+				p.z += VZ
+				let npz
+				if (VZ > 0) npz = collide(contacts.faces[3], min, 2, p2.z - p.w)
+				else        npz = collide(contacts.faces[2], max, 2, p2.z + p.w)
+				if (npz !== false) {
+					if (p.onGround) {
+						// See if we can step up
+						p.y += 0.5
+						if (collide(contacts.faces[0]) === false) {
+							if (VZ > 0) npz = collide(contacts.faces[3], min, 2, p2.z - p.w)
+							else        npz = collide(contacts.faces[2], max, 2, p2.z + p.w)
+						}
+						p.y -= 0.5
 					}
-					// p.z = p.pz
-					if (p.canStepZ) p.z -= VZ // Wasn't handled in `collided` since it thought it could step.
-					p.velocity.z = 0
-					// hasCollided = true
-					break
+					if (npz !== false) {
+						p.z = npz
+						p.velocity.z = 0
+					}
 				}
-				if (sneakLock && onBox(x, y, z, 1, 1, 1)) {
-					sneakSafe = true
+
+				if (p.sneaking && p.onGround) {
+					if (collide(contacts.faces[1], max, 1, p2.y + p.bottomH) === false) {
+						p.z = pz
+						p.velocity.z = 0
+					}
 				}
 			}
 
-			if (sneakLock && !sneakSafe) {
-				p.z = pz
-				p.velocity.z = 0
-				// hasCollided = true
-			}
+			if (p.velocity.x === 0) VX = 0
+			if (p.velocity.y === 0) VY = 0
+			if (p.velocity.z === 0) VZ = 0
 		}
 
 
@@ -1350,64 +1300,99 @@ async function MineKhan() {
 		}
 	}
 
-	function drawHitbox(camera) {
+	/**
+	 * @param {Camera} camera
+	 */
+	const drawHitbox = (camera) => {
 		// Get the transformation matrix in position
 		const [x, y, z] = hitBox.pos
 		camera.transformation.translate(x, y, z)
-		camera.getMatrix()
+		// camera.transformation.elements[15] -= 1
 		gl.useProgram(program3DFogless)
-		gl.uniformMatrix4fv(glCache.uViewFogless, false, matrix)
+		gl.uniformMatrix4fv(glCache.uViewFogless, false, camera.getMatrix())
+		// console.log(...[...matrix].map(n => +n.toFixed(3)))
 		camera.transformation.translate(-x, -y, -z)
 
 		// Bind texture buffer with black texture
-		gl.bindBuffer(gl.ARRAY_BUFFER, texCoordsBuffers[textureMap.hitbox])
+		gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.buffer)
 		gl.vertexAttribPointer(glCache.aTexture, 2, gl.FLOAT, false, 0, 0)
 
 		// Bind vertex buffer with the shape of the targeted block
 		gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.shape.buffer)
 		gl.vertexAttribPointer(glCache.aVertex, 3, gl.FLOAT, false, 0, 0)
+		gl.disableVertexAttribArray(glCache.aSkylight)
+		gl.disableVertexAttribArray(glCache.aBlocklight)
+		gl.disableVertexAttribArray(glCache.aShadow)
 
-		// Draw them 1 face at a time to avoid drawing triangles
+		// Avoid Z-fighting on the outline since it overlaps the block
+		gl.uniform1f(glCache.uZoffset, -0.0005)
+
+		// Draw lines around 1 face at a time to avoid drawing triangles
 		for (let i = 0; i < hitBox.shape.size; i++) {
 			gl.drawArrays(gl.LINE_LOOP, i * 4, 4)
 		}
+		gl.uniform1f(glCache.uZoffset, 0)
 	}
 
-	function changeWorldBlock(t) {
-		let pos = hitBox.pos
-		if(pos && pos[1] > 0 && pos[1] < maxHeight) {
-			const data = blockData[t]
-			let shape = t && data.shape
-			if (t && data.rotate) {
-				let pi = Math.PI / 4
-				if (p.ry <= pi || p.ry >= 7 * pi) {
-					t |= WEST
-				}
-				else if (p.ry < 3 * pi) {
-					t |= SOUTH
-				}
-				else if (p.ry < 5 * pi) {
-					t |= EAST
-				}
-				else if (p.ry < 7 * pi) {
-					// t |= SOUTH
-				}
-			}
+	const changeWorldBlock = (t, x, y, z) => {
+		if (!hitBox.pos) return
+		x ??= hitBox.pos[0]
+		y ??= hitBox.pos[1]
+		z ??= hitBox.pos[2]
+		if (y <= 0 || y >= maxHeight) return
 
-			if (t && shape.flip && hitBox.face !== "top" && (hitBox.face === "bottom" || (p.direction.y * hitBox.closest + p.y) % 1 < 0.5)) {
-				t |= FLIP
+		const data = blockData[t]
+		if (t && data.rotate) {
+			let pi = Math.PI / 4
+			if (p.ry <= pi || p.ry >= 7 * pi) {
+				t |= WEST
 			}
-
-			world.setBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2], t, 0)
-			if (t) {
-				p.lastPlace = now
+			else if (p.ry < 3 * pi) {
+				t |= SOUTH
 			}
-			else {
-				p.lastBreak = now
+			else if (p.ry < 5 * pi) {
+				t |= EAST
+			}
+			else if (p.ry < 7 * pi) {
+				// t |= NORTH
 			}
 		}
+
+		if (t && data.flip && hitBox.face !== "top" && (hitBox.face === "bottom" || (p.direction.y * hitBox.closest + p.y) % 1 < 0.5)) {
+			t |= FLIP
+		}
+
+		// Check for block collision with player
+		const newBlock = blockData[t]
+		if (newBlock.solid) {
+			const verts = newBlock.shape.verts
+			let [ny, py, pz, nz, px, nx] = [0.5, -0.5, -0.5, 0.5, -0.5, 0.5]
+			for (let face of verts[0]) ny = min(ny, face[1])
+			for (let face of verts[1]) py = max(py, face[1])
+			for (let face of verts[2]) pz = max(pz, face[2])
+			for (let face of verts[3]) nz = min(nz, face[2])
+			for (let face of verts[4]) px = max(px, face[0])
+			for (let face of verts[5]) nx = min(nx, face[0])
+
+			let pny = roundBits(p.y - p.bottomH - y)
+			let ppy = roundBits(p.y + p.topH - y)
+			let pnx = p.x - p.w - x
+			let ppx = p.x + p.w - x
+			let pnz = p.z - p.w - z
+			let ppz = p.z + p.w - z
+			// console.table([[ny, py, pz, nz, px, nx], [pny, ppy, ppz, pnz, ppx, pnx]])
+			if (ppx > nx && ppy > ny && ppz > nz && pnx < px && pny < py && pnz < pz) return
+		}
+
+		world.setBlock(x, y, z, t, 0)
+		if (t) {
+			p.lastPlace = now
+		}
+		else {
+			p.lastBreak = now
+		}
 	}
-	function newWorldBlock() {
+	const newWorldBlock = () => {
 		if(!hitBox.pos || !holding) return
 		let pos = hitBox.pos, [x, y, z] = pos
 		switch(hitBox.face) {
@@ -1431,11 +1416,9 @@ async function MineKhan() {
 				break
 		}
 		let oldBlock = world.getBlock(x, y, z)
-		if (y < maxHeight && y >= 0 && !inBox(x, y, z, 1, 1, 1) && (!oldBlock || blockData[oldBlock].shape === shapes.flower) && oldBlock !== holding) {
-			pos[0] = x
-			pos[1] = y
-			pos[2] = z
-			changeWorldBlock(holding)
+
+		if (y < maxHeight && y >= 0 && (!oldBlock || blockData[oldBlock].shape === shapes.flower) && oldBlock !== holding) {
+			changeWorldBlock(holding, x, y, z)
 		}
 	}
 
@@ -1456,7 +1439,7 @@ async function MineKhan() {
 		fps: 0,
 		worstFps: 60,
 	}
-	function chunkDist(c) {
+	const chunkDist = (c) => {
 		let dx = p.x - c.x
 		let dz = p.z - c.z
 		if (dx > 16) {
@@ -1473,14 +1456,14 @@ async function MineKhan() {
 		}
 		return Math.sqrt(dx * dx + dz * dz)
 	}
-	function sortChunks(c1, c2) { // Sort the list of chunks based on distance from the player
+	const sortChunks = (c1, c2) => { // Sort the list of chunks based on distance from the player
 		let dx1 = p.x - c1.x - 8
 		let dy1 = p.z - c1.z - 8
 		let dx2 = p.x - c2.x - 8
 		let dy2 = p.z - c2.z - 8
 		return dx1 * dx1 + dy1 * dy1 - (dx2 * dx2 + dy2 * dy2)
 	}
-	function fillReqs(x, z) {
+	const fillReqs = (x, z) => {
 		// Chunks must all be loaded first.
 		let done = true
 		for (let i = x - 4; i <= x + 4; i++) {
@@ -1513,12 +1496,12 @@ async function MineKhan() {
 
 		return done
 	}
-	function renderFilter(chunk) {
+	const renderFilter = (chunk) => {
 		const d = settings.renderDistance + Math.SQRT1_2
 		return chunk.distSq <= d * d
 	}
 
-	function debug(message) {
+	const debug = (message) => {
 		let ellapsed = performance.now() - debug.start
 		if (ellapsed > 30) {
 			console.log(message, ellapsed.toFixed(2), "milliseconds")
@@ -1526,7 +1509,7 @@ async function MineKhan() {
 	}
 
 	let alerts = []
-	function chatAlert(msg) {
+	const chatAlert = (msg) => {
 		if (screen !== "play") return
 		alerts.push({
 			msg: msg.substr(0, 50),
@@ -1547,7 +1530,7 @@ async function MineKhan() {
 		charWidth = span.offsetWidth
 		span.remove()
 	}
-	function renderChatAlerts() {
+	const renderChatAlerts = () => {
 		if (!alerts.length || screen !== "play") return
 		let y = height - 150
 		if (now - alerts[0].created > 10000 || !alerts.at(-1).rendered) {
@@ -1556,7 +1539,7 @@ async function MineKhan() {
 			let y2 = y - 50 * (alerts.length - 1) - 20
 			let w = charWidth * alerts.reduce((mx, al) => max(mx, al.msg.length), 0)
 			let h = 50 * (alerts.length - 1) + 24
-			ctx.clearRect(x, y2, w, h)
+			ctx.clearRect(x, y2, w + 5, h + 5)
 		}
 		else return
 		while(alerts.length && now - alerts[0].created > 10000) {
@@ -1570,7 +1553,7 @@ async function MineKhan() {
 		}
 	}
 
-	function chat(msg, color, author) {
+	const chat = (msg, color, author) => {
 		let lockScroll = false
 		if (chatOutput.scrollTop + chatOutput.clientHeight + 50 > chatOutput.scrollHeight) {
 			lockScroll = true
@@ -1601,7 +1584,7 @@ async function MineKhan() {
 		}
 	}
 
-	function sendChat(msg) {
+	const sendChat = (msg) => {
 		if (multiplayer) {
 			multiplayer.send(JSON.stringify({
 				type: "chat",
@@ -1620,7 +1603,7 @@ async function MineKhan() {
 	let playerPositions = {}
 	let playerEntities = {}
 	let playerDistances = []
-	function setAutocomplete(list) {
+	const setAutocomplete = (list) => {
 		if (list === autocompleteList) return
 		if (list.length === autocompleteList.length) {
 			let i = 0
@@ -1640,7 +1623,7 @@ async function MineKhan() {
 		}
 		autocompleteList = list
 	}
-	function addCommand(name, callback, usage, description, autocomplete) {
+	const addCommand = (name, callback, usage, description, autocomplete) => {
 		if (!autocomplete) autocomplete = () => {}
 		commands.set(name, {
 			name,
@@ -1739,14 +1722,20 @@ async function MineKhan() {
 			return
 		}
 
-		if (count > list.length) count = list.length
-		chat(`Undoing the last ${count} block edits from ${name}`, "lime")
-		for (let i = 0; i < count; i++) {
-			let [x, y, z, , oldBlock] = list.pop()
-			if (multiplayer) await sleep(50)
-			world.setBlock(x, y, z, oldBlock, false, false, true)
-		}
-		chat(`${count} block edits undone.`, "lime")
+		if (count > list.length) count = list.length;
+
+		// Run after closing chat
+		(async () => {
+			await sleep(1)
+			chat(`Undoing the last ${count} block edits from ${name}`, "lime")
+			for (let i = 0; i < count; i++) {
+				let [x, y, z, , oldBlock] = list.pop()
+				if (multiplayer) await sleep(50)
+				world.setBlock(x, y, z, oldBlock, false, false, true)
+			}
+			chat(`${count} block edits undone.`, "lime")
+		})()
+		play()
 	}, "/undo [username=Player] <blockCount>", "Undoes the last <blockCount> block edits made by [username]", () => {
 		setAutocomplete(Object.keys(blockLog).map(name => `/undo ${name} ${blockLog[name].length}`))
 	})
@@ -1895,19 +1884,45 @@ async function MineKhan() {
 		}
 
 		play()
-	}, "/fill [cuboid|sphere|cylinder] [solid|hollow]", "Uses the player's last 2 edited blocks to designate an area to fill, then fills it with the block in the player's hand.\nWith a cuboid, the 2 blocks are the corners.\nWith a sphere, the first block you edit is the center, and the 2nd block determines the radius.\nWith a cylinder, the first block determines the center, and the 2nd block determines the radius and height.", () => {
+	},
+	"/fill [cuboid|sphere|cylinder] [solid|hollow]",
+	"Uses the player's last 2 edited blocks to designate an area to fill, then fills it with the block in the player's hand.\nWith a cuboid, the 2 blocks are the corners.\nWith a sphere, the first block you edit is the center, and the 2nd block determines the radius.\nWith a cylinder, the first block determines the center, and the 2nd block determines the radius and height.",
+	() => {
 		setAutocomplete(["/fill cuboid hollow", "/fill sphere hollow", "/fill cylinder hollow", "/fill cuboid solid", "/fill sphere solid", "/fill cylinder solid"])
 	})
+	addCommand("time",
+		args => {
+			let time = world.tickCount % 12000
+			if (!args.length) return chat(`Current time: ${time}`, "lime")
+			let arg = args[0].toLowerCase()
+			let target = 0
+			if (/^\d+$/.test(arg)) target = +arg
+			else if (arg === "dawn") target = 0
+			else if (arg === "dusk") target = 6000
+			else if (arg === "noon") target = 3000
+			else if (arg === "night") target = 9000
 
-	function sendCommand(msg) {
+			chat(`Setting time to ${target}`, "lime")
+			if (target < time) target += 12000
+			world.addedTime = (target - time + 49) / 50 | 0
+			play()
+		},
+		"/time [dawn|dusk|noon|night|<Number>]",
+		"Either displays the current time, or sets the time to the desired value, measured in 1/20ths of a second.",
+		() => setAutocomplete(["/time dawn", "/time noon", "/time dusk", "/time night"])
+	)
+
+	const sendCommand = (msg) => {
 		msg = msg.substr(1)
 		let parts = msg.split(" ")
 		let cmd = parts.shift()
-		if (commands.has(cmd)) commands.get(cmd).callback(parts)
+		if (commands.has(cmd)) {
+			commands.get(cmd).callback(parts)
+		}
 		setAutocomplete(commandList)
 	}
 
-	async function loggedIn() {
+	const loggedIn = async () => {
 		let exists = await fetch("https://willard.fun/profile").then(res => res.text()).catch(() => "401")
 		if (!exists || exists === "401") {
 			if (location.href.startsWith("https://willard.fun")) {
@@ -1926,7 +1941,7 @@ async function MineKhan() {
 		return true
 	}
 
-	async function initMultiplayer(target) {
+	const initMultiplayer = async (target) => {
 		if (multiplayer) return
 		let logged = await loggedIn()
 		if (!logged) return
@@ -1978,7 +1993,13 @@ async function MineKhan() {
 
 				if (!a[4]) {
 					// If it's not an "Undo" packet, log it.
-					let old = world.getBlock(a[0], a[1], a[2])
+					let old = -1
+					try {
+						old = world.getBlock(a[0], a[1], a[2])
+					}
+					catch {
+						old = -1
+					}
 					a.push(old, now)
 					if (!blockLog[packet.author]) blockLog[packet.author] = []
 					blockLog[packet.author].push(a)
@@ -2085,7 +2106,7 @@ async function MineKhan() {
 		}
 	}
 
-	async function getWorlds() {
+	const getWorlds = async () => {
 		let logged = await loggedIn()
 		if (!logged) return []
 
@@ -2100,17 +2121,16 @@ async function MineKhan() {
 	class World {
 		constructor(empty) {
 			if (!empty) {
-				setSeed(Math.random() * 2000000000 | 0)
+				this.setSeed(Math.random() * 2000000000 | 0)
 			}
 
 			generatedChunks = 0
 			fogDist = 16
 
 			// Initialize the world's arrays
-			this.chunks = []
 			this.loaded = []
-			this.sortedChunks = []
-			this.doubleRenderChunks = []
+			this.sortedChunks = [] // What gets rendered
+			this.doubleRenderChunks = [] // What gets rendered with water
 			this.offsetX = 0
 			this.offsetZ = 0
 			this.lwidth = 0
@@ -2121,9 +2141,8 @@ async function MineKhan() {
 			this.loadQueue = []
 			this.meshQueue = []
 			this.loadFrom = {}
-			this.loading = false
 			this.entities = []
-			this.lastChunk = ","
+			this.lastChunk = "," // Chunk the player was standing in in the last tick
 			this.caves = caves
 			this.initTime = Date.now()
 			this.tickCount = 0
@@ -2133,6 +2152,15 @@ async function MineKhan() {
 			// this.memory = memory
 			// this.freeMemory = []
 		}
+		setSeed(seed) {
+			this.seed = seed
+			seedHash(seed)
+			noiseProfile.noiseSeed(seed)
+			while(win.workers.length) {
+				win.doWork({ seed })
+			}
+		}
+
 		// initMemory() {
 		// 	// Reserve first 256 bytes for settings or whatever
 		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
@@ -2377,17 +2405,22 @@ async function MineKhan() {
 				chunk.setBlockLight(cx, y, cz, 0)
 				spread.push(x, y, z)
 				let respread = []
-				for (let i = 0; i <= blockLight + 1; i++) respread[i] = []
+				for (let i = 0; i <= 15; i++) respread[i] = []
 				chunk.unSpreadLight(spread, blockLight - 1, respread, 1)
 				chunk.reSpreadLight(respread, 1)
 			}
 		}
 		async tick() {
-			this.lastTick = performance.now()
-			this.tickCount++
+			let pnow = performance.now()
+			this.tickCount += multiplayer ? Math.round((pnow - this.lastTick) / 50) : 1
+			this.lastTick = pnow
 			if (this.tickCount & 1) {
 				hud() // Update the HUD at 10 TPS
 				renderChatAlerts()
+			}
+			if (this.addedTime) { // /time command was used
+				this.tickCount += 50
+				this.addedTime--
 			}
 
 			let maxChunkX = (p.x >> 4) + settings.renderDistance
@@ -2499,12 +2532,12 @@ async function MineKhan() {
 			}
 			animateTextures(gl)
 
-			initModelView(p)
 			gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
 			let time = 0
-			if (multiplayer) time = Date.now()
-			else time = this.tickCount * 50 + (performance.now() - this.lastTick) % 50
+			let delta = performance.now() - this.lastTick
+			if (!multiplayer && delta > 100) delta = 0
+			time = this.tickCount * 50 + delta * (this.addedTime ? 51 : 1)
 
 			p2.x = round(p.x)
 			p2.y = round(p.y)
@@ -2523,14 +2556,20 @@ async function MineKhan() {
 				else fogDist = dist
 			}
 
+			gl.useProgram(program3D)
 			gl.uniform3f(glCache.uPos, p.x, p.y, p.z)
 			gl.uniform1f(glCache.uDist, fogDist)
 
 			gl.useProgram(program3DFogless)
 			gl.uniform3f(glCache.uPosFogless, p.x, p.y, p.z)
+			if (hitBox.pos) {
+				p.transform()
+				drawHitbox(p)
+			}
+			initModelView(p)
 
 			let c = this.sortedChunks
-			let glob = { renderedChunks }
+			let glob = { renderedChunks } // An object so I can keep track of whether or not they're rendered.
 			let fog = false
 			for (let i = 0; i < c.length; i++) {
 				if (!fog && fogDist < chunkDist(c[i]) + 24) {
@@ -2567,9 +2606,6 @@ async function MineKhan() {
 			gl.disableVertexAttribArray(glCache.aBlocklight)
 			gl.disableVertexAttribArray(glCache.aShadow)
 			// gl.uniform3f(glCache.uPos, 0, 0, 0)
-			if (hitBox.pos) {
-				drawHitbox(p)
-			}
 
 			// Render entities
 			gl.useProgram(programEntity)
@@ -2644,7 +2680,15 @@ async function MineKhan() {
 				this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 			}
 		}
-
+		unloadChunks() {
+			for (let chunk of this.loaded) {
+				if (chunk.buffer) {
+					gl.deleteBuffer(chunk.buffer)
+					chunk.blocks = null
+					chunk.light = null
+				}
+			}
+		}
 		getSaveString() {
 
 			let bab = new BitArrayBuilder()
@@ -2652,7 +2696,7 @@ async function MineKhan() {
 			for (let c of this.name) bab.add(c.charCodeAt(0), 8)
 			version.split(" ")[1].split(".").map(n => bab.add(+n, 8))
 
-			bab.add(worldSeed, 32)
+			bab.add(this.seed, 32)
 			bab.add(this.tickCount, 32)
 			bab.add(round(p.x), 20).add(Math.min(round(p.y), 511), 9).add(round(p.z), 20)
 			bab.add(p.rx * 100, 11).add(p.ry * 100, 11)
@@ -2672,8 +2716,8 @@ async function MineKhan() {
 
 			// Chunks that aren't in the loaded area
 			for (let coords in this.loadFrom) {
-				const [x, z] = coords.split(",").map(n => n << 4)
-				const chunk = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves)
+				const [x, z] = coords.split(",").map(n => n * 16)
+				const chunk = new Chunk(x, z, this, glExtensions, gl, glCache, superflat, caves)
 
 				if (this.version < "Alpha 0.8.1" || this.loadFrom[coords].edits) {
 					// Load the chunk and re-save it in the new version format
@@ -2729,7 +2773,7 @@ async function MineKhan() {
 			if (version === 0x800) {
 				// Alpha 0.8.0
 				this.rivers = false
-				setSeed(reader.read(32))
+				this.setSeed(reader.read(32))
 				this.tickCount = reader.read(32)
 
 				p.x = reader.read(20, true)
@@ -2737,7 +2781,11 @@ async function MineKhan() {
 				p.z = reader.read(20, true)
 				p.rx = reader.read(11, true) / 100
 				p.ry = reader.read(11, true) / 100
-				for (let i = 0; i < 9; i++) inventory.playerStorage.setItem(reader.read(16), i + inventory.hotbar.start)
+				for (let i = 0; i < 9; i++) {
+					let id = reader.read(16)
+					if (!blockData[id]) id = blockIds.pumpkin
+					inventory.playerStorage.setItem(id, i + inventory.hotbar.start)
+				}
 				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
 				p.flying = reader.read(1)
 				p.spectator = reader.read(1)
@@ -2750,14 +2798,24 @@ async function MineKhan() {
 
 				paletteLen = reader.read(16)
 				paletteBits = BitArrayBuilder.bits(paletteLen)
-				for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+				for (let i = 0; i < paletteLen; i++) {
+					let id = reader.read(16)
+					if (id & STAIR) {
+						let rot = id & 0x1800
+						id ^= rot // Remove old rotation
+						if (!rot) id |= WEST
+						else if (rot === WEST) id |= SOUTH
+						else if (rot === SOUTH) id |= EAST
+					}
+					palette.push(id)
+				}
 
 				reader.bit += 32 // Section count; no longer used since I realized I can just read to the end.
 			}
 			else {
 				// Current saves
 				version = reader.read(24)
-				setSeed(reader.read(32))
+				this.setSeed(reader.read(32))
 				this.tickCount = reader.read(32)
 
 				p.x = reader.read(20, true)
@@ -2775,6 +2833,7 @@ async function MineKhan() {
 				for (let i = 0; i < 36; i++) {
 					let id = reader.read(16)
 					let stack = reader.read(6) + 1
+					if (!blockData[id]) id = blockIds.pumpkin
 					inventory.playerStorage.setItem(id ? new InventoryItem(id, blockData[id].name, stack, blockData[id].iconImg) : null, i)
 				}
 				inventory.hotbar.index = reader.read(4) + inventory.hotbar.start
@@ -2805,7 +2864,17 @@ async function MineKhan() {
 					paletteLen = reader.read(9)
 					paletteBits = BitArrayBuilder.bits(paletteLen)
 					palette = []
-					for (let i = 0; i < paletteLen; i++) palette.push(reader.read(16))
+					for (let i = 0; i < paletteLen; i++) {
+						let id = reader.read(16)
+						// if (id & STAIR) {
+						// 	let rot = id & 0x1800
+						// 	id ^= rot // Remove old rotation
+						// 	if (!rot) id |= WEST
+						// 	else if (rot === WEST) id |= SOUTH
+						// 	else if (rot === SOUTH) id |= EAST
+						// }
+						palette.push(id)
+					}
 				}
 
 				let orientation = reader.read(3)
@@ -2856,6 +2925,14 @@ async function MineKhan() {
 			}
 			previousChunk.endPos = reader.bit
 
+			// Script to hack in some chunks from another save
+			// for (let c in loadFrom) {
+			// 	const blocks = []
+			// 	const o = loadFrom[c].blocks
+			// 	for (let i in o) if (o[i] !== "length") blocks[i] = o[i]
+			// 	loadFrom[c].blocks = blocks
+			// 	chunks[c] = loadFrom[c]
+			// }
 			this.loadFrom = chunks
 		}
 		loadOldSave(str) {
@@ -2863,7 +2940,7 @@ async function MineKhan() {
 			let data = str.split(";")
 
 			this.name = data.shift()
-			setSeed(parseInt(data.shift(), 36))
+			this.setSeed(parseInt(data.shift(), 36))
 
 			let playerData = data.shift().split(",")
 			p.x = parseInt(playerData[0], 36)
@@ -2894,6 +2971,7 @@ async function MineKhan() {
 				let chunk = chunks[str].blocks
 				for (let j = 0; j < blocks.length; j++) {
 					let block = parseInt(blocks[j], 36)
+
 					// Old index was 0xXYZ, new index is 0xYYXZ
 					let x = block >> 8 & 15
 					let y = block >> 4 & 15
@@ -2901,12 +2979,20 @@ async function MineKhan() {
 					let index = (cy * 16 + y) * 256 + x * 16 + z
 					let pid = block >> 12
 
-					chunk[index] = palette[pid]
+					let id = palette[pid]
+					if (id & STAIR) {
+						let rot = id & 0x1800
+						id ^= rot // Remove old rotation
+						if (!rot) id |= WEST
+						else if (rot === WEST) id |= SOUTH
+						else if (rot === SOUTH) id |= EAST
+					}
+
+					chunk[index] = id
 				}
 			}
 
 			this.loadFrom = chunks
-			// this.loadKeys = Object.keys(chunks)
 		}
 	}
 
@@ -3171,7 +3257,7 @@ async function MineKhan() {
 	}
 	Button.all = []
 
-	function initButtons() {
+	const initButtons = () => {
 		Button.all = []
 		Slider.all = []
 		const nothing = () => false
@@ -3257,11 +3343,12 @@ async function MineKhan() {
 		let mid = width / 2
 		Button.add(mid - 3 * x4, height - 30, w4, 40, "Edit", "loadsave menu", () => changeScene("editworld"), () => selected() || !worlds[selectedWorld].edited)
 		Button.add(mid - x4, height - 30, w4, 40, "Delete", "loadsave menu", () => {
-			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}? This will also delete it from the cloud.`)) {
+			const cloud = location.href.startsWith("https://willard.fun/") ? " This will also delete it from the cloud." : ""
+			if (worlds[selectedWorld] && confirm(`Are you sure you want to delete ${worlds[selectedWorld].name}?${cloud}`)) {
 				deleteFromDB(selectedWorld)
 				win.worlds.removeChild(document.getElementById(selectedWorld))
 				delete worlds[selectedWorld]
-				if (location.href.startsWith("https://willard.fun/")) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
+				if (cloud) fetch(`https://willard.fun/minekhan/saves/${selectedWorld}`, { method: "DELETE" })
 				selectedWorld = 0
 			}
 		}, () => selected() || !worlds[selectedWorld].edited, "Delete the world forever.")
@@ -3318,7 +3405,7 @@ async function MineKhan() {
 			}
 			else {
 				let oldLength = w.name.length
-				w.name = boxCenterTop.value.slice(0, 256)
+				w.name = boxCenterTop.value.slice(0, 256) || w.name
 				let newLength = w.name.length
 				let newCode = new Uint8Array(w.code.length + newLength - oldLength)
 				newCode[0] = newLength
@@ -3341,7 +3428,10 @@ async function MineKhan() {
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
 		Button.add(width / 2, 275, 300, 40, "Options", "pause", () => changeScene("options"))
-		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, () => !!multiplayer && !multiplayer.host, () => `Save the world to your browser + account. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`)
+		Button.add(width / 2, 325, 300, 40, "Save", "pause", save, () => !!multiplayer && !multiplayer.host, () => {
+			const account = location.href.startsWith("https://willard.fun") ? " + account" : ""
+			return `Save the world to your browser${account}. Doesn't work in incognito.\n\nLast saved ${timeString(now - world.edited)}.`
+		})
 		Button.add(width / 2, 375, 300, 40, "Get Save Code", "pause", () => {
 			savebox.classList.remove("hidden")
 			saveDirections.classList.remove("hidden")
@@ -3357,6 +3447,7 @@ async function MineKhan() {
 			}
 			initWorldsMenu()
 			changeScene("main menu")
+			world.unloadChunks()
 			world = null
 		})
 
@@ -3399,7 +3490,7 @@ async function MineKhan() {
 		Button.add(width / 2, optionsBottom, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
 	}
 
-	function hotbar() {
+	const hotbar = () => {
 		if (screen !== "play") return
 		// The selected block has changed. Update lantern brightness
 		{
@@ -3411,7 +3502,7 @@ async function MineKhan() {
 		}
 	}
 
-	function crosshair() {
+	const crosshair = () => {
 		if (p.spectator) return
 		let x = width / 2 + 0.5
 		let y = height / 2 + 0.5
@@ -3427,7 +3518,7 @@ async function MineKhan() {
 
 	let debugLines = []
 	let newDebugLines = []
-	function hud(clear) {
+	const hud = (clear) => {
 		if (p.spectator || screen !== "play") return
 		if (clear) debugLines.length = 0
 
@@ -3534,13 +3625,13 @@ async function MineKhan() {
 	sortedBlocks.shift() // Get rid of the air block in the array of sorted blocks
 	sortedBlocks.sort()
 
-	function clickInv() {
+	const clickInv = () => {
 		inventory.heldItem = null
 		document.getElementById("heldItem")?.classList.add("hidden")
 	}
 
 	let unpauseDelay = 0
-	function mmoved(e) {
+	const mmoved = (e) => {
 		let mouseS = settings.mouseSense / 30000
 		p.rx -= e.movementY * mouseS
 		p.ry += e.movementX * mouseS
@@ -3558,7 +3649,7 @@ async function MineKhan() {
 			p.rx = -Math.PI / 2
 		}
 	}
-	function trackMouse(e) {
+	const trackMouse = (e) => {
 		if (screen !== "play") {
 			cursor("")
 			mouseX = e.x
@@ -3576,7 +3667,7 @@ async function MineKhan() {
 	}
 
 	// For user controls that react immediately in the event handlers.
-	function controlEvent(name, event) {
+	const controlEvent = (name, event) => {
 		if(screen === "play") {
 			if (document.pointerLockElement !== canvas) {
 				getPointer()
@@ -3901,60 +3992,7 @@ async function MineKhan() {
 		e.preventDefault()
 	}, false)
 
-	function use2d() {
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.enableVertexAttribArray(glCache.aVertex2)
-		gl.enableVertexAttribArray(glCache.aTexture2)
-		gl.enableVertexAttribArray(glCache.aShadow2)
-		gl.useProgram(program2D)
-		gl.uniform2f(glCache.uOffset, 0, 0) // Remove offset from rendering icons
-		gl.depthFunc(gl.ALWAYS)
-	}
-	function use3d() {
-		gl.useProgram(program3D)
-		gl.enableVertexAttribArray(glCache.aVertex)
-		gl.enableVertexAttribArray(glCache.aTexture)
-		gl.enableVertexAttribArray(glCache.aShadow)
-		gl.enableVertexAttribArray(glCache.aSkylight)
-		gl.enableVertexAttribArray(glCache.aBlocklight)
-		gl.activeTexture(gl.TEXTURE0)
-		// gl.depthFunc(gl.LESS)
-	}
-
-	const dirt = () => {
-		ctx.clearRect(0, 0, width, height) // Don't draw over the beautful dirt
-
-		use2d()
-		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
-		gl.uniform1i(glCache.uSampler2, 1) // Dirt texture
-		gl.vertexAttribPointer(glCache.aVertex2, 2, gl.FLOAT, false, 20, 0)
-		gl.vertexAttribPointer(glCache.aTexture2, 2, gl.FLOAT, false, 20, 8)
-		gl.vertexAttribPointer(glCache.aShadow2, 1, gl.FLOAT, false, 20, 16)
-		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-	}
-	function initDirt() {
-		// Dirt background
-		let aspect = width / height
-		let stack = height / 96
-		let bright = 0.4
-		if (!dirtBuffer) dirtBuffer = gl.createBuffer()
-		gl.bindBuffer(gl.ARRAY_BUFFER, dirtBuffer)
-		let bgCoords = new Float32Array([
-			-1, -1, 0, stack, bright,
-			1, -1, stack * aspect, stack, bright,
-			1, 1, stack * aspect, 0, bright,
-			-1, 1, 0, 0, bright
-		])
-		gl.bufferData(gl.ARRAY_BUFFER, bgCoords, gl.STATIC_DRAW)
-		dirt()
-	}
-
-	function startLoad() {
-		dirt()
-		world.loadChunks()
-	}
-	function initWebgl() {
+	const initWebgl = () => {
 		if (!win.gl) {
 			let canv = document.getElementById("webgl-canvas")
 			canv.width = ctx.canvas.width
@@ -3977,8 +4015,8 @@ async function MineKhan() {
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 			win.glCache = glCache = {}
-			program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
 			program3DFogless = createProgramObject(gl, foglessVertexShaderSrc3D, foglessFragmentShaderSrc3D)
+			program3D = createProgramObject(gl, vertexShaderSrc3D, fragmentShaderSrc3D)
 			program2D = createProgramObject(gl, vertexShaderSrc2D, fragmentShaderSrc2D)
 			programEntity = createProgramObject(gl, vertexShaderSrcEntity, fragmentShaderSrcEntity)
 			skybox = getSkybox(gl, glCache, program3D, program3DFogless)
@@ -4004,6 +4042,7 @@ async function MineKhan() {
 			glCache.uTimeFogless = gl.getUniformLocation(program3DFogless, "uTime")
 			glCache.uTransFogless = gl.getUniformLocation(program3DFogless, "uTrans")
 			glCache.uLanternFogless = gl.getUniformLocation(program3DFogless, "uLantern")
+			glCache.uZoffset = gl.getUniformLocation(program3DFogless, "uZoffset")
 
 			gl.useProgram(program3D)
 			glCache.uView = gl.getUniformLocation(program3D, "uView")
@@ -4024,13 +4063,13 @@ async function MineKhan() {
 			win.glPrograms = { program2D, program3D, program3DFogless, programEntity, skybox }
 		}
 		else {
-			({ gl, glCache, glExtensions } = win.gl);
+			({ gl, glCache, glExtensions } = win);
 			({ program2D, program3D, program3DFogless, programEntity, skybox } = win.glPrograms)
-			document.getElementById("webgl-canvas").remove() // There can be 1
+			document.getElementById("webgl-canvas").remove() // There can be only 1
 			document.body.prepend(gl.canvas)
-		}
 
-		modelView = new Float32Array(16)
+			gl.useProgram(program3D)
+		}
 
 		gl.uniform1f(glCache.uDist, 1000)
 		gl.uniform1i(glCache.uTrans, 0)
@@ -4039,23 +4078,12 @@ async function MineKhan() {
 		initTextures(gl, glCache)
 		initShapes()
 
-		// These buffers are only used for drawing the main menu blocks
-		sideEdgeBuffers = {}
-		for (let side in shapes.cube.verts) {
-			let edgeBuffer = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuffer)
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shapes.cube.verts[side][0]), gl.STATIC_DRAW)
-			sideEdgeBuffers[side] = edgeBuffer
-		}
-		texCoordsBuffers = []
-		for (let t in textureCoords) {
-			let buff = gl.createBuffer()
-			gl.bindBuffer(gl.ARRAY_BUFFER, buff)
-			gl.bufferData(gl.ARRAY_BUFFER, textureCoords[t], gl.STATIC_DRAW)
-			texCoordsBuffers.push(buff)
-		}
+		// Make a buffer for the hitbox outline texture (just black repeatedly)
+		hitBox.buffer = gl.createBuffer()
+		gl.bindBuffer(gl.ARRAY_BUFFER, hitBox.buffer)
+		gl.bufferData(gl.ARRAY_BUFFER, hitboxTextureCoords, gl.STATIC_DRAW)
 
-		// Bind the Vertex Array Object (VAO) that will be used to draw everything
+		// Bind the index buffer that will be used to draw squares instead of 2 triangles for everything
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
@@ -4064,13 +4092,12 @@ async function MineKhan() {
 		gl.enable(gl.CULL_FACE)
 		gl.cullFace(gl.BACK)
 
+		gl.depthRange(0, 2)
 		gl.lineWidth(2)
-		gl.enable(gl.POLYGON_OFFSET_FILL)
-		gl.polygonOffset(1, 1)
 		gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 	}
 
-	function initPlayer() {
+	const initPlayer = () => {
 		p = new Camera()
 		p.speed = 0.11
 		p.velocity = new PVector(0, 0, 0)
@@ -4080,7 +4107,7 @@ async function MineKhan() {
 		p.x = 8
 		p.y = 0
 		p.z = 8
-		p.w = 3 / 8
+		p.w = 6 / 16
 		p.bottomH = 1.62
 		p.topH = 0.18
 		p.onGround = false
@@ -4098,17 +4125,24 @@ async function MineKhan() {
 		p.sneaking = false
 		p.spectator = false
 
+		p.minX = () => roundBits(p.x - p.w - p2.x)
+		p.minY = () => roundBits(p.y - p.bottomH - p2.y)
+		p.minZ = () => roundBits(p.z - p.w - p2.z)
+		p.maxX = () => roundBits(p.x + p.w - p2.x)
+		p.maxY = () => roundBits(p.y + p.topH - p2.y)
+		p.maxZ = () => roundBits(p.z + p.w - p2.z)
+
 		win.player = p
 		win.p2 = p2
 	}
 
-	function sanitize(text) {
+	const sanitize = (text) => {
 		const el = document.createElement('div')
 		el.textContent = text
 		return el.innerHTML
 	}
 
-	function initWorldsMenu() {
+	const initWorldsMenu = () => {
 		while (win.worlds.firstChild) {
 			win.worlds.removeChild(win.worlds.firstChild)
 		}
@@ -4122,7 +4156,7 @@ async function MineKhan() {
 			}
 		}
 
-		function addWorld(name, version, size, id, edited, cloud) {
+		const addWorld = (name, version, size, id, edited, cloud) => {
 			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = () => {
@@ -4208,7 +4242,7 @@ async function MineKhan() {
 		caves = true
 	}
 
-	async function initMultiplayerMenu() {
+	const initMultiplayerMenu = async () => {
 		while (win.worlds.firstChild) {
 			win.worlds.removeChild(win.worlds.firstChild)
 		}
@@ -4224,7 +4258,7 @@ async function MineKhan() {
 
 		let servers = await getWorlds()
 
-		function addWorld(name, host, online, id, version, password) {
+		const addWorld = (name, host, online, id, version, password) => {
 			let div = document.createElement("div")
 			div.className = "world"
 			div.onclick = () => {
@@ -4277,13 +4311,17 @@ async function MineKhan() {
 		}, 5000)
 	}
 
-	function initEverything() {
+	const initEverything = () => {
 		generatedChunks = 0
 
 		initPlayer()
 		initWebgl()
 
-		if (win.location.origin === "https://www.kasandbox.org" && (loadString || document.children[0].innerHTML.length !== 314419)) {
+		let l = 0
+		for (let d of document.getElementsByTagName("script")) {
+			l += d.innerHTML.length
+		}
+		if (win.location.origin === "https://www.kasandbox.org" && l !== 311283) {
 			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
 			// If you're making significant changes and want to remove this, then you can.
 			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
@@ -4311,13 +4349,13 @@ async function MineKhan() {
 			initMultiplayer(urlParams.get("target"))
 		}
 
-		if (win.tickid) win.clearTimeout(win.tickid)
-		tickLoop()
+		if (win.tickid) win.clearInterval(win.tickid)
+		win.tickid = setInterval(tickLoop, 50)
 	}
 
 	// Define all the scene draw functions
 	(function() {
-		function title() {
+		const title = () => {
 			let title = "MINEKHAN"
 			let subtext = "JAVASCRIPT EDITION"
 			let font = "monospace"
@@ -4428,9 +4466,7 @@ async function MineKhan() {
 		Slider.draw()
 	}, 100)
 
-	function tickLoop() {
-		win.tickid = win.setTimeout(tickLoop, 50) // 20 TPS
-
+	const tickLoop = () => {
 		if (world && screen === "play") {
 			let tickStart = performance.now()
 			world.tick()
@@ -4444,7 +4480,7 @@ async function MineKhan() {
 	}
 
 	let prevTime = 0
-	function renderLoop(time) {
+	const renderLoop = (time) => {
 		let frameFPS = Math.round(10000/(time - prevTime)) / 10
 		prevTime = time
 

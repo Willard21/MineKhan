@@ -1,6 +1,5 @@
 import { blockData } from "./blockData.js"
 import { shapes } from "./shapes.js"
-import { textureCoords, textureMap } from "./texture.js"
 import { Entity } from "./entity.js"
 import { Matrix } from "./3Dutils.js"
 

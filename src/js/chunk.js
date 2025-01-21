@@ -1,8 +1,6 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { BitArrayBuilder, BitArrayReader } from "./utils.js"
-import { shapes } from "./shapes.js"
-// let world
 
 const { floor, max, abs } = Math
 const semiTrans = new Uint8Array(blockData.filter((data, i) => data && i < 256).map(data => data.semiTrans ? 1 : 0))
@@ -36,7 +34,7 @@ let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,
 // }
 // console.log(sphere)
 
-function carveSphere(x, y, z, world) {
+const carveSphere = (x, y, z, world) => {
 	if (y > 3) {
 		for (let i = 0; i < sphere.length; i += 3) {
 			world.setWorldBlock(x + sphere[i], y + sphere[i + 1], z + sphere[i + 2], blockIds.air, true)
@@ -94,7 +92,7 @@ let getShadows
 	]
 }
 
-function average(l, a, b, c, d) {
+const average = (l, a, b, c, d) => {
 	a = l[a]
 	b = l[b]
 	c = l[c]
@@ -1246,14 +1244,10 @@ class Chunk {
 
 			let shapeVerts = block.shape.verts
 			let shapeTexVerts = block.shape.texVerts
-			if (block.shape === shapes.fence) {
-				let mask = 0
-				if (this.world.getBlock(worldX + 1, worldY, worldZ)) mask |= 8
-				if (this.world.getBlock(worldX - 1, worldY, worldZ)) mask |= 4
-				if (this.world.getBlock(worldX, worldY, worldZ + 1)) mask |= 2
-				if (this.world.getBlock(worldX, worldY, worldZ - 1)) mask |= 1
-				shapeVerts = shapes.fence.variants[mask].verts
-				shapeTexVerts = shapes.fence.variants[mask].texVerts
+			if (block.shape.getShape) {
+				let newShape = block.shape.getShape(worldX, chunkY, worldZ, this.world, blockData)
+				shapeVerts = newShape.verts
+				shapeTexVerts = newShape.texVerts
 			}
 
 			for (let n = 0; n < 6; n++) {

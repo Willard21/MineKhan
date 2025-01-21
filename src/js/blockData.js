@@ -325,7 +325,7 @@ class BlockData {
 }
 
 const blockData = [
-	{ name: "air", textures: "air", transparent: true, shadow: false, solid: false },
+	{ name: "air", textures: "tntSide", transparent: true, shadow: false, solid: false },
 	{ name: "grass", textures: ["dirt", "grassTop", "grassSide"] },
 	{ name: "dirt" },
 	{ name: "stone" },
@@ -416,7 +416,7 @@ const blockData = [
 	{ name: "polishedDiorite" },
 	{ name: "granite" },
 	{ name: "polishedGranite" },
-	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon", hideInterior: true },
+	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, hideInterior: true },
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
 	{ name: "obsidian" },
@@ -430,10 +430,10 @@ const blockData = [
 	{ name: "polishedBlackstoneBricks" },
 	{ name: "prismarineBricks" },
 	{ name: "quartzBricks" },
-	{ name: "oakDoorTop", solid: false, transparent: true, icon: "oakDoorTop", shape: shapes.door },
-	{ name: "oakDoorBottom", solid: false, transparent: true, icon: "oakDoorBottom", shape: shapes.door },
-	{ name: "warpedDoorTop", solid: false, transparent: true, icon: "warpedDoorTop", shape: shapes.door },
-	{ name: "warpedDoorBottom", solid: false, transparent: true, icon: "warpedDoorBottom", shape: shapes.door },
+	{ name: "oakDoorTop", solid: false, transparent: true, shape: shapes.door },
+	{ name: "oakDoorBottom", solid: false, transparent: true, shape: shapes.door },
+	{ name: "warpedDoorTop", solid: false, transparent: true, shape: shapes.door },
+	{ name: "warpedDoorBottom", solid: false, transparent: true, shape: shapes.door },
 	{ name: "ironTrapdoor", solid: false, transparent: true, shape: shapes.cube },
 	{ name: "cherryPlanks" },
 	{ name: "cherryLog", textures: ["cherryLogTop", "cherryLog"] },
@@ -485,7 +485,6 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "poppy",
 		shape: shapes.flower
 	},
 	{
@@ -494,7 +493,6 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "cornflower",
 		shape: shapes.flower
 	},
 	{
@@ -503,7 +501,6 @@ const blockData = [
 		solid: false,
 		transparent: true,
 		shadow: false,
-		icon: "dandelion",
 		shape: shapes.flower
 	},
 	{
@@ -511,7 +508,6 @@ const blockData = [
 		textures: ["air", "cobweb"],
 		solid: false,
 		transparent: true,
-		icon: "cobweb",
 		shape: shapes.flower
 	},
 	{ name: "pumpkin", textures: ["pumpkinTop", "pumpkinSide"] },
@@ -602,6 +598,15 @@ const blockData = [
 		shadow: false,
 		shape: shapes.fence
 	},
+	{
+		name: "player",
+		textures: "grassTop",
+		transparent: true,
+		shape: shapes.player,
+		rotate: true
+	},
+	// { name: "obsidianDoorTop", textures: "obsidian", solid: false, transparent: true, shape: shapes.door },
+	// { name: "obsidianDoorBottom", textures: "obsidian", solid: false, transparent: true, shape: shapes.door },
 	// Removed because everyone wants them to explode, but they don't explode.
 	/* {
  	name: "tnt",
@@ -612,7 +617,7 @@ blockData[0].iconImg = null // Air doesn't need an icon.
 
 const BLOCK_COUNT = blockData.length
 
-let Block = {
+const Block = {
 	top: 0x4,
 	bottom: 0x8,
 	north: 0x20,

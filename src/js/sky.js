@@ -6,7 +6,7 @@ import { createProgramObject } from './glUtils'
  * @param {WebGLRenderingContext} gl gl
  * @returns Rendering function
  */
-function getSkybox(gl, glCache, program3D, program3DFogless) {
+const getSkybox = (gl, glCache, program3D, program3DFogless) => {
 	// I can't explain why, but the directions are all backwards from the world coordinates
 	const vertexData = new Float32Array([
 		// top

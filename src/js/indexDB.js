@@ -1,4 +1,4 @@
-async function createDatabase() {
+const createDatabase = async () => {
 	return await new Promise((resolve, reject) => {
 		let request = window.indexedDB.open("MineKhan", 1)
 
@@ -21,7 +21,7 @@ async function createDatabase() {
 		}
 	})
 }
-async function loadFromDB(id) {
+const loadFromDB = async (id) => {
 	let db = await createDatabase()
 	let trans = db.transaction("worlds", "readwrite")
 	let store = trans.objectStore("worlds")
@@ -37,7 +37,7 @@ async function loadFromDB(id) {
 		}
 	})
 }
-async function saveToDB(id, data) {
+const saveToDB = async (id, data) => {
 	let db = await createDatabase()
 	let trans = db.transaction("worlds", "readwrite")
 	let store = trans.objectStore("worlds")
@@ -51,7 +51,7 @@ async function saveToDB(id, data) {
 		}
 	})
 }
-async function deleteFromDB(id) {
+const deleteFromDB = async (id) => {
 	let db = await createDatabase()
 	let trans = db.transaction("worlds", "readwrite")
 	let store = trans.objectStore("worlds")

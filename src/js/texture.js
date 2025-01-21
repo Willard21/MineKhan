@@ -3,8 +3,7 @@ import { texturesFunc } from "./blockData.js"
 /**
  * Texture name to index map.
  */
-const textureMap = {}
-const textureCoords = []
+const hitboxTextureCoords = new Float32Array(192)
 const textureSize = 256
 const scale = 1 / 16
 const texturePixels = new Uint8Array(textureSize * textureSize * 4)
@@ -12,7 +11,7 @@ const texturePixels = new Uint8Array(textureSize * textureSize * 4)
 /**
  * @param {WebGLRenderingContext} gl
  */
-function initTextures(gl, glCache) {
+const initTextures = (gl, glCache) => {
 	const setPixel = function(textureNum, x, y, r, g, b, a) {
 		let texX = textureNum & 15
 		let texY = textureNum >> 4
@@ -26,7 +25,7 @@ function initTextures(gl, glCache) {
 	const base256CharSet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEF!#$%&L(MNO)*+,-./:;<=WSTR>Q?@[]P^_{|}~ÀÁÂÃUVÄÅÆÇÈÉÊËÌÍKÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãGäåæçèéêHëìíîXïðñIòóôõö÷øùúJûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦYħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťZ'
 	const base256DecodeMap = new Map()
 	for (let i = 0; i < 256; i++) base256DecodeMap.set(base256CharSet[i], i)
-	function decodeByte(str) {
+	const decodeByte = (str) => {
 		let num = 0
 		for (let char of str) {
 			num <<= 8
@@ -115,16 +114,6 @@ function initTextures(gl, glCache) {
 	const textures = texturesFunc(setPixel, getPixels)
 
 	{
-		// Specify the texture coords for each index
-		const s = scale
-		for (let i = 0; i < 256; i++) {
-			let texX = i & 15
-			let texY = i >> 4
-			let offsetX = texX * scale
-			let offsetY = texY * scale
-			textureCoords.push(new Float32Array([offsetX, offsetY, offsetX + s, offsetY, offsetX + s, offsetY + s, offsetX, offsetY + s]))
-		}
-
 		// Set all of the textures into 1 big tiled texture
 		let n = 0
 		for (let name in textures) {
@@ -139,17 +128,20 @@ function initTextures(gl, glCache) {
 					setPixel(n, j >> 2 & 15, j >> 6, pix[j], pix[j+1], pix[j+2], pix[j+3])
 				}
 			}
-			textureMap[name] = n
+
+			if (name === "hitbox") {
+				//Set the hitbox texture to 1 point
+				let texX = n & 15
+				let texY = n >> 4
+				let offsetX = texX * scale + 0.01
+				let offsetY = texY * scale + 0.01
+				for (let i = 0; i < 192; i += 2) {
+					hitboxTextureCoords[i] = offsetX
+					hitboxTextureCoords[i + 1] = offsetY
+				}
+			}
 			n++
 		}
-
-		//Set the hitbox texture to 1 pixel
-		let arr = new Float32Array(192)
-		for (let i = 0; i < 192; i += 2) {
-			arr[i] = textureCoords[textureMap.hitbox][0] + 0.01
-			arr[i + 1] = textureCoords[textureMap.hitbox][1] + 0.01
-		}
-		textureCoords[textureMap.hitbox] = arr
 	}
 
 	const makeTexture = (index, width, height, pixels, edge) => {
@@ -174,7 +166,7 @@ function initTextures(gl, glCache) {
 	makeTexture(gl.TEXTURE1, 16, 16, dirtPixels, gl.REPEAT)
 }
 
-function animateTextures(gl) {
+const animateTextures = (gl) => {
 	// const x = Math.random() * 16 | 0
 	// const y = Math.random() * 16 | 0
 
@@ -187,4 +179,4 @@ function animateTextures(gl) {
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
 }
 
-export { initTextures, textureMap, textureCoords, animateTextures }
+export { initTextures, hitboxTextureCoords, animateTextures }

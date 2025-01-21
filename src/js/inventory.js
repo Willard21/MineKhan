@@ -33,7 +33,7 @@ const heldCtx = heldItemCanvas.getContext("2d")
  */
 const hoverBox = document.getElementById("onhover")
 
-function displayHoverText(text, mouseX, mouseY) {
+const displayHoverText = (text, mouseX, mouseY) => {
 	hoverBox.textContent = text
 	hoverBox.classList.remove("hidden")
 	if (mouseY < window.parent.innerHeight / 2) {
@@ -136,7 +136,7 @@ class InventoryPage {
 		this.items.sort((a, b) => a.name.localeCompare(b.name))
 	}
 	sortById() {
-		this.items.sort((a, b) => a.id - b.id)
+		this.items.sort((a, b) => blockData[a.id].shape.index - blockData[b.id].shape.index || a.id - b.id)
 	}
 
 	indexAt(x, y) {
@@ -412,6 +412,9 @@ class InventoryManager {
 			decor.size = decor.items.length
 			this.containers.push(cubes, slabs, stairs, decor)
 		}
+
+		for (let container of this.containers) container.sortById()
+
 		containerCanvas.onmousemove = e => this.mouseMove(e)
 		containerCanvas.onmousedown = e => this.mouseClick(e)
 		this.render()

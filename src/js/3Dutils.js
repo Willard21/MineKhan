@@ -206,7 +206,7 @@ class Plane {
 	}
 }
 
-function cross(v1, v2, result) {
+const cross = (v1, v2, result) => {
 	let x = v1.x,
 		y = v1.y,
 		z = v1.z,
