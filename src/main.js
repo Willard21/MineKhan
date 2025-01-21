@@ -1961,6 +1961,9 @@ async function MineKhan() {
 			})), 500)
 		}
 		let multiplayerError = ""
+
+		// Server message types. If we receive these from another client, they're likely hacking.
+		const serverMessageTypes = ["users", "ban", "error", "debug", "eval"]
 		multiplayer.onmessage = msg => {
 			if (msg.data === "ping") {
 				multiplayer.send("pong")
@@ -1973,6 +1976,12 @@ async function MineKhan() {
 				return
 			}
 			let packet = JSON.parse(msg.data)
+
+			if (serverMessageTypes.includes(packet.type) && packet.author) {
+				chat(`${packet.author} is sending ${packet.type} packets. Either they're being sus, or Willard shouldn't have black-listed ${packet.type} packets.`, "tomato")
+				return
+			}
+
 			if (packet.type === "setBlock") {
 				let a = packet.data
 

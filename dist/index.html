@@ -2330,7 +2330,7 @@ const blockData = [
 	{ name: "polishedGranite" },
 	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, icon: "lightIcon", hideInterior: true },
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
-	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15 },
+	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15, transparent: true, shadow: false, hideInterior: true },
 	{ name: "obsidian" },
 	{ name: "cryingObsidian", lightLevel: 10 },
 	{ name: "endStone" },
@@ -7462,6 +7462,9 @@ async function MineKhan() {
 			})), 500)
 		}
 		let multiplayerError = ""
+
+		// Server message types. If we receive these from another client, they're likely hacking.
+		const serverMessageTypes = ["users", "ban", "error", "debug", "eval"]
 		multiplayer.onmessage = msg => {
 			if (msg.data === "ping") {
 				multiplayer.send("pong")
@@ -7474,6 +7477,12 @@ async function MineKhan() {
 				return
 			}
 			let packet = JSON.parse(msg.data)
+
+			if (serverMessageTypes.includes(packet.type) && packet.author) {
+				chat(`${packet.author} is sending ${packet.type} packets. Either they're being sus, or Willard shouldn't have black-listed ${packet.type} packets.`, "tomato")
+				return
+			}
+
 			if (packet.type === "setBlock") {
 				let a = packet.data
 
