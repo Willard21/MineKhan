@@ -321,7 +321,7 @@ const noiseProfile = {
 }
 
 // Copied and modified from https://github.com/blindman67/SimplexNoiseJS
-function openSimplexNoise(clientSeed) {
+const openSimplexNoise = (clientSeed) => {
 	const toNums = function(s) {
 		return s.split(",").map(function(s) {
 			return new Uint8Array(s.split("").map(function(v) {
@@ -360,7 +360,7 @@ function openSimplexNoise(clientSeed) {
 		while (i < count && cb(i++) !== true);
 	}
 
-	function shuffleSeed(seed,count){
+	const shuffleSeed = (seed,count) => {
 		seed = seed * 1664525 + 1013904223 | 0
 		count -= 1
 		return count > 0 ? shuffleSeed(seed, count) : seed
@@ -375,7 +375,7 @@ function openSimplexNoise(clientSeed) {
 		}
 	}
 
-	function createContribution(type, baseSet, index) {
+	const createContribution = (type, baseSet, index) => {
 		var i = 0
 		const multiplier = baseSet[index ++]
 		const c = { next : undefined }
@@ -387,7 +387,7 @@ function openSimplexNoise(clientSeed) {
 		return c
 	}
 
-	function createLookupPairs(lookupArray, contributions){
+	const createLookupPairs = (lookupArray, contributions) => {
 		var i
 		const a = lookupArray()
 		const res = new Map()
@@ -397,7 +397,7 @@ function openSimplexNoise(clientSeed) {
 		return res
 	}
 
-	function createContributionArray(type) {
+	const createContributionArray = (type) => {
 		const conts = []
 		const d = type.dimensions
 		const baseStep = d * d

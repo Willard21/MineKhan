@@ -1,6 +1,6 @@
 const { floor } = Math
 
-function timeString(millis) {
+const timeString = (millis) => {
 	if (millis > 300000000000 || !millis) {
 		return "never"
 	}
@@ -39,11 +39,11 @@ function timeString(millis) {
 	return `${seconds} second${seconds !== 1 ? "s" : ""} ago`
 }
 
-function roundBits(number) {
-	return (number * 1000000 + 0.5 | 0) / 1000000
+const roundBits = (number) => {
+	return Math.round(number * 100000) / 100000
 }
 
-function compareArr(arr, out) {
+const compareArr = (arr, out) => {
 	let minX = 1000
 	let maxX = -1000
 	let minY = 1000

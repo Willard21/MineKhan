@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- @MineKhan version Alpha 0.7.1
+<!-- @MineKhan version Alpha 0.8.2
 
 	NOTE:
 The "Save" button saves your world to your local browser. Nobody else can see it. However, if you're on a public or shared computer, that save may be deleted unexpectedly. So it's a good idea to keep a safe copy of your save string somewhere where it won't be deleted.
 
-To share your save with other people, copy your world string into the "loadString" variable on line 295.
+To share your save with other people, copy your world string into the "loadString" variable on line 293.
 
 	Controls:
 
@@ -51,7 +51,7 @@ To share your save with other people, copy your world string into the "loadStrin
 
 	How it works:
 
-The graphics in this project are done using WebGL, which is a web implementation of OpenGL ES 2.
+The graphics in this project are done using WebGL, which is a web implementation of OpenGL ES 2 (Open Graphics Library Embedded Systems 2).
 It allows us to write shader programs that run right on the GPU, which means it can run as fast as any C++ game.
 The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even being using the GPU.
 
@@ -71,12 +71,9 @@ I learned WebGL from https://webglfundamentals.org and just by playing around wi
 		<meta name="keywords" content="Khan Academy, Programs, Search">
 		<meta property="og:title" content="MineKhan"/>
 		<meta property="og:description" content="Play creative mode Minecraft right from your browser!"/>
-		<meta property="og:image" content="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/5308848032661504.png"/>
+		<meta property="og:image" content="https://www.khanacademy.org/computer-programming/minekhan/5647155001376768/latest.png"/>
 		<title>MineKhan</title>
-		<!-- <link id="vtfont" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"> -->
-		<!-- <link rel="preload" href="https://willard.fun/fonts/VT323.woff2" as="font" type="font/woff2" crossorigin> -->
 		<link rel="shortcut icon" type="image/ico" href="https://willard.fun/assets/minekhan.ico">
-		<!-- <link rel="manifest" href="https://willard.fun/manifest.json" /> -->
 	</head>
 	<body>
 		<!-- Text so that Lighthouse believes the page is loaded and to provide search terms. -->
@@ -98,7 +95,7 @@ I learned WebGL from https://webglfundamentals.org and just by playing around wi
 		</datalist>
 		<p id="savedirections" class="hidden" style="position: absolute; top: 40px; left: 10px; z-index: 1; background-color: rgba(255, 255, 255, 0.3);">
 			To share your world on KA, copy/paste the saveString<br>
-			from this box into the code on line 295.<br>
+			from this box into the code on line 293.<br>
 			var loadString = "Your Code Here";<br>
 			Then save the program as a Spin-off.
 		</p>
@@ -113,72 +110,29 @@ I learned WebGL from https://webglfundamentals.org and just by playing around wi
 			<canvas id="inventory" tabindex="0"></canvas>
 		</div>
 		<canvas id="hotbar" class="hidden"></canvas>
-		<script>
+		<script type="application/javascript">
 			// Khan Academy instructions:
 			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol
 			window.parent.loadString = ""
 			window.parent.exports = {}
+
+			/*
+				/cs/pro/5733417664643072
+				This comment ^ is to hide spin-offs from the hotlist.
+				The hostlist is intended to show off impressive coding ability, not gaming ability.
+				If you've actually coded something on this and want people to see it, you'll need to remove this comment before saving it for the first time.
+				I would encourage you to re-add the comment after saving so spin-offs of your spin-off are also hidden by default.
+				(Personally I don't mind just seeing builds on the hostlist, but they're off-topic and I know it annoys other people.)
+				<script>
+			*/
 		</script>
 	</body>
 </html>
 
-<!-- function hcyl(bottom, height, radius, id) {
-	let radsq = radius * radius
-	let innerRadsq = (radius - 1.2) * (radius - 1.2)
-	height += bottom
-	for (let x = -radius; x <= radius; x++) {
-		for (let y = bottom; y < height; y++) {
-			for (let z = -radius; z <= radius; z++) {
-				let d = x * x + z * z
-				if (d < radsq && d >= innerRadsq) {
-					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-				}
-			}
-		}
-	}
-}
-
-function cyl(bottom, height, radius, id) {
-	let radsq = radius * radius
-	height += bottom
-	for (let x = -radius; x <= radius; x++) {
-		for (let y = bottom; y < height; y++) {
-			for (let z = -radius; z <= radius; z++) {
-				let d = x * x + z * z
-				if (d < radsq) {
-					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-				}
-			}
-		}
-	}
-}
-
-function sphereoid(w, h, d, id) {
-	let w2 = w * w
-	let h2 = h * h
-	let d2 = d * d
-	let w3 = (w - 1.5) * (w - 1.5)
-	let h3 = (h - 1.5) * (h - 1.5)
-	let d3 = (d - 1.5) * (d - 1.5)
-
-	for (let y = -h; y < h; y++) {
-		for (let x = -w; x <= w; x++) {
-			for (let z = -d; z <= d; z++) {
-				let n = x * x / w2 + y * y / h2 + z * z / d2
-				let n2 = x * x / w3 + y * y / h3 + z * z / d3
-				if (n < 1 && n2 >= 1) {
-					world.setBlock(p2.x + x, p2.y + y, p2.z + z, id)
-				}
-			}
-		}
-	}
-}
-
-function sleep(ms) {
-	return new Promise(resolve => setTimeout(() => resolve(), ms))
-}
-
-async function asphereoid(w, h, d, id) {
+<!--
+// Just a fun function to use in the web console.
+const asphereoid = async (w, h, d, id) => {
+	const sleep = ms => new Promise(resolve => setTimeout(() => resolve(), ms))
 	let px = p2.x
 	let py = p2.y
 	let pz = p2.z

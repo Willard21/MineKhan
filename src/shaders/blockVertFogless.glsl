@@ -9,6 +9,7 @@ uniform mat4 uView;
 uniform vec3 uPos;
 uniform float uTime;
 uniform float uLantern;
+uniform float uZoffset;
 
 mat4 no_translate (mat4 mat) {
 	mat4 nmat = mat;
@@ -20,6 +21,7 @@ mat4 no_translate (mat4 mat) {
 void main() {
 	vTexture = aTexture;
 	gl_Position = uView * vec4(aVertex, 1.0);
+	gl_Position.z += uZoffset;
 
 	float dist = length(uPos - aVertex);
 	float worldLight = max(aSkylight * uTime, aBlocklight);

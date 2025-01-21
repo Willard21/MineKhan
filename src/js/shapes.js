@@ -20,7 +20,7 @@ const WEST     = 0x1800
  * @param {Number} textureX The X coordinate of the texture at (x, y, z) on the face
  * @param {Number} textureY The Y coordinate of the texture at (x, y, z) on the face
  */
-function arrayify(x, y, z, width, height, textureX, textureY) {
+const arrayify = (x, y, z, width, height, textureX, textureY) => {
 	return [x, y, z, width, height, textureX, textureY]
 }
 let shapes = {
@@ -198,12 +198,12 @@ let shapes = {
 	},
 	fenceSide: {
 		verts: [
-			[[7,12,0,2,9,7,0],[7,6,0,2,9,7,0]],
-			[[7,15,9,2,9,7,0],[7,9,9,2,9,7,0]],
-			[[9,15,9,2,3,7,1],[9,9,9,2,3,7,7]],
-			[],
-			[[9,15,0,9,3,0,1],[9,9,0,9,3,0,7]],
-			[[7,15,9,9,3,0,1],[7,9,9,9,3,0,7]]
+			[[7,12,0,2,6,7,0],[7,6,0,2,6,7,0]],
+			[[7,15,6,2,6,7,0],[7,9,6,2,6,7,0]],
+			[],//[9,15,6,2,3,7,1],[9,9,6,2,3,7,7]],
+			[[7,15,0,2,3,7,1],[7,9,0,2,3,7,7]], //
+			[[9,15,0,6,3,0,1],[9,9,0,6,3,0,7]],
+			[[7,15,6,6,3,0,1],[7,9,6,6,3,0,7]]
 		],
 		cull: {
 			top: 0,
@@ -220,9 +220,74 @@ let shapes = {
 		flip: false,
 		rotate: true
 	},
+	innerStairs: {
+		verts: [
+			[[0,0,0,16,16,0,0]],
+			[[0,8,8,8,8,0,0],[8,16,16,8,16,8,0],[0,16,16,8,8,0,8]],
+			[[16,16,16,16,16,0,0]],
+			[[0,8,0,16,8,0,8],[8,16,0,8,8,8,0],[0,16,8,8,8,0,0]],
+			[[16,16,0,16,16,0,0]],
+			[[0,8,16,16,8,0,8],[8,16,8,8,8,0,0],[0,16,16,8,8,8,0]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 12,
+		variants: [],
+		flip: true,
+		rotate: true
+	},
+	outerStairs: {
+		verts: [
+			[[0,0,0,16,16,0,0]],
+			[[0,8,16,16,16,0,0],[8,16,16,8,8,8,8]],
+			[[16,8,16,16,8,0,0],[16,16,16,8,8,0,0]],
+			[[0,8,0,16,8,0,0],[8,16,8,8,8,8,0]],
+			[[16,8,0,16,8,0,0],[16,16,8,8,8,0,0]],
+			[[0,8,16,16,8,0,0],[8,16,16,8,8,8,0]]
+		],
+		cull: {
+			top: 0,
+			bottom: 0,
+			north: 0,
+			south: 0,
+			east: 0,
+			west: 0
+		},
+		texVerts: [],
+		buffer: null,
+		size: 11,
+		variants: [],
+		flip: true,
+		rotate: true
+	},
+	player: {
+		verts: [
+			[[4,24,4,8,8,16,0],[4,24,4,8,8,48,0],[4,12,6,8,4,28,16],[4,12,6,8,4,28,32],[0,12,6,4,4,40,48],[0,12,6,4,4,56,48],[12,12,6,4,4,48,16],[12,12,6,4,4,48,32],[4,0,6,4,4,24,48],[4,0,6,4,4,8,48],[8,0,6,4,4,8,16],[8,0,6,4,4,8,32]],
+			[[4,32,12,8,8,8,0],[4,32,12,8,8,40,0],[4,24,10,8,4,24,16],[4,24,10,8,4,24,32],[0,24,10,4,4,36,48],[0,24,10,4,4,52,48],[12,24,10,4,4,44,16],[12,24,10,4,4,44,32],[4,12,10,4,4,20,48],[4,12,10,4,4,4,48],[8,12,10,4,4,4,16],[8,12,10,4,4,4,32]],
+			[[12,32,12,8,8,8,8],[12,32,12,8,8,40,8],[12,24,10,8,12,24,28],[12,24,10,8,12,24,44],[4,24,10,4,12,36,60],[4,24,10,4,12,52,60],[16,24,10,4,12,44,28],[16,24,10,4,12,44,44],[8,12,10,4,12,20,60],[8,12,10,4,12,4,60],[12,12,10,4,12,4,28],[12,12,10,4,12,4,44]],
+			[[4,32,4,8,8,24,8],[4,32,4,8,8,56,8],[4,24,6,8,12,36,28],[4,24,6,8,12,36,44],[0,24,6,4,12,44,60],[0,24,6,4,12,60,60],[12,24,6,4,12,52,28],[12,24,6,4,12,52,44],[4,12,6,4,12,28,60],[4,12,6,4,12,12,60],[8,12,6,4,12,12,28],[8,12,6,4,12,12,44]],
+			[[12,32,4,8,8,16,8],[12,32,4,8,8,48,8],[12,24,6,4,12,28,28],[12,24,6,4,12,28,44],[4,24,6,4,12,40,60],[4,24,6,4,12,56,60],[16,24,6,4,12,48,28],[16,24,6,4,12,48,44],[8,12,6,4,12,24,60],[8,12,6,4,12,8,60],[12,12,6,4,12,8,28],[12,12,6,4,12,8,44]],
+			[[4,32,12,8,8,0,8],[4,32,12,8,8,32,8],[4,24,10,4,12,16,28],[4,24,10,4,12,16,44],[0,24,10,4,12,32,60],[0,24,10,4,12,48,60],[12,24,10,4,12,40,28],[12,24,10,4,12,40,44],[4,12,10,4,12,16,60],[4,12,10,4,12,0,60],[8,12,10,4,12,0,28],[8,12,10,4,12,0,44]]
+		],
+		cull: {},
+		texVerts:[],
+		buffer: null,
+		size: 0,
+		variants: [],
+		flip: false,
+		rotate: true
+	}
 }
 
-function mapCoords(rect, face) {
+const mapCoords = (rect, face) => {
 	const [x, y, z, w, h, tx, ty] = rect
 	const tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h].map(c => c / 16 / textureAtlasWidth)
 	const pos = [x, y, z]
@@ -258,7 +323,7 @@ function mapCoords(rect, face) {
 }
 
 // 90 degree clockwise rotation; returns a new shape object
-function rotate(shape) {
+const rotate = (shape) => {
 	let verts = shape.verts
 	let texVerts = shape.texVerts
 	let cull = shape.cull
@@ -335,7 +400,7 @@ function rotate(shape) {
 }
 
 // Reflect over the y plane; returns a new shape object
-function flip(shape) {
+const flip = (shape) => {
 	let verts = shape.verts
 	let texVerts = shape.texVerts
 	let cull = shape.cull
@@ -394,35 +459,35 @@ function flip(shape) {
 	}
 }
 
+let sortIndex = 0
 for (let shape in shapes) {
-	let obj = shapes[shape]
-	let verts = obj.verts
-
-	// Populate the vertex coordinates
-	for (let i = 0; i < verts.length; i++) { // 6 directions
-		let side = verts[i] // Array of faces in this direction
-		let texArr = []
-		obj.texVerts.push(texArr)
-		for (let j = 0; j < side.length; j++) { // Each face in this direction
-			let face = side[j] // Array of arrayified data
-			let mapped = mapCoords(face, i)
-			side[j] = mapped.pos
-			texArr.push(mapped.tex)
+	const obj = shapes[shape]
+	const verts = obj.verts
+	obj.size = obj.verts.flat().length
+	obj.index = sortIndex++
+	if (!obj.texVerts.length) {
+		// Populate the vertex coordinates
+		for (let i = 0; i < verts.length; i++) { // 6 directions
+			let side = verts[i] // Array of faces in this direction
+			let texArr = []
+			obj.texVerts.push(texArr)
+			for (let j = 0; j < side.length; j++) { // Each face in this direction
+				let face = side[j] // Array of arrayified data
+				let mapped = mapCoords(face, i)
+				side[j] = mapped.pos
+				texArr.push(mapped.tex)
+			}
 		}
 	}
 
+	const v = obj.variants
 	if (obj.rotate) {
-		let v = obj.variants
-		let east = rotate(obj)
-		let south = rotate(east)
-		let west = rotate(south)
+		v[4] = rotate(obj)
+		v[2] = rotate(v[4])
+		v[6] = rotate(v[2])
 		v[0] = obj
-		v[2] = south
-		v[4] = east
-		v[6] = west
 	}
 	if (obj.flip) {
-		let v = obj.variants
 		v[1] = flip(obj)
 		if (obj.rotate) {
 			v[3] = flip(v[2])
@@ -430,10 +495,6 @@ for (let shape in shapes) {
 			v[7] = flip(v[6])
 		}
 	}
-
-	// obj.buffer = gl.createBuffer()
-	// gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer)
-	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts.flat(2)), gl.STATIC_DRAW)
 }
 
 // Now that fenceSide is rotated, let's generate a bunch of fence variants
@@ -455,6 +516,7 @@ for (let shape in shapes) {
 		let obj = clone(shapes.fence)
 		for (let j = 0; j < 4; j++) {
 			if (i & 1 << j) for (let k = 0; k < 6; k++) {
+				obj.size += shapes.fenceSide.variants[j * 2].verts[k].length
 				obj.verts[k].push(...shapes.fenceSide.variants[j * 2].verts[k])
 				obj.texVerts[k].push(...shapes.fenceSide.variants[j * 2].texVerts[k])
 			}
@@ -462,8 +524,56 @@ for (let shape in shapes) {
 		v.push(obj)
 	}
 
-	shapes.fence.texVerts = shapes.cube.texVerts
-	shapes.fence.verts = shapes.cube.verts
+	// shapes.fence.texVerts = shapes.cube.texVerts
+	// shapes.fence.verts = shapes.cube.verts // Make the hitbox a cube
+	shapes.fence.getShape = (x, y, z, world, blockData) => {
+		let mask = 0
+		if (blockData[world.getBlock(x + 1, y, z)].solid) mask |= 8
+		if (blockData[world.getBlock(x - 1, y, z)].solid) mask |= 4
+		if (blockData[world.getBlock(x, y, z + 1)].solid) mask |= 2
+		if (blockData[world.getBlock(x, y, z - 1)].solid) mask |= 1
+		return shapes.fence.variants[mask]
+	}
+}
+
+
+// Generate functions for each stair direction to transform it into corners
+const stairs = shapes.stair.variants
+const getShapeFunction = (shape, dx, dz, indices, negShape, posShape) => {
+	const stair1 = stairs[indices[0]]
+	const stair2 = stairs[indices[1]]
+	const ret1 = negShape[indices[0]]
+	const ret2 = negShape[indices[2]]
+	const ret3 = posShape[indices[0]]
+	const ret4 = posShape[indices[2]]
+	return (x, y, z, world, blockData) => {
+		const n = blockData[world.getBlock(x - dx, y, z - dz)].shape
+		if (n === stair1) return ret1
+		if (n === stair2) return ret2
+
+		const p = blockData[world.getBlock(x + dx, y, z + dz)].shape
+		if (p === stair1) return ret3
+		if (p === stair2) return ret4
+
+		return shape
+	}
+}
+
+const inner = shapes.innerStairs.variants
+const outer = shapes.outerStairs.variants
+const stairFunctions = [
+	[1, 0, [4, 6, 0], inner, outer],
+	[1, 0, [5, 7, 1], inner, outer],
+	[1, 0, [6, 4, 2], outer, inner],
+	[1, 0, [7, 5, 3], outer, inner],
+	[0, 1, [2, 0, 4], outer, inner],
+	[0, 1, [3, 1, 5], outer, inner],
+	[0, 1, [0, 2, 6], inner, outer],
+	[0, 1, [1, 3, 7], inner, outer]
+]
+
+for (let i = 0; i < 8; i++) {
+	stairs[i].getShape = getShapeFunction(stairs[i], ...stairFunctions[i])
 }
 
 

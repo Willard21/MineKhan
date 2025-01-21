@@ -1,4 +1,4 @@
-function createProgramObject(curContext, vetexShaderSource, fragmentShaderSource) {
+const createProgramObject = (curContext, vetexShaderSource, fragmentShaderSource) => {
 	let vertexShaderObject = curContext.createShader(curContext.VERTEX_SHADER)
 	curContext.shaderSource(vertexShaderObject, vetexShaderSource)
 	curContext.compileShader(vertexShaderObject)
@@ -24,7 +24,7 @@ function createProgramObject(curContext, vetexShaderSource, fragmentShaderSource
 	return programObject
 }
 
-function uniformMatrix(gl, glCache, cacheId, programObj, vrName, transpose, matrix) {
+const uniformMatrix = (gl, glCache, cacheId, programObj, vrName, transpose, matrix) => {
 	let vrLocation = glCache[cacheId]
 	if(vrLocation === undefined) {
 		vrLocation = gl.getUniformLocation(programObj, vrName)
@@ -43,7 +43,7 @@ function uniformMatrix(gl, glCache, cacheId, programObj, vrName, transpose, matr
  * @param {Number} size
  * @param {WebGLBuffer} VBO
  */
-function vertexAttribPointer(gl, glCache, cacheId, programObj, vrName, size, VBO) {
+const vertexAttribPointer = (gl, glCache, cacheId, programObj, vrName, size, VBO) => {
 	let vrLocation = glCache[cacheId]
 	if(vrLocation === undefined) {
 		vrLocation = gl.getAttribLocation(programObj, vrName)
