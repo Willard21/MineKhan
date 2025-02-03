@@ -53,7 +53,7 @@ function bundle() {
 		for (let i = 0; i < lines.length; i++) {
 			const imp = lines[i].match(/^(\s*)import ((.+) from )?['"](.+)['"]/)
 			if (imp) {
-				// Somehow this line worked different on Windows, so I changed to a bit better approach
+				// Somehow this line wasn't working the right way on Windows
 				// let p = Path.join(path.split("/").slice(0, -1).join("/"), imp[4])
 				const dir = Path.dirname(path);
 				let p = Path.join(dir, imp[4]).replaceAll("\\", "/");
