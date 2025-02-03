@@ -56,7 +56,8 @@ function bundle() {
 				// Somehow this line wasn't working the right way on Windows
 				// let p = Path.join(path.split("/").slice(0, -1).join("/"), imp[4])
 				const dir = Path.dirname(path);
-				let p = Path.join(dir, imp[4]).replaceAll("\\", "/");
+				let p = Path.normalize(Path.join(dir, imp[4]));
+				console.log(p);
 				
 				if (p.endsWith(".css")) {
 					lines[i] = "// " + lines[i]
