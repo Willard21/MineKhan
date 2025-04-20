@@ -88,6 +88,7 @@ I learned WebGL from https://webglfundamentals.org and just by playing around wi
 		<div id="quota" class="hidden"></div>
 		<div id="onhover" class="hidden"></div>
 		<div id="chat" class="hidden"></div>
+		<div id="controls-container" class = "hidden center-div"><table id="controls-page"></table></div>
 		<input id="chatbar" class="hidden" list="commands">
 		<datalist id="commands">
 			<option>/ban</option>
@@ -102,14 +103,14 @@ I learned WebGL from https://webglfundamentals.org and just by playing around wi
 		<div class="world-select hidden" id="worlds"></div>
 		<p id="message" class="hidden" style="position: absolute; top: 10px; right: 10px; z-index: 1; text-align: right; background-color: rgba(255, 255, 255, 0.3);"></p>
 		<span class="hidden" id="loading-text"></span>
-		<div id="inv-container" class="hidden">
+		<div id="inv-container" class="hidden center-div">
 			<div id="inv-scroll">
 				<!-- This is very very important: canvases need that tabindex thing to capture keyboard events. Idk why. But I spent hours trying to figure it out. -->
 				<canvas id="container" tabindex="0"></canvas>
 			</div>
 			<canvas id="inventory" tabindex="0"></canvas>
 		</div>
-		<canvas id="hotbar" class="hidden"></canvas>
+		<canvas id="hotbar" class="hidden center-div"></canvas>
 		<script type="application/javascript">
 			// Khan Academy instructions:
 			// Place save code here to load your world. Make extra sure you got it copied so you don't paste in the wrong thing and delete your world on accident lol

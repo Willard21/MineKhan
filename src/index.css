@@ -19,6 +19,11 @@ canvas:focus {
 	outline: none;
 }
 
+.center-div {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, 0);
+}
 .world-select {
 	width: 99vw;
 	min-width: 300px;
@@ -152,9 +157,6 @@ input[type=text]:focus {
 	font-family: monospace;
 }
 #inv-container {
-	position: absolute;
-	left: 50%;
-	transform: translate(-50%, 0);
 	z-index: 1;
 }
 #inv-scroll {
@@ -162,10 +164,20 @@ input[type=text]:focus {
 	overflow-y: auto;
 	border-bottom: solid 2px lightgray;
 }
+#controls-page {
+	z-index: 1;
+	width: 300px;
+	background-color: rgba(127, 127, 127, 0.8);
+}
+#controls-container {
+	top: 90px;
+	max-height: calc(99vh - 90px);
+	overflow-y: auto;
+}
+.control-row {
+	height: 30px;
+}
 #hotbar {
-	position: absolute;
-	left: 50%;
-	transform: translate(-50%, 0);
 	bottom: 10px;
 	z-index: 0;
 }

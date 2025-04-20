@@ -220,6 +220,7 @@ const MineKhan = async () => {
 		mouseSense: 100, // Mouse sensitivity as a percentage of the default
 		reach: 5,
 		showDebug: 3,
+		controls: {}
 		// inventorySort: "blockid"
 	}
 	let generatedChunks
@@ -304,7 +305,8 @@ const MineKhan = async () => {
 		"multiplayer menu": () => {},
 		"comingsoon menu": () => {},
 		"loadsave menu": () => {},
-		"chat": () => {}
+		"chat": () => {},
+		"controls": () => {}
 	}
 	let html = {
 		play: {
@@ -388,12 +390,24 @@ const MineKhan = async () => {
 				ctx.clearRect(0, 0, width, height) // Hide the GUI and text and stuff
 				inventory.playerStorage.render()
 			}
+		},
+		controls: {
+			enter: [document.getElementById("controls-container")],
+			exit: [document.getElementById("controls-container")],
 		}
 	}
 
 	let screen = "main menu"
-	let previousScreen = screen
+	let screenPath = [screen]
 	const changeScene = (newScene) => {
+		if (newScene === "play" || newScene === "main menu") screenPath = [newScene]
+		else if (newScene === "back") {
+			newScene = screenPath.pop()
+		}
+		else {
+			screenPath.push(screen)
+		}
+
 		document.getElementById('background-text').classList.add('hidden')
 		if (screen === "options") {
 			saveToDB("settings", settings).catch(e => console.error(e))
@@ -417,8 +431,7 @@ const MineKhan = async () => {
 		if (html[screen] && html[screen].onexit) {
 			html[screen].onexit()
 		}
-
-		previousScreen = screen
+		
 		screen = newScene
 		mouseDown = false
 		drawScreens[screen]()
@@ -446,26 +459,95 @@ const MineKhan = async () => {
 	}
 
 	const setControl = (name, key, shift = false, ctrl = false, alt = false) => {
-		controlMap[name] = {
-			key,
-			shift,
-			ctrl,
-			alt,
-			get pressed() {
-				return Boolean(Key[this.key]
-					&& (!this.shift || Key.ShiftLeft || Key.ShiftRight)
-					&& (!this.ctrl || Key.ControlLeft || Key.ControlRight)
-					&& (!this.alt || Key.AltLeft || Key.AltRight))
-			},
-			// Check to see if all of an event's data matches this key map
-			event(e) {
-				return Boolean(e.code === this.key
-					&& (!this.shift || e.shiftKey)
-					&& (!this.ctrl || e.ctrlKey)
-					&& (!this.alt || e.altKey))
+		let override = Boolean(controlMap[name])
+		if (override) {
+			if (""+[name, key, shift, ctrl, alt] !== ""+settings.controls[name]) {
+				settings.controls[name] = [name, key, shift, ctrl, alt]
+				saveToDB("settings", settings).catch(e => console.error(e))
 			}
+			Object.assign(controlMap[name], {key, shift, ctrl, alt})
+			controlMap[name].button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
+		}
+		else {
+			let button = document.createElement("input")
+			controlMap[name] = {
+				key,
+				shift,
+				ctrl,
+				alt,
+				pressed: false,
+				button,
+				// Check to see if this control is newly triggered
+				triggered() {
+					let pressed = Boolean(Key[this.key]
+						&& (!this.shift || Key.shift)
+						&& (!this.ctrl || Key.ctrl)
+						&& (!this.alt || Key.alt))
+					if (pressed && !this.pressed) return this.pressed = true
+					return false
+				},
+				released() {
+					let pressed = Boolean(Key[this.key]
+						&& (!this.shift || Key.shift)
+						&& (!this.ctrl || Key.ctrl)
+						&& (!this.alt || Key.alt))
+					if (!pressed && this.pressed) {
+						this.pressed = false
+						return true
+					}
+					return false
+				}
+			}
+
+			let tr = document.createElement("tr")
+			let td = document.createElement("td")
+			td.textContent = name
+			tr.append(td)
+			button.type = "button"
+			button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
+			button.onmousedown = event => {
+				if (button.value === "          ") {
+					event.stopPropagation()
+					event.preventDefault()
+					let buttonName = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + event.button
+					console.log(event.button, event)
+					setControl(name, buttonName, event.shiftKey, event.ctrlKey, event.altKey)
+					button.value = (event.ctrlKey ? "Ctrl + " : "") + (event.altKey ? "Alt + " : "") + (event.shiftKey ? "Shift + " : "") + buttonName
+				}
+				else {
+					button.value = "          "
+				}
+			}
+			button.onkeyup = event => {
+				if (button.value === "          ") {
+					event.stopPropagation()
+					event.preventDefault()
+					if (event.code === "Escape") {
+						button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
+					}
+					else {
+						setControl(name, event.code, event.shiftKey, event.ctrlKey, event.altKey)
+						button.value = (event.ctrlKey ? "Ctrl + " : "") + (event.altKey ? "Alt + " : "") + (event.shiftKey ? "Shift + " : "") + event.code
+					}
+				}
+			}
+			button.onblur = () => {
+				if (settings.controls[name]) {
+					[name, key, shift, ctrl, alt] = settings.controls[name]
+				}
+				if (button.value === "          ") {
+					button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
+				}
+			}
+			td = document.createElement("td")
+			td.style.textAlign = "right"
+			td.append(button)
+			tr.append(td)
+			tr.className = "control-row"
+			document.getElementById('controls-page').append(tr)
 		}
 	}
+
 	setControl("jump", "Space")
 	setControl("walkForwards", "KeyW")
 	setControl("strafeLeft", "KeyA")
@@ -479,7 +561,7 @@ const MineKhan = async () => {
 	setControl("superBreaker", "KeyB")
 	setControl("toggleSpectator", "KeyL")
 	setControl("zoom", "KeyZ")
-	setControl("sneak", "ShiftLeft")
+	setControl("sneak", "shift")
 	setControl("dropItem", "Backspace")
 	setControl("breakBlock", "leftMouse")
 	setControl("placeBlock", "rightMouse")
@@ -3341,7 +3423,7 @@ const MineKhan = async () => {
 			world.chunkGenQueue.sort(sortChunks)
 			changeScene("loading")
 		})
-		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", () => changeScene(previousScreen))
+		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", () => changeScene("back"))
 
 		// Loadsave menu buttons
 		const selected = () => !selectedWorld || !worlds[selectedWorld]
@@ -3432,7 +3514,7 @@ const MineKhan = async () => {
 				changeScene("loadsave menu")
 			}).catch(e => console.error(e))
 		})
-		Button.add(mid, height / 2 + 50, w2, 40, "Back", "editworld", () => changeScene(previousScreen))
+		Button.add(mid, height / 2 + 50, w2, 40, "Back", "editworld", () => changeScene("back"))
 
 		// Pause buttons
 		Button.add(width / 2, 225, 300, 40, "Resume", "pause", play)
@@ -3461,7 +3543,7 @@ const MineKhan = async () => {
 		})
 
 		// Comingsoon menu buttons
-		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene(previousScreen))
+		Button.add(width / 2, 395, width / 3, 40, "Back", "comingsoon menu", () => changeScene("back"))
 
 		// Multiplayer buttons
 		Button.add(mid + 3 * x4, height - 30, w4, 40, "Cancel", "multiplayer menu", () => changeScene("main menu"))
@@ -3486,6 +3568,7 @@ const MineKhan = async () => {
 		// })
 
 		// Settings Sliders
+		Button.add(width / 2, optionsBottom - 60 * 5, width / 3, 40, "Controls", "options", () => changeScene("controls"))
 		Slider.add(width/2, optionsBottom - 60 * 4, width / 3, 40, "options", "Render Distance", 1, 32, "renderDistance", val => settings.renderDistance = round(val))
 		Slider.add(width/2, optionsBottom - 60 * 3, width / 3, 40, "options", "FOV", 30, 110, "fov", val => {
 			p.FOV(val)
@@ -3496,7 +3579,10 @@ const MineKhan = async () => {
 		})
 		Slider.add(width/2, optionsBottom - 60 * 2, width / 3, 40, "options", "Mouse Sensitivity", 30, 400, "mouseSense", val => settings.mouseSense = val)
 		Slider.add(width/2, optionsBottom - 60, width / 3, 40, "options", "Reach", 5, 100, "reach", val => settings.reach = val)
-		Button.add(width / 2, optionsBottom, width / 3, 40, "Back", "options", () => changeScene(previousScreen))
+		Button.add(width / 2, optionsBottom, width / 3, 40, "Back", "options", () => changeScene("back"))
+
+		// Controls page
+		Button.add(width / 2, 60, width / 3, 40, "Back", "controls", () => changeScene("back"))
 	}
 
 	const hotbar = () => {
@@ -3683,27 +3769,27 @@ const MineKhan = async () => {
 				p.lastBreak = now
 			}
 			else {
-				if (name === controlMap.breakBlock.key) {
+				if (controlMap.breakBlock.triggered()) {
 					changeWorldBlock(0)
 				}
 
-				if(name === controlMap.placeBlock.key && holding) {
+				if(controlMap.placeBlock.triggered() && holding) {
 					newWorldBlock()
 				}
 
-				if (name === controlMap.pickBlock.key && hitBox.pos) {
+				if (controlMap.pickBlock.triggered() && hitBox.pos) {
 					let block = world.getBlock(hitBox.pos[0], hitBox.pos[1], hitBox.pos[2]) & 0x3ff
 					inventory.hotbar.pickBlock(block)
 					holding = inventory.hotbar.hand.id
 					hotbar()
 				}
 
-				if(name === controlMap.pause.key) {
+				if(controlMap.pause.triggered()) {
 					releasePointer()
 					changeScene("pause")
 				}
 
-				if (name === controlMap.openChat.key) {
+				if (controlMap.openChat.triggered()) {
 					event.preventDefault()
 					changeScene("chat")
 				}
@@ -3712,17 +3798,17 @@ const MineKhan = async () => {
 					chatInput.value = "/"
 				}
 
-				if(name === controlMap.superBreaker.key) {
+				if(controlMap.superBreaker.triggered()) {
 					p.autoBreak = !p.autoBreak
 					hud()
 				}
 
-				if(name === controlMap.hyperBuilder.key) {
+				if(controlMap.hyperBuilder.triggered()) {
 					p.autoBuild = !p.autoBuild
 					hud()
 				}
 
-				if (name === controlMap.jump.key && !p.spectator) {
+				if (controlMap.jump.triggered() && !p.spectator) {
 					if (now < p.lastJump + 400) {
 						p.flying = !p.flying
 					}
@@ -3731,11 +3817,11 @@ const MineKhan = async () => {
 					}
 				}
 
-				if (name === controlMap.zoom.key) {
+				if (controlMap.zoom.triggered()) {
 					p.FOV(10, 300)
 				}
 
-				if (name === controlMap.sneak.key && !p.flying) {
+				if (controlMap.sneak.triggered() && !p.flying) {
 					p.sneaking = true
 					if (p.sprinting) {
 						p.FOV(settings.fov, 100)
@@ -3745,7 +3831,7 @@ const MineKhan = async () => {
 					p.bottomH = 1.32
 				}
 
-				if (name === controlMap.toggleSpectator.key) {
+				if (controlMap.toggleSpectator.triggered()) {
 					p.spectator = !p.spectator
 					p.flying = true
 					p.onGround = false
@@ -3759,7 +3845,7 @@ const MineKhan = async () => {
 					}
 				}
 
-				if (name === controlMap.openInventory.key) {
+				if (controlMap.openInventory.triggered()) {
 					changeScene("inventory")
 					releasePointer()
 				}
@@ -3775,20 +3861,20 @@ const MineKhan = async () => {
 				}
 
 				// Drop held item; this just crashes since I broke Item entities.
-				// if (name === controlMap.dropItem.key) {
+				// if (controlMap.dropItem.triggered()) {
 				// 	let d = p.direction
 				// 	world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
 				// }
 			}
 		}
-		else if (screen === "pause" && name === controlMap.pause.key) {
+		else if (screen === "pause" && controlMap.pause.triggered()) {
 			play()
 		}
 		else if (screen === "inventory") {
 			if (name === "leftMouse") {
 				clickInv()
 			}
-			if (name === controlMap.openInventory.key) {
+			if (controlMap.openInventory.triggered()) {
 				play()
 			}
 		}
@@ -3813,41 +3899,23 @@ const MineKhan = async () => {
 		mouseX = e.x
 		mouseY = e.y
 		mouseDown = true
-		let name
-		switch(e.button) {
-			case 0:
-				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
-				else name = "leftMouse"
-				break
-			case 1:
-				name = "middleMouse"
-				break
-			case 2:
-				name = "rightMouse"
-				break
-		}
+		let name = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + e.button
 		Key[name] = true
-		controlEvent(name)
+		controlEvent(name, e)
+		for (let name in controlMap) {
+			if (!controlMap[name].pressed) controlMap[name].triggered()
+		}
 
 		Button.click()
 		Slider.click()
 	}
 	canvas.onmouseup = function(e) {
-		let name
-		switch(e.button) {
-			case 0:
-				if (Key.ControlRight || Key.ControlLeft) name = "rightMouse"
-				else name = "leftMouse"
-				break
-			case 1:
-				name = "middleMouse"
-				break
-			case 2:
-				name = "rightMouse"
-				break
-		}
+		let name = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + e.button
 		Key[name] = false
 		mouseDown = false
+		for (let name in controlMap) {
+			if (controlMap[name].pressed) controlMap[name].released()
+		}
 		Slider.release()
 	}
 	canvas.onkeydown = function(e) {
@@ -3860,8 +3928,14 @@ const MineKhan = async () => {
 			return
 		}
 		Key[code] = true
+		Key.shift = e.shiftKey
+		Key.ctrl = e.ctrlKey
+		Key.alt = e.altKey
 
 		controlEvent(code, e)
+		for (let name in controlMap) {
+			if (!controlMap[name].pressed) controlMap[name].triggered()
+		}
 
 		if (screen === "play" && Number(e.key)) {
 			inventory.hotbar.setPosition(e.key - 1)
@@ -3871,19 +3945,25 @@ const MineKhan = async () => {
 	}
 	canvas.onkeyup = function(e) {
 		Key[e.code] = false
-		if(e.code === "Escape" && (screen === "chat" || screen === "pause" || screen === "inventory" || screen === "options" && previousScreen === "pause") && now > unpauseDelay) {
+		Key.shift = e.shiftKey
+		Key.ctrl = e.ctrlKey
+		Key.alt = e.altKey
+		if(e.code === "Escape" && screenPath[0] === "play" && now > unpauseDelay) {
 			play()
 		}
-		if (screen === "play") {
-			if (e.code === controlMap.zoom.key) {
-				p.FOV(settings.fov, 300)
-			}
 
-			if (e.code === controlMap.sneak.key && p.sneaking) {
-				p.sneaking = false
-				p.speed = 0.11
-				p.bottomH = 1.62
-			}
+		// Normally should only run in-game, but holding the key while switching screens would jam it.
+		if (controlMap.zoom.released()) {
+			p.FOV(settings.fov, 300)
+		}
+		if (controlMap.sneak.released() && p.sneaking) {
+			p.sneaking = false
+			p.speed = 0.11
+			p.bottomH = 1.62
+		}
+
+		for (let name in controlMap) {
+			if (controlMap[name].pressed) controlMap[name].released()
 		}
 	}
 	canvas.onblur = function() {
@@ -4215,6 +4295,9 @@ const MineKhan = async () => {
 				let index = res.findIndex(obj => obj.id === "settings")
 				if (index >= 0) {
 					Object.assign(settings, res[index].data) // Stored data overrides any hardcoded settings
+					for (let name in settings.controls) {
+						setControl(...settings.controls[name])
+					}
 					p.FOV(settings.fov)
 					res.splice(index, 1)
 				}
@@ -4465,6 +4548,13 @@ const MineKhan = async () => {
 			textSize(20)
 			fill(255)
 			text("Select Server", width / 2, 20)
+		}
+		drawScreens.controls = () => {
+			clear()
+			ctx.textAlign = 'center'
+			textSize(20)
+			fill(255)
+			text("Controls", width / 2, 20)
 		}
 	})()
 
