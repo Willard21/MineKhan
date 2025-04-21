@@ -177,6 +177,18 @@ input[type=text]:focus {
 .control-row {
 	height: 30px;
 }
+
+#changelog-list {
+	z-index: 1;
+	width: 400px;
+	background-color: rgba(127, 127, 127, 0.8);
+}
+#changelog-container {
+	top: 90px;
+	max-height: calc(99vh - 90px);
+	overflow-y: auto;
+}
+
 #hotbar {
 	bottom: 10px;
 	z-index: 0;

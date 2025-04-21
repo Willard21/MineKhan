@@ -254,6 +254,18 @@ input[type=text]:focus {
 .control-row {
 	height: 30px;
 }
+
+#changelog-list {
+	z-index: 1;
+	width: 400px;
+	background-color: rgba(127, 127, 127, 0.8);
+}
+#changelog-container {
+	top: 90px;
+	max-height: calc(99vh - 90px);
+	overflow-y: auto;
+}
+
 #hotbar {
 	bottom: 10px;
 	z-index: 0;
@@ -278,6 +290,7 @@ input[type=text]:focus {
 		<div id="onhover" class="hidden"></div>
 		<div id="chat" class="hidden"></div>
 		<div id="controls-container" class = "hidden center-div"><table id="controls-page"></table></div>
+		<div id="changelog-container" class = "hidden center-div"><ul id="changelog-list"></ul></div>
 		<input id="chatbar" class="hidden" list="commands">
 		<datalist id="commands">
 			<option>/ban</option>
@@ -5626,6 +5639,71 @@ class Player extends Entity {
 
 window.parent.exports["src/js/player.js"] = { Player }}
 		</script>
+		<script id="src/js/changelog.js" type="application/javascript">
+{const changeList = [
+	{
+		date: "2017-03-09",
+		version: "Scuscraft 3D Alpha 0.1",
+		versionLink: "https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624",
+		creditName: "ScusX",
+		creditLink: "https://www.khanacademy.org/profile/kaid_690562335310574068784363/projects",
+		changes: [
+			"(Original game)",
+			"Added first 7 blocks (no textures)",
+			"Added oak trees",
+			"Added save codes (copy/paste only)",
+			"Made with P3D",
+			"(Renders about 4 blocks away)"
+		]
+	},
+	{
+		date: "2020-07-05",
+		version: "0.3",
+		versionLink: "https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632",
+		creditName: "Willard",
+		creditLink: "https://www.khanacademy.org/profile/willllard/projects",
+		changes: [
+			"Added textures",
+			"Added inventory with 29 blocks",
+			"Added chunks with chunk-based rendering",
+			"Added mouse controls with screen lock",
+			"Added occular occlusion (shadows in block corners)",
+			"Added frustum culling (chunks behind the player aren't rendered)",
+			"Stopped rendering hidden block faces",
+			"Removed Processing.js dependency (everything is raw WebGL)",
+			"Removed save codes (world format changed)",
+			"Improved performance (Can render as much as the GPU can handle)"
+		]
+	},
+	{
+		date: "2025-04-21",
+		version: "0.8.3",
+		versionLink: "https://willard.fun/minekhan",
+		creditName: "Willard",
+		creditLink: "https://github.com/Willard21",
+		changes: [
+			"Added \"Controls\" page in Options",
+			"Added Changelog page to the homepage"
+		]
+	},
+]
+
+changeList.sort((a, b) => b.date.localeCompare(a.date))
+
+const list = document.getElementById("changelog-list")
+for (let {date, version, creditName, creditLink, versionLink, changes} of changeList) {
+	let li = document.createElement("li")
+	li.innerHTML = `Version: ${versionLink ? `<a href=${versionLink} target="_blank">${version}</a>` : version}<br>
+		Date: ${date}<br>
+		Credit: ${creditLink ? `<a href=${creditLink} target="_blank">${creditName}</a>` : creditName}<br>
+		Changes:<br>
+		<ul>${changes.map(change => `<li>${change}</li>`).join("")}</ul>`
+	li.style.marginBottom = "20px"
+	list.appendChild(li)
+}
+const changelog = document.getElementById("changelog-container")
+window.parent.exports["src/js/changelog.js"] = { changelog }}
+		</script>
 		<script id="src/main.js" type="application/javascript">
 {// import './index.css'
 
@@ -5656,6 +5734,7 @@ const { getSkybox } = window.parent.exports["src/js/sky.js"]
 const { Chunk } = window.parent.exports["src/js/chunk.js"]
 // import { Item } from './js/item.js'
 const { Player } = window.parent.exports["src/js/player.js"]
+const { changelog } = window.parent.exports["src/js/changelog.js"]
 
 
 const win = window.parent
@@ -5935,7 +6014,8 @@ const MineKhan = async () => {
 		"comingsoon menu": () => {},
 		"loadsave menu": () => {},
 		"chat": () => {},
-		"controls": () => {}
+		"controls": () => {},
+		"changelog": () => {}
 	}
 	let html = {
 		play: {
@@ -6023,6 +6103,10 @@ const MineKhan = async () => {
 		controls: {
 			enter: [document.getElementById("controls-container")],
 			exit: [document.getElementById("controls-container")],
+		},
+		changelog: {
+			enter: [changelog],
+			exit: [changelog]
 		}
 	}
 
@@ -8994,8 +9078,15 @@ const MineKhan = async () => {
 			initMultiplayerMenu()
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
+		Button.add(width / 2, height / 2 + 145, 400, 40, "Change Log" + (settings.lastVersion !== version ? " (NEW UPDATE!)" : ""), "main menu", () => {
+			changeScene("changelog")
+			if (settings.lastVersion !== version) {
+				settings.lastVersion = version
+				saveToDB("settings", settings).catch(e => console.error(e))
+			}
+		})
 		if (height <= 600) {
-			Button.add(width / 2, height / 2 + 145, 400, 40, "Full Screen", "main menu", () => {
+			Button.add(width / 2, height / 2 + 200, 400, 40, "Full Screen", "main menu", () => {
 				const w = window.open()
 				w.document.write(document.children[0].outerHTML)
 			})
@@ -9021,7 +9112,7 @@ const MineKhan = async () => {
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Ender dragon blocks? Maybe? Hmmmmmmmmmm...")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			if (survival) {
-				alert("Lol no.")
+				alert("Survival Soon™")
 				// window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
 				return
 			}
@@ -9212,6 +9303,7 @@ const MineKhan = async () => {
 
 		// Controls page
 		Button.add(width / 2, 60, width / 3, 40, "Back", "controls", () => changeScene("back"))
+		Button.add(width / 2, 60, width / 3, 40, "Back", "changelog", () => changeScene("back"))
 	}
 
 	const hotbar = () => {
@@ -9385,8 +9477,8 @@ const MineKhan = async () => {
 		}
 		if (screen === "inventory") {
 			const heldItemCanvas = document.getElementById("heldItem")
-			heldItemCanvas.style.left = (event.x - inventory.iconSize / 2 | 0) + "px"
-			heldItemCanvas.style.top = (event.y - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.left = (e.x - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.top = (e.y - inventory.iconSize / 2 | 0) + "px"
 		}
 	}
 
@@ -9609,7 +9701,7 @@ const MineKhan = async () => {
 		if (screen === "play" && Key.control) {
 			releasePointer()
 			e.preventDefault()
-			e.returnValue = "Q is the sprint button; Ctrl + W closes the page."
+			e.returnValue = "Q is the default sprint button; Ctrl + W closes the page."
 			return true
 		}
 	}
@@ -9860,7 +9952,7 @@ const MineKhan = async () => {
 		return el.innerHTML
 	}
 
-	const initWorldsMenu = () => {
+	const initWorldsMenu = async () => {
 		while (win.worlds.firstChild) {
 			win.worlds.removeChild(win.worlds.firstChild)
 		}
@@ -9919,44 +10011,44 @@ const MineKhan = async () => {
 				console.error(e)
 			}
 		}
-		loadFromDB().then(async res => {
-			if(res && res.length) {
-				let index = res.findIndex(obj => obj.id === "settings")
-				if (index >= 0) {
-					Object.assign(settings, res[index].data) // Stored data overrides any hardcoded settings
-					for (let name in settings.controls) {
-						setControl(...settings.controls[name])
-					}
-					p.FOV(settings.fov)
-					res.splice(index, 1)
-				}
-			}
 
-			if (res && res.length) {
-				res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
-				for (let data of res) {
-					addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited, false)
-					data.cloud = false
+		let res = await loadFromDB().catch(console.error)
+		if(res && res.length) {
+			let index = res.findIndex(obj => obj.id === "settings")
+			if (index >= 0) {
+				Object.assign(settings, res[index].data) // Stored data overrides any hardcoded settings
+				for (let name in settings.controls) {
+					setControl(...settings.controls[name])
+				}
+				p.FOV(settings.fov)
+				res.splice(index, 1)
+			}
+		}
+
+		if (res && res.length) {
+			res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
+			for (let data of res) {
+				addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited, false)
+				data.cloud = false
+				worlds[data.id] = data
+			}
+		}
+
+		if (location.href.startsWith("https://willard.fun/")) {
+			let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
+			if (Array.isArray(cloudSaves) && cloudSaves.length) {
+				for (let data of cloudSaves) {
+					if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
+
+					addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
+					data.cloud = true
 					worlds[data.id] = data
 				}
 			}
+		}
 
-			if (location.href.startsWith("https://willard.fun/")) {
-				let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
-				if (Array.isArray(cloudSaves) && cloudSaves.length) {
-					for (let data of cloudSaves) {
-						if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
-
-						addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
-						data.cloud = true
-						worlds[data.id] = data
-					}
-				}
-			}
-
-			win.worlds.onclick = Button.draw
-			win.boxCenterTop.onkeyup = Button.draw
-		}).catch(e => console.error(e))
+		win.worlds.onclick = Button.draw
+		win.boxCenterTop.onkeyup = Button.draw
 
 		superflat = false
 		details = true
@@ -10057,8 +10149,7 @@ const MineKhan = async () => {
 		Slider.draw()
 
 		p.FOV(settings.fov)
-		initWorldsMenu()
-		initButtons()
+		initWorldsMenu().then(() => initButtons())
 
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
@@ -10184,6 +10275,13 @@ const MineKhan = async () => {
 			textSize(20)
 			fill(255)
 			text("Controls", width / 2, 20)
+		}
+		drawScreens.changelog = () => {
+			clear()
+			ctx.textAlign = 'center'
+			textSize(20)
+			fill(255)
+			text("Change Log", width / 2, 20)
 		}
 	})()
 

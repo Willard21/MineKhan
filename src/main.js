@@ -27,6 +27,7 @@ import { getSkybox } from './js/sky'
 import { Chunk } from "./js/chunk.js"
 // import { Item } from './js/item.js'
 import { Player } from "./js/player.js"
+import { changelog } from './js/changelog.js'
 
 
 const win = window.parent
@@ -306,7 +307,8 @@ const MineKhan = async () => {
 		"comingsoon menu": () => {},
 		"loadsave menu": () => {},
 		"chat": () => {},
-		"controls": () => {}
+		"controls": () => {},
+		"changelog": () => {}
 	}
 	let html = {
 		play: {
@@ -394,6 +396,10 @@ const MineKhan = async () => {
 		controls: {
 			enter: [document.getElementById("controls-container")],
 			exit: [document.getElementById("controls-container")],
+		},
+		changelog: {
+			enter: [changelog],
+			exit: [changelog]
 		}
 	}
 
@@ -3365,8 +3371,15 @@ const MineKhan = async () => {
 			initMultiplayerMenu()
 		}, () => !location.href.startsWith("https://willard.fun"), "Please visit https://willard.fun/login to enjoy multiplayer.")
 		Button.add(width / 2, height / 2 + 90, 400, 40, "Options", "main menu", () => changeScene("options"))
+		Button.add(width / 2, height / 2 + 145, 400, 40, "Change Log" + (settings.lastVersion !== version ? " (NEW UPDATE!)" : ""), "main menu", () => {
+			changeScene("changelog")
+			if (settings.lastVersion !== version) {
+				settings.lastVersion = version
+				saveToDB("settings", settings).catch(e => console.error(e))
+			}
+		})
 		if (height <= 600) {
-			Button.add(width / 2, height / 2 + 145, 400, 40, "Full Screen", "main menu", () => {
+			Button.add(width / 2, height / 2 + 200, 400, 40, "Full Screen", "main menu", () => {
 				const w = window.open()
 				w.document.write(document.children[0].outerHTML)
 			})
@@ -3392,7 +3405,7 @@ const MineKhan = async () => {
 		Button.add(width / 2, 335, 300, 40, "Difficulty: Peaceful", "creation menu", nothing, always, "Ender dragon blocks? Maybe? Hmmmmmmmmmm...")
 		Button.add(width / 2, height - 90, 300, 40, "Create New World", "creation menu", () => {
 			if (survival) {
-				alert("Lol no.")
+				alert("Survival Soon™")
 				// window.open("https://www.minecraft.net/en-us/store/minecraft-java-edition", "_blank")
 				return
 			}
@@ -3583,6 +3596,7 @@ const MineKhan = async () => {
 
 		// Controls page
 		Button.add(width / 2, 60, width / 3, 40, "Back", "controls", () => changeScene("back"))
+		Button.add(width / 2, 60, width / 3, 40, "Back", "changelog", () => changeScene("back"))
 	}
 
 	const hotbar = () => {
@@ -3756,8 +3770,8 @@ const MineKhan = async () => {
 		}
 		if (screen === "inventory") {
 			const heldItemCanvas = document.getElementById("heldItem")
-			heldItemCanvas.style.left = (event.x - inventory.iconSize / 2 | 0) + "px"
-			heldItemCanvas.style.top = (event.y - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.left = (e.x - inventory.iconSize / 2 | 0) + "px"
+			heldItemCanvas.style.top = (e.y - inventory.iconSize / 2 | 0) + "px"
 		}
 	}
 
@@ -3980,7 +3994,7 @@ const MineKhan = async () => {
 		if (screen === "play" && Key.control) {
 			releasePointer()
 			e.preventDefault()
-			e.returnValue = "Q is the sprint button; Ctrl + W closes the page."
+			e.returnValue = "Q is the default sprint button; Ctrl + W closes the page."
 			return true
 		}
 	}
@@ -4231,7 +4245,7 @@ const MineKhan = async () => {
 		return el.innerHTML
 	}
 
-	const initWorldsMenu = () => {
+	const initWorldsMenu = async () => {
 		while (win.worlds.firstChild) {
 			win.worlds.removeChild(win.worlds.firstChild)
 		}
@@ -4290,44 +4304,44 @@ const MineKhan = async () => {
 				console.error(e)
 			}
 		}
-		loadFromDB().then(async res => {
-			if(res && res.length) {
-				let index = res.findIndex(obj => obj.id === "settings")
-				if (index >= 0) {
-					Object.assign(settings, res[index].data) // Stored data overrides any hardcoded settings
-					for (let name in settings.controls) {
-						setControl(...settings.controls[name])
-					}
-					p.FOV(settings.fov)
-					res.splice(index, 1)
-				}
-			}
 
-			if (res && res.length) {
-				res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
-				for (let data of res) {
-					addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited, false)
-					data.cloud = false
+		let res = await loadFromDB().catch(console.error)
+		if(res && res.length) {
+			let index = res.findIndex(obj => obj.id === "settings")
+			if (index >= 0) {
+				Object.assign(settings, res[index].data) // Stored data overrides any hardcoded settings
+				for (let name in settings.controls) {
+					setControl(...settings.controls[name])
+				}
+				p.FOV(settings.fov)
+				res.splice(index, 1)
+			}
+		}
+
+		if (res && res.length) {
+			res = res.map(d => d.data).filter(d => d && d.code).sort((a, b) => b.edited - a.edited)
+			for (let data of res) {
+				addWorld(data.name, data.version, data.code.length + 60, data.id, data.edited, false)
+				data.cloud = false
+				worlds[data.id] = data
+			}
+		}
+
+		if (location.href.startsWith("https://willard.fun/")) {
+			let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
+			if (Array.isArray(cloudSaves) && cloudSaves.length) {
+				for (let data of cloudSaves) {
+					if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
+
+					addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
+					data.cloud = true
 					worlds[data.id] = data
 				}
 			}
+		}
 
-			if (location.href.startsWith("https://willard.fun/")) {
-				let cloudSaves = await fetch('https://willard.fun/minekhan/saves').then(res => res.json())
-				if (Array.isArray(cloudSaves) && cloudSaves.length) {
-					for (let data of cloudSaves) {
-						if (worlds[data.id] && worlds[data.id].edited >= data.edited) continue
-
-						addWorld(data.name, data.version, data.size + 60, data.id, data.edited, true)
-						data.cloud = true
-						worlds[data.id] = data
-					}
-				}
-			}
-
-			win.worlds.onclick = Button.draw
-			win.boxCenterTop.onkeyup = Button.draw
-		}).catch(e => console.error(e))
+		win.worlds.onclick = Button.draw
+		win.boxCenterTop.onkeyup = Button.draw
 
 		superflat = false
 		details = true
@@ -4428,8 +4442,7 @@ const MineKhan = async () => {
 		Slider.draw()
 
 		p.FOV(settings.fov)
-		initWorldsMenu()
-		initButtons()
+		initWorldsMenu().then(() => initButtons())
 
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
@@ -4555,6 +4568,13 @@ const MineKhan = async () => {
 			textSize(20)
 			fill(255)
 			text("Controls", width / 2, 20)
+		}
+		drawScreens.changelog = () => {
+			clear()
+			ctx.textAlign = 'center'
+			textSize(20)
+			fill(255)
+			text("Change Log", width / 2, 20)
 		}
 	})()
 
