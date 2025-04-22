@@ -572,6 +572,7 @@ const MineKhan = async () => {
 	setControl("breakBlock", "leftMouse")
 	setControl("placeBlock", "rightMouse")
 	setControl("pickBlock", "middleMouse")
+	setControl("cycleDebug", "F3")
 	//}
 
 	const play = () => {
@@ -3869,8 +3870,9 @@ const MineKhan = async () => {
 					freezeFrame = now + 500
 				}
 
-				if (name === "F3") {
+				if (controlMap.cycleDebug.triggered()) {
 					settings.showDebug = (settings.showDebug + 1) % 3
+					saveToDB("settings", settings).catch(e => console.error(e))
 					hud()
 				}
 
