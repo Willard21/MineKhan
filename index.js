@@ -53,7 +53,12 @@ function bundle() {
 		for (let i = 0; i < lines.length; i++) {
 			const imp = lines[i].match(/^(\s*)import ((.+) from )?['"](.+)['"]/)
 			if (imp) {
-				let p = Path.join(path.split("/").slice(0, -1).join("/"), imp[4])
+				// Somehow this line wasn't working the right way on Windows
+				// let p = Path.join(path.split("/").slice(0, -1).join("/"), imp[4])
+				const dir = Path.dirname(path);
+				let p = Path.normalize(Path.join(dir, imp[4]));
+				console.log(p);
+				
 				if (p.endsWith(".css")) {
 					lines[i] = "// " + lines[i]
 					cssFiles.push(p)
