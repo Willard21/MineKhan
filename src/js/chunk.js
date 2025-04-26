@@ -1,16 +1,11 @@
 import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { BitArrayBuilder, BitArrayReader } from "./utils.js"
+import { shapes } from "./shapes.js"
 
 const { floor, max, abs } = Math
-const semiTrans = new Uint8Array(blockData.filter((data, i) => data && i < 256).map(data => data.semiTrans ? 1 : 0))
-const transparent = new Uint8Array(1 << 13) // 5 bits of block state
-for (let i = 0; i < blockData.length; i++) transparent[i] = blockData[i].transparent ? 1 : 0
 const hideInterior = new Uint8Array(255)
 hideInterior.set(blockData.slice(0, 255).map(data => data.hideInterior))
-
-transparent.fill(1, 256) // Anything other than default cubes should be considered transparent for lighting and face culling
-
 const shadow = new Uint8Array(blockData.map(data => data.shadow ? 1 : 0))
 const lightLevels = new Uint8Array(blockData.map(data => data.lightLevel || 0))
 
@@ -92,6 +87,15 @@ let getShadows
 	]
 }
 
+/**
+ * Function to compute smooth lighting.
+ * @param {Number[]} l Array of numbers to average
+ * @param {Number} a The index of the face
+ * @param {Number} b The second index of the 4 numbers
+ * @param {Number} c The third index of the 4 numbers
+ * @param {Number} d The fourth index of the 4 numbers
+ * @returns 
+ */
 const average = (l, a, b, c, d) => {
 	a = l[a]
 	b = l[b]
@@ -344,7 +348,7 @@ class Chunk {
 			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 
-		if (semiTrans[blockID & 255]) {
+		if (blockData[blockID & 255].semiTrans) {
 			this.doubleRender = true
 			if (!this.world.doubleRenderChunks.includes(this)) {
 				this.world.doubleRenderChunks.push(this)
@@ -365,7 +369,7 @@ class Chunk {
 	processBlocks() {
 		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
 		const { blocks, maxY, blockSpread, world } = this
-		const trans = transparent
+		const cube = shapes.cube.cull
 
 		const chunkN = world.getChunk(this.x, this.z + 16).blocks
 		const chunkS = world.getChunk(this.x, this.z - 16).blocks
@@ -383,11 +387,14 @@ class Chunk {
 			const x = i >> 4 & 15
 			const z = i & 15
 			const b = blocks[i]
+			const data = blockData[b]
 
 			// Set bit flags on adjacent blocks
-			if (trans[b] === 1) {
-				if (b === 0) flags[i] ^= 128 // This is an air block, so it can't be rendered
+			if (data.transparent) {
+				if (b === 0) flags[i] |= 128 // This is an air block, so it can't be rendered. This bit makes it negative.
 				else if (hideInterior[b] === 1) {
+
+					// Toggle visibilty flags. The neighbors will toggle them again, leaving them off.
 					flags[i] ^= (b === (i >> 4 & 15 ? blocks[i - 16] : chunkW[i + 240])) << 0
 					| (b === (~i >> 4 & 15 ? blocks[i + 16] : chunkE[i - 240])) << 1
 					| (b === blocks[i - 256]) << 2
@@ -396,12 +403,33 @@ class Chunk {
 					| (b === (~i & 15 ? blocks[i + 1] : chunkN[i - 15])) << 5
 				}
 
+				// Toggle neighbor's visibility flags.
 				flags[i - 256] ^= 8 // Top face of block below is visible
 				if (i < flags.length - 256) flags[i + 256] ^= 4 // Bottom face of block above is visible
 				if (z)      flags[i - 1] ^= 32 // South face of North block is visible
 				if (z < 15) flags[i + 1] ^= 16 // North face of South block is visible
 				if (x)      flags[i - 16] ^= 2 // West face of East block is visible
 				if (x < 15) flags[i + 16] ^= 1 // East face of West block is visible
+			}
+			else if (data.shape.cull !== cube) {
+				if (!data.shape.cull.bottom) {
+					flags[i - 256] |= 8 // Top face of block below is visible
+				}
+				if (!data.shape.cull.top && i < flags.length - 256) {
+					flags[i + 256] |= 4 // Bottom face of block above is visible
+				}
+				if (!data.shape.cull.south && z) {
+					flags[i - 1] |= 32 // South face of North block is visible
+				}
+				if (!data.shape.cull.north && z < 15) {
+					flags[i + 1] |= 16 // North face of South block is visible
+				}
+				if (!data.shape.cull.west && x) {
+					flags[i - 16] |= 2 // West face of East block is visible
+				}
+				if (!data.shape.cull.east && x < 15) {
+					flags[i + 16] |= 1 // East face of West block is visible
+				}
 			}
 
 			// Some lighting stuff
@@ -433,9 +461,7 @@ class Chunk {
 			for (let z = 0; z < 16; z++) {
 				for (let y = this.maxY; y > 0; y--) {
 					const block = blocks[y * 256 + x * 16 + z]
-
-					if (block && !transparent[block]) {
-					// if ((visFlags[y*256 + x*16 + z - 256] & 8) === 0) {
+					if (block && !blockData[block].transparent) {
 						this.tops[x * 16 + z] = y
 						break
 					}
@@ -513,7 +539,7 @@ class Chunk {
 		if (y > 255) return
 		const { world } = this
 		if (world.getLight(x, y, z, blockLight) < level) {
-			if (transparent[world.getBlock(x, y, z)]) {
+			if (blockData[world.getBlock(x, y, z)].transparent) {
 				world.setLight(x, y, z, level, blockLight)
 				spread.push(x, y, z)
 			}
@@ -546,9 +572,8 @@ class Chunk {
 		if (y > 255) return
 		const { world } = this
 		let light = world.getLight(x, y, z, blockLight)
-		let trans = transparent[world.getBlock(x, y, z)]
 		if (light === level) {
-			if (trans) {
+			if (blockData[world.getBlock(x, y, z)].transparent) {
 				world.setLight(x, y, z, 0, blockLight)
 				spread.push(x, y, z)
 			}
@@ -656,7 +681,6 @@ class Chunk {
 	}
 	optimize() {
 		const { blocks, renderData, world, x, z, maxY } = this
-		const trans = transparent
 		const flags = this.visFlags // Computed in this.processBlocks()
 		this.visFlags = null
 
@@ -675,10 +699,10 @@ class Chunk {
 			let indexE = indexN
 			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				if (trans[chunkN[indexN]]) flags[indexN + 15] ^= 32
-				if (trans[chunkS[indexS]]) flags[indexS - 15] ^= 16
-				if (trans[chunkE[indexE]]) flags[indexE + 240] ^= 2
-				if (trans[chunkW[indexW]]) flags[indexW - 240] ^= 1
+				if (blockData[chunkN[indexN]].transparent || !blockData[chunkN[indexN]].shape.cull.south) flags[indexN + 15] ^= 32
+				if (blockData[chunkS[indexS]].transparent || !blockData[chunkS[indexS]].shape.cull.north) flags[indexS - 15] ^= 16
+				if (blockData[chunkE[indexE]].transparent || !blockData[chunkE[indexE]].shape.cull.west) flags[indexE + 240] ^= 2
+				if (blockData[chunkW[indexW]].transparent || !blockData[chunkW[indexW]].shape.cull.east) flags[indexW - 240] ^= 1
 				indexN += 16
 				indexS += 16
 				indexE++
@@ -687,7 +711,17 @@ class Chunk {
 		}
 
 		//Check all the blocks in the chunk to see if they're visible.
+		const cube = shapes.cube.cull
 		for (let index = 256; index < flags.length; index++) {
+			const cull = blockData[blocks[index]].shape.cull
+			if (cull !== cube) {
+				if (!cull.bottom) flags[index] |= 4
+				if (!cull.top)    flags[index] |= 8
+				if (!cull.south)  flags[index] |= 16
+				if (!cull.north)  flags[index] |= 32
+				if (!cull.west)   flags[index] |= 1
+				if (!cull.east)   flags[index] |= 2
+			}
 			if (flags[index] > 0) {
 				renderData[this.renderLength++] = index << 16 | flags[index] << 10
 			}
@@ -697,7 +731,7 @@ class Chunk {
 		// The bottom layer of bedrock is only ever visible on top
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				if (transparent[blocks[256 + i*16 + k]]) {
+				if (blockData[blocks[256 + i*16 + k]].transparent) {
 					this.minY = 0
 					renderData.push(i*16 + k << 16 | 1 << 13)
 				}
@@ -734,20 +768,22 @@ class Chunk {
 		z += this.z
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
+		const cull = blockData[blockState].shape.cull
 
-		let w = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
-		let e = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
-		let d = y      ? this.blocks[index - 256]: 4
-		let u =          this.blocks[index + 256]
-		let s = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
-		let n = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
+		let w = blockData[i ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)]
+		let e = blockData[i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)]
+		let d = blockData[y ? this.blocks[index - 256]: 4]
+		let u = blockData[this.blocks[index + 256]]
+		let s = blockData[k ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)]
+		let n = blockData[k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)]
 
-		let visible = blockState && transparent[w]
-		+ transparent[e] * 2
-		+ transparent[d] * 4
-		+ transparent[u] * 8
-		+ transparent[s] * 16
-		+ transparent[n] * 32
+		let visible = blockState
+		&& (w.transparent || !w.shape.cull.east   || !cull.west)
+		+  (e.transparent || !e.shape.cull.west   || !cull.east) * 2
+		+  (d.transparent || !d.shape.cull.top    || !cull.bottom) * 4
+		+  (u.transparent || !u.shape.cull.bottom || !cull.top) * 8
+		+  (s.transparent || !s.shape.cull.north  || !cull.south) * 16
+		+  (n.transparent || !n.shape.cull.south  || !cull.north) * 32
 
 		if (blockState < 256 && hideInterior[blockState]) {
 			visible ^= w === blockState
@@ -1220,10 +1256,14 @@ class Chunk {
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
 
+		let blockLight = 0
+		let skyLight = 0
 		let shadows = [1, 1, 1, 1], slights = [1, 1, 1, 1], blights = [1, 1, 1, 1]
 		let blockMasks = Object.values(Block)
 		const blocks27 = new Uint8Array(27)
 		const lights27 = new Uint8Array(27)
+		const cube = shapes.cube
+		const edges = [[1, -0.5], [1, 0.5], [2, 0.5], [2, -0.5], [0, 0.5], [0, -0.5]]
 
 		for (let i = 0; i < renderLength; i++) {
 			const data = renderData[i]
@@ -1250,13 +1290,32 @@ class Chunk {
 				shapeTexVerts = newShape.texVerts
 			}
 
-			for (let n = 0; n < 6; n++) {
-				if (sides & blockMasks[n]) {
-					shadows = getShadows[n](blocks27)
-					slights = getLight[n](lights27, slights, 0x0f, 0)
-					blights = getLight[n](lights27, blights, 0xf0, 4)
+			if (block.shape !== cube) {
+				// shadows = noShadows
+				const light = this.light[loc]
+				blockLight = (light >>> 4) / 15
+				skyLight = (light & 15) / 15
+			}
 
+			for (let n = 0; n < 6; n++) {
+				if (sides & blockMasks[n] && shapeVerts[n].length) {
+					// Determine if lighting or shading are needed for a given face.
 					let directionalFaces = shapeVerts[n]
+					if (block.shape !== cube && (directionalFaces.length > 1 || directionalFaces[0][edges[n][0]] !== edges[n][1])) {
+						// shadows = noShadows
+						// if (block.name.includes("Door")) {
+						// 	console.log(block.name, n, skyLight, block.id, directionalFaces[0])
+						// }
+						for (let a = 0; a < 4; a++) {
+							blights[a] = blockLight
+							slights[a] = skyLight
+						}
+					}
+					else {
+						slights = getLight[n](lights27, slights, 0x0f, 0)
+						blights = getLight[n](lights27, blights, 0xf0, 4)
+					}
+					shadows = getShadows[n](blocks27)
 
 					// Add vertices for a single rectangle.
 					for (let facei = 0; facei < directionalFaces.length; facei++) {

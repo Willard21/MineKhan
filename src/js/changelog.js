@@ -25,11 +25,12 @@ const changeList = [
 			"Added: Inventory with 29 blocks",
 			"Added: Chunks with chunk-based rendering",
 			"Added: Mouse controls with screen lock",
-			"Added: Occular occlusion (shadows in block corners)",
+			"Added: Ambient occlusion (shadows in block corners)",
 			"Added: Frustum culling (chunks behind the player aren't rendered)",
-			"Stopped: rendering hidden block faces",
 			"Removed: Processing.js dependency (everything is raw WebGL)",
 			"Removed: Save codes (world format changed)",
+			"Optimized: The entire world is no longer re-generated every frame",
+			"Optimized: Hidden block faces are no longer rendered",
 			"Optimized: Everything is faster",
 		]
 	},
@@ -58,7 +59,7 @@ const changeList = [
 		creditName: "Willard",
 		creditLink: "https://www.khanacademy.org/profile/willllard/projects",
 		changes: [
-			"Fixed: People getting stuck at Y=7",
+			"Fixed: People getting stuck to the ground at Y=7",
 			"Fixed: Right click getting stuck on Safari",
 			"Fixed: Inventory looked really weird on Firefox",
 			"Optimized: Hotbar is no longer drawn every frame",
@@ -197,7 +198,7 @@ const changeList = [
 			"Fixed: Weird lines between blocks",
 			"Fixed: Crash on old Safari versions (from weird function hoisting behavior)",
 			"Fixed: Un-rotated stairs from old saves. Only applies if it hasn't been saved over in 0.8.1",
-			"Changed: Fences have fence-shaped hitboxes now (let me know if you prefer it like that or not)",
+			"Changed: Fences have fence-shaped hitboxes now",
 			"Changed: Fences no longer connect to non-solid blocks"
 		]
 	},
@@ -211,15 +212,19 @@ const changeList = [
 		]
 	},
 	{
-		date: "2025-04-21",
+		date: "2025-04-24",
 		version: "0.8.3",
 		versionLink: "https://willard.fun/minekhan",
 		creditName: "Willard",
 		creditLink: "https://github.com/Willard21",
 		changes: [
-			"Added \"Controls\" page in Options",
-			"Added \"Change Log\" page to the homepage",
-			"Removed: Ctrl clicking no longer places blocks by default (you can still bind it in the options)",
+			"Added: \"Controls\" page in Options",
+			"Added: \"Change Log\" page to the main menu",
+			"Removed: Ctrl clicking no longer places blocks by default",
+			"Fixed: Rendering bug when partial blocks are placed next to solid blocks",
+			"Broken: Smooth lighting removed from inner faces of partial blocks. The previous bug was hiding a lighting bug, and this was my solution.",
+			"Fixed: Inventory glitch on Khan Academy. Not sure why it wasn't broken everywhere.",
+			"Changed: Save strings are like 1% smaller. I compressed repeating characters to avoid KA's spam filter when posting saves in comments.",
 		]
 	},
 ]

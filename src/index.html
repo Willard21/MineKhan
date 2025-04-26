@@ -6,46 +6,31 @@ The "Save" button saves your world to your local browser. Nobody else can see it
 
 To share your save with other people, copy your world string into the "loadString" variable on line 293.
 
-	Controls:
+	These controls are hard-coded. The rest are customizable in the Options->Controls menu.
 
- * Mouse Right-click (or ctrl + left-click): place block
- * Mouse Left-click: Remove block
- * Mouse Middle-click: Pick block
- * Q: Sprint
- * W-A-S-D: Walk around
- * Shift: Sneak
- * E: Open/Close inventory
- * B: Toggle super (B)reaker
- * H: Toggle (H)yper builder
- * Z: Zoom
- * L: Toggle Spectator mode
  * Arrow Keys: Look around
- * P or Esc: Pause/unpause
+ * Esc: Pause/unpause
  * 1-9: Navigate hotbar
- * Spacebar: Jump
  * Double jump: Toggle flight
- * Shift (flying): Fly down
- * Space (flying): Fly up
- * T: Open chat
+ * Sneak (flying): Fly down
+ * Jump (flying): Fly up
  * ; (semicolon): Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
- * This program (MineKhan) was made by Willard (me). The original is https://www.khanacademy.org/cs/mc/5647155001376768 (just adding this so that spin-offs have it)
  * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub. https://www.khanacademy.org/profile/
  * Zushah helped me with some of the menus in the 0.6 update, and added the flower models via GitHub. https://www.khanacademy.org/profile/zushah77
  * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
  * Danielkshin made an old main menu background. https://www.khanacademy.org/profile/danielkshin
 
- * This program originated as a spin-off of ScusCraft by ScusX.
- * It's 99% different code at this point, but I still never would have made it this far without his code for reference.
- * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
+ * This program originated as a spin-off of Scuscraft 3D by ScusX.
+ * All the original code is long since replaced, but he saved me from needing to figure out how to 3D.
+ * Scuscraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
  * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
  * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
- * The real Minecraft game can be bought and downloaded at https://www.minecraft.net/en-us/
 
 	To-Do:
- * A lot. Check out the GitHub repo if you'd like to collaborate on this.
+ * A lot. Check out the GitHub repo if you'd like to contribute to this.
  * https://github.com/Willard21/MineKhan
 
 
@@ -53,10 +38,10 @@ To share your save with other people, copy your world string into the "loadStrin
 
 The graphics in this project are done using WebGL, which is a web implementation of OpenGL ES 2 (Open Graphics Library Embedded Systems 2).
 It allows us to write shader programs that run right on the GPU, which means it can run as fast as any C++ game.
-The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even being using the GPU.
+The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even be using the GPU.
 
 To properly utilize WebGL like this program does, you need to make efficient use of buffers, which are arrays containing data on all the triangles that need to be rendered.
-Ideally you should be rendering less than 100 buffers per frame for the slowest computers to get a good framerate.
+Ideally you should be rendering less than 100 buffers per frame for the slowest computers to get a good framerate, though non-toasters can render a couple thousand.
 To achieve this, you can store all the textures in 1 very big texture called a "texture atlas". Then, when you're constructing the buffer, you specify which part of the texture atlas to use for each triangle you're drawing.
 My buffers have 8 values for each vertex: X, Y, Z, textureX, textureY, ambient occlusion, sky light, and block light.
 I use 1 buffer per 16x16 chunk. I use "frustum culling" to only render chunks that are visible on the screen.

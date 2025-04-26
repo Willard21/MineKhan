@@ -6,43 +6,28 @@ The "Save" button saves your world to your local browser. Nobody else can see it
 
 To share your save with other people, copy your world string into the "loadString" variable on line 293.
 
-	Controls:
+	These controls are hard-coded. The rest are customizable in the Options->Controls menu.
 
- * Mouse Right-click (or ctrl + left-click): place block
- * Mouse Left-click: Remove block
- * Mouse Middle-click: Pick block
- * Q: Sprint
- * W-A-S-D: Walk around
- * Shift: Sneak
- * E: Open/Close inventory
- * B: Toggle super (B)reaker
- * H: Toggle (H)yper builder
- * Z: Zoom
- * L: Toggle Spectator mode
  * Arrow Keys: Look around
- * P or Esc: Pause/unpause
+ * Esc: Pause/unpause
  * 1-9: Navigate hotbar
- * Spacebar: Jump
  * Double jump: Toggle flight
- * Shift (flying): Fly down
- * Space (flying): Fly up
- * T: Open chat
+ * Sneak (flying): Fly down
+ * Jump (flying): Fly up
  * ; (semicolon): Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
- * This program (MineKhan) was made by Willard (me). The original is https://www.khanacademy.org/cs/mc/5647155001376768 (just adding this so that spin-offs have it)
  * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub. https://www.khanacademy.org/profile/
  * Zushah helped me with some of the menus in the 0.6 update, and added the flower models via GitHub. https://www.khanacademy.org/profile/zushah77
  * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
  * Danielkshin made an old main menu background. https://www.khanacademy.org/profile/danielkshin
 
- * This program originated as a spin-off of ScusCraft by ScusX.
- * It's 99% different code at this point, but I still never would have made it this far without his code for reference.
+ * This program originated as a spin-off of Scuscraft 3D by ScusX.
+ * All the original code is long since replaced, but he saved me from needing to figure out how to 3D.
  * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
  * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
  * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
- * The real Minecraft game can be bought and downloaded at https://www.minecraft.net/en-us/
 
 	To-Do:
  * A lot. Check out the GitHub repo if you'd like to collaborate on this.
@@ -53,10 +38,10 @@ To share your save with other people, copy your world string into the "loadStrin
 
 The graphics in this project are done using WebGL, which is a web implementation of OpenGL ES 2 (Open Graphics Library Embedded Systems 2).
 It allows us to write shader programs that run right on the GPU, which means it can run as fast as any C++ game.
-The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even being using the GPU.
+The infamous P3D mode in Processing.js uses WebGL behind the scenes, but it does it so inefficiently that it might as well not even be using the GPU.
 
 To properly utilize WebGL like this program does, you need to make efficient use of buffers, which are arrays containing data on all the triangles that need to be rendered.
-Ideally you should be rendering less than 100 buffers per frame for the slowest computers to get a good framerate.
+Ideally you should be rendering less than 100 buffers per frame for the slowest computers to get a good framerate, though non-toasters can render a couple thousand.
 To achieve this, you can store all the textures in 1 very big texture called a "texture atlas". Then, when you're constructing the buffer, you specify which part of the texture atlas to use for each triangle you're drawing.
 My buffers have 8 values for each vertex: X, Y, Z, textureX, textureY, ambient occlusion, sky light, and block light.
 I use 1 buffer per 16x16 chunk. I use "frustum culling" to only render chunks that are visible on the screen.
@@ -1473,7 +1458,14 @@ class BitArrayReader {
 	}
 }
 
-window.parent.exports["src/js/utils.js"] = { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader }}
+// Simple repeating letter substitution. It's only intended for base64 strings since those tend to have AAAAAAAAA
+const numMap = ")!@#$%^&*("
+const compressString = str => str.replace(/(.)\1+/g, s => s[0] + s.length.toString().replace(/./g, n => numMap[n]))
+const charMap = {}
+for (let c of numMap) charMap[c] = numMap.indexOf(c)
+const decompressString = str => str.replace(/.[\)\!@#\$%\^\&\*\(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
+
+window.parent.exports["src/js/utils.js"] = { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader, compressString, decompressString }}
 		</script>
 		<script id="src/js/shapes.js" type="application/javascript">
 {const { compareArr } = window.parent.exports["src/js/utils.js"]
@@ -1514,12 +1506,12 @@ let shapes = {
 			[arrayify( 0, 16, 16, 16, 16, 0, 0)]  //west
 		],
 		cull: {
-			top: 15,
-			bottom: 15,
-			north: 15,
-			south: 15,
-			east: 15,
-			west: 15
+			top: true,
+			bottom: true,
+			north: true,
+			south: true,
+			east: true,
+			west: true
 		},
 		texVerts: [],
 		buffer: null,
@@ -1538,12 +1530,12 @@ let shapes = {
 			[arrayify( 0, 8, 16, 16, 8, 0, 0)]  //west
 		],
 		cull: {
-			top: 0,
-			bottom: 15,
-			north: 3,
-			south: 3,
-			east: 3,
-			west: 3
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1562,12 +1554,12 @@ let shapes = {
 			[[0,8,16,16,8,0,0],[8,16,16,16,8,0,0]] // -x
 		],
 		cull: {
-			top: 0b1100,
-			bottom: 15,
-			north: 15,
-			south: 3,
-			east: 0b0111,
-			west: 0b1011
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: true,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1588,12 +1580,12 @@ let shapes = {
 			[arrayify( 8, 16, 16, 16, 16,  0,  0)]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1612,12 +1604,12 @@ let shapes = {
 			[[5,8,11,6,7,0,2],[6,10,10,4,2,1,0],[8,16,9.5,3,6,11,6]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1636,12 +1628,12 @@ let shapes = {
 			[[0,16,16,16,16,0,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 15,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1660,12 +1652,12 @@ let shapes = {
 			[[6,16,10,4,16,6,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1679,17 +1671,17 @@ let shapes = {
 			[[7,12,0,2,6,7,0],[7,6,0,2,6,7,0]],
 			[[7,15,6,2,6,7,0],[7,9,6,2,6,7,0]],
 			[],//[9,15,6,2,3,7,1],[9,9,6,2,3,7,7]],
-			[[7,15,0,2,3,7,1],[7,9,0,2,3,7,7]], //
+			[[7,15,0,2,3,7,1],[7,9,0,2,3,7,7]],
 			[[9,15,0,6,3,0,1],[9,9,0,6,3,0,7]],
 			[[7,15,6,6,3,0,1],[7,9,6,6,3,0,7]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1708,12 +1700,12 @@ let shapes = {
 			[[0,8,16,16,8,0,8],[8,16,8,8,8,0,0],[0,16,16,8,8,8,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1732,12 +1724,12 @@ let shapes = {
 			[[0,8,16,16,8,0,0],[8,16,16,8,8,8,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -1755,7 +1747,14 @@ let shapes = {
 			[[12,32,4,8,8,16,8],[12,32,4,8,8,48,8],[12,24,6,4,12,28,28],[12,24,6,4,12,28,44],[4,24,6,4,12,40,60],[4,24,6,4,12,56,60],[16,24,6,4,12,48,28],[16,24,6,4,12,48,44],[8,12,6,4,12,24,60],[8,12,6,4,12,8,60],[12,12,6,4,12,8,28],[12,12,6,4,12,8,44]],
 			[[4,32,12,8,8,0,8],[4,32,12,8,8,32,8],[4,24,10,4,12,16,28],[4,24,10,4,12,16,44],[0,24,10,4,12,32,60],[0,24,10,4,12,48,60],[12,24,10,4,12,40,28],[12,24,10,4,12,40,44],[4,12,10,4,12,16,60],[4,12,10,4,12,0,60],[8,12,10,4,12,0,28],[8,12,10,4,12,0,44]]
 		],
-		cull: {},
+		cull: {
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
+		},
 		texVerts:[],
 		buffer: null,
 		size: 0,
@@ -1937,6 +1936,7 @@ const flip = (shape) => {
 	}
 }
 
+// Fill out the coordinates of every shape, and generate all the flipped and rotated variants
 let sortIndex = 0
 for (let shape in shapes) {
 	const obj = shapes[shape]
@@ -2015,9 +2015,12 @@ for (let shape in shapes) {
 }
 
 
-// Generate functions for each stair direction to transform it into corners
+// Generate functions for each stair direction to transform it into corners.
+// shape.getShape(x, y, z, world, blockData) is a function that returns a new shape
+// that depends on adjacent block shapes. In other words, if a rotated stair is
+// next to another stair, one of them will turn into a corner stair.
 const stairs = shapes.stair.variants
-const getShapeFunction = (shape, dx, dz, indices, negShape, posShape) => {
+const getShapeFactory = (shape, dx, dz, indices, negShape, posShape) => {
 	const stair1 = stairs[indices[0]]
 	const stair2 = stairs[indices[1]]
 	const ret1 = negShape[indices[0]]
@@ -2051,7 +2054,7 @@ const stairFunctions = [
 ]
 
 for (let i = 0; i < 8; i++) {
-	stairs[i].getShape = getShapeFunction(stairs[i], ...stairFunctions[i])
+	stairs[i].getShape = getShapeFactory(stairs[i], ...stairFunctions[i])
 }
 
 
@@ -3700,16 +3703,11 @@ window.parent.exports["src/js/sky.js"] = { getSkybox }}
 {const { random, randomSeed, hash, noiseProfile } = window.parent.exports["src/js/random.js"]
 const { blockData, blockIds, Block } = window.parent.exports["src/js/blockData.js"]
 const { BitArrayBuilder, BitArrayReader } = window.parent.exports["src/js/utils.js"]
+const { shapes } = window.parent.exports["src/js/shapes.js"]
 
 const { floor, max, abs } = Math
-const semiTrans = new Uint8Array(blockData.filter((data, i) => data && i < 256).map(data => data.semiTrans ? 1 : 0))
-const transparent = new Uint8Array(1 << 13) // 5 bits of block state
-for (let i = 0; i < blockData.length; i++) transparent[i] = blockData[i].transparent ? 1 : 0
 const hideInterior = new Uint8Array(255)
 hideInterior.set(blockData.slice(0, 255).map(data => data.hideInterior))
-
-transparent.fill(1, 256) // Anything other than default cubes should be considered transparent for lighting and face culling
-
 const shadow = new Uint8Array(blockData.map(data => data.shadow ? 1 : 0))
 const lightLevels = new Uint8Array(blockData.map(data => data.lightLevel || 0))
 
@@ -3791,6 +3789,15 @@ let getShadows
 	]
 }
 
+/**
+ * Function to compute smooth lighting.
+ * @param {Number[]} l Array of numbers to average
+ * @param {Number} a The index of the face
+ * @param {Number} b The second index of the 4 numbers
+ * @param {Number} c The third index of the 4 numbers
+ * @param {Number} d The fourth index of the 4 numbers
+ * @returns 
+ */
 const average = (l, a, b, c, d) => {
 	a = l[a]
 	b = l[b]
@@ -4043,7 +4050,7 @@ class Chunk {
 			if (!this.originalBlocks.length) this.originalBlocks = this.blocks.slice() // save originally generated chunk
 		}
 
-		if (semiTrans[blockID & 255]) {
+		if (blockData[blockID & 255].semiTrans) {
 			this.doubleRender = true
 			if (!this.world.doubleRenderChunks.includes(this)) {
 				this.world.doubleRenderChunks.push(this)
@@ -4064,7 +4071,7 @@ class Chunk {
 	processBlocks() {
 		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
 		const { blocks, maxY, blockSpread, world } = this
-		const trans = transparent
+		const cube = shapes.cube.cull
 
 		const chunkN = world.getChunk(this.x, this.z + 16).blocks
 		const chunkS = world.getChunk(this.x, this.z - 16).blocks
@@ -4082,11 +4089,14 @@ class Chunk {
 			const x = i >> 4 & 15
 			const z = i & 15
 			const b = blocks[i]
+			const data = blockData[b]
 
 			// Set bit flags on adjacent blocks
-			if (trans[b] === 1) {
-				if (b === 0) flags[i] ^= 128 // This is an air block, so it can't be rendered
+			if (data.transparent) {
+				if (b === 0) flags[i] |= 128 // This is an air block, so it can't be rendered. This bit makes it negative.
 				else if (hideInterior[b] === 1) {
+
+					// Toggle visibilty flags. The neighbors will toggle them again, leaving them off.
 					flags[i] ^= (b === (i >> 4 & 15 ? blocks[i - 16] : chunkW[i + 240])) << 0
 					| (b === (~i >> 4 & 15 ? blocks[i + 16] : chunkE[i - 240])) << 1
 					| (b === blocks[i - 256]) << 2
@@ -4095,12 +4105,33 @@ class Chunk {
 					| (b === (~i & 15 ? blocks[i + 1] : chunkN[i - 15])) << 5
 				}
 
+				// Toggle neighbor's visibility flags.
 				flags[i - 256] ^= 8 // Top face of block below is visible
 				if (i < flags.length - 256) flags[i + 256] ^= 4 // Bottom face of block above is visible
 				if (z)      flags[i - 1] ^= 32 // South face of North block is visible
 				if (z < 15) flags[i + 1] ^= 16 // North face of South block is visible
 				if (x)      flags[i - 16] ^= 2 // West face of East block is visible
 				if (x < 15) flags[i + 16] ^= 1 // East face of West block is visible
+			}
+			else if (data.shape.cull !== cube) {
+				if (!data.shape.cull.bottom) {
+					flags[i - 256] |= 8 // Top face of block below is visible
+				}
+				if (!data.shape.cull.top && i < flags.length - 256) {
+					flags[i + 256] |= 4 // Bottom face of block above is visible
+				}
+				if (!data.shape.cull.south && z) {
+					flags[i - 1] |= 32 // South face of North block is visible
+				}
+				if (!data.shape.cull.north && z < 15) {
+					flags[i + 1] |= 16 // North face of South block is visible
+				}
+				if (!data.shape.cull.west && x) {
+					flags[i - 16] |= 2 // West face of East block is visible
+				}
+				if (!data.shape.cull.east && x < 15) {
+					flags[i + 16] |= 1 // East face of West block is visible
+				}
 			}
 
 			// Some lighting stuff
@@ -4132,9 +4163,7 @@ class Chunk {
 			for (let z = 0; z < 16; z++) {
 				for (let y = this.maxY; y > 0; y--) {
 					const block = blocks[y * 256 + x * 16 + z]
-
-					if (block && !transparent[block]) {
-					// if ((visFlags[y*256 + x*16 + z - 256] & 8) === 0) {
+					if (block && !blockData[block].transparent) {
 						this.tops[x * 16 + z] = y
 						break
 					}
@@ -4212,7 +4241,7 @@ class Chunk {
 		if (y > 255) return
 		const { world } = this
 		if (world.getLight(x, y, z, blockLight) < level) {
-			if (transparent[world.getBlock(x, y, z)]) {
+			if (blockData[world.getBlock(x, y, z)].transparent) {
 				world.setLight(x, y, z, level, blockLight)
 				spread.push(x, y, z)
 			}
@@ -4245,9 +4274,8 @@ class Chunk {
 		if (y > 255) return
 		const { world } = this
 		let light = world.getLight(x, y, z, blockLight)
-		let trans = transparent[world.getBlock(x, y, z)]
 		if (light === level) {
-			if (trans) {
+			if (blockData[world.getBlock(x, y, z)].transparent) {
 				world.setLight(x, y, z, 0, blockLight)
 				spread.push(x, y, z)
 			}
@@ -4355,7 +4383,6 @@ class Chunk {
 	}
 	optimize() {
 		const { blocks, renderData, world, x, z, maxY } = this
-		const trans = transparent
 		const flags = this.visFlags // Computed in this.processBlocks()
 		this.visFlags = null
 
@@ -4374,10 +4401,10 @@ class Chunk {
 			let indexE = indexN
 			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				if (trans[chunkN[indexN]]) flags[indexN + 15] ^= 32
-				if (trans[chunkS[indexS]]) flags[indexS - 15] ^= 16
-				if (trans[chunkE[indexE]]) flags[indexE + 240] ^= 2
-				if (trans[chunkW[indexW]]) flags[indexW - 240] ^= 1
+				if (blockData[chunkN[indexN]].transparent || !blockData[chunkN[indexN]].shape.cull.south) flags[indexN + 15] ^= 32
+				if (blockData[chunkS[indexS]].transparent || !blockData[chunkS[indexS]].shape.cull.north) flags[indexS - 15] ^= 16
+				if (blockData[chunkE[indexE]].transparent || !blockData[chunkE[indexE]].shape.cull.west) flags[indexE + 240] ^= 2
+				if (blockData[chunkW[indexW]].transparent || !blockData[chunkW[indexW]].shape.cull.east) flags[indexW - 240] ^= 1
 				indexN += 16
 				indexS += 16
 				indexE++
@@ -4386,7 +4413,17 @@ class Chunk {
 		}
 
 		//Check all the blocks in the chunk to see if they're visible.
+		const cube = shapes.cube.cull
 		for (let index = 256; index < flags.length; index++) {
+			const cull = blockData[blocks[index]].shape.cull
+			if (cull !== cube) {
+				if (!cull.bottom) flags[index] |= 4
+				if (!cull.top)    flags[index] |= 8
+				if (!cull.south)  flags[index] |= 16
+				if (!cull.north)  flags[index] |= 32
+				if (!cull.west)   flags[index] |= 1
+				if (!cull.east)   flags[index] |= 2
+			}
 			if (flags[index] > 0) {
 				renderData[this.renderLength++] = index << 16 | flags[index] << 10
 			}
@@ -4396,7 +4433,7 @@ class Chunk {
 		// The bottom layer of bedrock is only ever visible on top
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
-				if (transparent[blocks[256 + i*16 + k]]) {
+				if (blockData[blocks[256 + i*16 + k]].transparent) {
 					this.minY = 0
 					renderData.push(i*16 + k << 16 | 1 << 13)
 				}
@@ -4433,20 +4470,22 @@ class Chunk {
 		z += this.z
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
+		const cull = blockData[blockState].shape.cull
 
-		let w = i      ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)
-		let e = i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)
-		let d = y      ? this.blocks[index - 256]: 4
-		let u =          this.blocks[index + 256]
-		let s = k      ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)
-		let n = k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)
+		let w = blockData[i ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)]
+		let e = blockData[i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)]
+		let d = blockData[y ? this.blocks[index - 256]: 4]
+		let u = blockData[this.blocks[index + 256]]
+		let s = blockData[k ? this.blocks[index - 1] : world.getBlock(x, j, z - 1)]
+		let n = blockData[k < 15 ? this.blocks[index + 1] : world.getBlock(x, j, z + 1)]
 
-		let visible = blockState && transparent[w]
-		+ transparent[e] * 2
-		+ transparent[d] * 4
-		+ transparent[u] * 8
-		+ transparent[s] * 16
-		+ transparent[n] * 32
+		let visible = blockState
+		&& (w.transparent || !w.shape.cull.east   || !cull.west)
+		+  (e.transparent || !e.shape.cull.west   || !cull.east) * 2
+		+  (d.transparent || !d.shape.cull.top    || !cull.bottom) * 4
+		+  (u.transparent || !u.shape.cull.bottom || !cull.top) * 8
+		+  (s.transparent || !s.shape.cull.north  || !cull.south) * 16
+		+  (n.transparent || !n.shape.cull.south  || !cull.north) * 32
 
 		if (blockState < 256 && hideInterior[blockState]) {
 			visible ^= w === blockState
@@ -4919,10 +4958,14 @@ class Chunk {
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
 
+		let blockLight = 0
+		let skyLight = 0
 		let shadows = [1, 1, 1, 1], slights = [1, 1, 1, 1], blights = [1, 1, 1, 1]
 		let blockMasks = Object.values(Block)
 		const blocks27 = new Uint8Array(27)
 		const lights27 = new Uint8Array(27)
+		const cube = shapes.cube
+		const edges = [[1, -0.5], [1, 0.5], [2, 0.5], [2, -0.5], [0, 0.5], [0, -0.5]]
 
 		for (let i = 0; i < renderLength; i++) {
 			const data = renderData[i]
@@ -4949,13 +4992,32 @@ class Chunk {
 				shapeTexVerts = newShape.texVerts
 			}
 
-			for (let n = 0; n < 6; n++) {
-				if (sides & blockMasks[n]) {
-					shadows = getShadows[n](blocks27)
-					slights = getLight[n](lights27, slights, 0x0f, 0)
-					blights = getLight[n](lights27, blights, 0xf0, 4)
+			if (block.shape !== cube) {
+				// shadows = noShadows
+				const light = this.light[loc]
+				blockLight = (light >>> 4) / 15
+				skyLight = (light & 15) / 15
+			}
 
+			for (let n = 0; n < 6; n++) {
+				if (sides & blockMasks[n] && shapeVerts[n].length) {
+					// Determine if lighting or shading are needed for a given face.
 					let directionalFaces = shapeVerts[n]
+					if (block.shape !== cube && (directionalFaces.length > 1 || directionalFaces[0][edges[n][0]] !== edges[n][1])) {
+						// shadows = noShadows
+						// if (block.name.includes("Door")) {
+						// 	console.log(block.name, n, skyLight, block.id, directionalFaces[0])
+						// }
+						for (let a = 0; a < 4; a++) {
+							blights[a] = blockLight
+							slights[a] = skyLight
+						}
+					}
+					else {
+						slights = getLight[n](lights27, slights, 0x0f, 0)
+						blights = getLight[n](lights27, blights, 0xf0, 4)
+					}
+					shadows = getShadows[n](blocks27)
 
 					// Add vertices for a single rectangle.
 					for (let facei = 0; facei < directionalFaces.length; facei++) {
@@ -5839,7 +5901,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 			"Fixed: Weird lines between blocks",
 			"Fixed: Crash on old Safari versions (from weird function hoisting behavior)",
 			"Fixed: Un-rotated stairs from old saves. Only applies if it hasn't been saved over in 0.8.1",
-			"Changed: Fences have fence-shaped hitboxes now (let me know if you prefer it like that or not)",
+			"Changed: Fences have fence-shaped hitboxes now",
 			"Changed: Fences no longer connect to non-solid blocks"
 		]
 	},
@@ -5853,15 +5915,19 @@ window.parent.exports["src/js/player.js"] = { Player }}
 		]
 	},
 	{
-		date: "2025-04-21",
+		date: "2025-04-24",
 		version: "0.8.3",
 		versionLink: "https://willard.fun/minekhan",
 		creditName: "Willard",
 		creditLink: "https://github.com/Willard21",
 		changes: [
-			"Added \"Controls\" page in Options",
-			"Added \"Change Log\" page to the homepage",
-			"Removed: Ctrl clicking no longer places blocks by default (you can still bind it in the options)",
+			"Added: \"Controls\" page in Options",
+			"Added: \"Change Log\" page to the main menu",
+			"Removed: Ctrl clicking no longer places blocks by default",
+			"Fixed: Rendering bug when partial blocks are placed next to solid blocks",
+			"Broken: Smooth lighting removed from inner faces of partial blocks. The previous bug was hiding a lighting bug, and this was my solution.",
+			"Fixed: Inventory glitch on Khan Academy. Not sure why it wasn't broken everywhere.",
+			"Changed: Save strings are like 1% smaller. I compressed repeating characters to avoid KA's spam filter when posting saves in comments.",
 		]
 	},
 ]
@@ -5901,7 +5967,7 @@ const workerCode = document.getElementById("src/workers/Caves.js").textContent
 // imports
 const { seedHash, randomSeed, noiseProfile } = window.parent.exports["src/js/random.js"]
 const { PVector, Matrix, Plane, cross } = window.parent.exports["src/js/3Dutils.js"]
-const { timeString, roundBits, BitArrayBuilder, BitArrayReader } = window.parent.exports["src/js/utils.js"]
+const { timeString, roundBits, BitArrayBuilder, BitArrayReader, decompressString, compressString } = window.parent.exports["src/js/utils.js"]
 const { blockData, BLOCK_COUNT, blockIds, BlockData } = window.parent.exports["src/js/blockData.js"]
 const { loadFromDB, saveToDB, deleteFromDB } = window.parent.exports["src/js/indexDB.js"]
 const { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } = window.parent.exports["src/js/shapes.js"]
@@ -5963,7 +6029,7 @@ const MineKhan = async () => {
 		for (let i = 0; i < this.length; i++) {
 			str += String.fromCharCode(this[i])
 		}
-		return btoa(str)
+		return compressString(btoa(str))
 	}
 
 	let yieldThread
@@ -6409,6 +6475,9 @@ const MineKhan = async () => {
 					button.value = "          "
 				}
 			}
+			button.onkeydown = e => {
+				e.preventDefault()
+			}
 			button.onkeyup = event => {
 				if (button.value === "          ") {
 					event.stopPropagation()
@@ -6453,7 +6522,7 @@ const MineKhan = async () => {
 	setControl("toggleSpectator", "KeyL")
 	setControl("zoom", "KeyZ")
 	setControl("sneak", "shift")
-	setControl("dropItem", "Backspace")
+	// setControl("dropItem", "Backspace")
 	setControl("breakBlock", "leftMouse")
 	setControl("placeBlock", "rightMouse")
 	setControl("pickBlock", "middleMouse")
@@ -8727,7 +8796,7 @@ const MineKhan = async () => {
 					}
 				}
 				try {
-					let bytes = atob(data)
+					let bytes = atob(decompressString(data))
 					let arr = new Uint8Array(bytes.length)
 					for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
 					data = arr
@@ -9766,6 +9835,10 @@ const MineKhan = async () => {
 				// 	let d = p.direction
 				// 	world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
 				// }
+
+				if (name === "KeyI" && hitBox.pos) {
+					chat(`Block light: ${world.getLight(...hitBox.pos, 1)}, Sky light: ${world.getLight(...hitBox.pos, 0)}`)
+				}
 			}
 		}
 		else if (screen === "pause" && controlMap.pause.triggered()) {
@@ -10325,14 +10398,15 @@ const MineKhan = async () => {
 		initDirt()
 
 		drawScreens[screen]()
-		Button.draw()
-		Slider.draw()
 
 		p.FOV(settings.fov)
-		initWorldsMenu().then(() => initButtons())
-
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
+		initWorldsMenu().then(() => {
+			initButtons()
+			Button.draw()
+			Slider.draw()
+		})
 
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(win.location.search)

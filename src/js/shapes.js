@@ -36,12 +36,12 @@ let shapes = {
 			[arrayify( 0, 16, 16, 16, 16, 0, 0)]  //west
 		],
 		cull: {
-			top: 15,
-			bottom: 15,
-			north: 15,
-			south: 15,
-			east: 15,
-			west: 15
+			top: true,
+			bottom: true,
+			north: true,
+			south: true,
+			east: true,
+			west: true
 		},
 		texVerts: [],
 		buffer: null,
@@ -60,12 +60,12 @@ let shapes = {
 			[arrayify( 0, 8, 16, 16, 8, 0, 0)]  //west
 		],
 		cull: {
-			top: 0,
-			bottom: 15,
-			north: 3,
-			south: 3,
-			east: 3,
-			west: 3
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -84,12 +84,12 @@ let shapes = {
 			[[0,8,16,16,8,0,0],[8,16,16,16,8,0,0]] // -x
 		],
 		cull: {
-			top: 0b1100,
-			bottom: 15,
-			north: 15,
-			south: 3,
-			east: 0b0111,
-			west: 0b1011
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: true,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -110,12 +110,12 @@ let shapes = {
 			[arrayify( 8, 16, 16, 16, 16,  0,  0)]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -134,12 +134,12 @@ let shapes = {
 			[[5,8,11,6,7,0,2],[6,10,10,4,2,1,0],[8,16,9.5,3,6,11,6]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -158,12 +158,12 @@ let shapes = {
 			[[0,16,16,16,16,0,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 15,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -182,12 +182,12 @@ let shapes = {
 			[[6,16,10,4,16,6,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -201,17 +201,17 @@ let shapes = {
 			[[7,12,0,2,6,7,0],[7,6,0,2,6,7,0]],
 			[[7,15,6,2,6,7,0],[7,9,6,2,6,7,0]],
 			[],//[9,15,6,2,3,7,1],[9,9,6,2,3,7,7]],
-			[[7,15,0,2,3,7,1],[7,9,0,2,3,7,7]], //
+			[[7,15,0,2,3,7,1],[7,9,0,2,3,7,7]],
 			[[9,15,0,6,3,0,1],[9,9,0,6,3,0,7]],
 			[[7,15,6,6,3,0,1],[7,9,6,6,3,0,7]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -230,12 +230,12 @@ let shapes = {
 			[[0,8,16,16,8,0,8],[8,16,8,8,8,0,0],[0,16,16,8,8,8,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -254,12 +254,12 @@ let shapes = {
 			[[0,8,16,16,8,0,0],[8,16,16,8,8,8,0]]
 		],
 		cull: {
-			top: 0,
-			bottom: 0,
-			north: 0,
-			south: 0,
-			east: 0,
-			west: 0
+			top: false,
+			bottom: true,
+			north: false,
+			south: false,
+			east: false,
+			west: false
 		},
 		texVerts: [],
 		buffer: null,
@@ -277,7 +277,14 @@ let shapes = {
 			[[12,32,4,8,8,16,8],[12,32,4,8,8,48,8],[12,24,6,4,12,28,28],[12,24,6,4,12,28,44],[4,24,6,4,12,40,60],[4,24,6,4,12,56,60],[16,24,6,4,12,48,28],[16,24,6,4,12,48,44],[8,12,6,4,12,24,60],[8,12,6,4,12,8,60],[12,12,6,4,12,8,28],[12,12,6,4,12,8,44]],
 			[[4,32,12,8,8,0,8],[4,32,12,8,8,32,8],[4,24,10,4,12,16,28],[4,24,10,4,12,16,44],[0,24,10,4,12,32,60],[0,24,10,4,12,48,60],[12,24,10,4,12,40,28],[12,24,10,4,12,40,44],[4,12,10,4,12,16,60],[4,12,10,4,12,0,60],[8,12,10,4,12,0,28],[8,12,10,4,12,0,44]]
 		],
-		cull: {},
+		cull: {
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
+		},
 		texVerts:[],
 		buffer: null,
 		size: 0,
@@ -459,6 +466,7 @@ const flip = (shape) => {
 	}
 }
 
+// Fill out the coordinates of every shape, and generate all the flipped and rotated variants
 let sortIndex = 0
 for (let shape in shapes) {
 	const obj = shapes[shape]
@@ -537,9 +545,12 @@ for (let shape in shapes) {
 }
 
 
-// Generate functions for each stair direction to transform it into corners
+// Generate functions for each stair direction to transform it into corners.
+// shape.getShape(x, y, z, world, blockData) is a function that returns a new shape
+// that depends on adjacent block shapes. In other words, if a rotated stair is
+// next to another stair, one of them will turn into a corner stair.
 const stairs = shapes.stair.variants
-const getShapeFunction = (shape, dx, dz, indices, negShape, posShape) => {
+const getShapeFactory = (shape, dx, dz, indices, negShape, posShape) => {
 	const stair1 = stairs[indices[0]]
 	const stair2 = stairs[indices[1]]
 	const ret1 = negShape[indices[0]]
@@ -573,7 +584,7 @@ const stairFunctions = [
 ]
 
 for (let i = 0; i < 8; i++) {
-	stairs[i].getShape = getShapeFunction(stairs[i], ...stairFunctions[i])
+	stairs[i].getShape = getShapeFactory(stairs[i], ...stairFunctions[i])
 }
 
 

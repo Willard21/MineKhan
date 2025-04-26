@@ -16,7 +16,7 @@ import workerCode from './workers/Caves.js'
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
 import { PVector, Matrix, Plane, cross } from "./js/3Dutils.js"
-import { timeString, roundBits, BitArrayBuilder, BitArrayReader } from "./js/utils.js"
+import { timeString, roundBits, BitArrayBuilder, BitArrayReader, decompressString, compressString } from "./js/utils.js"
 import { blockData, BLOCK_COUNT, blockIds, BlockData } from "./js/blockData.js"
 import { loadFromDB, saveToDB, deleteFromDB } from "./js/indexDB.js"
 import { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST } from "./js/shapes.js"
@@ -78,7 +78,7 @@ const MineKhan = async () => {
 		for (let i = 0; i < this.length; i++) {
 			str += String.fromCharCode(this[i])
 		}
-		return btoa(str)
+		return compressString(btoa(str))
 	}
 
 	let yieldThread
@@ -524,6 +524,9 @@ const MineKhan = async () => {
 					button.value = "          "
 				}
 			}
+			button.onkeydown = e => {
+				e.preventDefault()
+			}
 			button.onkeyup = event => {
 				if (button.value === "          ") {
 					event.stopPropagation()
@@ -568,7 +571,7 @@ const MineKhan = async () => {
 	setControl("toggleSpectator", "KeyL")
 	setControl("zoom", "KeyZ")
 	setControl("sneak", "shift")
-	setControl("dropItem", "Backspace")
+	// setControl("dropItem", "Backspace")
 	setControl("breakBlock", "leftMouse")
 	setControl("placeBlock", "rightMouse")
 	setControl("pickBlock", "middleMouse")
@@ -2842,7 +2845,7 @@ const MineKhan = async () => {
 					}
 				}
 				try {
-					let bytes = atob(data)
+					let bytes = atob(decompressString(data))
 					let arr = new Uint8Array(bytes.length)
 					for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
 					data = arr
@@ -3881,6 +3884,10 @@ const MineKhan = async () => {
 				// 	let d = p.direction
 				// 	world.entities.push(new Item(p.x, p.y, p.z, d.x/4, d.y/4, d.z/4, holding || inventory.hotbar[inventory.hotbarSlot], glExtensions, gl, glCache, indexBuffer, world, p))
 				// }
+
+				if (name === "KeyI" && hitBox.pos) {
+					chat(`Block light: ${world.getLight(...hitBox.pos, 1)}, Sky light: ${world.getLight(...hitBox.pos, 0)}`)
+				}
 			}
 		}
 		else if (screen === "pause" && controlMap.pause.triggered()) {
@@ -4440,14 +4447,15 @@ const MineKhan = async () => {
 		initDirt()
 
 		drawScreens[screen]()
-		Button.draw()
-		Slider.draw()
 
 		p.FOV(settings.fov)
-		initWorldsMenu().then(() => initButtons())
-
 		inventory.size = min(width, height) / 15 | 0
 		inventory.init(true)
+		initWorldsMenu().then(() => {
+			initButtons()
+			Button.draw()
+			Slider.draw()
+		})
 
 		// See if a user followed a link here.
 		var urlParams = new URLSearchParams(win.location.search)
