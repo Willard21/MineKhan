@@ -194,7 +194,7 @@ const MineKhan = async () => {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.2"
+	let version = "Alpha 0.8.3"
 	let superflat = false
 	let details = true
 	let caves = true

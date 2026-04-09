@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- @MineKhan version Alpha 0.8.2
+<!-- @MineKhan version Alpha 0.8.3
 
 	NOTE:
 The "Save" button saves your world to your local browser. Nobody else can see it. However, if you're on a public or shared computer, that save may be deleted unexpectedly. So it's a good idea to keep a safe copy of your save string somewhere where it won't be deleted.
@@ -8,8 +8,8 @@ To share your save with other people, copy your world string into the "loadStrin
 
 	These controls are hard-coded. The rest are customizable in the Options->Controls menu.
 
- * Arrow Keys: Look around
  * Esc: Pause/unpause
+ * Arrow Keys: Look around (at 20 FPS since it's in the tick loop)
  * 1-9: Navigate hotbar
  * Double jump: Toggle flight
  * Sneak (flying): Fly down
@@ -17,20 +17,20 @@ To share your save with other people, copy your world string into the "loadStrin
  * ; (semicolon): Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
- * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub. https://www.khanacademy.org/profile/
+ * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub.
  * Zushah helped me with some of the menus in the 0.6 update, and added the flower models via GitHub. https://www.khanacademy.org/profile/zushah77
  * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
  * Danielkshin made an old main menu background. https://www.khanacademy.org/profile/danielkshin
 
  * This program originated as a spin-off of Scuscraft 3D by ScusX.
  * All the original code is long since replaced, but he saved me from needing to figure out how to 3D.
- * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
+ * Scuscraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
  * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
  * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
 
 	To-Do:
- * A lot. Check out the GitHub repo if you'd like to collaborate on this.
+ * A lot. Check out the GitHub repo if you'd like to contribute to this.
  * https://github.com/Willard21/MineKhan
 
 
@@ -1463,7 +1463,7 @@ const numMap = ")!@#$%^&*("
 const compressString = str => str.replace(/(.)\1+/g, s => s[0] + s.length.toString().replace(/./g, n => numMap[n]))
 const charMap = {}
 for (let c of numMap) charMap[c] = numMap.indexOf(c)
-const decompressString = str => str.replace(/.[\)\!@#\$%\^\&\*\(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
+const decompressString = str => str.replace(/.[)!@#$%^&*(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
 
 window.parent.exports["src/js/utils.js"] = { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader, compressString, decompressString }}
 		</script>
@@ -2330,6 +2330,7 @@ class BlockData {
 	iconImg = document.createElement("canvas")
 	shape = shapes.cube
 	uniqueShape = false
+	isCube = true
 
 	constructor(data, id, hasIcon = true) {
 		if (data instanceof BlockData) {
@@ -2384,6 +2385,7 @@ class BlockData {
 
 		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 		Object.assign(this, data)
+		if (this.shape !== shapes.cube) this.isCube = false
 	}
 }
 
@@ -2578,7 +2580,7 @@ const blockData = [
 	{
 		name: "jackOLantern",
 		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "jackOLantern"],
-		shadow: "false",
+		shadow: false,
 		lightLevel: 15,
 		rotate: true,
 		shape: shapes.cube
@@ -2698,7 +2700,7 @@ window.parent.exports["src/js/blockData.js"] = { texturesFunc, blockData, BLOCK_
 
 		request.onupgradeneeded = function(event) {
 			let DB = event.target.result
-			// Worlds will contain and ID containing the timestamp at which the world was created, a "saved" timestamp,
+			// Worlds will contain an ID containing the timestamp at which the world was created, a "saved" timestamp,
 			// and a "data" string that's identical to the copy/paste save string
 			let store = DB.createObjectStore("worlds", { keyPath: "id" })
 			store.createIndex("id", "id", { unique: true })
@@ -3515,7 +3517,7 @@ const animateTextures = (gl) => {
 	// texturePixels[y * textureSize * 4 + x * 4 + 2] = 64 * d
 
 	// gl.activeTexture(gl.TEXTURE0) // Moved to play()
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
+	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
 }
 
 window.parent.exports["src/js/texture.js"] = { initTextures, hitboxTextureCoords, animateTextures }}
@@ -5729,11 +5731,12 @@ window.parent.exports["src/js/player.js"] = { Player }}
 			"Added: Inventory with 29 blocks",
 			"Added: Chunks with chunk-based rendering",
 			"Added: Mouse controls with screen lock",
-			"Added: Occular occlusion (shadows in block corners)",
+			"Added: Ambient occlusion (shadows in block corners)",
 			"Added: Frustum culling (chunks behind the player aren't rendered)",
-			"Stopped: rendering hidden block faces",
 			"Removed: Processing.js dependency (everything is raw WebGL)",
 			"Removed: Save codes (world format changed)",
+			"Optimized: The entire world is no longer re-generated every frame",
+			"Optimized: Hidden block faces are no longer rendered",
 			"Optimized: Everything is faster",
 		]
 	},
@@ -5762,7 +5765,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 		creditName: "Willard",
 		creditLink: "https://www.khanacademy.org/profile/willllard/projects",
 		changes: [
-			"Fixed: People getting stuck at Y=7",
+			"Fixed: People getting stuck to the ground at Y=7",
 			"Fixed: Right click getting stuck on Safari",
 			"Fixed: Inventory looked really weird on Firefox",
 			"Optimized: Hotbar is no longer drawn every frame",
@@ -5924,7 +5927,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 			"Added: \"Controls\" page in Options",
 			"Added: \"Change Log\" page to the main menu",
 			"Removed: Ctrl clicking no longer places blocks by default",
-			"Fixed: Rendering bug when partial blocks are placed next to solid blocks",
+			"Fixed: Rendering bug when partial blocks are placed next to solid blocks (the partial block allowed x-raying through the solid block)",
 			"Broken: Smooth lighting removed from inner faces of partial blocks. The previous bug was hiding a lighting bug, and this was my solution.",
 			"Fixed: Inventory glitch on Khan Academy. Not sure why it wasn't broken everywhere.",
 			"Changed: Save strings are like 1% smaller. I compressed repeating characters to avoid KA's spam filter when posting saves in comments.",
@@ -5935,7 +5938,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 changeList.sort((a, b) => b.date.localeCompare(a.date))
 
 const list = document.getElementById("changelog-list")
-for (let {date, version, creditName, creditLink, versionLink, changes} of changeList) {
+for (let { date, version, creditName, creditLink, versionLink, changes } of changeList) {
 	let li = document.createElement("li")
 	li.innerHTML = `Version: ${versionLink ? `<a href=${versionLink} target="_blank">${version}</a>` : version}<br>
 		Date: ${date}<br>
@@ -6145,7 +6148,7 @@ const MineKhan = async () => {
 	}
 
 	// Globals
-	let version = "Alpha 0.8.2"
+	let version = "Alpha 0.8.3"
 	let superflat = false
 	let details = true
 	let caves = true
