@@ -94,7 +94,6 @@ let getShadows
  * @param {Number} b The second index of the 4 numbers
  * @param {Number} c The third index of the 4 numbers
  * @param {Number} d The fourth index of the 4 numbers
- * @returns 
  */
 const average = (l, a, b, c, d) => {
 	a = l[a]

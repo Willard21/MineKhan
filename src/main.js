@@ -437,7 +437,7 @@ const MineKhan = async () => {
 		if (html[screen] && html[screen].onexit) {
 			html[screen].onexit()
 		}
-		
+
 		screen = newScene
 		mouseDown = false
 		drawScreens[screen]()
@@ -471,7 +471,7 @@ const MineKhan = async () => {
 				settings.controls[name] = [name, key, shift, ctrl, alt]
 				saveToDB("settings", settings).catch(e => console.error(e))
 			}
-			Object.assign(controlMap[name], {key, shift, ctrl, alt})
+			Object.assign(controlMap[name], { key, shift, ctrl, alt })
 			controlMap[name].button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
 		}
 		else {
@@ -4436,7 +4436,7 @@ const MineKhan = async () => {
 		for (let d of document.getElementsByTagName("script")) {
 			l += d.innerHTML.length
 		}
-		if (win.location.origin === "https://www.kasandbox.org" && l !== 311283) {
+		if (win.location.origin === "https://www.kasandbox.org" && l !== 332489) {
 			// This is only for KA, since forks that make it onto the hotlist get a lot of hate for "not giving credit".
 			// If you're making significant changes and want to remove this, then you can.
 			// If publishing this on another website, I'd encourage giving credit somewhere to avoid being accused of plagiarism.
