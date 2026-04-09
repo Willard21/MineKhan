@@ -3922,7 +3922,7 @@ const MineKhan = async () => {
 		mouseX = e.x
 		mouseY = e.y
 		mouseDown = true
-		let name = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + e.button
+		let name = ["leftMouse", "middleMouse", "rightMouse"][e.button] || "mouse" + e.button
 		Key[name] = true
 		controlEvent(name, e)
 		for (let name in controlMap) {
@@ -3933,7 +3933,7 @@ const MineKhan = async () => {
 		Slider.click()
 	}
 	canvas.onmouseup = function(e) {
-		let name = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + e.button
+		let name = ["leftMouse", "middleMouse", "rightMouse"][e.button] || "mouse" + e.button
 		Key[name] = false
 		mouseDown = false
 		for (let name in controlMap) {
