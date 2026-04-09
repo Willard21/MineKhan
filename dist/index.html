@@ -8,8 +8,8 @@ To share your save with other people, copy your world string into the "loadStrin
 
 	These controls are hard-coded. The rest are customizable in the Options->Controls menu.
 
- * Arrow Keys: Look around
  * Esc: Pause/unpause
+ * Arrow Keys: Look around (at 20 FPS since it's in the tick loop)
  * 1-9: Navigate hotbar
  * Double jump: Toggle flight
  * Sneak (flying): Fly down
@@ -17,20 +17,20 @@ To share your save with other people, copy your world string into the "loadStrin
  * ; (semicolon): Release the pointer without pausing (for screenshots)
 
 	Notes and accreditation:
- * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub. https://www.khanacademy.org/profile/
+ * Phi helped impliment VAOs and entities and split the project into multiple files via GitHub.
  * Zushah helped me with some of the menus in the 0.6 update, and added the flower models via GitHub. https://www.khanacademy.org/profile/zushah77
  * Element118 helped speed up the process of adding new textures significantly. https://www.khanacademy.org/profile/element118
  * Danielkshin made an old main menu background. https://www.khanacademy.org/profile/danielkshin
 
  * This program originated as a spin-off of Scuscraft 3D by ScusX.
  * All the original code is long since replaced, but he saved me from needing to figure out how to 3D.
- * ScusCraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
+ * Scuscraft can be found here: https://www.khanacademy.org/computer-programming/scuscraft-3d/5145400332058624
  * My original spin-off can be found here: https://www.khanacademy.org/computer-programming/high-performance-minecraft/5330738124357632
  * While porting the code from PJS to a webpage, I copied the PJS source code for a few of their helper functions from here: https://raw.githubusercontent.com/Khan/processing-js/master/processing.js
  * The textures are 100% copied from real Minecraft, and are the property of Mojang and Microsoft with whom I have no association.
 
 	To-Do:
- * A lot. Check out the GitHub repo if you'd like to collaborate on this.
+ * A lot. Check out the GitHub repo if you'd like to contribute to this.
  * https://github.com/Willard21/MineKhan
 
 
@@ -314,6 +314,1401 @@ input[type=text]:focus {
 				<script>
 			*/
 		</script>
+		<script id="src/workers/Caves.js" type="text/js">
+/* eslint-env worker */
+// @ts-check
+const { imul, floor } = Math
+
+// implementation of xxHash
+const {
+	seedHash,
+	hash
+} = (() => {
+	// closure around mutable `seed`; updated via calls to `seedHash`
+
+	let seed = Math.random() * 2100000000 | 0
+
+	const PRIME32_2 = 1883677709
+	const PRIME32_3 = 2034071983
+	const PRIME32_4 = 668265263
+	const PRIME32_5 = 374761393
+
+	const seedHash = s => {
+		seed = s | 0
+	}
+
+	const hash = (x, y) => {
+		let h32 = 0
+
+		h32 = seed + PRIME32_5 | 0
+		h32 += 8
+
+		h32 += imul(x, PRIME32_3)
+		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
+		h32 += imul(y, PRIME32_3)
+		h32 = imul(h32 << 17 | h32 >> 32 - 17, PRIME32_4)
+
+		h32 ^= h32 >> 15
+		h32 *= PRIME32_2
+		h32 ^= h32 >> 13
+		h32 *= PRIME32_3
+		h32 ^= h32 >> 16
+
+		return h32 / 2147483647
+	}
+
+	return {
+		seedHash,
+		hash
+	}
+})()
+
+class Marsaglia {
+	// from http://www.math.uni-bielefeld.de/~sillke/ALGORITHMS/random/marsaglia-c
+
+	nextInt() {
+		const { z, w } = this
+
+		this.z = 36969 * (z & 65535) + (z >>> 16) & 0xFFFFFFFF
+		this.w = 18000 * (w & 65535) + (w >>> 16) & 0xFFFFFFFF
+
+		return ((this.z & 0xFFFF) << 16 | this.w & 0xFFFF) & 0xFFFFFFFF
+	}
+
+	nextDouble() {
+		const i = this.nextInt() / 4294967296
+
+		const isNegative = i < 0 | 0 // cast to 1 or 0
+
+		return isNegative + i
+	}
+
+	constructor(i1, i2) { // better param names
+		this.z = i1 | 0 || 362436069
+		this.w = i2 || hash(521288629, this.z) * 2147483647 | 0
+	}
+}
+
+// The noise and random functions are copied from the processing.js source code
+
+const {
+	randomSeed,
+	random
+} = (() => {
+	// closure around mut `currentRandom`
+
+	let currentRandom = null
+
+	const randomSeed = seed => {
+		currentRandom = new Marsaglia(seed)
+	}
+
+	const random = (min, max) => {
+		if (!max) {
+			if (min) {
+				max = min
+				min = 0
+			}
+			else {
+				min = 0
+				max = 1
+			}
+		}
+
+		return currentRandom.nextDouble() * (max - min) + min
+	}
+
+	return {
+		randomSeed,
+		random
+	}
+})()
+
+class PerlinNoise {
+	// http://www.noisemachine.com/talk1/17b.html
+	// http://mrl.nyu.edu/~perlin/noise/
+
+	static grad3d(i, x, y, z) {
+		const h = i & 15 // convert into 12 gradient directions
+
+		const u = h < 8
+			? x
+			: y
+
+		const v = h < 4
+			? y
+			: h === 12 || h === 14
+				? x
+				: z
+
+		return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v)
+	}
+
+	static grad2d(i, x, y) {
+		const v = (i & 1) === 0
+			? x
+			: y
+
+		return (i & 2) === 0
+			? -v
+			: v
+	}
+
+	static grad1d(i, x) {
+		return (i & 1) === 0
+			? -x
+			: x
+	}
+
+	static lerp(t, a, b) {
+		return a + t * (b - a)
+	}
+
+	// end of statics
+
+	// prototype functions:
+	noise3d(x, y, z) {
+		const X = floor(x) & 0xff
+		const Y = floor(y) & 0xff
+		const Z = floor(z) & 0xff
+
+		x -= floor(x)
+		y -= floor(y)
+		z -= floor(z)
+
+		const fx = (3 - 2 * x) * x * x
+		const fy = (3 - 2 * y) * y * y
+		const fz = (3 - 2 * z) * z * z
+
+		const { perm } = this
+
+		const p0 = perm[X] + Y
+		const p00 = perm[p0] + Z
+		const p01 = perm[p0 + 1] + Z
+		const p1 = perm[X + 1] + Y
+		const p10 = perm[p1] + Z
+		const p11 = perm[p1 + 1] + Z
+
+		const { lerp, grad3d } = PerlinNoise
+
+		return lerp(
+			fz,
+			lerp(
+				fy,
+				lerp(
+					fx,
+					grad3d(perm[p00], x, y, z),
+					grad3d(perm[p10], x - 1, y, z)
+				),
+				lerp(
+					fx,
+					grad3d(perm[p01], x, y - 1, z),
+					grad3d(perm[p11],x - 1, y - 1, z)
+				)
+			),
+			lerp(
+				fy,
+				lerp(
+					fx,
+					grad3d(perm[p00 + 1], x, y, z - 1),
+					grad3d(perm[p10 + 1], x - 1, y, z - 1)
+				),
+				lerp(
+					fx,
+					grad3d(perm[p01 + 1], x, y - 1, z - 1),
+					grad3d(perm[p11 + 1], x - 1, y - 1, z - 1)
+				)
+			)
+		)
+	}
+
+	noise2d(x, y) {
+		const X = floor(x) & 0xff
+		const Y = floor(y) & 0xff
+
+		x -= floor(x)
+		y -= floor(y)
+
+		const { perm } = this
+		const fx = (3 - 2 * x) * x * x
+		const fy = (3 - 2 * y) * y * y
+		const p0 = perm[X] + Y
+		const p1 = perm[X + 1] + Y
+
+		const { lerp, grad2d } = PerlinNoise
+
+		return lerp(
+			fy,
+			lerp(
+				fx,
+				grad2d(
+					perm[p0],
+					x,
+					y
+				),
+				grad2d(
+					perm[p1],
+					x - 1,
+					y
+				)
+			),
+			lerp(
+				fx,
+				grad2d(
+					perm[p0 + 1],
+					x,
+					y - 1
+				),
+				grad2d(
+					perm[p1 + 1],
+					x - 1,
+					y - 1
+				)
+			)
+		)
+	}
+
+	constructor(seed) {
+		if (seed === undefined) {
+			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`")
+		}
+		// console.log("New noise generator with seed", seed)
+
+		const rnd = new Marsaglia(seed)
+
+		// generate permutation
+		const perm = new Uint8Array(0x200)
+		this.perm = perm
+
+		// fill 0x0..0x100
+		for (let i = 0; i < 0x100; ++i) {
+			perm[i] = i
+		}
+
+		for (let i = 0; i < 0x100; ++i) {
+			const j = rnd.nextInt() & 0xFF
+			const t = perm[j]
+			perm[j] = perm[i]
+			perm[i] = t
+		}
+
+		// copy to avoid taking mod in perm[0]
+		// copies from first half of array, into the second half
+		perm.copyWithin(0x100, 0x0, 0x100)
+	}
+}
+
+const noiseProfile = {
+	generator: undefined,
+	octaves: 4,
+	fallout: 0.5,
+	seed: undefined,
+	noiseSeed(seed) {
+		this.seed = seed
+		this.generator = new PerlinNoise(noiseProfile.seed)
+	},
+	noise(x, y, z) {
+		const { generator, octaves, fallout } = this
+
+		let effect = 1,
+			sum = 0
+
+		for (let i = 0; i < octaves; ++i) {
+			effect *= fallout
+
+			const k = 1 << i
+
+			let temp
+			switch (arguments.length) {
+				case 1: {
+					temp = generator.noise1d(k * x)
+					break
+				} case 2: {
+					temp = generator.noise2d(k * x, k * y)
+					break
+				} case 3: {
+					temp = generator.noise3d(k * x, k * y, k * z)
+					break
+				}
+			}
+
+			sum += effect * (1 + temp) / 2
+		}
+
+		return sum
+	}
+}
+
+// Copied and modified from https://github.com/blindman67/SimplexNoiseJS
+const openSimplexNoise = (clientSeed) => {
+	const toNums = function(s) {
+		return s.split(",").map(function(s) {
+			return new Uint8Array(s.split("").map(function(v) {
+				return Number(v)
+			}))
+		})
+	}
+	const decode = function(m, r, s) {
+		return new Int8Array(s.split("").map(function(v) {
+			return parseInt(v, r) + m
+		}))
+	}
+	const toNumsB32 = function(s) {
+		return s.split(",").map(function(s) {
+			return parseInt(s, 32)
+		})
+	}
+	const NORM_3D = 1.0 / 206.0
+	const SQUISH_3D = 1 / 3
+	const STRETCH_3D = -1 / 6
+	var base3D = toNums("0000110010101001,2110210120113111,110010101001211021012011")
+	const gradients3D = decode(-11, 23, "0ff7mf7fmmfffmfffm07f70f77mm7ff0ff7m0f77m77f0mf7fm7ff0077707770m77f07f70")
+	var lookupPairs3D = function() {
+		return new Uint16Array(toNumsB32("0,2,1,1,2,2,5,1,6,0,7,0,10,2,12,2,41,1,45,1,50,5,51,5,g6,0,g7,0,h2,4,h6,4,k5,3,k7,3,l0,5,l1,5,l2,4,l5,3,l6,4,l7,3,l8,d,l9,d,la,c,ld,e,le,c,lf,e,m8,k,ma,i,p9,l,pd,n,q8,k,q9,l,15e,j,15f,m,16a,i,16e,j,19d,n,19f,m,1a8,f,1a9,h,1aa,f,1ad,h,1ae,g,1af,g,1ag,b,1ah,a,1ai,b,1al,a,1am,9,1an,9,1bg,b,1bi,b,1eh,a,1el,a,1fg,8,1fh,8,1qm,9,1qn,9,1ri,7,1rm,7,1ul,6,1un,6,1vg,8,1vh,8,1vi,7,1vl,6,1vm,7,1vn,6"))
+	}
+	var p3D = decode(-1, 5, "112011210110211120110121102132212220132122202131222022243214231243124213241324123222113311221213131221123113311112202311112022311112220342223113342223311342223131322023113322023311320223113320223131322203311322203131")
+	const setOf = function(count) {
+		var a = [], i = 0
+		while (i < count) {
+			a.push(i++)
+		}
+		return a
+	}
+	const doFor = function(count, cb) {
+		var i = 0
+		while (i < count && cb(i++) !== true);
+	}
+
+	const shuffleSeed = (seed,count) => {
+		seed = seed * 1664525 + 1013904223 | 0
+		count -= 1
+		return count > 0 ? shuffleSeed(seed, count) : seed
+	}
+	const types = {
+		_3D : {
+			base : base3D,
+			squish : SQUISH_3D,
+			dimensions : 3,
+			pD : p3D,
+			lookup : lookupPairs3D,
+		}
+	}
+
+	const createContribution = (type, baseSet, index) => {
+		var i = 0
+		const multiplier = baseSet[index ++]
+		const c = { next : undefined }
+		while(i < type.dimensions) {
+			const axis = "xyzw"[i]
+			c[axis + "sb"] = baseSet[index + i]
+			c["d" + axis] = - baseSet[index + i++] - multiplier * type.squish
+		}
+		return c
+	}
+
+	const createLookupPairs = (lookupArray, contributions) => {
+		var i
+		const a = lookupArray()
+		const res = new Map()
+		for (i = 0; i < a.length; i += 2) {
+			res.set(a[i], contributions[a[i + 1]])
+		}
+		return res
+	}
+
+	const createContributionArray = (type) => {
+		const conts = []
+		const d = type.dimensions
+		const baseStep = d * d
+		var k, i = 0
+		while (i < type.pD.length) {
+			const baseSet = type.base[type.pD[i]]
+			let previous, current
+			k = 0
+			do {
+				current = createContribution(type, baseSet, k)
+				if (!previous) {
+					conts[i / baseStep] = current
+				}
+				else {
+					previous.next = current
+				}
+				previous = current
+				k += d + 1
+			} while(k < baseSet.length)
+
+			current.next = createContribution(type, type.pD, i + 1)
+			if (d >= 3) {
+				current.next.next = createContribution(type, type.pD, i + d + 2)
+			}
+			if (d === 4) {
+				current.next.next.next = createContribution(type, type.pD, i + 11)
+			}
+			i += baseStep
+		}
+		const result = [conts, createLookupPairs(type.lookup, conts)]
+		type.base = undefined
+		type.lookup = undefined
+		return result
+	}
+
+	let temp = createContributionArray(types._3D)
+	const lookup3D = temp[1]
+	const perm = new Uint8Array(256)
+	const perm3D = new Uint8Array(256)
+	const source = new Uint8Array(setOf(256))
+	var seed = shuffleSeed(clientSeed, 3)
+	doFor(256, function(i) {
+		i = 255 - i
+		seed = shuffleSeed(seed, 1)
+		var r = (seed + 31) % (i + 1)
+		r += r < 0 ? i + 1 : 0
+		perm[i] = source[r]
+		perm3D[i] = perm[i] % 24 * 3
+		source[r] = source[i]
+	})
+	base3D = undefined
+	lookupPairs3D = undefined
+	p3D = undefined
+
+	return function(x, y, z) {
+		const pD = perm3D
+		const p = perm
+		const g = gradients3D
+		const stretchOffset = (x + y + z) * STRETCH_3D
+		const xs = x + stretchOffset, ys = y + stretchOffset, zs = z + stretchOffset
+		const xsb = floor(xs), ysb = floor(ys), zsb = floor(zs)
+		const squishOffset	= (xsb + ysb + zsb) * SQUISH_3D
+		const dx0 = x - (xsb + squishOffset), dy0 = y - (ysb + squishOffset), dz0 = z - (zsb + squishOffset)
+		const xins = xs - xsb, yins = ys - ysb, zins = zs - zsb
+		const inSum = xins + yins + zins
+		var c = lookup3D.get(
+			yins - zins + 1
+				| xins - yins + 1 << 1
+				| xins - zins + 1 << 2
+				| inSum << 3
+				| inSum + zins << 5
+				| inSum + yins << 7
+				| inSum + xins << 9
+		)
+		var i, value = 0
+		while (c !== undefined) {
+			const dx = dx0 + c.dx, dy = dy0 + c.dy, dz = dz0 + c.dz
+			let attn = 2 - dx * dx - dy * dy - dz * dz
+			if (attn > 0) {
+				i = pD[(p[xsb + c.xsb & 0xFF] + (ysb + c.ysb) & 0xFF) + (zsb + c.zsb) & 0xFF]
+				attn *= attn
+				value += attn * attn * (g[i++] * dx + g[i++] * dy + g[i] * dz)
+			}
+			c = c.next
+		}
+		return value * NORM_3D + 0.5
+	}
+}
+
+
+// Copy/pasted from src/js/utils.js for the workers
+class BitArrayReader {
+	/**
+	 * @param {Uint8Array} array
+	 */
+	constructor(array) {
+		this.data = array // Byte array; values are assumed to be under 256
+
+		/**
+		 * A pointer to the bit position of the reader; can be adjusted to read a different part of the array.
+		 */
+		this.bit = 0
+	}
+
+	/** @param {{data:Uint8Array,bit:Number}} obj */
+	static from(obj) {
+		let ret = new BitArrayReader(obj.data)
+		ret.bit = obj.bit
+		return ret
+	}
+	/**
+	 * @param {number} bits
+	 */
+	read(bits, negative = false) {
+		let openBits = 32 - bits
+		let { data, bit } = this
+		this.bit += bits // Move pointer
+		if (bit > data.length * 8 || bit < 0) {
+			throw "You done messed up A-A-Ron"
+		}
+
+		let unread = 8 - (bit & 7)
+		let index = bit >>> 3
+		let ret = 0
+		while (bits > 0) {
+			let n = data[index] & -1 >>> 32 - unread
+			ret |= bits >= unread ? n << bits - unread : n >> unread - bits
+			bits -= unread
+			unread = 8
+			index++
+		}
+		if (negative) {
+			return ret << openBits >> openBits
+		}
+		return ret
+	}
+}
+
+/**
+ * @type {MessagePort[]}
+ */
+let workerPorts = []
+
+/** @type {ArrayBuffer[][]} */
+const messageQueue = []
+
+/**
+ * @type {{
+ * shape: { cull: {top: Boolean,bottom: Boolean,north: Boolean,south: Boolean,east: Boolean,west: Boolean} },
+ * semiTrans: Boolean, transparent: Boolean, hideInterior: Boolean, isCube: Boolean, lightLevel: Number
+ * }[]}
+ */
+let blockData = []
+/** @type {Object.<string, number>} */
+let blockIds = {}
+let workerID = 0
+/** @type {string[]} */
+let jobQueue = []
+/** @type {Object.<string, {reader: BitArrayReader, startPos: Number, endPos: Number, blocks?: {}, edits?: {}}>} */
+const saves = {}
+let superflat = false
+let spawnTrees = true
+let spawnCaves = true
+let rivers = true
+/**
+ * @type {((x: Number, z: Number) => Int8Array)}
+ */
+let getCarveData
+
+/**
+ * @type {(seed: number) => void}
+ */
+let seedNoise
+/** @type {Map<String, ArrayBuffer[]>} */ const chunkPortMap = new Map()
+/** @type {Map<String, PartialChunk>} */ const chunkMap = new Map()
+
+{
+	// This is my compiled cave generation code. I wrote it in C.
+	// It includes an OpenSimplexNoise function,
+	// plus the logic to carve caves within the borders of the chunk it's operating on.
+	const program = new Uint8Array(atob("AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL").split("").map(c => c.charCodeAt(0))).buffer
+
+	WebAssembly.instantiate(program).then(wasm => {
+		/** @type {{getCaves: Function, memory: Uint8ClampedArray, seed_noise?: (seed: Number)=>void}} */
+		// @ts-ignore
+		const exports = wasm.instance.exports
+		console.log(exports)
+		const wasmCaves = exports.getCaves // || exports.get_caves || exports.c
+		const { buffer } = exports.memory //  || exports.a
+
+		seedNoise = exports.seed_noise || (seed => {
+			// Originally this stuff was generated in code
+			const GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])
+			const POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]
+			const DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]
+			const SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])
+
+			const positions = new Int32Array(buffer, 0, 80)
+			const data = new Float64Array(buffer, positions.byteLength, DATA.length)
+			const source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)
+			const perm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)
+			const perm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)
+			const gradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)
+			const caves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)
+			const sphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)
+
+			sphere.set(SPHERE)
+			positions.set(POSITIONS)
+			data.set(DATA)
+			gradients3D.set(GRADIENTS_3D)
+
+			for (let i = 0; i < 256; i++) source[i] = i
+			for (let i = 0; i < 3; i++) {
+				seed = seed * 1664525 + 1013904223 | 0
+			}
+			for (let i = 255; i >= 0; i--) {
+				seed = seed * 1664525 + 1013904223 | 0
+				let r = (seed + 31) % (i + 1)
+				if (r < 0) r += i + 1
+				perm[i] = source[r]
+				perm3D[i] = perm[i] % 24 * 3
+				source[r] = source[i]
+			}
+		})
+		getCarveData = (x, z) => {
+			const ptr = wasmCaves(x, z)
+			const arr = new Int8Array(buffer, ptr, 20992)
+			return arr
+		}
+	})
+}
+
+// Leaves from top to bottom.
+const leafPos = [
+	[-1, 1, 0], [1, 1, 0], [0, 1, -1], [0, 1, 1], [0, 1, 0], [-1, 0, 0], [1, 0, 0], [0, 0, -1], [0, 0, 1],
+	[-2, -1, -1], [-2, -1, 0], [-2, -1, 1], [-1, -1, -2], [-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, -1, 2], [0, -1, -2], [0, -1, -1],
+	[0, -1, 1], [0, -1, 2], [1, -1, -2], [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, -1, 2], [2, -1, -1], [2, -1, 0], [2, -1, 1],
+	[-2, -2, -1], [-2, -2, 0], [-2, -2, 1], [-1, -2, -2], [-1, -2, -1], [-1, -2, 0], [-1, -2, 1], [-1, -2, 2], [0, -2, -2], [0, -2, -1],
+	[0, -2, 1], [0, -2, 2], [1, -2, -2], [1, -2, -1], [1, -2, 0], [1, -2, 1], [1, -2, 2], [2, -2, -1], [2, -2, 0], [2, -2, 1],
+]
+const randomLeaves = [
+	[-2, -2, -2], [-2, -2, 2], [2, -2, -2], [2, -2, 2],
+	[-2, -1, -2], [-2, -1, 2], [2, -1, -2], [2, -1, 2],
+	[-1,  0, -1], [-1,  0, 1], [1,  0, -1], [1,  0, 1]
+]
+const sphereOffsets = new Int8Array([
+	-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,-1,-2,1,0,-2,1,1,-1,-2,-1,-1,-2,0,-1,-2,1,-1,-1,-2,-1,-1,-1,-1,-1,0,-1,-1,1,
+	-1,-1,2,-1,0,-2,-1,0,-1,-1,0,0,-1,0,1,-1,0,2,-1,1,-2,-1,1,-1,-1,1,0,-1,1,1,-1,1,2,-1,2,-1,-1,2,0,-1,2,1,0,-2,-1,0,-2,0,0,-2,1,0,-1,-2,0,-1,-1,0,-1,0,0,-1,1,0,-1,
+	2,0,0,-2,0,0,-1,0,0,0,0,0,1,0,0,2,0,1,-2,0,1,-1,0,1,0,0,1,1,0,1,2,0,2,-1,0,2,0,0,2,1,1,-2,-1,1,-2,0,1,-2,1,1,-1,-2,1,-1,-1,1,-1,0,1,-1,1,1,-1,2,1,0,-2,1,0,-1,1,0,
+	0,1,0,1,1,0,2,1,1,-2,1,1,-1,1,1,0,1,1,1,1,1,2,1,2,-1,1,2,0,1,2,1,2,-1,-1,2,-1,0,2,-1,1,2,0,-1,2,0,0,2,0,1,2,1,-1,2,1,0,2,1,1
+])
+
+class PartialChunk {
+	/**
+	 * @param {number} x
+	 * @param {number} z
+	 */
+	constructor(x, z) {
+		this.x = x
+		this.z = z
+		this.cx = x >> 4
+		this.cz = z >> 4
+		const buffer = new ArrayBuffer(0)
+		this.blocks = new Int16Array(buffer)
+		this.tops = new Int16Array(buffer)
+		this.light = new Uint8Array(buffer)
+		this.flags = new Int8Array(buffer) // flagPool.pop()
+		/**
+		 * @type {Number[]}
+		 */
+		this.renderData = []
+		this.doubleRender = false
+		/**
+		 * Edits this chunk made to its neighbors
+		 * @type {Number[][]}
+		 * */
+		this.neighbors = [[], [], [], [], [], [], [], [], []]
+		this.maxY = 0
+		this.minY = 255
+		/**
+		 * Edits neighbors made to this chunk
+		 * @type {Int32Array[]}
+		 */
+		this.edits = []
+		this.stage = 0
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} z
+	 */
+	getBlock(x, y, z) {
+		return this.blocks[y * 256 + x * 16 + z]
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} z
+	 * @param {number} blockID
+	 */
+	setBlock(x, y, z, blockID) {
+		const chunkIndex = ((x >> 4) + 1) * 3 + ((z >> 4) + 1)
+		const blockIndex = y * 256 + (x&15) * 16 + (z&15)
+		if (chunkIndex === 4) {
+			this.blocks[blockIndex] = blockID
+		}
+		else {
+			this.neighbors[chunkIndex].push(blockIndex << 16 | blockID)
+		}
+	}
+	generateGround() {
+		const { grass, dirt, stone, bedrock, sand, water } = blockIds
+		const { blocks, tops } = this
+		const { abs } = Math
+		const cx = this.x
+		const cz = this.z
+
+		const waterHeight = 55
+		const smoothness = 0.01 // How close hills and valleys are together
+		const hilliness = 80 // Height of the hills
+		const extra = 30 // Extra blocks stacked onto the terrain
+		let gen = 0
+		let index2d = 0
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				if (superflat) {
+					gen = 4
+					tops[index2d] = gen
+				}
+				else {
+					let n = noiseProfile.noise((cx + i) * smoothness, (cz + k) * smoothness)
+					gen = Math.round(n * hilliness + extra)
+					if (rivers) {
+						const m = (1 - abs(noiseProfile.noise((cz + k - 5432.123) * 0.003, (cx + i + 9182.543) * 0.003) - 0.5))**50
+						gen = Math.round((waterHeight - 5 - gen) * m + gen)
+					}
+					tops[index2d] = gen > waterHeight ? gen : waterHeight
+				}
+				if (gen < this.minY) this.minY = gen
+				if (gen > this.maxY) this.maxY = gen
+
+				let index = index2d
+				blocks[index] = bedrock
+				index += 256
+				for (let max = (gen - 3) * 256; index < max; index += 256) {
+					blocks[index] = stone
+				}
+				if (gen > waterHeight || !rivers || superflat) {
+					blocks[index] = dirt
+					blocks[index + 256] = dirt
+					blocks[index + 512] = dirt
+					blocks[index + 768] = grass
+				}
+				else {
+					blocks[index] = sand
+					blocks[index + 256] = sand
+					blocks[index + 512] = sand
+					blocks[index + 768] = sand
+					for (index += 1024; index < (waterHeight + 1) * 256; index += 256) blocks[index] = water
+					if (gen <= waterHeight) this.doubleRender = true
+				}
+				index2d++
+			}
+		}
+	}
+	carveCaves() {
+		const { tops, blocks } = this
+		const arr = getCarveData(this.x, this.z)
+		const lowest = (Math.min(...tops) - 1) * 256
+		for (let i = 512; i < lowest; i++) {
+			if (arr[i] === 1) {
+				// Carve a sphere centered at index i
+				let ix = i >> 4 & 15
+				let iy = i >> 8
+				let iz = i & 15
+				for (let j = 0; j < sphereOffsets.length; j += 3) {
+					this.setBlock(ix + sphereOffsets[j], iy + sphereOffsets[j + 1], iz + sphereOffsets[j + 2], 0)
+				}
+				if (iy - 3 < this.minY) this.minY = iy - 3
+			}
+			else if (arr[i] === 2) {
+				blocks[i] = 0
+				if (i >> 8 < this.minY + 1) this.minY = (i >> 8) - 1
+			}
+		}
+	}
+	addTrees() {
+		const { floor, min } = Math
+		const { blocks, tops, x, z } = this
+
+		// Really need to import blockIds and blockData.
+		const { grass, oakLog, birchLog, leaves, dirt, stone, diamondOre, goldOre, ironOre, coalOre, lapisOre, redstoneOre, poppy, cornflower, dandelion } = blockIds
+
+		randomSeed(hash(x, z) * 210000000) // Hash is seeded with the world seed, so this doesn't need to be.
+
+		// Spawn trees and ores
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+				let ground = tops[i * 16 + k]
+
+				// Tree
+				if (spawnTrees && random() < 0.005 && this.getBlock(i, ground, k) === grass) {
+					let top = ground + floor(4.5 + random(2.5))
+					let rand = floor(random(4096))
+					let tree = random() < 0.6 ? oakLog : ++top && birchLog
+					if (top + 1 > this.maxY) this.maxY = top + 1
+
+					// Tree trunk
+					for (let j = ground + 1; j <= top; j++) {
+						this.setBlock(i, j, k, tree)
+					}
+					tops[i * 16 + k] = top + 1 // Say the top of the tree is the top
+					this.setBlock(i, ground, k, dirt)
+
+					// Leaves
+					for (let [dx, dy, dz] of leafPos) {
+						this.setBlock(i + dx, top + dy, k + dz, leaves)
+					}
+
+					// 12 randomly placed leaves
+					for (let [dx, dy, dz] of randomLeaves) {
+						if (rand & 1) {
+							this.setBlock(i + dx, top + dy, k + dz, leaves)
+						}
+						rand >>>= 1
+					}
+				}
+
+				// Blocks of each per chunk in Minecraft
+				// Coal: 185.5
+				// Iron: 111.5
+				// Gold: 10.4
+				// Redstone: 29.1
+				// Diamond: 3.7
+				// Lapis: 4.1
+				ground -= 4
+				// while (blocks[ground * 256 + i * 16 + k] !== stone) ground--
+
+				let xzi = i * 16 + k
+				if (random() < 3.7 / 256) {
+					let y = random(1, 16) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = diamondOre
+					}
+				}
+
+				if (random() < 111.5 / 256) {
+					let y = random(1, min(64, ground)) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = ironOre
+					}
+				}
+
+				if (random() < 185.5 / 256) {
+					let y = random(1, ground) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = coalOre
+					}
+				}
+
+				if (random() < 10.4 / 256) {
+					let y = random(1, 32) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = goldOre
+					}
+				}
+
+				if (random() < 29.1 / 256) {
+					let y = random(1, 16) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = redstoneOre
+					}
+				}
+
+				if (random() < 4.1 / 256) {
+					let y = random(1, 32) << 8
+					if (blocks[xzi + y] === stone) {
+						blocks[xzi + y] = lapisOre
+					}
+				}
+			}
+		}
+
+		// Spawn flower patches; 1 in 4 chunks will have a patch
+		for (let i = 0; i < 16; i++) {
+			for (let k = 0; k < 16; k++) {
+
+				if (spawnTrees && random() < 0.0009765625) {
+					const types = []
+					if (random() < 0.5) types.push(poppy)
+					if (random() < 0.5) types.push(cornflower)
+					if (random() < 0.5) types.push(dandelion)
+
+					for (let i = 0; i < types.length * 4; i++) {
+						let x = i + random(-2, 3) | 0
+						let z = k + random(-2, 3) | 0
+						if (x < 0) x += random(x, 5)
+						if (x > 15) x -= random(x-15, 5)
+						let y = tops[x * 16 + z]
+						let index = y * 256 + x * 16 + z
+						if (blocks[index] === grass && !blocks[index + 256]) {
+							blocks[index + 256] = types[random(types.length) | 0]
+						}
+					}
+				}
+			}
+		}
+	}
+	applyNeighborEdits() {
+		// TO-DO: Resolve overlapping neighbor edits at chunk corners deterministically
+		const { max } = Math
+		for (let arr of this.edits) {
+			for (let i = 0; i < arr.length; i++) {
+				const data = arr[i]
+				const blockID = data & 0xffff
+				const pos = data >>> 16
+
+				// Leaves aren't allowed to overwrite non-air blocks
+				if (blockID !== blockIds.leaves || !this.blocks[pos]) {
+					this.blocks[pos] = blockID
+				}
+
+				const y = data >>> 24
+				const xz = data >> 16 & 255
+				if (y > this.tops[xz]) this.tops[xz] = y
+				this.maxY = max(this.maxY, y) // Leaves are usually higher than than the ground
+			}
+		}
+	}
+	/**
+	 * @param {Object.<number, number>} blocks
+	 */
+	loadFromBlocks(blocks) {
+		let last = 0
+		for (let j in blocks) {
+			last = +j
+			let block = blocks[last]
+			if (!blockData[block]) { // Loading a non-existent block. Replace it with a pumpkin.
+				if (blockData[block & 255]) block &= 255
+				else block = blockIds.pumpkin
+			}
+			this.blocks[last] = block
+			if (!this.doubleRender && blockData[block].semiTrans) {
+				this.doubleRender = true
+			}
+		}
+		if (last >> 8 > this.maxY) this.maxY = last >> 8
+	}
+	load() {
+		const { max } = Math
+
+		// Load player edits if they exist
+		const str = `${this.cx},${this.cz}`
+		const load = saves[str]
+
+		if (load) {
+			if (load.reader) load.reader = BitArrayReader.from(load.reader)
+			delete saves[str]
+			if (load.reader && !load.edits) this.saveData = {
+				reader: load.reader,
+				startPos: load.startPos,
+				endPos: load.endPos
+			}
+			this.originalBlocks = this.blocks.slice()
+
+			if (load.blocks) {
+				// The initial world load had to parse the blocks, so they were stored.
+				this.loadFromBlocks(load.blocks)
+			}
+			else if (load.reader) {
+				// The chunk was loaded, then later unloaded.
+
+				/** @type {((index:number,x:number,y:number,z:number)=>number)[]} */
+				const getIndex = [
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 6 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 0 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 6 & 7))*16 + z + (index >> 3 & 7),
+					(index, x, y, z) => (y + (index >> 0 & 7))*256 + (x + (index >> 3 & 7))*16 + z + (index >> 6 & 7),
+					(index, x, y, z) => (y + (index >> 3 & 7))*256 + (x + (index >> 0 & 7))*16 + z + (index >> 6 & 7)
+				]
+				const { reader, startPos, endPos } = load
+
+				reader.bit = startPos
+				while (reader.bit < endPos) {
+					let x = reader.read(16, true) * 8
+					let y = reader.read(5, false) * 8
+					let z = reader.read(16, true) * 8
+
+					const paletteLen = reader.read(9)
+					const paletteBits = Math.ceil(Math.log2(paletteLen))
+					const palette = []
+					for (let i = 0; i < paletteLen; i++) {
+						let block = reader.read(16)
+						if (!blockData[block]) {
+							if (blockData[block & 255]) block &= 255
+							else block = blockIds.pumpkin
+						}
+						palette.push(block)
+						if (blockData[block].semiTrans) {
+							this.doubleRender = true
+						}
+					}
+
+					const orientation = reader.read(3)
+
+					const cx = x >> 4
+					const cz = z >> 4
+
+					// Make them into local chunk coords
+					x = x !== cx * 16 ? 8 : 0
+					z = z !== cz * 16 ? 8 : 0
+
+					const runs = reader.read(8)
+					const singles = reader.read(9)
+					for (let j = 0; j < runs; j++) {
+						let index = reader.read(9)
+						const types = reader.read(9)
+						const lenSize = reader.read(4)
+						for (let k = 0; k < types; k++) {
+							const chain = reader.read(lenSize) + 1
+							const block = reader.read(paletteBits)
+							for (let l = 0; l < chain; l++) {
+								const i = getIndex[orientation](index, x, y, z)
+								this.blocks[i] = palette[block]
+								this.maxY = max(this.maxY, i >> 8)
+								index++
+							}
+						}
+					}
+					for (let j = 0; j < singles; j++) {
+						const index = reader.read(9)
+						const block = reader.read(paletteBits)
+						const i = getIndex[orientation](index, x, y, z)
+						this.blocks[i] = palette[block]
+						this.maxY = max(this.maxY, i >> 8)
+					}
+				}
+			}
+
+			// Edits happened while the chunk was unloaded.
+			if (load.edits) {
+				this.loadFromBlocks(load.edits)
+			}
+		}
+	}
+	addLight() {
+		const { blocks, tops, light, maxY } = this
+		// Drop light straight down from the sky
+		light.fill(15, (maxY + 1) * 256)
+		for (let x = 0; x < 16; x++) {
+			for (let z = 0; z < 16; z++) {
+				const xz = x * 16 + z
+				for (let y = maxY * 256; y > 0; y -= 256) {
+					const block = blocks[y + xz]
+					if (block && !blockData[block].transparent) {
+						tops[xz] = y >> 8
+						break
+					}
+					light[y + xz] = 15
+				}
+			}
+		}
+
+		// Calculate where sky light can potentially spread from based on tops
+		let skyLightSpread = []
+		for (let x = 0; x < 16; x++) {
+			for (let z = 0; z < 16; z++) {
+				const i = x * 16 + z
+				let y = tops[i]
+				const nx = x && tops[i - 16]
+				const px = x < 15 ? tops[i + 16] : 0
+				const nz = z && tops[i - 1]
+				const pz = z < 15 ? tops[i + 1] : 0
+				// Check all 4 neighbors heights; if there's a chance they're casting a shadow, try to spread these blocks outward.
+				while (x > 0 && nx - y > 1 || x < 15 && px - y > 1 || z > 0 && nz - y > 1 || z < 15 && pz - y > 1) {
+					y++
+					skyLightSpread.push(y * 256 + i)
+				}
+			}
+		}
+		const skyLights = []
+		skyLights[15] = skyLightSpread
+		this.spreadLight(skyLights, false)
+	}
+
+	/**
+	 * Spreads light within a single 16×256×16 chunk using a level-based flood fill.
+	 *
+	 * @param {Array<number[]>} sources - Array of 16 arrays (one per light level),
+	 *   where each contains the block indices emitting that level of light.
+	 *   This structure is reused and modified in-place during the spread.
+	 * @param {boolean} block - If true, modifies block light (upper 4 bits).
+	 *   If false, modifies skylight (lower 4 bits).
+	 *
+	 * Light spreads to transparent blocks if the existing light level is ≤ the new level.
+	 * Only spreads within the same chunk — no boundary checks.
+	 */
+	spreadLight(sources, block) {
+		const { blocks, light } = this
+		const shift = block ? 4 : 0
+
+		/**
+		 * A helper function for the BFS lighting
+		 * @param {Number} index The index of the block to push
+		 * @param {Number[]} pushTo The array to push the index to
+		 * @param {Number} newLevel The light level to assign to the block if it's transparent and darker than this
+		 */
+		const pushIfValid = (index, pushTo, newLevel) => {
+			if (blockData[blocks[index]].transparent && (light[index] >> shift & 15) < newLevel) {
+				light[index] = block ? light[index] & 15 | newLevel << 4 : light[index] & 0xf0 | newLevel
+				pushTo.push(index)
+			}
+		}
+		for (let i = 0; i < sources.length; i++) if (!sources[i]) sources[i] = []
+		for (let level = sources.length - 1; level > 0; level--) {
+			const coords = sources[level]
+			for (let i = 0; i < coords.length; i++) {
+				const index = coords[i]
+				if (level === 1) continue
+
+				if (index & 15)                 pushIfValid(index - 1, sources[level - 1], level - 1)
+				if ((index & 15) < 15)          pushIfValid(index + 1, sources[level - 1], level - 1)
+				if (index >> 4 & 15)            pushIfValid(index - 16, sources[level - 1], level - 1)
+				if ((index >> 4 & 15) < 15)     pushIfValid(index + 16, sources[level - 1], level - 1)
+				if (index >> 8)                 pushIfValid(index - 256, sources[level - 1], level - 1)
+				if (index + 256 < light.length) pushIfValid(index + 256, sources[level - 1], level - 1)
+			}
+		}
+	}
+	preprocessBlocks() {
+		const flags = this.flags = new Int8Array(65536) // flagPool.pop()
+		const { blocks, renderData, maxY } = this
+
+		for (let i = 0; i < 256; i++) {
+			flags[maxY * 256 + i] = 8 // The top blocks
+		}
+		/** @type {Number[][]} */
+		const blockSpread = []
+		for (let i = 256; i < (maxY + 1) * 256; i++) {
+			const x = i >> 4 & 15
+			const z = i & 15
+			const b = blocks[i]
+			const data = blockData[b]
+
+			// Set bit flags on adjacent blocks
+			if (data.transparent) {
+				if (b === 0) flags[i] |= 128 // This is an air block, so it can't be rendered. This bit makes it negative.
+				else if (data.hideInterior) {
+
+					// Toggle visibilty flags. The neighbors will toggle them again, leaving them off.
+					flags[i] ^= +(b === (x ? blocks[i - 16] : 0)) << 0
+					| +(b === (x < 15 ? blocks[i + 16] : 0)) << 1
+					| +(b === blocks[i - 256]) << 2
+					| +(b === blocks[i + 256]) << 3
+					| +(b === (z ? blocks[i - 1] : 0)) << 4
+					| +(b === (z < 15 ? blocks[i + 1] : 0)) << 5
+				}
+
+				// Toggle neighbor's visibility flags.
+				flags[i - 256] ^= 8 // Top face of block below is visible
+				flags[i + 256] ^= 4 // Bottom face of block above is visible
+				if (z)      flags[i - 1] ^= 32 // South face of North block is visible
+				if (z < 15) flags[i + 1] ^= 16 // North face of South block is visible
+				if (x)      flags[i - 16] ^= 2 // West face of East block is visible
+				if (x < 15) flags[i + 16] ^= 1 // East face of West block is visible
+			}
+			else if (!data.isCube) {
+				const cull = data.shape.cull
+				if (!cull.bottom) {
+					flags[i - 256] |= 8 // Top face of block below is visible
+				}
+				if (!cull.top) {
+					flags[i + 256] |= 4 // Bottom face of block above is visible
+				}
+				if (!cull.south && z) {
+					flags[i - 1] |= 32 // South face of North block is visible
+				}
+				if (!cull.north && z < 15) {
+					flags[i + 1] |= 16 // North face of South block is visible
+				}
+				if (!cull.west && x) {
+					flags[i - 16] |= 2 // West face of East block is visible
+				}
+				if (!cull.east && x < 15) {
+					flags[i + 16] |= 1 // East face of West block is visible
+				}
+			}
+
+			// Some lighting stuff
+			const light = data.lightLevel
+			if (light) {
+				if (!blockSpread[light]) blockSpread[light] = []
+				blockSpread[light].push(i)
+				this.light[i] |= light * 16
+			}
+		}
+
+		// Compute renderData for inner 14x14 column after ensuring all flags are accurate
+		for (let index = 256; index < (maxY + 1) * 256; index++) {
+			if (!blockData[blocks[index]].isCube) {
+				const cull = blockData[blocks[index]].shape.cull
+				if (!cull.west)   flags[index] |= 1
+				if (!cull.east)   flags[index] |= 2
+				if (!cull.bottom) flags[index] |= 4
+				if (!cull.top)    flags[index] |= 8
+				if (!cull.south)  flags[index] |= 16
+				if (!cull.north)  flags[index] |= 32
+			}
+			const x = index >> 4 & 15
+			const z = index & 15
+			if (x && x < 15 && z && z < 15 && flags[index] > 0) {
+				renderData.push(index << 16 | flags[index] << 10)
+			}
+		}
+
+		this.spreadLight(blockSpread, true)
+	}
+
+	sendEditsToNeighbors() {
+		/**
+		 * @param {Number} x Target chunk's world x coordinate
+		 * @param {Number} z Target chunk's world x coordinate
+		 * @param {Number[]} editData An array of bit-packed block data
+		 */
+		const sendEdit = (x, z, editData) => {
+			const coords = x+','+z
+			if (chunkMap.has(coords)) {
+				chunkMap.get(coords)?.edits.push(new Int32Array(editData)) // Chunk is in this thread
+			}
+			else {
+				editData.push(x, z)
+				const typedData = new Int32Array(editData)
+				chunkPortMap.get(coords)?.push(typedData.buffer) // Chunk is in another thread
+			}
+		}
+		sendEdit(this.x-16, this.z-16, this.neighbors[0])
+		sendEdit(this.x-16, this.z,    this.neighbors[1])
+		sendEdit(this.x-16, this.z+16, this.neighbors[2])
+		sendEdit(this.x,    this.z-16, this.neighbors[3])
+		sendEdit(this.x,    this.z+16, this.neighbors[5])
+		sendEdit(this.x+16, this.z-16, this.neighbors[6])
+		sendEdit(this.x+16, this.z,    this.neighbors[7])
+		sendEdit(this.x+16, this.z+16, this.neighbors[8])
+	}
+
+	stage1() {
+		this.stage = 1
+		const buffer = new ArrayBuffer(65536 * 3 + 256)
+		this.blocks = new Int16Array(buffer, 0, 65536)
+		this.tops = new Int16Array(buffer, this.blocks.byteLength, 256)
+		this.light = new Uint8Array(buffer, this.blocks.byteLength + 256, 65536)
+		this.generateGround()
+		if (superflat) return
+		if (spawnCaves) this.carveCaves()
+		if (spawnTrees) this.addTrees()
+		this.sendEditsToNeighbors()
+	}
+	stage2() {
+		if (!superflat && this.edits.length !== 8 || this.stage !== 1) return false
+		this.applyNeighborEdits()
+		this.load()
+		this.preprocessBlocks()
+		this.addLight()
+		this.stage = 2
+
+		postMessage({
+			x: this.x,
+			z: this.z,
+			maxY: this.maxY,
+			minY: this.minY,
+			tops: this.tops,
+			light: this.light,
+			visFlags: this.flags,
+			blocks: this.blocks,
+			renderData: this.renderData,
+			doubleRender: this.doubleRender
+		// @ts-ignore
+		}, [this.blocks.buffer, this.flags.buffer])
+		return true
+	}
+}
+
+function sendMessages() {
+	for (let i = 0; i < messageQueue.length; i++) {
+		if (messageQueue[i].length) {
+			workerPorts[i].postMessage(messageQueue[i], messageQueue[i])
+			messageQueue[i].length = 0
+		}
+	}
+}
+
+// Loop over all jobs, advancing the first eligible chunk by 1 stage before checking for new data, then repeating.
+const channel = new MessageChannel()
+let looping = false // Prevent duplicate loops
+function workLoop() {
+	looping = true
+	let progress = false
+	for (let i = 0; i < 20; i++) {
+		let index = -1
+		for (let coords of jobQueue) {
+			index++
+			const [x, z] = coords.split(",").map(n => Number(n))
+			let chunk = chunkMap.get(coords)
+			if (!chunk) chunk = new PartialChunk(x, z)
+			if (chunk.stage === 0) {
+				chunk.stage1()
+				progress = true
+				break
+			}
+			else if (chunk.stage2()) {
+				jobQueue.splice(index, 1)
+				progress = true
+				break
+			}
+		}
+	}
+	sendMessages()
+	if (progress) channel.port1.postMessage("")
+	else looping = false
+}
+channel.port2.onmessage = workLoop
+
+let interval = setInterval(() => self.postMessage("ready"), 100) // Sometimes the page lags and messages are lost
+
+/**
+ * @param {MessageEvent} e
+ */
+function neighborEditsReceived(e) {
+	for (const editsBuffer of e.data) {
+		const arr = new Int32Array(editsBuffer)
+		const z = arr.at(-1)
+		const x = arr.at(-2)
+		const coords = `${x},${z}`
+		const edits = new Int32Array(editsBuffer, 0, (editsBuffer.byteLength - 8) / 4)
+		chunkMap.get(coords)?.edits.push(edits)
+	}
+	if (!looping) workLoop()
+}
+self.onmessage = function(e) {
+	if (e.data.blockIds) {
+		blockData = e.data.blockData
+		blockIds = e.data.blockIds
+		workerID = e.data.workerID
+		workerPorts = e.data.workerPorts
+		for (let i = 0; i < workerPorts.length; i++) {
+			if (i !== workerID) {
+				workerPorts[i].onmessage = neighborEditsReceived
+			}
+			messageQueue.push([])
+		}
+		// setTimeout(() => {
+		// 	let port
+		// 	while(!port) port = workerPorts[Math.random() * workerPorts.length | 0]
+		// 	port.postMessage(workerPorts.indexOf(port))
+		// }, 500)
+		clearInterval(interval)
+		return
+	}
+	if (e.data.seed) {
+		seedHash(e.data.seed)
+		seedNoise(e.data.seed)
+		noiseProfile.noiseSeed(e.data.seed)
+		superflat = e.data.superflat
+		spawnCaves = e.data.spawnCaves
+		spawnTrees = e.data.spawnTrees
+		rivers = e.data.rivers
+	}
+
+	if (e.data.jobList) {
+		/** @type {string[][]} */
+		const jobList = e.data.jobList
+		Object.assign(saves, e.data.saves)
+		for (let id = 0; id < jobList.length; id++) {
+			if (id === workerID) {
+				for (let coords of jobList[id]) {
+					const [x, z] = coords.split(",").map(n => +n)
+					chunkMap.set(coords, new PartialChunk(x, z))
+				}
+				jobQueue.push(...jobList[id])
+			}
+			else {
+				for (let chunk of jobList[id]) {
+					chunkPortMap.set(chunk, messageQueue[id])
+				}
+			}
+		}
+		if (!looping) workLoop()
+	}
+}
+
+		</script>
 		<script id="src/shaders/blockVert.glsl" type="x-shader/x-vertex">
 attribute vec3  aVertex;
 attribute vec2  aTexture;
@@ -500,83 +1895,6 @@ void main(){
 	vec4 color = texture2D(uSampler, vTexture);
 	gl_FragColor = vec4(color.rgb * uLightLevel, color.a);
 }
-		</script>
-		<script id="src/workers/Caves.js" type="text/js">
-const worker = async () => {
-	// Originally this stuff was generated in code
-	const GRADIENTS_3D = new Int8Array([-11,4,4,-4,11,4,-4,4,11,11,4,4,4,11,4,4,4,11,-11,-4,4,-4,-11,4,-4,-4,11,11,-4,4,4,-11,4,4,-4,11,-11,4,-4,-4,11,-4,-4,4,-11,11,4,-4,4,11,-4,4,4,-11,-11,-4,-4,-4,-11,-4,-4,-4,-11,11,-4,-4,4,-11,-4,4,-4,-11])
-	const POSITIONS = [-1,180,216,528,624,-1,912,288,144,360,252,816,-1,-1,720,216,-1,-1,72,960,-1,-1,912,36,144,360,0,816,-1,480,576,72,324,-1,144,-1,432,-1,624,36,-1,288,108,576,-1,864,-1,180,252,36,144,672,-1,-1,-1,108,-1,-1,396,-1,-1,-1,432,360,252,36,324,-1,768,-1,528,396,0,-1,252,480,-1,672,-1,360]
-	const DATA = [0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-1,-255,0,1,255,0,-1,0,-255,1,0,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,-1,0,255,1,0,0,-1,-255,0,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-255,0,-1,255,0,1,0,-255,-1,0,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-4/3,-4/3,-255.33333333333334,1,1,255,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-2/3,-5/3,1,0,1,-4/3,-255.33333333333334,-4/3,1,255,1,0,0,0,0,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-2,-1,2,1,0,-2,-3,-1,1,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-3,-1,-2,2,0,1,-2,-1,-3,1,0,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1,-3,-2,0,2,1,-1,-2,-3,0,1,2,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-4/3,-1/3,-1/3,1,0,0,-8/3,-2/3,-2/3,2,0,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-4/3,-1/3,0,1,0,-2/3,-8/3,-2/3,0,2,0,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-1/3,-1/3,-4/3,0,0,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-255.33333333333334,-4/3,1,255,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-255.33333333333334,-4/3,-4/3,255,1,1,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,0,0,0,0,0,0,-4/3,-4/3,-255.33333333333334,1,1,255,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-2,-2,-2,1,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-255.33333333333334,-4/3,1,255,1,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-2/3,-8/3,0,0,2,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-255.33333333333334,-4/3,-4/3,255,1,1,-2/3,-8/3,-2/3,0,2,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-8/3,-2/3,-2/3,2,0,0,-4/3,-1/3,-1/3,1,0,0,-1/3,-4/3,-1/3,0,1,0,-1/3,-1/3,-4/3,0,0,1,-5/3,-5/3,-2/3,1,1,0,-5/3,-2/3,-5/3,1,0,1,-2/3,-5/3,-5/3,0,1,1,-4/3,-4/3,-255.33333333333334,1,1,255,-2/3,-8/3,-2/3,0,2,0]
-	let SPHERE = new Int16Array([-529, -528, -527, -513, -512, -511, -497, -496, -495, -289, -288, -287, -274, -273, -272, -271, -270, -258, -257, -256, -255, -254, -242, -241, -240, -239, -238, -225, -224, -223, -33, -32, -31, -18, -17, -16, -15, -14, -2, -1, 0, 1, 2, 14, 15, 16, 17, 18, 31, 32, 33, 223, 224, 225, 238, 239, 240, 241, 242, 254, 255, 256, 257, 258, 270, 271, 272, 273, 274, 287, 288, 289, 495, 496, 497, 511, 512, 513, 527, 528, 529])
-
-	let data, positions, perm, perm3D, caves, gradients3D, sphere
-	const seedNoise = (seed, buffer) => {
-		positions = new Int32Array(buffer, 0, 80)
-		data = new Float64Array(buffer, positions.byteLength, DATA.length)
-		const source = new Uint8Array(buffer, data.byteOffset + data.byteLength, 256)
-		perm = new Uint8Array(buffer, source.byteOffset + source.byteLength, 256)
-		perm3D = new Uint8Array(buffer, perm.byteOffset + perm.byteLength, 256)
-		gradients3D = new Int8Array(buffer, perm3D.byteOffset + perm3D.byteLength, GRADIENTS_3D.length)
-		caves = new Uint8Array(buffer, gradients3D.byteOffset + gradients3D.byteLength, 16 * 16 * 82)
-		sphere = new Int16Array(buffer, caves.byteOffset + caves.byteLength, SPHERE.length)
-
-		sphere.set(SPHERE)
-		positions.set(POSITIONS)
-		data.set(DATA)
-		gradients3D.set(GRADIENTS_3D)
-
-		for (let i = 0; i < 256; i++) source[i] = i
-		for (let i = 0; i < 3; i++) {
-			seed = seed * 1664525 + 1013904223 | 0
-		}
-		for (let i = 255; i >= 0; i--) {
-			seed = seed * 1664525 + 1013904223 | 0
-			let r = (seed + 31) % (i + 1)
-			if (r < 0) r += i + 1
-			perm[i] = source[r]
-			perm3D[i] = perm[i] % 24 * 3
-			source[r] = source[i]
-		}
-	}
-
-	// This is my compiled cave generation code. I wrote it in C. It includes my OpenSimplexNoise function, plus the logic to carve caves within the borders of the chunk it's operating on.
-	const program = new Uint8Array(atob("AGFzbQEAAAABEQNgAABgA3x8fAF8YAJ/fwF/AwQDAAECBAUBcAEBAQUEAQEBAQcdBAZtZW1vcnkCAAFiAAAIZ2V0Q2F2ZXMAAgFkAQAMAQAKzwYDAwABC4YEAgR/CHxEAAAAAAAA8D8gASAAoCACoERVVVVVVVXFv6IiByABoCILIAucIguhIgqhIAcgAKAiDCAMnCIMoSIIoKohA0GACCgCAEQAAAAAAADwPyAHIAKgIgcgB5wiB6EiDaEiCSAKoKogA0EBdHIgCSAIoKpBAnRyIAggCqAgDaAiCapBA3RyIAkgDaCqQQV0ciAJIAqgqkEHdHIgCSAIoKpBCXRyQaOXvWlsQd/mu+MDakEBdkHQAHBBAnRqKAIAIgRBf0YEQEQAAAAAAAAAAA8LIAIgB6EgDCALoCAHoERVVVVVVVXVv6IiAqAhCSABIAuhIAKgIQ0gACAMoSACoCEOQQZBCCAEQbADSBshBkQAAAAAAAAAACEBA0BEAAAAAAAAAEAgDSAEQQN0IgMrA8gCoCIAIACiIA4gAysDwAKgIgIgAqKgIAkgAysD0AKgIgogCqKgoSIIRAAAAAAAAAAAZUUEQCAIIAiiIgggCKIgACADKwPoAiAHoKogAysD2AIgDKCqQf8BcUHAwwBqLQAAIAMrA+ACIAugqmpqQf8BcUHAxQBqLAAAIgNBwccAaiwAALeiIAIgA0HAxwBqLAAAt6KgIAogA0HCxwBqLAAAt6KgoiABoCEBCyAEQQZqIQQgBUEBaiIFIAZHDQALIAFEAqnkvCzicz+iRAAAAAAAAOA/oAvAAgIDfwN8QYjIAEEAQYCkAfwLAEGACCECA0ACQEQAAAAAAADgPyACQQR2QQ9xIgQgAGq3RHsUrkfhepQ/oiIFIAJBCHa3RHsUrkfhepQ/oiIGIAJBD3EiAyABardEexSuR+F6lD+iIgcQAaGZRLpJDAIrh3Y/Zg0ARAAAAAAAAOA/IAYgByAFEAGhmUS6SQwCK4d2P2YNAAJAIARBAmtBC0sNACADQQJJDQBBACEEIANBDUsNAANAIAIgBEEBdEGI7AFqLgEAaiIDQYjIAGotAABBAUcEQCADQQI6AIhICyAEQQFyIgNB0QBGDQIgAiADQQF0QYjsAWouAQBqIgNBiMgAai0AAEEBRwRAIANBAjoAiEgLIARBAmohBAwACwALIAJBiMgAakEBOgAACyACQQFqIgJBgKABRw0AC0GIyAAL").split("").map(c => c.charCodeAt(0))).buffer
-
-	const wasm = await WebAssembly.instantiate(program)
-
-	const exports = wasm.instance.exports
-	const wasmCaves = exports.getCaves || exports.get_caves || exports.c
-	const wasmMemory = exports.memory || exports.a
-
-	self.onmessage = function(e) {
-		if (e.data && e.data.seed) {
-			if (exports.seed_noise) exports.seed_noise(e.data.seed)
-			else seedNoise(e.data.seed, wasmMemory.buffer)
-			self.postMessage(e.data)
-		}
-		if (e.data && e.data.caves) {
-			const { x, z } = e.data
-			const ptr = wasmCaves(x, z)
-			// const buffer = wasmMemory.buffer.slice(ptr, ptr + 20992)
-			const arr = new Int8Array(wasmMemory.buffer, ptr, 20992)
-
-			let air = []
-			let carve = []
-			for (let i = 512; i < arr.length; i++) {
-				if (arr[i] === 1) carve.push(i)
-				else if (arr[i] === 2) air.push(i)
-			}
-			let airArr = new Uint16Array(air)
-			let carveArr = new Uint16Array(carve)
-
-			self.postMessage({
-				air: airArr,
-				carve: carveArr
-			}, [airArr.buffer, carveArr.buffer])
-		}
-	}
-}
-worker()
 		</script>
 		<script id="src/js/random.js" type="application/javascript">
 {const { imul, floor } = Math
@@ -1463,7 +2781,7 @@ const numMap = ")!@#$%^&*("
 const compressString = str => str.replace(/(.)\1+/g, s => s[0] + s.length.toString().replace(/./g, n => numMap[n]))
 const charMap = {}
 for (let c of numMap) charMap[c] = numMap.indexOf(c)
-const decompressString = str => str.replace(/.[\)\!@#\$%\^\&\*\(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
+const decompressString = str => str.replace(/.[)!@#$%^&*(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
 
 window.parent.exports["src/js/utils.js"] = { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader, compressString, decompressString }}
 		</script>
@@ -2330,6 +3648,7 @@ class BlockData {
 	iconImg = document.createElement("canvas")
 	shape = shapes.cube
 	uniqueShape = false
+	isCube = true
 
 	constructor(data, id, hasIcon = true) {
 		if (data instanceof BlockData) {
@@ -2384,6 +3703,7 @@ class BlockData {
 
 		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 		Object.assign(this, data)
+		if (this.shape !== shapes.cube) this.isCube = false
 	}
 }
 
@@ -2578,7 +3898,7 @@ const blockData = [
 	{
 		name: "jackOLantern",
 		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "jackOLantern"],
-		shadow: "false",
+		shadow: false,
 		lightLevel: 15,
 		rotate: true,
 		shape: shapes.cube
@@ -2698,7 +4018,7 @@ window.parent.exports["src/js/blockData.js"] = { texturesFunc, blockData, BLOCK_
 
 		request.onupgradeneeded = function(event) {
 			let DB = event.target.result
-			// Worlds will contain and ID containing the timestamp at which the world was created, a "saved" timestamp,
+			// Worlds will contain an ID containing the timestamp at which the world was created, a "saved" timestamp,
 			// and a "data" string that's identical to the copy/paste save string
 			let store = DB.createObjectStore("worlds", { keyPath: "id" })
 			store.createIndex("id", "id", { unique: true })
@@ -3514,8 +4834,8 @@ const animateTextures = (gl) => {
 	// texturePixels[y * textureSize * 4 + x * 4 + 1] = 125 * d
 	// texturePixels[y * textureSize * 4 + x * 4 + 2] = 64 * d
 
-	// gl.activeTexture(gl.TEXTURE0) // Moved to play()
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
+	// // gl.activeTexture(gl.TEXTURE0) // Moved to play()
+	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
 }
 
 window.parent.exports["src/js/texture.js"] = { initTextures, hitboxTextureCoords, animateTextures }}
@@ -3700,19 +5020,12 @@ const getSkybox = (gl, glCache, program3D, program3DFogless) => {
 window.parent.exports["src/js/sky.js"] = { getSkybox }}
 		</script>
 		<script id="src/js/chunk.js" type="application/javascript">
-{const { random, randomSeed, hash, noiseProfile } = window.parent.exports["src/js/random.js"]
-const { blockData, blockIds, Block } = window.parent.exports["src/js/blockData.js"]
+{const { blockData, blockIds, Block } = window.parent.exports["src/js/blockData.js"]
 const { BitArrayBuilder, BitArrayReader } = window.parent.exports["src/js/utils.js"]
 const { shapes } = window.parent.exports["src/js/shapes.js"]
 
-const { floor, max, abs } = Math
-const hideInterior = new Uint8Array(255)
-hideInterior.set(blockData.slice(0, 255).map(data => data.hideInterior))
+const { max, abs } = Math
 const shadow = new Uint8Array(blockData.map(data => data.shadow ? 1 : 0))
-const lightLevels = new Uint8Array(blockData.map(data => data.lightLevel || 0))
-
-// Save the coords for a small sphere used to carve out caves
-let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,-1,-2,1,0,-2,1,1,-1,-2,-1,-1,-2,0,-1,-2,1,-1,-1,-2,-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,2,-1,0,-2,-1,0,-1,-1,0,0,-1,0,1,-1,0,2,-1,1,-2,-1,1,-1,-1,1,0,-1,1,1,-1,1,2,-1,2,-1,-1,2,0,-1,2,1,0,-2,-1,0,-2,0,0,-2,1,0,-1,-2,0,-1,-1,0,-1,0,0,-1,1,0,-1,2,0,0,-2,0,0,-1,0,0,0,0,0,1,0,0,2,0,1,-2,0,1,-1,0,1,0,0,1,1,0,1,2,0,2,-1,0,2,0,0,2,1,1,-2,-1,1,-2,0,1,-2,1,1,-1,-2,1,-1,-1,1,-1,0,1,-1,1,1,-1,2,1,0,-2,1,0,-1,1,0,0,1,0,1,1,0,2,1,1,-2,1,1,-1,1,1,0,1,1,1,1,1,2,1,2,-1,1,2,0,1,2,1,2,-1,-1,2,-1,0,2,-1,1,2,0,-1,2,0,0,2,0,1,2,1,-1,2,1,0,2,1,1])
 
 // {
 // 	let blocks = []
@@ -3730,14 +5043,6 @@ let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,
 // 	sphere = new Int8Array(blocks)
 // }
 // console.log(sphere)
-
-const carveSphere = (x, y, z, world) => {
-	if (y > 3) {
-		for (let i = 0; i < sphere.length; i += 3) {
-			world.setWorldBlock(x + sphere[i], y + sphere[i + 1], z + sphere[i + 2], blockIds.air, true)
-		}
-	}
-}
 
 let getShadows
 {
@@ -3796,7 +5101,7 @@ let getShadows
  * @param {Number} b The second index of the 4 numbers
  * @param {Number} c The third index of the 4 numbers
  * @param {Number} d The fourth index of the 4 numbers
- * @returns 
+ * @returns {Number} A number between 0 and 1 indicating the light at the vertex
  */
 const average = (l, a, b, c, d) => {
 	a = l[a]
@@ -4000,44 +5305,170 @@ class Chunk {
 	 * @param {Number} x
 	 * @param {Number} z
 	 * @param {World} world
-	 * @param {{vertex_array_object: OES_vertex_array_object}} glExtensions
-	 * @param {WebGLRenderingContext} gl
-	 * @param {Object} glCache
 	 * @param {Boolean} superflat
 	 * @param {Boolean} caves
+	 * @param {{gl:WebGLRenderingContext,glExtensions:{vertex_array_object: OES_vertex_array_object},glCache:{},indexBuffer:WebGLBuffer,bigArray:Float32Array}} glGlobals
 	 */
-	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
+	constructor(x, z, world, superflat, spawnCaves, spawnTrees, glGlobals) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
 		this.minY = 255
-		this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
-		this.optimized = false
-		this.generated = false // Terrain
-		this.populated = superflat // Details and ores
-		this.lit = false
-		this.lightDropped = false
+		// const buffer = new ArrayBuffer(65536 * 3 + 256)
+		// this.blocks = new Int16Array(buffer, 0, 65536)
+		// this.tops = new Uint8Array(buffer, this.blocks.byteLength, 256)
+		// this.light = new Uint8Array(buffer, this.blocks.byteLength + 256, 65536)
+		// this.visFlags = new Int8Array(65536) // 0ba0nstbew
+		this.originalBlocks = new Int16Array(0)
+		this.superflat = superflat // Trees, caves, and ores
+		this.spawnCaves = spawnCaves
+		this.spawnTrees = spawnTrees
 		this.edited = false
 		this.loaded = false
 		// vao for this chunk
-		this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
-		this.caves = !caves
 		this.world = world
-		this.gl = gl
-		this.glCache = glCache
-		this.glExtensions = glExtensions
+		this.glGlobals = glGlobals
 		this.doubleRender = false
-		this.blocks = new Int16Array(16*16*256)
-		this.originalBlocks = new Int16Array(0)
-		this.light = new Uint8Array(16*16*256)
-		this.renderData = []
+		/** @type {Number[]} */ this.renderData = []
 		this.renderLength = 0
-		this.hasBlockLight = false
+		this.optimized = false
+		this.countNeighbors() // May not be 0 if the player is moving back and forth
+		this.generating = false
 
-		// These are temporary and will be removed after the chunk is generated.
-		this.blockSpread = []
-		this.visFlags = new Int8Array(0)
-		this.shadowFlags = new Int8Array(0)
+		// When something this chunk does influences a neighbor chunk, we'll store it here.
+		// The order is (-x, -z), (-x, z) (-x, +z), (x, -z), (x, z) (x, +z), (+x, -z), (+x, z) (+x, +z) where (x, z) is this chunk and is always empty
+		// The data will be bit-packed as (index << 16 | value) where index is the position in the neighbor chunk.
+		/** @type {Int32Array[]} */ this.neighborBlockEdits = []
+	}
+	// startGeneration() {
+	// 	if (this.step === 0) {
+	// 		window.parent.doWork({
+	// 			stage1: true,
+	// 			x: this.x,
+	// 			z: this.z,
+	// 			superflat: this.superflat,
+	// 			rivers: this.world.rivers,
+	// 			caves: this.spawnCaves,
+	// 			spawnTrees: this.spawnTrees
+	// 		}, this)
+	// 		this.step = 1
+	// 	}
+	// 	else if (this.step === 2) this.checkStep2()
+	// 	else if (this.step === 4) this.checkStep4()
+	// }
+	// step1Done(results) {
+	// 	/** @type {Int16Array} */ this.blocks = results.blocks
+	// 	/** @type {Uint8Array} */ this.tops = results.tops
+	// 	this.neighborBlockEdits = results.neighbors
+	// 	this.doubleRender = results.doubleRender
+	// 	this.maxY = results.maxY
+	// 	this.step = 2
+
+	// 	for (let chunk of [
+	// 		this.world.getChunk(this.x - 16, this.z - 16),
+	// 		this.world.getChunk(this.x - 16, this.z + 16),
+	// 		this.world.getChunk(this.x + 16, this.z - 16),
+	// 		this.world.getChunk(this.x + 16, this.z + 16),
+	// 		this.world.getChunk(this.x, this.z - 16),
+	// 		this.world.getChunk(this.x, this.z + 16),
+	// 		this.world.getChunk(this.x - 16, this.z),
+	// 		this.world.getChunk(this.x + 16, this.z)
+	// 	]) {
+	// 		if (chunk) chunk.checkStep2()
+	// 	}
+	// 	this.checkStep2()
+	// }
+	// checkStep2() {
+	// 	if (this.step !== 2) return
+	// 	this.countNeighbors()
+	// 	if (this.step2Neighbors === 8) {
+	// 		this.load()
+	// 		window.parent.doWork({
+	// 			stage2: true,
+	// 			blocks: this.blocks,
+	// 			tops: this.tops,
+	// 			maxY: this.maxY
+	// 		}, this, [this.blocks.buffer], true)
+	// 		this.step = 3
+	// 	}
+	// }
+	// step3Done(results) {
+	// 	this.blocks = results.blocks
+	// 	this.tops = results.tops
+	// 	/** @type {Uint8Array} */ this.light = results.light
+	// 	/** @type {Int8Array} */ this.visFlags = results.flags
+	// 	this.renderData = results.renderData
+	// 	this.step = 4
+
+	// 	for (let chunk of [
+	// 		this.world.getChunk(this.x - 16, this.z - 16),
+	// 		this.world.getChunk(this.x - 16, this.z + 16),
+	// 		this.world.getChunk(this.x + 16, this.z - 16),
+	// 		this.world.getChunk(this.x + 16, this.z + 16),
+	// 		this.world.getChunk(this.x, this.z - 16),
+	// 		this.world.getChunk(this.x, this.z + 16),
+	// 		this.world.getChunk(this.x - 16, this.z),
+	// 		this.world.getChunk(this.x + 16, this.z)
+	// 	]) {
+	// 		if (chunk) chunk.checkStep4()
+	// 	}
+	// 	this.checkStep4()
+	// }
+	// checkStep4(indexBuffer, bigArray) {
+	// 	if (this.step !== 4) return
+	// 	this.countNeighbors()
+	// 	if (this.step4Neighbors === 8) {
+	// 		this.optimize()
+	// 		this.genMesh(indexBuffer, bigArray)
+	// 		this.step = 5
+	// 		this.world.chunkGenQueue.push(this)
+	// 	}
+	// 	// this.world.generate()
+	// }
+	countNeighbors() {
+		this.loadedNeighbors = 0
+		for (let chunk of [
+			this.world.getChunk(this.x - 16, this.z - 16),
+			this.world.getChunk(this.x - 16, this.z + 16),
+			this.world.getChunk(this.x + 16, this.z - 16),
+			this.world.getChunk(this.x + 16, this.z + 16),
+			this.world.getChunk(this.x, this.z - 16),
+			this.world.getChunk(this.x, this.z + 16),
+			this.world.getChunk(this.x - 16, this.z),
+			this.world.getChunk(this.x + 16, this.z)
+		]) {
+			if (chunk && chunk.loaded) this.loadedNeighbors++
+		}
+	}
+	/** Called when the chunk has finished generating in the web workers.
+	 * This chunk and its 8 neighbors all see if they now have 8 loaded neighbors to finish generating.
+	*/
+	onload() {
+		this.loaded = true
+		this.loadedNeighbors = 0
+		for (let chunk of [
+			this.world.getChunk(this.x - 16, this.z - 16),
+			this.world.getChunk(this.x - 16, this.z + 16),
+			this.world.getChunk(this.x + 16, this.z - 16),
+			this.world.getChunk(this.x + 16, this.z + 16),
+			this.world.getChunk(this.x, this.z - 16),
+			this.world.getChunk(this.x, this.z + 16),
+			this.world.getChunk(this.x - 16, this.z),
+			this.world.getChunk(this.x + 16, this.z)
+		]) {
+			if (chunk) {
+				if (chunk.loaded) this.loadedNeighbors++
+				chunk.loadedNeighbors++
+				if (chunk.loaded && chunk.loadedNeighbors === 8) chunk.finishGenerating()
+			}
+		}
+		if (this.loadedNeighbors === 8) {
+			this.finishGenerating()
+		}
+	}
+	finishGenerating() {
+		this.optimize()
+		this.genMesh()
 	}
 	getBlock(x, y, z) {
 		// if (y < 0 || y > 255) debugger
@@ -4058,6 +5489,7 @@ class Chunk {
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
+
 	deleteBlock(x, y, z, user) {
 		if (user && !this.edited) {
 			this.edited = true
@@ -4068,6 +5500,7 @@ class Chunk {
 		this.minY = y < this.minY ? y : this.minY
 	}
 
+	/*
 	processBlocks() {
 		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
 		const { blocks, maxY, blockSpread, world } = this
@@ -4081,10 +5514,10 @@ class Chunk {
 		const flags = new Int8Array((maxY + 1) * 256)
 		this.visFlags = flags
 		// this.shadowFlags = new Int32Array(flags.length >> 5)
+		// for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
 		for (let i = flags.length - 256; i < flags.length; i++) {
 			flags[i] = 8 // Up is Air
 		}
-		for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
 		for (let i = 256; i < flags.length; i++) {
 			const x = i >> 4 & 15
 			const z = i & 15
@@ -4135,7 +5568,7 @@ class Chunk {
 			}
 
 			// Some lighting stuff
-			const light = lightLevels[255 & b]
+			const light = lightLevels[b & 255]
 			if (light) {
 				if (!blockSpread[light]) blockSpread[light] = []
 				blockSpread[light].push(this.x + x, i >> 8, this.z + z)
@@ -4182,10 +5615,10 @@ class Chunk {
 		this.blockSpread = null
 
 		// Drop light in neighboring chunk borders so we won't need to spread into them as much.
-		world.getChunk(this.x - 1, this.z).dropLight()
-		world.getChunk(this.x + 17, this.z).dropLight()
-		world.getChunk(this.x, this.z - 1).dropLight()
-		world.getChunk(this.x, this.z + 17).dropLight()
+		world.getChunk(this.x - 16, this.z).dropLight()
+		world.getChunk(this.x + 16, this.z).dropLight()
+		world.getChunk(this.x, this.z - 16).dropLight()
+		world.getChunk(this.x, this.z + 16).dropLight()
 
 		// Spread the light to places where the vertical columns stopped earlier, plus chunk borders
 		let spread = []
@@ -4213,6 +5646,70 @@ class Chunk {
 		}
 
 		this.lit = true
+	}*/
+	/**
+	 * Checks and pulls light from neighboring chunks along borders.
+	 */
+	checkBorderLight() {
+		const chunkNX = this.world.getChunk(this.x - 16, this.z)
+		const chunkPX = this.world.getChunk(this.x + 16, this.z)
+		const chunkNZ = this.world.getChunk(this.x, this.z - 16)
+		const chunkPZ = this.world.getChunk(this.x, this.z + 16)
+
+		const { light, blocks } = this
+
+		for (let y = 1; y < 256; y++) {
+			for (let i = 0; i < 16; i++) {
+				{
+					// X border (x = 0)
+					let x = 0, z = i
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkNX.light[index + 15 * 16]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// X border (x = 15)
+					let x = 15, z = i
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkPX.light[index - 15 * 16]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// Z border (z = 0)
+					let x = i, z = 0
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkNZ.light[index + 15]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// Z border (z = 15)
+					let x = i, z = 15
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkPZ.light[index - 15]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+			}
+		}
 	}
 	setLight(x, y, z, level) {
 		const i = y * 256 + x * 16 + z
@@ -4220,7 +5717,6 @@ class Chunk {
 		// debugger
 	}
 	setBlockLight(x, y, z, level) {
-		this.hasBlockLight = true
 		const i = y * 256 + x * 16 + z
 		this.light[i] = level << 4 | this.light[i] & 15
 	}
@@ -4327,7 +5823,9 @@ class Chunk {
 			}
 		}
 	}
-	generate() {
+	/*generateStage1() {
+		if (this.caves || this.caveData) return
+
 		if (this.generated) return
 		const cx = this.x
 		const cz = this.z
@@ -4338,7 +5836,7 @@ class Chunk {
 		const smoothness = 0.01 // How close hills and valleys are together
 		const hilliness = 80 // Height of the hills
 		const extra = 30 // Extra blocks stacked onto the terrain
-		const superflat = this.populated
+		const superflat = this.superflat
 		let gen = 0
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
@@ -4380,31 +5878,44 @@ class Chunk {
 		if (this.doubleRender) this.world.doubleRenderChunks.push(this)
 		this.generated = true
 		this.getCaveData() // Queue up the multithreaded cave gen
-	}
+	}*/
 	optimize() {
 		const { blocks, renderData, world, x, z, maxY } = this
 		const flags = this.visFlags // Computed in this.processBlocks()
 		this.visFlags = null
+		// console.log(renderData)
 
 		// Load adjacent chunks blocks
-		const chunkN = world.getChunk(x, z + 17).blocks
-		const chunkS = world.getChunk(x, z - 1).blocks
-		const chunkE = world.getChunk(x + 17, z).blocks
-		const chunkW = world.getChunk(x - 1, z).blocks
+		const chunkN = world.getChunk(x, z + 16).blocks
+		const chunkS = world.getChunk(x, z - 16).blocks
+		const chunkE = world.getChunk(x + 16, z).blocks
+		const chunkW = world.getChunk(x - 16, z).blocks
 		// let max = (maxY - 1) * 256
 		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
 
 		// Culling faces on chunk borders as needed
+		const updateEdge = (chunk, index, thisIndex, direction, flag, otherDirection) => {
+			const data = blockData[chunk[index]]
+			if (data.hideInterior && data.id === this.blocks[thisIndex]) return false
+
+			const thisData = blockData[blocks[thisIndex]]
+			if ((data.transparent || !data.isCube && !data.shape.cull[direction])
+				&& (thisData.isCube || thisData.shape.cull[otherDirection])) {
+				flags[thisIndex] ^= flag
+			}
+		}
+
+		// Fix edge flags
 		for (let y = 1; y <= maxY; y++) {
 			let indexN = y * 256
 			let indexS = indexN + 15
 			let indexE = indexN
 			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				if (blockData[chunkN[indexN]].transparent || !blockData[chunkN[indexN]].shape.cull.south) flags[indexN + 15] ^= 32
-				if (blockData[chunkS[indexS]].transparent || !blockData[chunkS[indexS]].shape.cull.north) flags[indexS - 15] ^= 16
-				if (blockData[chunkE[indexE]].transparent || !blockData[chunkE[indexE]].shape.cull.west) flags[indexE + 240] ^= 2
-				if (blockData[chunkW[indexW]].transparent || !blockData[chunkW[indexW]].shape.cull.east) flags[indexW - 240] ^= 1
+				updateEdge(chunkN, indexN, indexS, "south", 32, "north")
+				updateEdge(chunkS, indexS, indexN, "north", 16, "south")
+				updateEdge(chunkE, indexE, indexW, "west", 2, "east")
+				updateEdge(chunkW, indexW, indexE, "east", 1, "west")
 				indexN += 16
 				indexS += 16
 				indexE++
@@ -4412,22 +5923,25 @@ class Chunk {
 			}
 		}
 
-		//Check all the blocks in the chunk to see if they're visible.
-		const cube = shapes.cube.cull
-		for (let index = 256; index < flags.length; index++) {
-			const cull = blockData[blocks[index]].shape.cull
-			if (cull !== cube) {
-				if (!cull.bottom) flags[index] |= 4
-				if (!cull.top)    flags[index] |= 8
-				if (!cull.south)  flags[index] |= 16
-				if (!cull.north)  flags[index] |= 32
-				if (!cull.west)   flags[index] |= 1
-				if (!cull.east)   flags[index] |= 2
-			}
-			if (flags[index] > 0) {
-				renderData[this.renderLength++] = index << 16 | flags[index] << 10
+		// Fill in edge renderData
+		for (let y = 1; y <= maxY; y++) {
+			let indexN = y * 256
+			let indexS = indexN + 15
+			let indexE = indexN
+			let indexW = indexN + 240
+			for (let i = 0; i < 16; i++) {
+				if (flags[indexN] > 0) renderData.push(indexN << 16 | flags[indexN] << 10)
+				if (flags[indexS] > 0) renderData.push(indexS << 16 | flags[indexS] << 10)
+				if (flags[indexE] > 0) renderData.push(indexE << 16 | flags[indexE] << 10)
+				if (flags[indexW] > 0) renderData.push(indexW << 16 | flags[indexW] << 10)
+				indexN += 16
+				indexS += 16
+				indexE++
+				indexW++
 			}
 		}
+
+		// Baseline
 		this.minY = renderData[0] >>> 24
 
 		// The bottom layer of bedrock is only ever visible on top
@@ -4440,14 +5954,10 @@ class Chunk {
 			}
 		}
 		this.renderLength = renderData.length
-
-		if (!world.meshQueue.includes(this)) {
-			world.meshQueue.push(this)
-		}
 		this.optimized = true
 	}
 	render(p, global) {
-		const { glExtensions, gl } = this
+		const { glExtensions, gl } = this.glGlobals
 		if (this.buffer === undefined) {
 			return
 		}
@@ -4470,7 +5980,8 @@ class Chunk {
 		z += this.z
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
-		const cull = blockData[blockState].shape.cull
+		const data = blockData[blockState]
+		const cull = data.shape.cull
 
 		let w = blockData[i ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)]
 		let e = blockData[i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)]
@@ -4487,7 +5998,7 @@ class Chunk {
 		+  (s.transparent || !s.shape.cull.north  || !cull.south) * 16
 		+  (n.transparent || !n.shape.cull.south  || !cull.north) * 32
 
-		if (blockState < 256 && hideInterior[blockState]) {
+		if (blockState < 256 && data.hideInterior) {
 			visible ^= w === blockState
 			| (e === blockState) << 1
 			| (d === blockState) << 2
@@ -4529,9 +6040,9 @@ class Chunk {
 			// Wasn't visible before, is visible after.
 			index = this.renderLength++
 		}
-		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
+		this.renderData[index] = pos | visible << 10 // | this.paletteMap[blockState]
 	}
-	getCaveData() {
+	/*getCaveData() {
 		if (this.caves || this.caveData) return
 		this.caveData = new Promise(resolve => {
 			window.parent.doWork({
@@ -4596,9 +6107,9 @@ class Chunk {
 		this.caveData = null
 	}
 	populate(details) {
-		if (this.populated) return
+		if (this.superflat) return
 		const { world } = this
-		randomSeed(hash(this.x, this.z) * 210000000)
+		randomSeed(hash(this.x, this.z) * 210000000) // Hash is seeded with the world seed, so this doesn't need to be.
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
 		// Spawn trees and ores
@@ -4807,8 +6318,8 @@ class Chunk {
 			}
 		}
 
-		this.populated = true
-	}
+		this.superflat = true
+	}*/
 	getSurroundingBlocks(loc, sides, blocks27, lights27) {
 		// Used in this.genMesh()
 		// Note that, while this *does* do more work than simply loading the blocks/lights as they're needed,
@@ -4949,11 +6460,13 @@ class Chunk {
 			}
 		}
 	}
-	genMesh(indexBuffer, bigArray) {
-		const { glExtensions, gl, glCache, renderLength, renderData } = this
+	genMesh() {
+		const { renderLength, renderData } = this
+		const { glExtensions, gl, glCache, indexBuffer, bigArray } = this.glGlobals
 		let index = 0
 		if (!this.renderLength) {
-			return index
+			// console.log(this.x, this.z, this.x / 16, this.z / 16, "No render data")
+			return
 		}
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
@@ -5070,20 +6583,15 @@ class Chunk {
 
 		if (!this.buffer) {
 			this.buffer = gl.createBuffer()
+			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
+			if (++this.world.generatedChunks === 3000) {
+				let ms = Date.now() - this.world.initTime
+				console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
+			}
 		}
 		let data = new Float32Array(bigArray.buffer, 0, index)
 
-		// let maxY = 0
-		// let minY = 255
-		// for (let i = 1; i < data.length; i += 6) {
-		// 	const y = data[i]
-		// 	maxY = y > maxY ? y : maxY
-		// 	minY = y < minY ? y : minY
-		// }
-		// this.maxY = maxY
-		// this.minY = minY
-
-		this.faces = data.length / 32
+		this.faces = index >> 5
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
@@ -5115,7 +6623,7 @@ class Chunk {
 			let x = i >> 3 & 7
 			let z = i & 7
 
-			// 3 copies of the section, all oriented in different directions so we can see which one compresses the most
+			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
 			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
 			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
 			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
@@ -5239,6 +6747,31 @@ class Chunk {
 	}
 	load() {
 		if (this.loaded) return
+		// Load blocks that the neighbors have edited.
+		let blocks = [
+			this.world.getChunk(this.x - 16, this.z - 16).neighborBlockEdits[8],
+			this.world.getChunk(this.x - 16, this.z).neighborBlockEdits[7],
+			this.world.getChunk(this.x - 16, this.z + 16).neighborBlockEdits[6],
+			this.world.getChunk(this.x, this.z - 16).neighborBlockEdits[5],
+			this.world.getChunk(this.x, this.z + 16).neighborBlockEdits[3],
+			this.world.getChunk(this.x + 16, this.z - 16).neighborBlockEdits[2],
+			this.world.getChunk(this.x + 16, this.z).neighborBlockEdits[1],
+			this.world.getChunk(this.x + 16, this.z + 16).neighborBlockEdits[0],
+		]
+		for (let arr of blocks) {
+			if (arr.length) {
+				for (let i = 0; i < arr.length; i++) {
+					let data = arr[i]
+					this.blocks[data >>> 16] = data & 0xffff
+					const y = data >>> 24
+					const xz = data >> 16 & 255
+					if (y > this.tops[xz]) this.tops[xz] = y
+					this.maxY = max(this.maxY, y) // Leaves are usually higher than than the ground, unless a chunk previously
+				}
+			}
+		}
+
+		// Load player edits if they exist
 		const chunkX = this.x >> 4
 		const chunkZ = this.z >> 4
 		const str = `${chunkX},${chunkZ}`
@@ -5350,7 +6883,10 @@ class Chunk {
 				}
 			}
 		}
-		if (this.buffer) this.gl.deleteBuffer(this.buffer)
+		if (this.buffer) {
+			this.glGlobals.glExtensions.vertex_array_object.deleteVertexArrayOES(this.vao)
+			this.glGlobals.gl.deleteBuffer(this.buffer)
+		}
 	}
 }
 
@@ -5729,11 +7265,12 @@ window.parent.exports["src/js/player.js"] = { Player }}
 			"Added: Inventory with 29 blocks",
 			"Added: Chunks with chunk-based rendering",
 			"Added: Mouse controls with screen lock",
-			"Added: Occular occlusion (shadows in block corners)",
+			"Added: Ambient occlusion (shadows in block corners)",
 			"Added: Frustum culling (chunks behind the player aren't rendered)",
-			"Stopped: rendering hidden block faces",
 			"Removed: Processing.js dependency (everything is raw WebGL)",
 			"Removed: Save codes (world format changed)",
+			"Optimized: The entire world is no longer re-generated every frame",
+			"Optimized: Hidden block faces are no longer rendered",
 			"Optimized: Everything is faster",
 		]
 	},
@@ -5762,7 +7299,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 		creditName: "Willard",
 		creditLink: "https://www.khanacademy.org/profile/willllard/projects",
 		changes: [
-			"Fixed: People getting stuck at Y=7",
+			"Fixed: People getting stuck to the ground at Y=7",
 			"Fixed: Right click getting stuck on Safari",
 			"Fixed: Inventory looked really weird on Firefox",
 			"Optimized: Hotbar is no longer drawn every frame",
@@ -5924,7 +7461,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 			"Added: \"Controls\" page in Options",
 			"Added: \"Change Log\" page to the main menu",
 			"Removed: Ctrl clicking no longer places blocks by default",
-			"Fixed: Rendering bug when partial blocks are placed next to solid blocks",
+			"Fixed: Rendering bug when partial blocks are placed next to solid blocks (the partial block allowed x-raying through the solid block)",
 			"Broken: Smooth lighting removed from inner faces of partial blocks. The previous bug was hiding a lighting bug, and this was my solution.",
 			"Fixed: Inventory glitch on Khan Academy. Not sure why it wasn't broken everywhere.",
 			"Changed: Save strings are like 1% smaller. I compressed repeating characters to avoid KA's spam filter when posting saves in comments.",
@@ -5935,7 +7472,7 @@ window.parent.exports["src/js/player.js"] = { Player }}
 changeList.sort((a, b) => b.date.localeCompare(a.date))
 
 const list = document.getElementById("changelog-list")
-for (let {date, version, creditName, creditLink, versionLink, changes} of changeList) {
+for (let { date, version, creditName, creditLink, versionLink, changes } of changeList) {
 	let li = document.createElement("li")
 	li.innerHTML = `Version: ${versionLink ? `<a href=${versionLink} target="_blank">${version}</a>` : version}<br>
 		Date: ${date}<br>
@@ -5951,6 +7488,172 @@ window.parent.exports["src/js/changelog.js"] = { changelog }}
 		<script id="src/main.js" type="application/javascript">
 {// import './index.css'
 
+// Import WebWorker code
+const workerCode = document.getElementById("src/workers/Caves.js").textContent
+
+// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
+if (!window.parent.workers) {
+	const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+	const workers = []
+	window.parent.workers = workers
+	// const jobQueue = []
+	// const priorityQueue = []
+	const workerCount = Math.max(navigator.hardwareConcurrency - 1 || 0, 3)
+	// const send = (worker, data, buffers) => {
+	// 	if (buffers) worker.postMessage(data, buffers)
+	// 	else worker.postMessage(data)
+	// }
+
+	// Establish worker-to-worker communication
+	const channelPorts = []
+	const chunks = new Map()
+	for (let i = 0; i < workerCount; i++) channelPorts[i] = []
+	for (let i = 0; i < workerCount; i++) {
+		channelPorts[i][i] = null // Can't message yourself
+		for (let j = i + 1; j < workerCount; j++) {
+			let channel = new MessageChannel()
+			channelPorts[i][j] = channel.port1
+			channelPorts[j][i] = channel.port2
+		}
+	}
+
+	for (let i = 0; i < workerCount; i++) { // Generate between 3 and (processors - 1) workers.
+		let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
+		worker.id = i
+		worker.ready = false
+		workers.push(worker)
+
+		worker.onerror = (e) => {
+			console.error(`Worker ${i + 1} error:`, e.message)
+		}
+		worker.onmessageerror = (e) => {
+			console.error(`Worker ${i + 1} message error:`, e)
+		}
+		worker.onmessage = e => {
+			const { data } = e
+			if (data === "ready" && !worker.ready) {
+				console.log("Worker", i+1, "is ready!")
+				worker.ready = true
+				worker.ids = [1, 0]
+				worker.chunks = [null, null]
+
+				const safeShapes = new Map() // Only 25 shapes surprisingly enough. 8(stairs)+2(slabs)+4(cubes)+4(doors)+4(players)+1(flower)+1(lantern)+1(fence)
+				const workerSafeBlockData = blockData.map(block => {
+					// eslint-disable-next-line no-unused-vars
+					const { iconImg, icon, textures, ...safeData } = block
+					let safeShape = safeShapes.get(block.shape)
+					if (!safeShape) {
+						// eslint-disable-next-line no-unused-vars
+						const { variants, getShape, buffer, ...shape } = block.shape
+						safeShape = shape
+						safeShapes.set(block.shape, shape)
+					}
+					safeData.shape = safeShape
+					return safeData
+				})
+				worker.postMessage({
+					blockData: workerSafeBlockData,
+					blockIds,
+					workerID: worker.id,
+					workerPorts: channelPorts[worker.id]
+				}, channelPorts[worker.id].filter(n => n))
+				return
+			}
+
+			// Worker is sending chunk data to the main thread
+			if (data.tops) {
+				/*
+					x: this.x,
+					z: this.z,
+					maxY: this.maxY,
+					minY: this.minY,
+					tops: this.tops,
+					light: this.light,
+					flags: this.flags,
+					blocks: this.blocks,
+					renderData: this.renderData,
+					doubleRender: this.doubleRender
+				*/
+				const chunk = chunks.get(`${data.x},${data.z}`)
+				Object.assign(chunk, data)
+				chunk.onload()
+			}
+
+			// if (data.id !== undefined) {
+			// 	// Give the chunk its results
+			// 	const chunk = worker.chunks[data.id]
+			// 	if (chunk.step === 1) chunk.step1Done(data) // This can rarely reach step 3 instantly when player is moving
+			// 	else if (chunk.step === 3) chunk.step3Done(data)
+
+			// 	worker.chunks[data.id] = null
+			// 	worker.ids.push(data.id)
+			// }
+			// else return // Not a world gen job
+
+			// Start next job
+			// if (priorityQueue.length) {
+			// 	const task = priorityQueue.shift()
+			// 	const id = worker.ids.pop()
+			// 	task[0].id = id
+			// 	worker.chunks[id] = task[1]
+			// 	send(worker, task[0], task[2])
+			// }
+			// else if (jobQueue.length) {
+			// 	const task = jobQueue.shift()
+			// 	const id = worker.ids.pop()
+			// 	task[0].id = id
+			// 	worker.chunks[id] = task[1]
+			// 	send(worker, task[0], task[2])
+			// }
+		}
+	}
+
+	// window.parent.doWork = (data, chunk, buffers, priority = false) => {
+	// 	for (let worker of workers) {
+	// 		if (worker.ids.length === 2) {
+	// 			data.id = worker.ids.pop()
+	// 			worker.chunks[data.id] = chunk
+	// 			send(worker, data, buffers)
+	// 			return
+	// 		}
+	// 	}
+	// 	for (let worker of workers) {
+	// 		if (worker.ids.length === 1) {
+	// 			data.id = worker.ids.pop()
+	// 			worker.chunks[data.id] = chunk
+	// 			send(worker, data, buffers)
+	// 			return
+	// 		}
+	// 	}
+	// 	if (priority) priorityQueue.push([data, chunk, buffers])
+	// 	else jobQueue.push([data, chunk, buffers])
+	// }
+
+	window.parent.generateChunks = (sortedChunkList, loadFrom) => {
+		const splitList = []
+		const loadList = []
+		for (let i = 0; i < workerCount; i++) {
+			splitList[i] = []
+			loadList[i] = {}
+		}
+		for (let i = 0; i < sortedChunkList.length; i++) {
+			const id = i % workerCount
+			const chunk = sortedChunkList[i]
+			const coords = `${chunk.x},${chunk.z}`
+			chunks.set(coords, chunk)
+			splitList[id].push(coords)
+			if (loadFrom[chunk]) {
+				loadList[id][chunk] = loadFrom[chunk]
+			}
+		}
+
+		for (let i = 0; i < workerCount; i++) workers[i].postMessage({
+			jobList: splitList,
+			saves: loadList[i]
+		})
+	}
+}
+
 // GLSL Shader code
 const vertexShaderSrc3D = document.getElementById("src/shaders/blockVert.glsl").textContent
 const fragmentShaderSrc3D = document.getElementById("src/shaders/blockFrag.glsl").textContent
@@ -5960,9 +7663,6 @@ const vertexShaderSrc2D = document.getElementById("src/shaders/2dVert.glsl").tex
 const fragmentShaderSrc2D = document.getElementById("src/shaders/2dFrag.glsl").textContent
 const vertexShaderSrcEntity = document.getElementById("src/shaders/entityVert.glsl").textContent
 const fragmentShaderSrcEntity = document.getElementById("src/shaders/entityFrag.glsl").textContent
-
-// Import WebWorker code
-const workerCode = document.getElementById("src/workers/Caves.js").textContent
 
 // imports
 const { seedHash, randomSeed, noiseProfile } = window.parent.exports["src/js/random.js"]
@@ -6030,51 +7730,6 @@ const MineKhan = async () => {
 			str += String.fromCharCode(this[i])
 		}
 		return compressString(btoa(str))
-	}
-
-	let yieldThread
-	{
-		// await yieldThread() will pause the current task until the event loop is cleared
-		const channel = new MessageChannel()
-		let res
-		channel.port1.onmessage = () => res()
-		yieldThread = () => {
-			return new Promise(resolve => {
-				res = resolve
-				channel.port2.postMessage("")
-			})
-		}
-	}
-
-	// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
-	if (!win.workers) {
-		const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
-		win.workers = []
-		const jobQueue = []
-		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
-		for (let i = 0; i < workerCount; i++) { // Generate between 1 and (processors - 1) workers.
-			let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
-			worker.onmessage = e => {
-				if (worker.resolve) worker.resolve(e.data)
-				worker.resolve = null
-				if (jobQueue.length) {
-					let [data, resolve] = jobQueue.shift()
-					worker.resolve = resolve
-					worker.postMessage(data)
-				}
-				else win.workers.push(worker)
-			}
-			win.workers.push(worker)
-		}
-
-		win.doWork = (data, resolve) => {
-			if (win.workers.length) {
-				let worker = win.workers.pop()
-				worker.resolve = resolve
-				worker.postMessage(data)
-			}
-			else jobQueue.push([data, resolve])
-		}
 	}
 
 	/**
@@ -6156,6 +7811,7 @@ const MineKhan = async () => {
 	/**
 	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
 	let glExtensions
+	let glCache, glGlobals
 
 	/**
 	 * @type {(time: Number, view: Matrix) => {}}
@@ -6175,7 +7831,6 @@ const MineKhan = async () => {
 		controls: {}
 		// inventorySort: "blockid"
 	}
-	let generatedChunks
 	let mouseX, mouseY, mouseDown
 	let width = win.innerWidth
 	let height = win.innerHeight
@@ -6191,7 +7846,7 @@ const MineKhan = async () => {
 	canvas.style.backgroundImage = background
 
 	let dirtBuffer
-	let bigArray = win.bigArray || new Float32Array(1000000)
+	let bigArray = win.bigArray || new Float32Array(2000000)
 	win.bigArray = bigArray
 
 	const use2d = () => {
@@ -6388,7 +8043,7 @@ const MineKhan = async () => {
 		if (html[screen] && html[screen].onexit) {
 			html[screen].onexit()
 		}
-		
+
 		screen = newScene
 		mouseDown = false
 		drawScreens[screen]()
@@ -6398,7 +8053,6 @@ const MineKhan = async () => {
 	let hitBox = {}
 	let holding = 0
 	let Key = {}
-	let glCache
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
@@ -6422,7 +8076,7 @@ const MineKhan = async () => {
 				settings.controls[name] = [name, key, shift, ctrl, alt]
 				saveToDB("settings", settings).catch(e => console.error(e))
 			}
-			Object.assign(controlMap[name], {key, shift, ctrl, alt})
+			Object.assign(controlMap[name], { key, shift, ctrl, alt })
 			controlMap[name].button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
 		}
 		else {
@@ -6467,7 +8121,6 @@ const MineKhan = async () => {
 					event.stopPropagation()
 					event.preventDefault()
 					let buttonName = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + event.button
-					console.log(event.button, event)
 					setControl(name, buttonName, event.shiftKey, event.ctrlKey, event.altKey)
 					button.value = (event.ctrlKey ? "Ctrl + " : "") + (event.altKey ? "Alt + " : "") + (event.shiftKey ? "Shift + " : "") + buttonName
 				}
@@ -6527,7 +8180,6 @@ const MineKhan = async () => {
 	setControl("placeBlock", "rightMouse")
 	setControl("pickBlock", "middleMouse")
 	setControl("cycleDebug", "F3")
-	//}
 
 	const play = () => {
 		canvas.onblur()
@@ -6587,6 +8239,7 @@ const MineKhan = async () => {
 				slabBlock.transparent = true
 				slabBlock.name += " Slab"
 				slabBlock.shape = shapes.slab
+				slabBlock.isCube = false
 				slabBlock.flip = true
 				blockData[id | SLAB] = slabBlock
 				let v = slabBlock.shape.variants
@@ -6594,6 +8247,7 @@ const MineKhan = async () => {
 					if (v[j]) {
 						let block = new BlockData(slabBlock, id | SLAB | j << 10, false)
 						block.shape = v[j]
+						block.isCube = false
 						blockData[id | SLAB | j << 10] = block
 					}
 				}
@@ -6602,6 +8256,7 @@ const MineKhan = async () => {
 				stairBlock.transparent = true
 				stairBlock.name += " Stairs"
 				stairBlock.shape = shapes.stair
+				stairBlock.isCube = false
 				stairBlock.rotate = true
 				stairBlock.flip = true
 				blockData[id | STAIR] = stairBlock
@@ -6610,6 +8265,7 @@ const MineKhan = async () => {
 					if (v[j]) {
 						let block = new BlockData(stairBlock, id | STAIR | j << 10, false)
 						block.shape = v[j]
+						block.isCube = false
 						blockData[id | STAIR | j << 10] = block
 					}
 				}
@@ -6644,15 +8300,6 @@ const MineKhan = async () => {
 				}
 			}
 		}
-	}
-	let indexOrder = new Uint32Array(bigArray.length / 6 | 0)
-	for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
-		indexOrder[i + 0] = 0 + j
-		indexOrder[i + 1] = 1 + j
-		indexOrder[i + 2] = 2 + j
-		indexOrder[i + 3] = 0 + j
-		indexOrder[i + 4] = 2 + j
-		indexOrder[i + 5] = 3 + j
 	}
 
 	const genIcons = () => {
@@ -7482,6 +9129,8 @@ const MineKhan = async () => {
 		fps: 0,
 		worstFps: 60,
 	}
+
+	// Some helper functions for world gen
 	const chunkDist = (c) => {
 		let dx = p.x - c.x
 		let dz = p.z - c.z
@@ -7505,39 +9154,6 @@ const MineKhan = async () => {
 		let dx2 = p.x - c2.x - 8
 		let dy2 = p.z - c2.z - 8
 		return dx1 * dx1 + dy1 * dy1 - (dx2 * dx2 + dy2 * dy2)
-	}
-	const fillReqs = (x, z) => {
-		// Chunks must all be loaded first.
-		let done = true
-		for (let i = x - 4; i <= x + 4; i++) {
-			for (let j = z - 4; j <= z + 4; j++) {
-				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
-				if (!chunk.generated) {
-					world.generateQueue.push(chunk)
-					done = false
-				}
-
-				if (!chunk.populated && i >= x - 3 && i <= x + 3 && j >= z - 3 && j <= z + 3) {
-					world.populateQueue.push(chunk)
-					done = false
-				}
-
-				if (!chunk.loaded && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
-					if (world.loadFrom[`${chunk.x >> 4},${chunk.z >> 4}`]) {
-						world.loadQueue.push(chunk)
-						done = false
-					}
-					else chunk.load()
-				}
-
-				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
-					world.lightingQueue.push(chunk)
-					done = false
-				}
-			}
-		}
-
-		return done
 	}
 	const renderFilter = (chunk) => {
 		const d = settings.renderDistance + Math.SQRT1_2
@@ -8167,33 +9783,26 @@ const MineKhan = async () => {
 
 	let fogDist = 16
 
-	// const wasm = await WebAssembly.instantiateStreaming("/world.wasm", {})
-	// const { memory } = wasm.instance.exports
-
 	class World {
 		constructor(empty) {
 			if (!empty) {
 				this.setSeed(Math.random() * 2000000000 | 0)
 			}
 
-			generatedChunks = 0
+			this.generatedChunks = 0
 			fogDist = 16
 
 			// Initialize the world's arrays
-			this.loaded = []
-			this.sortedChunks = [] // What gets rendered
-			this.doubleRenderChunks = [] // What gets rendered with water
+			/** @type {Chunk[]} */ this.loaded = []
+			/** @type {Chunk[]} */ this.sortedChunks = [] // What gets rendered
+			/** @type {Chunk[]} */ this.doubleRenderChunks = [] // What gets rendered with water
 			this.offsetX = 0
 			this.offsetZ = 0
 			this.lwidth = 0
-			this.chunkGenQueue = []
-			this.populateQueue = []
-			this.generateQueue = []
-			this.lightingQueue = []
-			this.loadQueue = []
-			this.meshQueue = []
+			/** @type {Chunk[]} */ this.chunkGenQueue = []
+			/** @type {Chunk[]} */ this.meshQueue = []
 			this.loadFrom = {}
-			this.entities = []
+			/** @type {Entity[]} */ this.entities = []
 			this.lastChunk = "," // Chunk the player was standing in in the last tick
 			this.caves = caves
 			this.initTime = Date.now()
@@ -8208,15 +9817,10 @@ const MineKhan = async () => {
 			this.seed = seed
 			seedHash(seed)
 			noiseProfile.noiseSeed(seed)
-			while(win.workers.length) {
-				win.doWork({ seed })
+			for (let worker of win.workers) {
+				worker.postMessage({ seed, superflat, spawnCaves: caves, spawnTrees: details, rivers: this.rivers })
 			}
 		}
-
-		// initMemory() {
-		// 	// Reserve first 256 bytes for settings or whatever
-		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
-		// }
 		updateBlock(x, y, z) {
 			const chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
 			if (chunk.buffer) {
@@ -8226,7 +9830,8 @@ const MineKhan = async () => {
 		getChunk(x, z) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			return this.loaded[X * this.lwidth + Z]
+			if (X >= 0 && X < this.lwidth && Z >= 0 && Z < this.lwidth) return this.loaded[X * this.lwidth + Z]
+			return null
 		}
 		getBlock(x, y, z) {
 			if (y > maxHeight) {
@@ -8462,7 +10067,7 @@ const MineKhan = async () => {
 				chunk.reSpreadLight(respread, 1)
 			}
 		}
-		async tick() {
+		tick() {
 			let pnow = performance.now()
 			this.tickCount += multiplayer ? Math.round((pnow - this.lastTick) / 50) : 1
 			this.lastTick = pnow
@@ -8481,7 +10086,6 @@ const MineKhan = async () => {
 			if (chunk !== this.lastChunk) {
 				this.lastChunk = chunk
 				this.loadChunks()
-				this.chunkGenQueue.sort(sortChunks)
 			}
 
 			if (controlMap.breakBlock.pressed && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
@@ -8500,82 +10104,42 @@ const MineKhan = async () => {
 				}
 			}
 
-			// Make sure there's only 1 "world gen" loop running at a time
-			if (this.ticking) return
-			this.ticking = true
-
-			let doneWork = true
-			while (doneWork && (screen === "play" || screen === "loading")) {
-				doneWork = false
-				debug.start = performance.now()
-				if (this.meshQueue.length) {
-					// Update all chunk meshes.
-					do {
-						this.meshQueue.pop().genMesh(indexBuffer, bigArray)
-					} while(this.meshQueue.length)
-					doneWork = true
-					debug("Meshes")
-				}
-
-				if (this.generateQueue.length && !doneWork) {
-					let chunk = this.generateQueue.pop()
-					chunk.generate()
-					doneWork = true
-				}
-
-				// Carve caves, then place details
-				if (this.populateQueue.length && !doneWork) {
-					let chunk = this.populateQueue[this.populateQueue.length - 1]
-					if (!chunk.caves) await chunk.carveCaves()
-					else {
-						chunk.populate(details)
-						this.populateQueue.pop()
-					}
-					doneWork = true
-				}
-
-				// Load chunk
-				if (!doneWork && this.loadQueue.length) {
-					this.loadQueue.pop().load()
-					doneWork = true
-				}
-
-				// Spread light
-				if (!doneWork && this.lightingQueue.length) {
-					let chunk = this.lightingQueue.pop()
-					chunk.fillLight()
-					doneWork = true
-				}
-
-				if (!doneWork && this.chunkGenQueue.length && !this.lightingQueue.length) {
-					let chunk = this.chunkGenQueue[0]
-					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
-						// The requirements haven't been filled yet; don't do anything else.
-					}
-					else if (!chunk.optimized) {
-						chunk.optimize(screen)
-						debug("Optimize")
-					}
-					else if (!chunk.buffer) {
-						chunk.genMesh(indexBuffer, bigArray)
-						debug("Initial mesh")
-					}
-					else {
-						this.chunkGenQueue.shift()
-						generatedChunks++
-						if (generatedChunks === 3000) {
-							let ms = Date.now() - this.initTime
-							console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
-						}
-					}
-					doneWork = true
-				}
-
-				// Yield the main thread to render passes
-				if (doneWork) await yieldThread()
+			// Update Any edited chunk meshes.
+			if (this.meshQueue.length) {
+				do {
+					this.meshQueue.pop().genMesh(indexBuffer, bigArray)
+				} while(this.meshQueue.length)
+				debug("Meshes")
 			}
-			this.ticking = false
 		}
+
+		// Generate chunks
+		// generate() {
+		// 	if (this.generating || !this.chunkGenQueue.length) return
+		// 	this.generating = true
+
+		// 	// Advance world generation for up to 2ms
+		// 	let start = Date.now()
+		// 	while (this.chunkGenQueue.length && Date.now() - start < 2) {
+		// 		const chunk = this.chunkGenQueue.pop()
+		// 		chunk.step4(indexBuffer, bigArray)
+
+		// 		// For the loading screen and my timer
+		// 		if (chunk.buffer) {
+		// 			if (++this.generatedChunks === 3000) {
+		// 				let ms = Date.now() - this.initTime
+		// 				console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
+		// 			}
+		// 		}
+		// 	}
+
+		// 	// Yield the main thread to render passes
+		// 	if (this.chunkGenQueue.length && (screen === "play" || screen === "loading")) {
+		// 		console.log(this.chunkGenQueue.length)
+		// 		this.generateMore.postMessage("")
+		// 	}
+		// 	else this.generating = false
+		// }
 		render() {
 			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
@@ -8598,10 +10162,10 @@ const MineKhan = async () => {
 			renderedChunks = 0
 
 			let dist = Math.max(settings.renderDistance * 16 - 8, 16)
-			if (this.chunkGenQueue.length) {
-				let chunk = this.chunkGenQueue[0]
-				dist = min(dist, chunkDist(chunk))
-			}
+			// if (this.chunkGenQueue.length) {
+			// 	let chunk = this.chunkGenQueue[0]
+			// 	dist = min(dist, chunkDist(chunk))
+			// }
 			if (dist !== fogDist) {
 				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 30
 				else if (fogDist > dist + 0.1) fogDist += (dist - fogDist) / 30
@@ -8677,7 +10241,7 @@ const MineKhan = async () => {
 
 			// gl.useProgram(program3D)
 		}
-		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 4) {
+		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 2) {
 			cx ??= p.x >> 4
 			cz ??= p.z >> 4
 			p.cx = cx
@@ -8690,10 +10254,6 @@ const MineKhan = async () => {
 			this.offsetX = -minChunkX
 			this.offsetZ = -minChunkZ
 			this.lwidth = renderDistance * 2 + 1
-			this.chunkGenQueue.length = 0
-			this.lightingQueue.length = 0
-			this.populateQueue.length = 0
-			this.generateQueue.length = 0
 
 			let chunks = new Map()
 			for (let i = this.loaded.length - 1; i >= 0; i--) {
@@ -8702,7 +10262,6 @@ const MineKhan = async () => {
 				const chunkZ = chunk.z >> 4
 				if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
 					chunk.unload()
-					delete chunk.blocks
 					this.loaded.splice(i, 1)
 				}
 				else chunks.set(`${chunkX},${chunkZ}`, chunk)
@@ -8712,23 +10271,29 @@ const MineKhan = async () => {
 				for (let z = minChunkZ; z <= maxChunkZ; z++) {
 					let chunk = chunks.get(`${x},${z}`)
 					if (!chunk) {
-						chunk = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
+						chunk = new Chunk(x * 16, z * 16, this, superflat, caves, details, glGlobals)
 						this.loaded.push(chunk)
 					}
 
 					const cdx = (chunk.x >> 4) - cx
 					const cdz = (chunk.z >> 4) - cz
 					chunk.distSq = cdx * cdx + cdz * cdz
-					if (!chunk.buffer && renderFilter(chunk)) {
-						this.chunkGenQueue.push(chunk)
-					}
 				}
 			}
 			this.loaded.sort((a, b) => a.x - b.x || a.z - b.z)
 
 			if (sort) {
-				this.sortedChunks = this.loaded.filter(renderFilter)
-				this.sortedChunks.sort(sortChunks)
+				const sorted = this.loaded.slice().sort(sortChunks)
+				let generateList = []
+				for (let chunk of sorted) {
+					if (!chunk.generating && !chunk.loaded) {
+						chunk.generating = true
+						generateList.push(chunk)
+					}
+				}
+				win.generateChunks(generateList, this.loadFrom)
+
+				this.sortedChunks = sorted.filter(renderFilter)
 				this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 			}
 		}
@@ -8769,7 +10334,7 @@ const MineKhan = async () => {
 			// Chunks that aren't in the loaded area
 			for (let coords in this.loadFrom) {
 				const [x, z] = coords.split(",").map(n => n * 16)
-				const chunk = new Chunk(x, z, this, glExtensions, gl, glCache, superflat, caves)
+				const chunk = new Chunk(x, z, this, superflat, caves, details, glGlobals)
 
 				if (this.version < "Alpha 0.8.1" || this.loadFrom[coords].edits) {
 					// Load the chunk and re-save it in the new version format
@@ -9388,7 +10953,6 @@ const MineKhan = async () => {
 			world.name = name
 			win.world = world
 			world.loadChunks()
-			world.chunkGenQueue.sort(sortChunks)
 			changeScene("loading")
 		})
 		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", () => changeScene("back"))
@@ -9606,7 +11170,7 @@ const MineKhan = async () => {
 				newDebugLines[lines++] = "Worst Frame Time: " + analytics.displayedwFrameTime + "ms"
 				newDebugLines[lines++] = "Render Time: " + analytics.displayedRenderTime + "ms"
 				newDebugLines[lines++] = "Tick Time: " + analytics.displayedTickTime + "ms"
-				newDebugLines[lines++] = "Generated Chunks: " + generatedChunks.toLocaleString()
+				newDebugLines[lines++] = "Generated Chunks: " + world.generatedChunks.toLocaleString()
 			}
 		}
 		if (p.autoBreak) newDebugLines[lines++] = "Super breaker enabled"
@@ -9808,9 +11372,11 @@ const MineKhan = async () => {
 						hotbar()
 						crosshair()
 						hud(true)
+						document.getElementById("hotbar").classList.remove("hidden")
 					}
 					else {
 						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+						document.getElementById("hotbar").classList.add("hidden")
 					}
 				}
 
@@ -10124,9 +11690,10 @@ const MineKhan = async () => {
 			glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 			win.glPrograms = { program2D, program3D, program3DFogless, programEntity, skybox }
+			win.glGlobals = glGlobals = { gl, glExtensions, glCache, bigArray, indexBuffer }
 		}
 		else {
-			({ gl, glCache, glExtensions } = win);
+			({ gl, glCache, glExtensions, glGlobals } = win);
 			({ program2D, program3D, program3DFogless, programEntity, skybox } = win.glPrograms)
 			document.getElementById("webgl-canvas").remove() // There can be only 1
 			document.body.prepend(gl.canvas)
@@ -10147,9 +11714,19 @@ const MineKhan = async () => {
 		gl.bufferData(gl.ARRAY_BUFFER, hitboxTextureCoords, gl.STATIC_DRAW)
 
 		// Bind the index buffer that will be used to draw squares instead of 2 triangles for everything
+		const indexOrder = new Uint32Array(bigArray.length / 6 | 0)
+		for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
+			indexOrder[i + 0] = 0 + j
+			indexOrder[i + 1] = 1 + j
+			indexOrder[i + 2] = 2 + j
+			indexOrder[i + 3] = 0 + j
+			indexOrder[i + 4] = 2 + j
+			indexOrder[i + 5] = 3 + j
+		}
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
+		glGlobals.indexBuffer = indexBuffer
 
 		// Tell it not to render the insides of blocks
 		gl.enable(gl.CULL_FACE)
@@ -10378,8 +11955,6 @@ const MineKhan = async () => {
 	}
 
 	const initEverything = () => {
-		generatedChunks = 0
-
 		initPlayer()
 		initWebgl()
 
@@ -10489,8 +12064,8 @@ const MineKhan = async () => {
 				return
 			}
 
-			let progress = round(100 * generatedChunks / 9)
-			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${generatedChunks} / 9)`
+			let progress = round(100 * world.generatedChunks / 9)
+			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${world.generatedChunks} / 9)`
 		}
 
 		drawScreens.pause = () => {

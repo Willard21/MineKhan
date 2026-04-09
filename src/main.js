@@ -1,5 +1,171 @@
 import './index.css'
 
+// Import WebWorker code
+import workerCode from './workers/Caves.js'
+
+// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
+if (!window.parent.workers) {
+	const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
+	const workers = []
+	window.parent.workers = workers
+	// const jobQueue = []
+	// const priorityQueue = []
+	const workerCount = Math.max(navigator.hardwareConcurrency - 1 || 0, 3)
+	// const send = (worker, data, buffers) => {
+	// 	if (buffers) worker.postMessage(data, buffers)
+	// 	else worker.postMessage(data)
+	// }
+
+	// Establish worker-to-worker communication
+	const channelPorts = []
+	const chunks = new Map()
+	for (let i = 0; i < workerCount; i++) channelPorts[i] = []
+	for (let i = 0; i < workerCount; i++) {
+		channelPorts[i][i] = null // Can't message yourself
+		for (let j = i + 1; j < workerCount; j++) {
+			let channel = new MessageChannel()
+			channelPorts[i][j] = channel.port1
+			channelPorts[j][i] = channel.port2
+		}
+	}
+
+	for (let i = 0; i < workerCount; i++) { // Generate between 3 and (processors - 1) workers.
+		let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
+		worker.id = i
+		worker.ready = false
+		workers.push(worker)
+
+		worker.onerror = (e) => {
+			console.error(`Worker ${i + 1} error:`, e.message)
+		}
+		worker.onmessageerror = (e) => {
+			console.error(`Worker ${i + 1} message error:`, e)
+		}
+		worker.onmessage = e => {
+			const { data } = e
+			if (data === "ready" && !worker.ready) {
+				console.log("Worker", i+1, "is ready!")
+				worker.ready = true
+				worker.ids = [1, 0]
+				worker.chunks = [null, null]
+
+				const safeShapes = new Map() // Only 25 shapes surprisingly enough. 8(stairs)+2(slabs)+4(cubes)+4(doors)+4(players)+1(flower)+1(lantern)+1(fence)
+				const workerSafeBlockData = blockData.map(block => {
+					// eslint-disable-next-line no-unused-vars
+					const { iconImg, icon, textures, ...safeData } = block
+					let safeShape = safeShapes.get(block.shape)
+					if (!safeShape) {
+						// eslint-disable-next-line no-unused-vars
+						const { variants, getShape, buffer, ...shape } = block.shape
+						safeShape = shape
+						safeShapes.set(block.shape, shape)
+					}
+					safeData.shape = safeShape
+					return safeData
+				})
+				worker.postMessage({
+					blockData: workerSafeBlockData,
+					blockIds,
+					workerID: worker.id,
+					workerPorts: channelPorts[worker.id]
+				}, channelPorts[worker.id].filter(n => n))
+				return
+			}
+
+			// Worker is sending chunk data to the main thread
+			if (data.tops) {
+				/*
+					x: this.x,
+					z: this.z,
+					maxY: this.maxY,
+					minY: this.minY,
+					tops: this.tops,
+					light: this.light,
+					flags: this.flags,
+					blocks: this.blocks,
+					renderData: this.renderData,
+					doubleRender: this.doubleRender
+				*/
+				const chunk = chunks.get(`${data.x},${data.z}`)
+				Object.assign(chunk, data)
+				chunk.onload()
+			}
+
+			// if (data.id !== undefined) {
+			// 	// Give the chunk its results
+			// 	const chunk = worker.chunks[data.id]
+			// 	if (chunk.step === 1) chunk.step1Done(data) // This can rarely reach step 3 instantly when player is moving
+			// 	else if (chunk.step === 3) chunk.step3Done(data)
+
+			// 	worker.chunks[data.id] = null
+			// 	worker.ids.push(data.id)
+			// }
+			// else return // Not a world gen job
+
+			// Start next job
+			// if (priorityQueue.length) {
+			// 	const task = priorityQueue.shift()
+			// 	const id = worker.ids.pop()
+			// 	task[0].id = id
+			// 	worker.chunks[id] = task[1]
+			// 	send(worker, task[0], task[2])
+			// }
+			// else if (jobQueue.length) {
+			// 	const task = jobQueue.shift()
+			// 	const id = worker.ids.pop()
+			// 	task[0].id = id
+			// 	worker.chunks[id] = task[1]
+			// 	send(worker, task[0], task[2])
+			// }
+		}
+	}
+
+	// window.parent.doWork = (data, chunk, buffers, priority = false) => {
+	// 	for (let worker of workers) {
+	// 		if (worker.ids.length === 2) {
+	// 			data.id = worker.ids.pop()
+	// 			worker.chunks[data.id] = chunk
+	// 			send(worker, data, buffers)
+	// 			return
+	// 		}
+	// 	}
+	// 	for (let worker of workers) {
+	// 		if (worker.ids.length === 1) {
+	// 			data.id = worker.ids.pop()
+	// 			worker.chunks[data.id] = chunk
+	// 			send(worker, data, buffers)
+	// 			return
+	// 		}
+	// 	}
+	// 	if (priority) priorityQueue.push([data, chunk, buffers])
+	// 	else jobQueue.push([data, chunk, buffers])
+	// }
+
+	window.parent.generateChunks = (sortedChunkList, loadFrom) => {
+		const splitList = []
+		const loadList = []
+		for (let i = 0; i < workerCount; i++) {
+			splitList[i] = []
+			loadList[i] = {}
+		}
+		for (let i = 0; i < sortedChunkList.length; i++) {
+			const id = i % workerCount
+			const chunk = sortedChunkList[i]
+			const coords = `${chunk.x},${chunk.z}`
+			chunks.set(coords, chunk)
+			splitList[id].push(coords)
+			if (loadFrom[chunk]) {
+				loadList[id][chunk] = loadFrom[chunk]
+			}
+		}
+
+		for (let i = 0; i < workerCount; i++) workers[i].postMessage({
+			jobList: splitList,
+			saves: loadList[i]
+		})
+	}
+}
+
 // GLSL Shader code
 import vertexShaderSrc3D from './shaders/blockVert.glsl'
 import fragmentShaderSrc3D from './shaders/blockFrag.glsl'
@@ -9,9 +175,6 @@ import vertexShaderSrc2D from './shaders/2dVert.glsl'
 import fragmentShaderSrc2D from './shaders/2dFrag.glsl'
 import vertexShaderSrcEntity from './shaders/entityVert.glsl'
 import fragmentShaderSrcEntity from './shaders/entityFrag.glsl'
-
-// Import WebWorker code
-import workerCode from './workers/Caves.js'
 
 // imports
 import { seedHash, randomSeed, noiseProfile } from "./js/random.js"
@@ -79,51 +242,6 @@ const MineKhan = async () => {
 			str += String.fromCharCode(this[i])
 		}
 		return compressString(btoa(str))
-	}
-
-	let yieldThread
-	{
-		// await yieldThread() will pause the current task until the event loop is cleared
-		const channel = new MessageChannel()
-		let res
-		channel.port1.onmessage = () => res()
-		yieldThread = () => {
-			return new Promise(resolve => {
-				res = resolve
-				channel.port2.postMessage("")
-			})
-		}
-	}
-
-	// Create Web Workers for generating caves. Stored in the window scope so Khan Academy won't generate a zillion workers.
-	if (!win.workers) {
-		const workerURL = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }))
-		win.workers = []
-		const jobQueue = []
-		const workerCount = (navigator.hardwareConcurrency || 4) - 1 || 1
-		for (let i = 0; i < workerCount; i++) { // Generate between 1 and (processors - 1) workers.
-			let worker = new Worker(workerURL, { name: `Cave Worker ${i + 1}` })
-			worker.onmessage = e => {
-				if (worker.resolve) worker.resolve(e.data)
-				worker.resolve = null
-				if (jobQueue.length) {
-					let [data, resolve] = jobQueue.shift()
-					worker.resolve = resolve
-					worker.postMessage(data)
-				}
-				else win.workers.push(worker)
-			}
-			win.workers.push(worker)
-		}
-
-		win.doWork = (data, resolve) => {
-			if (win.workers.length) {
-				let worker = win.workers.pop()
-				worker.resolve = resolve
-				worker.postMessage(data)
-			}
-			else jobQueue.push([data, resolve])
-		}
 	}
 
 	/**
@@ -205,6 +323,7 @@ const MineKhan = async () => {
 	/**
 	 * @type {{vertex_array_object: OES_vertex_array_object}}*/
 	let glExtensions
+	let glCache, glGlobals
 
 	/**
 	 * @type {(time: Number, view: Matrix) => {}}
@@ -224,7 +343,6 @@ const MineKhan = async () => {
 		controls: {}
 		// inventorySort: "blockid"
 	}
-	let generatedChunks
 	let mouseX, mouseY, mouseDown
 	let width = win.innerWidth
 	let height = win.innerHeight
@@ -240,7 +358,7 @@ const MineKhan = async () => {
 	canvas.style.backgroundImage = background
 
 	let dirtBuffer
-	let bigArray = win.bigArray || new Float32Array(1000000)
+	let bigArray = win.bigArray || new Float32Array(2000000)
 	win.bigArray = bigArray
 
 	const use2d = () => {
@@ -437,7 +555,7 @@ const MineKhan = async () => {
 		if (html[screen] && html[screen].onexit) {
 			html[screen].onexit()
 		}
-		
+
 		screen = newScene
 		mouseDown = false
 		drawScreens[screen]()
@@ -447,7 +565,6 @@ const MineKhan = async () => {
 	let hitBox = {}
 	let holding = 0
 	let Key = {}
-	let glCache
 	let worlds, selectedWorld = 0
 	let freezeFrame = 0
 	let p
@@ -471,7 +588,7 @@ const MineKhan = async () => {
 				settings.controls[name] = [name, key, shift, ctrl, alt]
 				saveToDB("settings", settings).catch(e => console.error(e))
 			}
-			Object.assign(controlMap[name], {key, shift, ctrl, alt})
+			Object.assign(controlMap[name], { key, shift, ctrl, alt })
 			controlMap[name].button.value = (ctrl ? "Ctrl + " : "") + (alt ? "Alt + " : "") + (shift ? "Shift + " : "") + key
 		}
 		else {
@@ -516,7 +633,6 @@ const MineKhan = async () => {
 					event.stopPropagation()
 					event.preventDefault()
 					let buttonName = ["leftMouse", "middleMouse", "rightMouse"][event.button] || "mouse" + event.button
-					console.log(event.button, event)
 					setControl(name, buttonName, event.shiftKey, event.ctrlKey, event.altKey)
 					button.value = (event.ctrlKey ? "Ctrl + " : "") + (event.altKey ? "Alt + " : "") + (event.shiftKey ? "Shift + " : "") + buttonName
 				}
@@ -576,7 +692,6 @@ const MineKhan = async () => {
 	setControl("placeBlock", "rightMouse")
 	setControl("pickBlock", "middleMouse")
 	setControl("cycleDebug", "F3")
-	//}
 
 	const play = () => {
 		canvas.onblur()
@@ -636,6 +751,7 @@ const MineKhan = async () => {
 				slabBlock.transparent = true
 				slabBlock.name += " Slab"
 				slabBlock.shape = shapes.slab
+				slabBlock.isCube = false
 				slabBlock.flip = true
 				blockData[id | SLAB] = slabBlock
 				let v = slabBlock.shape.variants
@@ -643,6 +759,7 @@ const MineKhan = async () => {
 					if (v[j]) {
 						let block = new BlockData(slabBlock, id | SLAB | j << 10, false)
 						block.shape = v[j]
+						block.isCube = false
 						blockData[id | SLAB | j << 10] = block
 					}
 				}
@@ -651,6 +768,7 @@ const MineKhan = async () => {
 				stairBlock.transparent = true
 				stairBlock.name += " Stairs"
 				stairBlock.shape = shapes.stair
+				stairBlock.isCube = false
 				stairBlock.rotate = true
 				stairBlock.flip = true
 				blockData[id | STAIR] = stairBlock
@@ -659,6 +777,7 @@ const MineKhan = async () => {
 					if (v[j]) {
 						let block = new BlockData(stairBlock, id | STAIR | j << 10, false)
 						block.shape = v[j]
+						block.isCube = false
 						blockData[id | STAIR | j << 10] = block
 					}
 				}
@@ -693,15 +812,6 @@ const MineKhan = async () => {
 				}
 			}
 		}
-	}
-	let indexOrder = new Uint32Array(bigArray.length / 6 | 0)
-	for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
-		indexOrder[i + 0] = 0 + j
-		indexOrder[i + 1] = 1 + j
-		indexOrder[i + 2] = 2 + j
-		indexOrder[i + 3] = 0 + j
-		indexOrder[i + 4] = 2 + j
-		indexOrder[i + 5] = 3 + j
 	}
 
 	const genIcons = () => {
@@ -1531,6 +1641,8 @@ const MineKhan = async () => {
 		fps: 0,
 		worstFps: 60,
 	}
+
+	// Some helper functions for world gen
 	const chunkDist = (c) => {
 		let dx = p.x - c.x
 		let dz = p.z - c.z
@@ -1554,39 +1666,6 @@ const MineKhan = async () => {
 		let dx2 = p.x - c2.x - 8
 		let dy2 = p.z - c2.z - 8
 		return dx1 * dx1 + dy1 * dy1 - (dx2 * dx2 + dy2 * dy2)
-	}
-	const fillReqs = (x, z) => {
-		// Chunks must all be loaded first.
-		let done = true
-		for (let i = x - 4; i <= x + 4; i++) {
-			for (let j = z - 4; j <= z + 4; j++) {
-				let chunk = world.loaded[(i + world.offsetX) * world.lwidth + j + world.offsetZ]
-				if (!chunk.generated) {
-					world.generateQueue.push(chunk)
-					done = false
-				}
-
-				if (!chunk.populated && i >= x - 3 && i <= x + 3 && j >= z - 3 && j <= z + 3) {
-					world.populateQueue.push(chunk)
-					done = false
-				}
-
-				if (!chunk.loaded && i >= x - 2 && i <= x + 2 && j >= z - 2 && j <= z + 2) {
-					if (world.loadFrom[`${chunk.x >> 4},${chunk.z >> 4}`]) {
-						world.loadQueue.push(chunk)
-						done = false
-					}
-					else chunk.load()
-				}
-
-				if (!chunk.lit && i >= x - 1 && i <= x + 1 && j >= z - 1 && j <= z + 1) {
-					world.lightingQueue.push(chunk)
-					done = false
-				}
-			}
-		}
-
-		return done
 	}
 	const renderFilter = (chunk) => {
 		const d = settings.renderDistance + Math.SQRT1_2
@@ -2216,33 +2295,26 @@ const MineKhan = async () => {
 
 	let fogDist = 16
 
-	// const wasm = await WebAssembly.instantiateStreaming("/world.wasm", {})
-	// const { memory } = wasm.instance.exports
-
 	class World {
 		constructor(empty) {
 			if (!empty) {
 				this.setSeed(Math.random() * 2000000000 | 0)
 			}
 
-			generatedChunks = 0
+			this.generatedChunks = 0
 			fogDist = 16
 
 			// Initialize the world's arrays
-			this.loaded = []
-			this.sortedChunks = [] // What gets rendered
-			this.doubleRenderChunks = [] // What gets rendered with water
+			/** @type {Chunk[]} */ this.loaded = []
+			/** @type {Chunk[]} */ this.sortedChunks = [] // What gets rendered
+			/** @type {Chunk[]} */ this.doubleRenderChunks = [] // What gets rendered with water
 			this.offsetX = 0
 			this.offsetZ = 0
 			this.lwidth = 0
-			this.chunkGenQueue = []
-			this.populateQueue = []
-			this.generateQueue = []
-			this.lightingQueue = []
-			this.loadQueue = []
-			this.meshQueue = []
+			/** @type {Chunk[]} */ this.chunkGenQueue = []
+			/** @type {Chunk[]} */ this.meshQueue = []
 			this.loadFrom = {}
-			this.entities = []
+			/** @type {Entity[]} */ this.entities = []
 			this.lastChunk = "," // Chunk the player was standing in in the last tick
 			this.caves = caves
 			this.initTime = Date.now()
@@ -2257,15 +2329,10 @@ const MineKhan = async () => {
 			this.seed = seed
 			seedHash(seed)
 			noiseProfile.noiseSeed(seed)
-			while(win.workers.length) {
-				win.doWork({ seed })
+			for (let worker of win.workers) {
+				worker.postMessage({ seed, superflat, spawnCaves: caves, spawnTrees: details, rivers: this.rivers })
 			}
 		}
-
-		// initMemory() {
-		// 	// Reserve first 256 bytes for settings or whatever
-		// 	this.pointers = new Uint32Array(this.memory.buffer, 256, 71*71)
-		// }
 		updateBlock(x, y, z) {
 			const chunk = this.loaded[((x >> 4) + this.offsetX) * this.lwidth + (z >> 4) + this.offsetZ]
 			if (chunk.buffer) {
@@ -2275,7 +2342,8 @@ const MineKhan = async () => {
 		getChunk(x, z) {
 			let X = (x >> 4) + this.offsetX
 			let Z = (z >> 4) + this.offsetZ
-			return this.loaded[X * this.lwidth + Z]
+			if (X >= 0 && X < this.lwidth && Z >= 0 && Z < this.lwidth) return this.loaded[X * this.lwidth + Z]
+			return null
 		}
 		getBlock(x, y, z) {
 			if (y > maxHeight) {
@@ -2511,7 +2579,7 @@ const MineKhan = async () => {
 				chunk.reSpreadLight(respread, 1)
 			}
 		}
-		async tick() {
+		tick() {
 			let pnow = performance.now()
 			this.tickCount += multiplayer ? Math.round((pnow - this.lastTick) / 50) : 1
 			this.lastTick = pnow
@@ -2530,7 +2598,6 @@ const MineKhan = async () => {
 			if (chunk !== this.lastChunk) {
 				this.lastChunk = chunk
 				this.loadChunks()
-				this.chunkGenQueue.sort(sortChunks)
 			}
 
 			if (controlMap.breakBlock.pressed && (p.lastBreak < now - 250 || p.autoBreak) && screen === "play") {
@@ -2549,82 +2616,42 @@ const MineKhan = async () => {
 				}
 			}
 
-			// Make sure there's only 1 "world gen" loop running at a time
-			if (this.ticking) return
-			this.ticking = true
-
-			let doneWork = true
-			while (doneWork && (screen === "play" || screen === "loading")) {
-				doneWork = false
-				debug.start = performance.now()
-				if (this.meshQueue.length) {
-					// Update all chunk meshes.
-					do {
-						this.meshQueue.pop().genMesh(indexBuffer, bigArray)
-					} while(this.meshQueue.length)
-					doneWork = true
-					debug("Meshes")
-				}
-
-				if (this.generateQueue.length && !doneWork) {
-					let chunk = this.generateQueue.pop()
-					chunk.generate()
-					doneWork = true
-				}
-
-				// Carve caves, then place details
-				if (this.populateQueue.length && !doneWork) {
-					let chunk = this.populateQueue[this.populateQueue.length - 1]
-					if (!chunk.caves) await chunk.carveCaves()
-					else {
-						chunk.populate(details)
-						this.populateQueue.pop()
-					}
-					doneWork = true
-				}
-
-				// Load chunk
-				if (!doneWork && this.loadQueue.length) {
-					this.loadQueue.pop().load()
-					doneWork = true
-				}
-
-				// Spread light
-				if (!doneWork && this.lightingQueue.length) {
-					let chunk = this.lightingQueue.pop()
-					chunk.fillLight()
-					doneWork = true
-				}
-
-				if (!doneWork && this.chunkGenQueue.length && !this.lightingQueue.length) {
-					let chunk = this.chunkGenQueue[0]
-					if (!fillReqs(chunk.x >> 4, chunk.z >> 4)) {
-						// The requirements haven't been filled yet; don't do anything else.
-					}
-					else if (!chunk.optimized) {
-						chunk.optimize(screen)
-						debug("Optimize")
-					}
-					else if (!chunk.buffer) {
-						chunk.genMesh(indexBuffer, bigArray)
-						debug("Initial mesh")
-					}
-					else {
-						this.chunkGenQueue.shift()
-						generatedChunks++
-						if (generatedChunks === 3000) {
-							let ms = Date.now() - this.initTime
-							console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
-						}
-					}
-					doneWork = true
-				}
-
-				// Yield the main thread to render passes
-				if (doneWork) await yieldThread()
+			// Update Any edited chunk meshes.
+			if (this.meshQueue.length) {
+				do {
+					this.meshQueue.pop().genMesh(indexBuffer, bigArray)
+				} while(this.meshQueue.length)
+				debug("Meshes")
 			}
-			this.ticking = false
 		}
+
+		// Generate chunks
+		// generate() {
+		// 	if (this.generating || !this.chunkGenQueue.length) return
+		// 	this.generating = true
+
+		// 	// Advance world generation for up to 2ms
+		// 	let start = Date.now()
+		// 	while (this.chunkGenQueue.length && Date.now() - start < 2) {
+		// 		const chunk = this.chunkGenQueue.pop()
+		// 		chunk.step4(indexBuffer, bigArray)
+
+		// 		// For the loading screen and my timer
+		// 		if (chunk.buffer) {
+		// 			if (++this.generatedChunks === 3000) {
+		// 				let ms = Date.now() - this.initTime
+		// 				console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
+		// 			}
+		// 		}
+		// 	}
+
+		// 	// Yield the main thread to render passes
+		// 	if (this.chunkGenQueue.length && (screen === "play" || screen === "loading")) {
+		// 		console.log(this.chunkGenQueue.length)
+		// 		this.generateMore.postMessage("")
+		// 	}
+		// 	else this.generating = false
+		// }
 		render() {
 			// Was in tick(); moved here just for joseph lol
 			if (controlMap.placeBlock.pressed && (p.lastPlace < now - 250 || p.autoBuild)) {
@@ -2647,10 +2674,10 @@ const MineKhan = async () => {
 			renderedChunks = 0
 
 			let dist = Math.max(settings.renderDistance * 16 - 8, 16)
-			if (this.chunkGenQueue.length) {
-				let chunk = this.chunkGenQueue[0]
-				dist = min(dist, chunkDist(chunk))
-			}
+			// if (this.chunkGenQueue.length) {
+			// 	let chunk = this.chunkGenQueue[0]
+			// 	dist = min(dist, chunkDist(chunk))
+			// }
 			if (dist !== fogDist) {
 				if (fogDist < dist - 0.1) fogDist += (dist - fogDist) / 30
 				else if (fogDist > dist + 0.1) fogDist += (dist - fogDist) / 30
@@ -2726,7 +2753,7 @@ const MineKhan = async () => {
 
 			// gl.useProgram(program3D)
 		}
-		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 4) {
+		loadChunks(cx, cz, sort = true, renderDistance = settings.renderDistance + 2) {
 			cx ??= p.x >> 4
 			cz ??= p.z >> 4
 			p.cx = cx
@@ -2739,10 +2766,6 @@ const MineKhan = async () => {
 			this.offsetX = -minChunkX
 			this.offsetZ = -minChunkZ
 			this.lwidth = renderDistance * 2 + 1
-			this.chunkGenQueue.length = 0
-			this.lightingQueue.length = 0
-			this.populateQueue.length = 0
-			this.generateQueue.length = 0
 
 			let chunks = new Map()
 			for (let i = this.loaded.length - 1; i >= 0; i--) {
@@ -2751,7 +2774,6 @@ const MineKhan = async () => {
 				const chunkZ = chunk.z >> 4
 				if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
 					chunk.unload()
-					delete chunk.blocks
 					this.loaded.splice(i, 1)
 				}
 				else chunks.set(`${chunkX},${chunkZ}`, chunk)
@@ -2761,23 +2783,29 @@ const MineKhan = async () => {
 				for (let z = minChunkZ; z <= maxChunkZ; z++) {
 					let chunk = chunks.get(`${x},${z}`)
 					if (!chunk) {
-						chunk = new Chunk(x * 16, z * 16, this, glExtensions, gl, glCache, superflat, caves, details)
+						chunk = new Chunk(x * 16, z * 16, this, superflat, caves, details, glGlobals)
 						this.loaded.push(chunk)
 					}
 
 					const cdx = (chunk.x >> 4) - cx
 					const cdz = (chunk.z >> 4) - cz
 					chunk.distSq = cdx * cdx + cdz * cdz
-					if (!chunk.buffer && renderFilter(chunk)) {
-						this.chunkGenQueue.push(chunk)
-					}
 				}
 			}
 			this.loaded.sort((a, b) => a.x - b.x || a.z - b.z)
 
 			if (sort) {
-				this.sortedChunks = this.loaded.filter(renderFilter)
-				this.sortedChunks.sort(sortChunks)
+				const sorted = this.loaded.slice().sort(sortChunks)
+				let generateList = []
+				for (let chunk of sorted) {
+					if (!chunk.generating && !chunk.loaded) {
+						chunk.generating = true
+						generateList.push(chunk)
+					}
+				}
+				win.generateChunks(generateList, this.loadFrom)
+
+				this.sortedChunks = sorted.filter(renderFilter)
 				this.doubleRenderChunks = this.sortedChunks.filter(chunk => chunk.doubleRender)
 			}
 		}
@@ -2818,7 +2846,7 @@ const MineKhan = async () => {
 			// Chunks that aren't in the loaded area
 			for (let coords in this.loadFrom) {
 				const [x, z] = coords.split(",").map(n => n * 16)
-				const chunk = new Chunk(x, z, this, glExtensions, gl, glCache, superflat, caves)
+				const chunk = new Chunk(x, z, this, superflat, caves, details, glGlobals)
 
 				if (this.version < "Alpha 0.8.1" || this.loadFrom[coords].edits) {
 					// Load the chunk and re-save it in the new version format
@@ -3437,7 +3465,6 @@ const MineKhan = async () => {
 			world.name = name
 			win.world = world
 			world.loadChunks()
-			world.chunkGenQueue.sort(sortChunks)
 			changeScene("loading")
 		})
 		Button.add(width / 2, height - 40, 300, 40, "Cancel", "creation menu", () => changeScene("back"))
@@ -3655,7 +3682,7 @@ const MineKhan = async () => {
 				newDebugLines[lines++] = "Worst Frame Time: " + analytics.displayedwFrameTime + "ms"
 				newDebugLines[lines++] = "Render Time: " + analytics.displayedRenderTime + "ms"
 				newDebugLines[lines++] = "Tick Time: " + analytics.displayedTickTime + "ms"
-				newDebugLines[lines++] = "Generated Chunks: " + generatedChunks.toLocaleString()
+				newDebugLines[lines++] = "Generated Chunks: " + world.generatedChunks.toLocaleString()
 			}
 		}
 		if (p.autoBreak) newDebugLines[lines++] = "Super breaker enabled"
@@ -3857,9 +3884,11 @@ const MineKhan = async () => {
 						hotbar()
 						crosshair()
 						hud(true)
+						document.getElementById("hotbar").classList.remove("hidden")
 					}
 					else {
 						ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+						document.getElementById("hotbar").classList.add("hidden")
 					}
 				}
 
@@ -4173,9 +4202,10 @@ const MineKhan = async () => {
 			glCache.aVertex = gl.getAttribLocation(program3D, "aVertex")
 
 			win.glPrograms = { program2D, program3D, program3DFogless, programEntity, skybox }
+			win.glGlobals = glGlobals = { gl, glExtensions, glCache, bigArray, indexBuffer }
 		}
 		else {
-			({ gl, glCache, glExtensions } = win);
+			({ gl, glCache, glExtensions, glGlobals } = win);
 			({ program2D, program3D, program3DFogless, programEntity, skybox } = win.glPrograms)
 			document.getElementById("webgl-canvas").remove() // There can be only 1
 			document.body.prepend(gl.canvas)
@@ -4196,9 +4226,19 @@ const MineKhan = async () => {
 		gl.bufferData(gl.ARRAY_BUFFER, hitboxTextureCoords, gl.STATIC_DRAW)
 
 		// Bind the index buffer that will be used to draw squares instead of 2 triangles for everything
+		const indexOrder = new Uint32Array(bigArray.length / 6 | 0)
+		for (let i = 0, j = 0; i < indexOrder.length; i += 6, j += 4) {
+			indexOrder[i + 0] = 0 + j
+			indexOrder[i + 1] = 1 + j
+			indexOrder[i + 2] = 2 + j
+			indexOrder[i + 3] = 0 + j
+			indexOrder[i + 4] = 2 + j
+			indexOrder[i + 5] = 3 + j
+		}
 		indexBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexOrder, gl.STATIC_DRAW)
+		glGlobals.indexBuffer = indexBuffer
 
 		// Tell it not to render the insides of blocks
 		gl.enable(gl.CULL_FACE)
@@ -4427,8 +4467,6 @@ const MineKhan = async () => {
 	}
 
 	const initEverything = () => {
-		generatedChunks = 0
-
 		initPlayer()
 		initWebgl()
 
@@ -4538,8 +4576,8 @@ const MineKhan = async () => {
 				return
 			}
 
-			let progress = round(100 * generatedChunks / 9)
-			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${generatedChunks} / 9)`
+			let progress = round(100 * world.generatedChunks / 9)
+			document.getElementById("loading-text").textContent = `Loading... ${progress}% complete (${world.generatedChunks} / 9)`
 		}
 
 		drawScreens.pause = () => {

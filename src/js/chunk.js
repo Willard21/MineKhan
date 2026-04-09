@@ -1,16 +1,9 @@
-import { random, randomSeed, hash, noiseProfile } from "./random.js"
 import { blockData, blockIds, Block } from "./blockData.js"
 import { BitArrayBuilder, BitArrayReader } from "./utils.js"
 import { shapes } from "./shapes.js"
 
-const { floor, max, abs } = Math
-const hideInterior = new Uint8Array(255)
-hideInterior.set(blockData.slice(0, 255).map(data => data.hideInterior))
+const { max, abs } = Math
 const shadow = new Uint8Array(blockData.map(data => data.shadow ? 1 : 0))
-const lightLevels = new Uint8Array(blockData.map(data => data.lightLevel || 0))
-
-// Save the coords for a small sphere used to carve out caves
-let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,-1,-2,1,0,-2,1,1,-1,-2,-1,-1,-2,0,-1,-2,1,-1,-1,-2,-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,2,-1,0,-2,-1,0,-1,-1,0,0,-1,0,1,-1,0,2,-1,1,-2,-1,1,-1,-1,1,0,-1,1,1,-1,1,2,-1,2,-1,-1,2,0,-1,2,1,0,-2,-1,0,-2,0,0,-2,1,0,-1,-2,0,-1,-1,0,-1,0,0,-1,1,0,-1,2,0,0,-2,0,0,-1,0,0,0,0,0,1,0,0,2,0,1,-2,0,1,-1,0,1,0,0,1,1,0,1,2,0,2,-1,0,2,0,0,2,1,1,-2,-1,1,-2,0,1,-2,1,1,-1,-2,1,-1,-1,1,-1,0,1,-1,1,1,-1,2,1,0,-2,1,0,-1,1,0,0,1,0,1,1,0,2,1,1,-2,1,1,-1,1,1,0,1,1,1,1,1,2,1,2,-1,1,2,0,1,2,1,2,-1,-1,2,-1,0,2,-1,1,2,0,-1,2,0,0,2,0,1,2,1,-1,2,1,0,2,1,1])
 
 // {
 // 	let blocks = []
@@ -28,14 +21,6 @@ let sphere = new Int8Array([-2,-1,-1,-2,-1,0,-2,-1,1,-2,0,-1,-2,0,0,-2,0,1,-2,1,
 // 	sphere = new Int8Array(blocks)
 // }
 // console.log(sphere)
-
-const carveSphere = (x, y, z, world) => {
-	if (y > 3) {
-		for (let i = 0; i < sphere.length; i += 3) {
-			world.setWorldBlock(x + sphere[i], y + sphere[i + 1], z + sphere[i + 2], blockIds.air, true)
-		}
-	}
-}
 
 let getShadows
 {
@@ -94,7 +79,7 @@ let getShadows
  * @param {Number} b The second index of the 4 numbers
  * @param {Number} c The third index of the 4 numbers
  * @param {Number} d The fourth index of the 4 numbers
- * @returns 
+ * @returns {Number} A number between 0 and 1 indicating the light at the vertex
  */
 const average = (l, a, b, c, d) => {
 	a = l[a]
@@ -298,44 +283,170 @@ class Chunk {
 	 * @param {Number} x
 	 * @param {Number} z
 	 * @param {World} world
-	 * @param {{vertex_array_object: OES_vertex_array_object}} glExtensions
-	 * @param {WebGLRenderingContext} gl
-	 * @param {Object} glCache
 	 * @param {Boolean} superflat
 	 * @param {Boolean} caves
+	 * @param {{gl:WebGLRenderingContext,glExtensions:{vertex_array_object: OES_vertex_array_object},glCache:{},indexBuffer:WebGLBuffer,bigArray:Float32Array}} glGlobals
 	 */
-	constructor(x, z, world, glExtensions, gl, glCache, superflat, caves) {
+	constructor(x, z, world, superflat, spawnCaves, spawnTrees, glGlobals) {
 		this.x = x
 		this.z = z
 		this.maxY = 0
 		this.minY = 255
-		this.tops = new Uint8Array(16 * 16) // Store the heighest block at every (x,z) coordinate
-		this.optimized = false
-		this.generated = false // Terrain
-		this.populated = superflat // Details and ores
-		this.lit = false
-		this.lightDropped = false
+		// const buffer = new ArrayBuffer(65536 * 3 + 256)
+		// this.blocks = new Int16Array(buffer, 0, 65536)
+		// this.tops = new Uint8Array(buffer, this.blocks.byteLength, 256)
+		// this.light = new Uint8Array(buffer, this.blocks.byteLength + 256, 65536)
+		// this.visFlags = new Int8Array(65536) // 0ba0nstbew
+		this.originalBlocks = new Int16Array(0)
+		this.superflat = superflat // Trees, caves, and ores
+		this.spawnCaves = spawnCaves
+		this.spawnTrees = spawnTrees
 		this.edited = false
 		this.loaded = false
 		// vao for this chunk
-		this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
-		this.caves = !caves
 		this.world = world
-		this.gl = gl
-		this.glCache = glCache
-		this.glExtensions = glExtensions
+		this.glGlobals = glGlobals
 		this.doubleRender = false
-		this.blocks = new Int16Array(16*16*256)
-		this.originalBlocks = new Int16Array(0)
-		this.light = new Uint8Array(16*16*256)
-		this.renderData = []
+		/** @type {Number[]} */ this.renderData = []
 		this.renderLength = 0
-		this.hasBlockLight = false
+		this.optimized = false
+		this.countNeighbors() // May not be 0 if the player is moving back and forth
+		this.generating = false
 
-		// These are temporary and will be removed after the chunk is generated.
-		this.blockSpread = []
-		this.visFlags = new Int8Array(0)
-		this.shadowFlags = new Int8Array(0)
+		// When something this chunk does influences a neighbor chunk, we'll store it here.
+		// The order is (-x, -z), (-x, z) (-x, +z), (x, -z), (x, z) (x, +z), (+x, -z), (+x, z) (+x, +z) where (x, z) is this chunk and is always empty
+		// The data will be bit-packed as (index << 16 | value) where index is the position in the neighbor chunk.
+		/** @type {Int32Array[]} */ this.neighborBlockEdits = []
+	}
+	// startGeneration() {
+	// 	if (this.step === 0) {
+	// 		window.parent.doWork({
+	// 			stage1: true,
+	// 			x: this.x,
+	// 			z: this.z,
+	// 			superflat: this.superflat,
+	// 			rivers: this.world.rivers,
+	// 			caves: this.spawnCaves,
+	// 			spawnTrees: this.spawnTrees
+	// 		}, this)
+	// 		this.step = 1
+	// 	}
+	// 	else if (this.step === 2) this.checkStep2()
+	// 	else if (this.step === 4) this.checkStep4()
+	// }
+	// step1Done(results) {
+	// 	/** @type {Int16Array} */ this.blocks = results.blocks
+	// 	/** @type {Uint8Array} */ this.tops = results.tops
+	// 	this.neighborBlockEdits = results.neighbors
+	// 	this.doubleRender = results.doubleRender
+	// 	this.maxY = results.maxY
+	// 	this.step = 2
+
+	// 	for (let chunk of [
+	// 		this.world.getChunk(this.x - 16, this.z - 16),
+	// 		this.world.getChunk(this.x - 16, this.z + 16),
+	// 		this.world.getChunk(this.x + 16, this.z - 16),
+	// 		this.world.getChunk(this.x + 16, this.z + 16),
+	// 		this.world.getChunk(this.x, this.z - 16),
+	// 		this.world.getChunk(this.x, this.z + 16),
+	// 		this.world.getChunk(this.x - 16, this.z),
+	// 		this.world.getChunk(this.x + 16, this.z)
+	// 	]) {
+	// 		if (chunk) chunk.checkStep2()
+	// 	}
+	// 	this.checkStep2()
+	// }
+	// checkStep2() {
+	// 	if (this.step !== 2) return
+	// 	this.countNeighbors()
+	// 	if (this.step2Neighbors === 8) {
+	// 		this.load()
+	// 		window.parent.doWork({
+	// 			stage2: true,
+	// 			blocks: this.blocks,
+	// 			tops: this.tops,
+	// 			maxY: this.maxY
+	// 		}, this, [this.blocks.buffer], true)
+	// 		this.step = 3
+	// 	}
+	// }
+	// step3Done(results) {
+	// 	this.blocks = results.blocks
+	// 	this.tops = results.tops
+	// 	/** @type {Uint8Array} */ this.light = results.light
+	// 	/** @type {Int8Array} */ this.visFlags = results.flags
+	// 	this.renderData = results.renderData
+	// 	this.step = 4
+
+	// 	for (let chunk of [
+	// 		this.world.getChunk(this.x - 16, this.z - 16),
+	// 		this.world.getChunk(this.x - 16, this.z + 16),
+	// 		this.world.getChunk(this.x + 16, this.z - 16),
+	// 		this.world.getChunk(this.x + 16, this.z + 16),
+	// 		this.world.getChunk(this.x, this.z - 16),
+	// 		this.world.getChunk(this.x, this.z + 16),
+	// 		this.world.getChunk(this.x - 16, this.z),
+	// 		this.world.getChunk(this.x + 16, this.z)
+	// 	]) {
+	// 		if (chunk) chunk.checkStep4()
+	// 	}
+	// 	this.checkStep4()
+	// }
+	// checkStep4(indexBuffer, bigArray) {
+	// 	if (this.step !== 4) return
+	// 	this.countNeighbors()
+	// 	if (this.step4Neighbors === 8) {
+	// 		this.optimize()
+	// 		this.genMesh(indexBuffer, bigArray)
+	// 		this.step = 5
+	// 		this.world.chunkGenQueue.push(this)
+	// 	}
+	// 	// this.world.generate()
+	// }
+	countNeighbors() {
+		this.loadedNeighbors = 0
+		for (let chunk of [
+			this.world.getChunk(this.x - 16, this.z - 16),
+			this.world.getChunk(this.x - 16, this.z + 16),
+			this.world.getChunk(this.x + 16, this.z - 16),
+			this.world.getChunk(this.x + 16, this.z + 16),
+			this.world.getChunk(this.x, this.z - 16),
+			this.world.getChunk(this.x, this.z + 16),
+			this.world.getChunk(this.x - 16, this.z),
+			this.world.getChunk(this.x + 16, this.z)
+		]) {
+			if (chunk && chunk.loaded) this.loadedNeighbors++
+		}
+	}
+	/** Called when the chunk has finished generating in the web workers.
+	 * This chunk and its 8 neighbors all see if they now have 8 loaded neighbors to finish generating.
+	*/
+	onload() {
+		this.loaded = true
+		this.loadedNeighbors = 0
+		for (let chunk of [
+			this.world.getChunk(this.x - 16, this.z - 16),
+			this.world.getChunk(this.x - 16, this.z + 16),
+			this.world.getChunk(this.x + 16, this.z - 16),
+			this.world.getChunk(this.x + 16, this.z + 16),
+			this.world.getChunk(this.x, this.z - 16),
+			this.world.getChunk(this.x, this.z + 16),
+			this.world.getChunk(this.x - 16, this.z),
+			this.world.getChunk(this.x + 16, this.z)
+		]) {
+			if (chunk) {
+				if (chunk.loaded) this.loadedNeighbors++
+				chunk.loadedNeighbors++
+				if (chunk.loaded && chunk.loadedNeighbors === 8) chunk.finishGenerating()
+			}
+		}
+		if (this.loadedNeighbors === 8) {
+			this.finishGenerating()
+		}
+	}
+	finishGenerating() {
+		this.optimize()
+		this.genMesh()
 	}
 	getBlock(x, y, z) {
 		// if (y < 0 || y > 255) debugger
@@ -356,6 +467,7 @@ class Chunk {
 		}
 		this.blocks[y * 256 + x * 16 + z] = blockID
 	}
+
 	deleteBlock(x, y, z, user) {
 		if (user && !this.edited) {
 			this.edited = true
@@ -366,6 +478,7 @@ class Chunk {
 		this.minY = y < this.minY ? y : this.minY
 	}
 
+	/*
 	processBlocks() {
 		// Do some pre-processing for dropLight, optimize, and genMesh. It's more efficient to do it all at once.
 		const { blocks, maxY, blockSpread, world } = this
@@ -379,10 +492,10 @@ class Chunk {
 		const flags = new Int8Array((maxY + 1) * 256)
 		this.visFlags = flags
 		// this.shadowFlags = new Int32Array(flags.length >> 5)
+		// for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
 		for (let i = flags.length - 256; i < flags.length; i++) {
 			flags[i] = 8 // Up is Air
 		}
-		for (let i = 0; i < 255; i++) this.shadowFlags[i] = 1
 		for (let i = 256; i < flags.length; i++) {
 			const x = i >> 4 & 15
 			const z = i & 15
@@ -433,7 +546,7 @@ class Chunk {
 			}
 
 			// Some lighting stuff
-			const light = lightLevels[255 & b]
+			const light = lightLevels[b & 255]
 			if (light) {
 				if (!blockSpread[light]) blockSpread[light] = []
 				blockSpread[light].push(this.x + x, i >> 8, this.z + z)
@@ -480,10 +593,10 @@ class Chunk {
 		this.blockSpread = null
 
 		// Drop light in neighboring chunk borders so we won't need to spread into them as much.
-		world.getChunk(this.x - 1, this.z).dropLight()
-		world.getChunk(this.x + 17, this.z).dropLight()
-		world.getChunk(this.x, this.z - 1).dropLight()
-		world.getChunk(this.x, this.z + 17).dropLight()
+		world.getChunk(this.x - 16, this.z).dropLight()
+		world.getChunk(this.x + 16, this.z).dropLight()
+		world.getChunk(this.x, this.z - 16).dropLight()
+		world.getChunk(this.x, this.z + 16).dropLight()
 
 		// Spread the light to places where the vertical columns stopped earlier, plus chunk borders
 		let spread = []
@@ -511,6 +624,70 @@ class Chunk {
 		}
 
 		this.lit = true
+	}*/
+	/**
+	 * Checks and pulls light from neighboring chunks along borders.
+	 */
+	checkBorderLight() {
+		const chunkNX = this.world.getChunk(this.x - 16, this.z)
+		const chunkPX = this.world.getChunk(this.x + 16, this.z)
+		const chunkNZ = this.world.getChunk(this.x, this.z - 16)
+		const chunkPZ = this.world.getChunk(this.x, this.z + 16)
+
+		const { light, blocks } = this
+
+		for (let y = 1; y < 256; y++) {
+			for (let i = 0; i < 16; i++) {
+				{
+					// X border (x = 0)
+					let x = 0, z = i
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkNX.light[index + 15 * 16]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// X border (x = 15)
+					let x = 15, z = i
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkPX.light[index - 15 * 16]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// Z border (z = 0)
+					let x = i, z = 0
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkNZ.light[index + 15]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+				{
+					// Z border (z = 15)
+					let x = i, z = 15
+					let index = y * 256 + x * 16 + z
+					if (blockData[blocks[index]].transparent) {
+						let neighborLight = chunkPZ.light[index - 15]
+						let sl = light[index] & 15
+						let bl = light[index] >> 4
+						if ((neighborLight & 15) - 1 > sl) this.spreadSkyLight(x, y, z, neighborLight & 15)
+						if ((neighborLight >> 4) - 1 > bl) this.spreadBlockLight(x, y, z, neighborLight >> 4)
+					}
+				}
+			}
+		}
 	}
 	setLight(x, y, z, level) {
 		const i = y * 256 + x * 16 + z
@@ -518,7 +695,6 @@ class Chunk {
 		// debugger
 	}
 	setBlockLight(x, y, z, level) {
-		this.hasBlockLight = true
 		const i = y * 256 + x * 16 + z
 		this.light[i] = level << 4 | this.light[i] & 15
 	}
@@ -625,7 +801,9 @@ class Chunk {
 			}
 		}
 	}
-	generate() {
+	/*generateStage1() {
+		if (this.caves || this.caveData) return
+
 		if (this.generated) return
 		const cx = this.x
 		const cz = this.z
@@ -636,7 +814,7 @@ class Chunk {
 		const smoothness = 0.01 // How close hills and valleys are together
 		const hilliness = 80 // Height of the hills
 		const extra = 30 // Extra blocks stacked onto the terrain
-		const superflat = this.populated
+		const superflat = this.superflat
 		let gen = 0
 		for (let i = 0; i < 16; i++) {
 			for (let k = 0; k < 16; k++) {
@@ -678,31 +856,44 @@ class Chunk {
 		if (this.doubleRender) this.world.doubleRenderChunks.push(this)
 		this.generated = true
 		this.getCaveData() // Queue up the multithreaded cave gen
-	}
+	}*/
 	optimize() {
 		const { blocks, renderData, world, x, z, maxY } = this
 		const flags = this.visFlags // Computed in this.processBlocks()
 		this.visFlags = null
+		// console.log(renderData)
 
 		// Load adjacent chunks blocks
-		const chunkN = world.getChunk(x, z + 17).blocks
-		const chunkS = world.getChunk(x, z - 1).blocks
-		const chunkE = world.getChunk(x + 17, z).blocks
-		const chunkW = world.getChunk(x - 1, z).blocks
+		const chunkN = world.getChunk(x, z + 16).blocks
+		const chunkS = world.getChunk(x, z - 16).blocks
+		const chunkE = world.getChunk(x + 16, z).blocks
+		const chunkW = world.getChunk(x - 16, z).blocks
 		// let max = (maxY - 1) * 256
 		// for (let i = 256; i <= max; i += 16) if (trans[chunkN[i]]) flags[i + 15] |= 32
 
 		// Culling faces on chunk borders as needed
+		const updateEdge = (chunk, index, thisIndex, direction, flag, otherDirection) => {
+			const data = blockData[chunk[index]]
+			if (data.hideInterior && data.id === this.blocks[thisIndex]) return false
+
+			const thisData = blockData[blocks[thisIndex]]
+			if ((data.transparent || !data.isCube && !data.shape.cull[direction])
+				&& (thisData.isCube || thisData.shape.cull[otherDirection])) {
+				flags[thisIndex] ^= flag
+			}
+		}
+
+		// Fix edge flags
 		for (let y = 1; y <= maxY; y++) {
 			let indexN = y * 256
 			let indexS = indexN + 15
 			let indexE = indexN
 			let indexW = indexN + 240
 			for (let i = 0; i < 16; i++) {
-				if (blockData[chunkN[indexN]].transparent || !blockData[chunkN[indexN]].shape.cull.south) flags[indexN + 15] ^= 32
-				if (blockData[chunkS[indexS]].transparent || !blockData[chunkS[indexS]].shape.cull.north) flags[indexS - 15] ^= 16
-				if (blockData[chunkE[indexE]].transparent || !blockData[chunkE[indexE]].shape.cull.west) flags[indexE + 240] ^= 2
-				if (blockData[chunkW[indexW]].transparent || !blockData[chunkW[indexW]].shape.cull.east) flags[indexW - 240] ^= 1
+				updateEdge(chunkN, indexN, indexS, "south", 32, "north")
+				updateEdge(chunkS, indexS, indexN, "north", 16, "south")
+				updateEdge(chunkE, indexE, indexW, "west", 2, "east")
+				updateEdge(chunkW, indexW, indexE, "east", 1, "west")
 				indexN += 16
 				indexS += 16
 				indexE++
@@ -710,22 +901,25 @@ class Chunk {
 			}
 		}
 
-		//Check all the blocks in the chunk to see if they're visible.
-		const cube = shapes.cube.cull
-		for (let index = 256; index < flags.length; index++) {
-			const cull = blockData[blocks[index]].shape.cull
-			if (cull !== cube) {
-				if (!cull.bottom) flags[index] |= 4
-				if (!cull.top)    flags[index] |= 8
-				if (!cull.south)  flags[index] |= 16
-				if (!cull.north)  flags[index] |= 32
-				if (!cull.west)   flags[index] |= 1
-				if (!cull.east)   flags[index] |= 2
-			}
-			if (flags[index] > 0) {
-				renderData[this.renderLength++] = index << 16 | flags[index] << 10
+		// Fill in edge renderData
+		for (let y = 1; y <= maxY; y++) {
+			let indexN = y * 256
+			let indexS = indexN + 15
+			let indexE = indexN
+			let indexW = indexN + 240
+			for (let i = 0; i < 16; i++) {
+				if (flags[indexN] > 0) renderData.push(indexN << 16 | flags[indexN] << 10)
+				if (flags[indexS] > 0) renderData.push(indexS << 16 | flags[indexS] << 10)
+				if (flags[indexE] > 0) renderData.push(indexE << 16 | flags[indexE] << 10)
+				if (flags[indexW] > 0) renderData.push(indexW << 16 | flags[indexW] << 10)
+				indexN += 16
+				indexS += 16
+				indexE++
+				indexW++
 			}
 		}
+
+		// Baseline
 		this.minY = renderData[0] >>> 24
 
 		// The bottom layer of bedrock is only ever visible on top
@@ -738,14 +932,10 @@ class Chunk {
 			}
 		}
 		this.renderLength = renderData.length
-
-		if (!world.meshQueue.includes(this)) {
-			world.meshQueue.push(this)
-		}
 		this.optimized = true
 	}
 	render(p, global) {
-		const { glExtensions, gl } = this
+		const { glExtensions, gl } = this.glGlobals
 		if (this.buffer === undefined) {
 			return
 		}
@@ -768,7 +958,8 @@ class Chunk {
 		z += this.z
 		let index = j * 256 + i * 16 + k
 		let blockState = this.blocks[index]
-		const cull = blockData[blockState].shape.cull
+		const data = blockData[blockState]
+		const cull = data.shape.cull
 
 		let w = blockData[i ? this.blocks[index - 16] : world.getBlock(x - 1, j, z)]
 		let e = blockData[i < 15 ? this.blocks[index + 16] : world.getBlock(x + 1, j, z)]
@@ -785,7 +976,7 @@ class Chunk {
 		+  (s.transparent || !s.shape.cull.north  || !cull.south) * 16
 		+  (n.transparent || !n.shape.cull.south  || !cull.north) * 32
 
-		if (blockState < 256 && hideInterior[blockState]) {
+		if (blockState < 256 && data.hideInterior) {
 			visible ^= w === blockState
 			| (e === blockState) << 1
 			| (d === blockState) << 2
@@ -827,9 +1018,9 @@ class Chunk {
 			// Wasn't visible before, is visible after.
 			index = this.renderLength++
 		}
-		this.renderData[index] = pos | visible << 10// | this.paletteMap[blockState]
+		this.renderData[index] = pos | visible << 10 // | this.paletteMap[blockState]
 	}
-	getCaveData() {
+	/*getCaveData() {
 		if (this.caves || this.caveData) return
 		this.caveData = new Promise(resolve => {
 			window.parent.doWork({
@@ -894,9 +1085,9 @@ class Chunk {
 		this.caveData = null
 	}
 	populate(details) {
-		if (this.populated) return
+		if (this.superflat) return
 		const { world } = this
-		randomSeed(hash(this.x, this.z) * 210000000)
+		randomSeed(hash(this.x, this.z) * 210000000) // Hash is seeded with the world seed, so this doesn't need to be.
 		let wx = 0, wz = 0, ground = 0, top = 0, rand = 0, place = false
 
 		// Spawn trees and ores
@@ -1105,8 +1296,8 @@ class Chunk {
 			}
 		}
 
-		this.populated = true
-	}
+		this.superflat = true
+	}*/
 	getSurroundingBlocks(loc, sides, blocks27, lights27) {
 		// Used in this.genMesh()
 		// Note that, while this *does* do more work than simply loading the blocks/lights as they're needed,
@@ -1247,11 +1438,13 @@ class Chunk {
 			}
 		}
 	}
-	genMesh(indexBuffer, bigArray) {
-		const { glExtensions, gl, glCache, renderLength, renderData } = this
+	genMesh() {
+		const { renderLength, renderData } = this
+		const { glExtensions, gl, glCache, indexBuffer, bigArray } = this.glGlobals
 		let index = 0
 		if (!this.renderLength) {
-			return index
+			// console.log(this.x, this.z, this.x / 16, this.z / 16, "No render data")
+			return
 		}
 		let verts = null, texVerts = null, texShapeVerts = null,
 			tx = 0, ty = 0
@@ -1368,20 +1561,15 @@ class Chunk {
 
 		if (!this.buffer) {
 			this.buffer = gl.createBuffer()
+			this.vao = glExtensions.vertex_array_object.createVertexArrayOES()
+			if (++this.world.generatedChunks === 3000) {
+				let ms = Date.now() - this.world.initTime
+				console.log("3000 chunk seconds:", ms/1000, "\nms per chunk:", ms / 3000, "\nChunks per second:", 3000000 / ms)
+			}
 		}
 		let data = new Float32Array(bigArray.buffer, 0, index)
 
-		// let maxY = 0
-		// let minY = 255
-		// for (let i = 1; i < data.length; i += 6) {
-		// 	const y = data[i]
-		// 	maxY = y > maxY ? y : maxY
-		// 	minY = y < minY ? y : minY
-		// }
-		// this.maxY = maxY
-		// this.minY = minY
-
-		this.faces = data.length / 32
+		this.faces = index >> 5
 		glExtensions.vertex_array_object.bindVertexArrayOES(this.vao)
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
@@ -1413,7 +1601,7 @@ class Chunk {
 			let x = i >> 3 & 7
 			let z = i & 7
 
-			// 3 copies of the section, all oriented in different directions so we can see which one compresses the most
+			// 6 copies of the section, all oriented in different directions so we can see which one compresses the most
 			section[0][(y & 7) << 6 | (x & 7) << 3 | z & 7] = blocks[i]
 			section[1][(y & 7) << 6 | (z & 7) << 3 | x & 7] = blocks[i]
 			section[2][(x & 7) << 6 | (y & 7) << 3 | z & 7] = blocks[i]
@@ -1537,6 +1725,31 @@ class Chunk {
 	}
 	load() {
 		if (this.loaded) return
+		// Load blocks that the neighbors have edited.
+		let blocks = [
+			this.world.getChunk(this.x - 16, this.z - 16).neighborBlockEdits[8],
+			this.world.getChunk(this.x - 16, this.z).neighborBlockEdits[7],
+			this.world.getChunk(this.x - 16, this.z + 16).neighborBlockEdits[6],
+			this.world.getChunk(this.x, this.z - 16).neighborBlockEdits[5],
+			this.world.getChunk(this.x, this.z + 16).neighborBlockEdits[3],
+			this.world.getChunk(this.x + 16, this.z - 16).neighborBlockEdits[2],
+			this.world.getChunk(this.x + 16, this.z).neighborBlockEdits[1],
+			this.world.getChunk(this.x + 16, this.z + 16).neighborBlockEdits[0],
+		]
+		for (let arr of blocks) {
+			if (arr.length) {
+				for (let i = 0; i < arr.length; i++) {
+					let data = arr[i]
+					this.blocks[data >>> 16] = data & 0xffff
+					const y = data >>> 24
+					const xz = data >> 16 & 255
+					if (y > this.tops[xz]) this.tops[xz] = y
+					this.maxY = max(this.maxY, y) // Leaves are usually higher than than the ground, unless a chunk previously
+				}
+			}
+		}
+
+		// Load player edits if they exist
 		const chunkX = this.x >> 4
 		const chunkZ = this.z >> 4
 		const str = `${chunkX},${chunkZ}`
@@ -1648,7 +1861,10 @@ class Chunk {
 				}
 			}
 		}
-		if (this.buffer) this.gl.deleteBuffer(this.buffer)
+		if (this.buffer) {
+			this.glGlobals.glExtensions.vertex_array_object.deleteVertexArrayOES(this.vao)
+			this.glGlobals.gl.deleteBuffer(this.buffer)
+		}
 	}
 }
 
