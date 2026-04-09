@@ -221,7 +221,7 @@ const changeList = [
 			"Added: \"Controls\" page in Options",
 			"Added: \"Change Log\" page to the main menu",
 			"Removed: Ctrl clicking no longer places blocks by default",
-			"Fixed: Rendering bug when partial blocks are placed next to solid blocks",
+			"Fixed: Rendering bug when partial blocks are placed next to solid blocks (the partial block allowed x-raying through the solid block)",
 			"Broken: Smooth lighting removed from inner faces of partial blocks. The previous bug was hiding a lighting bug, and this was my solution.",
 			"Fixed: Inventory glitch on Khan Academy. Not sure why it wasn't broken everywhere.",
 			"Changed: Save strings are like 1% smaller. I compressed repeating characters to avoid KA's spam filter when posting saves in comments.",
@@ -232,7 +232,7 @@ const changeList = [
 changeList.sort((a, b) => b.date.localeCompare(a.date))
 
 const list = document.getElementById("changelog-list")
-for (let {date, version, creditName, creditLink, versionLink, changes} of changeList) {
+for (let { date, version, creditName, creditLink, versionLink, changes } of changeList) {
 	let li = document.createElement("li")
 	li.innerHTML = `Version: ${versionLink ? `<a href=${versionLink} target="_blank">${version}</a>` : version}<br>
 		Date: ${date}<br>

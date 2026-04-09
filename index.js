@@ -28,7 +28,7 @@ if (!cmd) {
 		// Only works on Linux, but it'll open the page.
 		require("child_process").exec("browse http://localhost:4000")
 	}
-	catch{}
+	catch{ /* empty */ }
 
 	// Find the computer's network IP
 	const nets = os.networkInterfaces()
@@ -55,13 +55,20 @@ function bundle() {
 			if (imp) {
 				const dir = Path.dirname(path)
 				let p = Path.normalize(Path.join(dir, imp[4]))
-				
+
 				if (p.endsWith(".css")) {
 					lines[i] = "// " + lines[i]
 					cssFiles.push(p)
 					continue
 				}
-				if (!p.includes(".")) p += ".js"
+				if (!/\.\w+$/.test(p)) p += ".js"
+
+				// Worker dependencies can't be nested. Sorry.
+				if (path.startsWith("src/workers")) {
+					let dep = fs.readFileSync(p, "utf-8")
+					lines[i] = dep.replace(/^\s*export .+$/m, "")
+					continue
+				}
 
 				loadFiles(p)
 

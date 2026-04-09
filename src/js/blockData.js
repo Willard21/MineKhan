@@ -267,6 +267,7 @@ class BlockData {
 	iconImg = document.createElement("canvas")
 	shape = shapes.cube
 	uniqueShape = false
+	isCube = true
 
 	constructor(data, id, hasIcon = true) {
 		if (data instanceof BlockData) {
@@ -321,6 +322,7 @@ class BlockData {
 
 		data.name = data.name.replace(/[A-Z]/g, " $&").replace(/./, c => c.toUpperCase())
 		Object.assign(this, data)
+		if (this.shape !== shapes.cube) this.isCube = false
 	}
 }
 
@@ -515,7 +517,7 @@ const blockData = [
 	{
 		name: "jackOLantern",
 		textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "jackOLantern"],
-		shadow: "false",
+		shadow: false,
 		lightLevel: 15,
 		rotate: true,
 		shape: shapes.cube
