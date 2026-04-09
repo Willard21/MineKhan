@@ -4,7 +4,7 @@ const createDatabase = async () => {
 
 		request.onupgradeneeded = function(event) {
 			let DB = event.target.result
-			// Worlds will contain and ID containing the timestamp at which the world was created, a "saved" timestamp,
+			// Worlds will contain an ID containing the timestamp at which the world was created, a "saved" timestamp,
 			// and a "data" string that's identical to the copy/paste save string
 			let store = DB.createObjectStore("worlds", { keyPath: "id" })
 			store.createIndex("id", "id", { unique: true })

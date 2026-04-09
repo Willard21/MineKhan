@@ -1,7 +1,3 @@
-// #include <emscripten/emscripten.h>
-// extern void conlog(int a, double b);
-#include <math.h>
-
 int cast(double a) {
 	int ret;
 	asm(
@@ -29,9 +25,9 @@ double noise(double x, double y, double z) {
 	const double xs = x + stretchOffset;
 	const double ys = y + stretchOffset;
 	const double zs = z + stretchOffset;
-	const double xsb = floor(xs);
-	const double ysb = floor(ys);
-	const double zsb = floor(zs);
+	const double xsb = __builtin_floor(xs);
+	const double ysb = __builtin_floor(ys);
+	const double zsb = __builtin_floor(zs);
 	const double xins = xs - xsb;
 	const double yins = ys - ysb;
 	const double zins = zs - zsb;
@@ -80,8 +76,8 @@ double noise(double x, double y, double z) {
 int isCave(double x, double y, double z) {
 	const double smooth = 0.02;
 	const double caveSize = 0.0055;
-	return fabs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
-		&& fabs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize;
+	return __builtin_fabs(0.5 - noise(x * smooth, y * smooth, z * smooth)) < caveSize
+		&& __builtin_fabs(0.5 - noise(y * smooth, z * smooth, x * smooth)) < caveSize;
 }
 
 void carveSphere(int index, char* output) {
@@ -94,7 +90,7 @@ void carveSphere(int index, char* output) {
 	}
 }
 
-__attribute__((used)) char* getCaves(int x, int z) {
+char* getCaves(int x, int z) {
 	char* results = (char*) 9224;
 	// Clear out the array so it doesn't re-use the results.
 	__builtin_memset(results, 0, 20992); // Clear 256 * 82 bytes

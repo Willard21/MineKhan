@@ -167,6 +167,6 @@ const numMap = ")!@#$%^&*("
 const compressString = str => str.replace(/(.)\1+/g, s => s[0] + s.length.toString().replace(/./g, n => numMap[n]))
 const charMap = {}
 for (let c of numMap) charMap[c] = numMap.indexOf(c)
-const decompressString = str => str.replace(/.[\)\!@#\$%\^\&\*\(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
+const decompressString = str => str.replace(/.[)!@#$%^&*(]+/g, s => s[0].repeat(+s.slice(1).replace(/./g, c => charMap[c])))
 
 export { timeString, roundBits, compareArr, BitArrayBuilder, BitArrayReader, compressString, decompressString }

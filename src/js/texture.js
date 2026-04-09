@@ -176,7 +176,7 @@ const animateTextures = (gl) => {
 	// texturePixels[y * textureSize * 4 + x * 4 + 2] = 64 * d
 
 	// gl.activeTexture(gl.TEXTURE0) // Moved to play()
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
+	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize, textureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texturePixels)
 }
 
 export { initTextures, hitboxTextureCoords, animateTextures }
