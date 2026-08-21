@@ -44,11 +44,14 @@ const { cos, sin } = Math
 
 class Matrix {
 	constructor(arr) {
-		this.elements = new Float32Array(arr || 16)
-		// this.elements[0] = 1
-		// this.elements[5] = 1
-		// this.elements[10] = 1
-		// this.elements[15] = 1
+		this.elements = new Float32Array(16)
+		if (arr) this.elements.set(arr)
+		else {
+			this.elements[0] = 1
+			this.elements[5] = 1
+			this.elements[10] = 1
+			this.elements[15] = 1
+		}
 	}
 	translate(x, y, z) {
 		let a = this.elements
@@ -174,14 +177,8 @@ class Matrix {
 		matrix[11] = matrix[14]
 		matrix[14] = temp
 	}
-	copyArray(from) {
-		let to = this.elements
-		for (let i = 0; i < from.length; i++) {
-			to[i] = from[i]
-		}
-	}
 	copyMatrix(from) {
-		let to = this.elements
+		const to = this.elements
 		from = from.elements
 		for (let i = 0; i < from.length; i++) {
 			to[i] = from[i]

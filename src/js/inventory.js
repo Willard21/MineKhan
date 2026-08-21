@@ -1,4 +1,4 @@
-import { SLAB, STAIR, shapes } from "./shapes"
+import { shapes } from "./shapes"
 import { blockData, blockIds } from "./blockData"
 
 /**
@@ -111,7 +111,7 @@ class InventoryPage {
 	 * @param {CanvasRenderingContext2D} context The context to render to.
 	 * @param {HTMLCanvasElement} icon The icon for the inventory page. Like a stair block for the stair inventory or whatever.
 	 */
-	constructor(context, icon) {
+	constructor(context = invCtx, icon = null) {
 		this.icon = icon
 		this.ctx = context
 	}
@@ -383,15 +383,15 @@ class InventoryManager {
 		// Creative Inventories
 		if (creative) {
 			let cubes = new InventoryPage(contCtx, blockData[blockIds.grass].iconImg)
-			let slabs = new InventoryPage(contCtx, blockData[blockIds.smoothStone | SLAB].iconImg)
-			let stairs = new InventoryPage(contCtx, blockData[blockIds.oakPlanks | STAIR].iconImg)
+			let slabs = new InventoryPage(contCtx, blockData[blockIds.smoothStoneSlab].iconImg)
+			let stairs = new InventoryPage(contCtx, blockData[blockIds.oakPlanksStairs].iconImg)
 			let decor = new InventoryPage(contCtx, blockData[blockIds.poppy].iconImg)
-			for (let id in blockData) {
-				const block = blockData[id]
+			for (const block of blockData) {
+				const id = block.id
 				// eslint-disable-next-line no-prototype-builtins
 				if (!block.iconImg) continue
 
-				let item = new InventoryItem(+id, block.name, 1, block.iconImg)
+				let item = new InventoryItem(id, block.name, 1, block.iconImg)
 
 				if (block.shape === shapes.cube && block.solid) {
 					cubes.items.push(item)

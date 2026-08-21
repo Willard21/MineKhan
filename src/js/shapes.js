@@ -1,6 +1,6 @@
 import { compareArr } from "./utils"
 
-const textureAtlasWidth = 16 // That's 16 textures wide
+const textureAtlasWidth = 32 // That's 16 textures wide
 
 const CUBE     = 0
 const SLAB     = 0x100 // 9th bit
@@ -23,8 +23,239 @@ const WEST     = 0x1800
 const arrayify = (x, y, z, width, height, textureX, textureY) => {
 	return [x, y, z, width, height, textureX, textureY]
 }
+
+const mapCoords = (rect, face) => {
+	const [x, y, z, w, h, tx, ty] = rect
+	const tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h].map(c => c / 16 / textureAtlasWidth)
+	const pos = [x, y, z]
+	switch(face) {
+		case 0: // Bottom
+			pos.push(x+w,y,z, x+w,y,z+h, x,y,z+h)
+			break
+		case 1: // Top
+			pos.push(x+w,y,z, x+w,y,z-h, x,y,z-h)
+			break
+		case 2: // Negative X
+			pos.push(x-w,y,z, x-w,y-h,z, x,y-h,z)
+			break
+		case 3: // Positive X
+			pos.push(x+w,y,z, x+w,y-h,z, x,y-h,z)
+			break
+		case 4: // Positive Z
+			pos.push(x,y,z+w, x,y-h,z+w, x,y-h,z)
+			break
+		case 5: // Negative Z
+			pos.push(x,y,z-w, x,y-h,z-w, x,y-h,z)
+			break
+	}
+	for (let i = 0; i < 12; i++) pos[i] = (pos[i] - 8) / 16
+	let minmax = compareArr(pos, [])
+	pos.max = minmax.splice(3, 3)
+	pos.min = minmax
+
+	return {
+		pos: pos,
+		tex: tex
+	}
+}
+
+// 90 degree clockwise rotation; returns a new shape object
+const rotate = (shape) => {
+	let verts = shape.verts
+	let texVerts = shape.texVerts
+	let cull = shape.cull
+	let pos = []
+	let tex = []
+	for (let i = 0; i < verts.length; i++) {
+		let side = verts[i]
+		pos[i] = []
+		tex[i] = []
+		for (let j = 0; j < side.length; j++) {
+			let face = side[j]
+			let c = []
+			pos[i][j] = c
+			for (let k = 0; k < face.length; k += 3) {
+				c[k] = face[k + 2]
+				c[k + 1] = face[k + 1]
+				c[k + 2] = -face[k]
+			}
+
+			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
+			if (i === 0) {
+				// Bottom
+				c.push(...c.splice(0, 3))
+				tex[i][j].push(...tex[i][j].splice(0, 2))
+			}
+			if (i === 1) {
+				// Top
+				c.unshift(...c.splice(-3, 3))
+				tex[i][j].unshift(...tex[i][j].splice(-2, 2))
+			}
+
+			let minmax = compareArr(c, [])
+			c.max = minmax.splice(3, 3)
+			c.min = minmax
+		}
+	}
+
+	// Make sure each direction has the correct number of faces and whatnot.
+	let temp = tex[2] // North
+	tex[2] = tex[5] // North = West
+	tex[5] = tex[3] // West = South
+	tex[3] = tex[4] // South = East
+	tex[4] = temp // East = North
+
+	temp = pos[2] // North
+	pos[2] = pos[5] // North = West
+	pos[5] = pos[3] // West = South
+	pos[3] = pos[4] // South = East
+	pos[4] = temp // East = North
+
+	let cull2 = {
+		top: cull.top,
+		bottom: cull.bottom,
+		north: cull.west,
+		west: cull.south,
+		south: cull.east,
+		east: cull.north
+	}
+
+	// let buffer = gl.createBuffer()
+	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
+
+	return {
+		verts: pos,
+		texVerts: tex,
+		cull: cull2,
+		rotate: true,
+		flip: shape.flip,
+		buffer: null,
+		size: shape.size,
+		variants: shape.variants
+	}
+}
+
+// Reflect over the y plane; returns a new shape object
+const flip = (shape) => {
+	let verts = shape.verts
+	let texVerts = shape.texVerts
+	let cull = shape.cull
+	let pos = []
+	let tex = []
+	for (let i = 0; i < verts.length; i++) {
+		let side = verts[i]
+		pos[i] = []
+		tex[i] = []
+		for (let j = 0; j < side.length; j++) {
+			let face = side[j].slice().reverse()
+			let c = []
+			pos[i][j] = c
+			for (let k = 0; k < face.length; k += 3) {
+				c[k] = face[k + 2]
+				c[k + 1] = -face[k + 1]
+				c[k + 2] = face[k]
+			}
+			let minmax = compareArr(c, [])
+			c.max = minmax.splice(3, 3)
+			c.min = minmax
+
+			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
+		}
+	}
+	let temp = pos[0] // Bottom
+	pos[0] = pos[1] // Bottom = Top
+	pos[1] = temp // Top = Bottom
+
+	temp = tex[0] // Bottom
+	tex[0] = tex[1] // Bottom = Top
+	tex[1] = temp // Top = Bottom
+
+	let cull2 = {
+		top: cull.bottom,
+		bottom: cull.top,
+		north: (cull.north & 1) << 1 | (cull.north & 2) >> 1,
+		west: (cull.west & 1) << 1 | (cull.west & 2) >> 1,
+		south: (cull.south & 1) << 1 | (cull.south & 2) >> 1,
+		east: (cull.east & 1) << 1 | (cull.east & 2) >> 1
+	}
+
+	// let buffer = gl.createBuffer()
+	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
+
+	return {
+		verts: pos,
+		texVerts: tex,
+		cull: cull2,
+		rotate: shape.rotate,
+		flip: shape.flip,
+		buffer: null,
+		size: shape.size,
+		variants: shape.variants
+	}
+}
+
+class Shape {
+	size = 6
+	variants = []
+
+	/** @type {WebGLBuffer} */
+	buffer = null
+	texVerts = []
+	flip = false
+	rotate = false
+	hitbox = []
+	index = 0
+	static index = 0
+	constructor(details) {
+		const verts = details.verts
+		this.size = details.verts.flat().length
+		this.index = Shape.index++
+
+		// Populate the vertex coordinates
+		for (let i = 0; i < verts.length; i++) { // 6 directions
+			const side = verts[i] // Array of faces in this direction
+			const texArr = []
+			this.texVerts.push(texArr)
+			for (let j = 0; j < side.length; j++) { // Each face in this direction
+				const mapped = mapCoords(side[j], i)
+				side[j] = mapped.pos
+				texArr.push(mapped.tex)
+			}
+		}
+
+		// Do the same if the object includes a hitbox that doesn't match the rendered faces (cactus)
+		if (details.hitbox) {
+			for (let i = 0; i < details.hitbox.length; i++) { // 6 directions
+				const side = details.hitbox[i] // Array of faces in this direction
+				for (let j = 0; j < side.length; j++) { // Each face in this direction
+					const mapped = mapCoords(side[j], i)
+					side[j] = mapped.pos
+				}
+			}
+		}
+
+		// Generate all the flipped and rotated variants
+		const v = details.variants
+		if (details.rotate) {
+			v[4] = rotate(details)
+			v[2] = rotate(v[4])
+			v[6] = rotate(v[2])
+			v[0] = details
+		}
+		if (details.flip) {
+			v[1] = flip(details)
+			if (details.rotate) {
+				v[3] = flip(v[2])
+				v[5] = flip(v[4])
+				v[7] = flip(v[6])
+			}
+		}
+	}
+}
 let shapes = {
-	cube: {
+	cube: new Shape({
 		verts: [
 			// x, y, z, width, height, textureX, textureY
 			// 0, 0, 0 is the corner on the top left of the texture
@@ -43,13 +274,8 @@ let shapes = {
 			east: true,
 			west: true
 		},
-		texVerts: [],
-		buffer: null,
-		size: 6,
-		variants: [],
-		flip: false,
 		rotate: true,
-	},
+	}),
 	slab: {
 		verts: [
 			[arrayify( 0, 0,  0, 16, 16, 0, 0)], //bottom
@@ -291,217 +517,38 @@ let shapes = {
 		variants: [],
 		flip: false,
 		rotate: true
-	}
-}
-
-const mapCoords = (rect, face) => {
-	const [x, y, z, w, h, tx, ty] = rect
-	const tex = [tx+w,ty, tx,ty, tx,ty+h, tx+w,ty+h].map(c => c / 16 / textureAtlasWidth)
-	const pos = [x, y, z]
-	switch(face) {
-		case 0: // Bottom
-			pos.push(x+w,y,z, x+w,y,z+h, x,y,z+h)
-			break
-		case 1: // Top
-			pos.push(x+w,y,z, x+w,y,z-h, x,y,z-h)
-			break
-		case 2: // North
-			pos.push(x-w,y,z, x-w,y-h,z, x,y-h,z)
-			break
-		case 3: // South
-			pos.push(x+w,y,z, x+w,y-h,z, x,y-h,z)
-			break
-		case 4: // East
-			pos.push(x,y,z+w, x,y-h,z+w, x,y-h,z)
-			break
-		case 5: // West
-			pos.push(x,y,z-w, x,y-h,z-w, x,y-h,z)
-			break
-	}
-	for(let i = 0; i < 12; i++) pos[i] = (pos[i] - 8) / 16
-	let minmax = compareArr(pos, [])
-	pos.max = minmax.splice(3, 3)
-	pos.min = minmax
-
-	return {
-		pos: pos,
-		tex: tex
-	}
-}
-
-// 90 degree clockwise rotation; returns a new shape object
-const rotate = (shape) => {
-	let verts = shape.verts
-	let texVerts = shape.texVerts
-	let cull = shape.cull
-	let pos = []
-	let tex = []
-	for (let i = 0; i < verts.length; i++) {
-		let side = verts[i]
-		pos[i] = []
-		tex[i] = []
-		for (let j = 0; j < side.length; j++) {
-			let face = side[j]
-			let c = []
-			pos[i][j] = c
-			for (let k = 0; k < face.length; k += 3) {
-				c[k] = face[k + 2]
-				c[k + 1] = face[k + 1]
-				c[k + 2] = -face[k]
-			}
-
-			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-			if (i === 0) {
-				// Bottom
-				c.push(...c.splice(0, 3))
-				tex[i][j].push(...tex[i][j].splice(0, 2))
-			}
-			if (i === 1) {
-				// Top
-				c.unshift(...c.splice(-3, 3))
-				tex[i][j].unshift(...tex[i][j].splice(-2, 2))
-			}
-
-			let minmax = compareArr(c, [])
-			c.max = minmax.splice(3, 3)
-			c.min = minmax
-		}
-	}
-
-	// Make sure each direction has the correct number of faces and whatnot.
-	let temp = tex[2] // North
-	tex[2] = tex[5] // North = West
-	tex[5] = tex[3] // West = South
-	tex[3] = tex[4] // South = East
-	tex[4] = temp // East = North
-
-	temp = pos[2] // North
-	pos[2] = pos[5] // North = West
-	pos[5] = pos[3] // West = South
-	pos[3] = pos[4] // South = East
-	pos[4] = temp // East = North
-
-	let cull2 = {
-		top: cull.top,
-		bottom: cull.bottom,
-		north: cull.west,
-		west: cull.south,
-		south: cull.east,
-		east: cull.north
-	}
-
-	// let buffer = gl.createBuffer()
-	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-	return {
-		verts: pos,
-		texVerts: tex,
-		cull: cull2,
-		rotate: true,
-		flip: shape.flip,
+	},
+	cactus: {
+		verts: [
+			[[1,0,1,14,14,1,1]],
+			[[1,16,15,14,14,1,1]],
+			[[16,16,15,16,16,0,0]],
+			[[0,16,1,16,16,0,0]],
+			[[15,16,0,16,16,0,0]],
+			[[1,16,16,16,16,0,0]]
+		],
+		cull: {
+			top: false,
+			bottom: false,
+			north: false,
+			south: false,
+			east: false,
+			west: false
+		},
+		texVerts:[],
 		buffer: null,
-		size: shape.size,
-		variants: shape.variants
-	}
-}
-
-// Reflect over the y plane; returns a new shape object
-const flip = (shape) => {
-	let verts = shape.verts
-	let texVerts = shape.texVerts
-	let cull = shape.cull
-	let pos = []
-	let tex = []
-	for (let i = 0; i < verts.length; i++) {
-		let side = verts[i]
-		pos[i] = []
-		tex[i] = []
-		for (let j = 0; j < side.length; j++) {
-			let face = side[j].slice().reverse()
-			let c = []
-			pos[i][j] = c
-			for (let k = 0; k < face.length; k += 3) {
-				c[k] = face[k + 2]
-				c[k + 1] = -face[k + 1]
-				c[k + 2] = face[k]
-			}
-			let minmax = compareArr(c, [])
-			c.max = minmax.splice(3, 3)
-			c.min = minmax
-
-			tex[i][j] = texVerts[i][j].slice() // Copy texture verts exactly
-		}
-	}
-	let temp = pos[0] // Bottom
-	pos[0] = pos[1] // Bottom = Top
-	pos[1] = temp // Top = Bottom
-
-	temp = tex[0] // Bottom
-	tex[0] = tex[1] // Bottom = Top
-	tex[1] = temp // Top = Bottom
-
-	let cull2 = {
-		top: cull.bottom,
-		bottom: cull.top,
-		north: (cull.north & 1) << 1 | (cull.north & 2) >> 1,
-		west: (cull.west & 1) << 1 | (cull.west & 2) >> 1,
-		south: (cull.south & 1) << 1 | (cull.south & 2) >> 1,
-		east: (cull.east & 1) << 1 | (cull.east & 2) >> 1
-	}
-
-	// let buffer = gl.createBuffer()
-	// gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-	// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos.flat(2)), gl.STATIC_DRAW)
-
-	return {
-		verts: pos,
-		texVerts: tex,
-		cull: cull2,
-		rotate: shape.rotate,
-		flip: shape.flip,
-		buffer: null,
-		size: shape.size,
-		variants: shape.variants
-	}
-}
-
-// Fill out the coordinates of every shape, and generate all the flipped and rotated variants
-let sortIndex = 0
-for (let shape in shapes) {
-	const obj = shapes[shape]
-	const verts = obj.verts
-	obj.size = obj.verts.flat().length
-	obj.index = sortIndex++
-	if (!obj.texVerts.length) {
-		// Populate the vertex coordinates
-		for (let i = 0; i < verts.length; i++) { // 6 directions
-			let side = verts[i] // Array of faces in this direction
-			let texArr = []
-			obj.texVerts.push(texArr)
-			for (let j = 0; j < side.length; j++) { // Each face in this direction
-				let face = side[j] // Array of arrayified data
-				let mapped = mapCoords(face, i)
-				side[j] = mapped.pos
-				texArr.push(mapped.tex)
-			}
-		}
-	}
-
-	const v = obj.variants
-	if (obj.rotate) {
-		v[4] = rotate(obj)
-		v[2] = rotate(v[4])
-		v[6] = rotate(v[2])
-		v[0] = obj
-	}
-	if (obj.flip) {
-		v[1] = flip(obj)
-		if (obj.rotate) {
-			v[3] = flip(v[2])
-			v[5] = flip(v[4])
-			v[7] = flip(v[6])
-		}
+		size: 6,
+		variants: [],
+		flip: false,
+		rotate: false,
+		hitbox: [ // Cacti have overlapping textures, which breaks the normal hitboxes.
+			[[1,0,1,14,14]],
+			[[1,16,15,14,14]],
+			[[15,16,15,14,16]],
+			[[1,16,1,14,16]],
+			[[15,16,1,14,16]],
+			[[1,16,15,14,16]]
+		]
 	}
 }
 
@@ -586,6 +633,5 @@ const stairFunctions = [
 for (let i = 0; i < 8; i++) {
 	stairs[i].getShape = getShapeFactory(stairs[i], ...stairFunctions[i])
 }
-
 
 export { shapes, CUBE, SLAB, STAIR, FLIP, SOUTH, EAST, WEST }

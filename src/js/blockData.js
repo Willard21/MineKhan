@@ -229,12 +229,89 @@ const texturesFunc = function (setPixel, getPixels) {
 		"poppy": "0g0g9000œĩZĀìYĤJYáëWxiHBÏH^NYFĩY00000000000000000000000000000000000000000000i000000jx(00001)Mw00001hi000000*K0000000Ý0000000Ý0000000Ý000005KëÓ00000ÀV0000005Ò000",
 		"cornflower": "0g0gb000ßWW?ĖYÏeYF;HSġY%ĊHöĤWÄ)ZÈâW<ŊH000000000000000000000000000000000011z00000xiNw00003QÂS000006Ý0000008ë0000000K00000ë0ë0000080ù00000aëù000000Đù0000006ù0000000K000",
 		"dandelion": "0g0g8000ZĜZZÃYřßHĥĊWlŗH^NYÄĊZ000000000000000000000000000000000000000000001w0000aÑ0000ÇIë000cQ00005Ĉ0001Għ0000LŁë0007Ĝ00006Ĉ00",
+		"allium": "0g0ga000ĹćHġŕZčêWŒWZå/W^NYÂÏZÄĊZlŗH0000000000000000000i(000001TB00000kkMÀ0000xxzÀ00003iN000000Äw0000006000000070000000800000008000000070000000700000006000000090000",
+		"azureBluet": "0g0g7000ľĖYZĜZŞņHÂÏZÄĊZ^NY00000000000000000000000000000000000000100000Ăw0000Òd000Cbáë00/MÀ000dKìĈ000ĻĊù000ĴĜ00005ë00006000",
+		"blueOrchid": "0g0g8000LWZ!ZZCėHu|H^NYÄĊZlŗH00000000000000000000000000a00000ĺë0ħ00ŌK6ù00C0b0000ĈK00-0î001ďQÖë00S(Q0000&ë00007Ĉ00000Ĥ00000Ň00",
+		"brownMushroom": "0g0g8000ĵÔYúĝHÞUWÖOYÒUY{ŚWĞÅZ000000000000000000000000000000000000000000000000009E0000PFë004^P(008Ąöħ0005ħ00007Ĉ00001Ň00001Ň00",
+		"lilacBottom": "0g0g9000ĝēWĹdWlŗHÂÏZąòZÄĊZ^NYŅ~W01x3S1y001*6ÝÂë000ÃÑ,*00000EÝÀ00000lg0000005À1Ew00E0Ý*i000jgÐV002x5GS000yï(6Ý0000hÃã000000V40iw00004âÁí00007OÀ000000(0000000(000",
+		"lilacTop": "0g0g9000ĹdWŅ~WĝēWąòZÂÏZÄĊZ^NYlŗH00000000000000000i0003g00M(00x(002)03j0000>04(00005K[000000äÝ000000Ä0>x01x067í(00jS5ëS0004X1Ý0h000[Ï(1z00003S]S000g0SX0001w0Ò000",
+		"lilyOfTheValley": "0g0g8000H5YÓĪWZZZŎĆHÂRZłÚY*ŘW00000000000000000000000002À0000-50000;EĈ0000ŇĈa00{ŘŇU00{0ĤA0003ťü0003ţĖ0000ŜÀ0000őŗ0000Zë0000Ň00",
+		"orangeTulip": "0g0g8000řßHĸŚWĥĊWlŗH^NYÂÏZÄĊZ000000000000000000008w00009S0000qK00003000004k0001Qķ0001Ĭŗ0001œŗ0001Ĥŗ0001éķ0000Lë0000Lë00004000",
+		"oxeyeDaisy": "0g0gb000ĂŢZŞņHľĖYŝŉHZÃYZĜZřßHÂÏZlŗHÄĊZ0000000000000000000i(000003Nz00000N?Ãg0000yÄRw0000j?ß(00003yO000000Ng0000008ù000000a0000009ó0000000Ă9000000aù0000008ù00000090000",
+		"peonyBottom": "0g0ga000BÏHBíHoňZxiHŅ~WŒvZōYHŉøHŞøZ00iM>*000gÑ)A*000xG>j0000khz[Ô000Á)jãñ000V>)ÇÓx03ikM*ÅS00Oz>>i0004Oj>xÀ01yÖ)jRg00[ðÁ)z)006âA.Ñ00003jÕÀ00004M[Ý00000))000000O(000",
+		"peonyTop": "0g0ga000ōYHŒvZŉøHBÏHŅ~WŞøZxiHBíHoňZ0000000000000000000000000000000000000g0002y01x000jiw?CN00x+ÅñÂh00ixÅXýÀ005ÇäPÝX000Qüå]Ý04Iÿÿüā000áòxāäX000hNnXx000iCÇåy0001Vÿÿ00",
+		"pinkTulip": "0g0g8000ŞøZŒvZōYH^NYlŗHÄĊZÂÏZ000000000000000000008S0000hS0000qK0000300001500001ĥg0001Ĝk0001ĝü0001ŜĻ0001;Ļ0000=Ĉ0000CĈ00005000",
+		"redMushroom": "0g0gb000ă<WţĊYŇTWþĢZīßHĐTYĶnZĒðHŖĔYľ^Z000000000000000000000000000000000000000000000000000000000000000000000000000iy000003yz(0000OyO>0000?OVÓ000007ë0000009Ý0000009Ĉ000",
+		"redTulip": "0g0g9000œĩZŤkWĤJYÄĊZĀìYÂÏZlŗH^NY000000000000000000000000000gg000000i(00000SMÀ00000@5000000Ñã0000004X0[00008@4Ý00008@XÝ00007ðÔ000007Xñ000000áÝ000000ãÝ00000070000",
+		"roseBushBottom": "0g0gc000áëWxiHFĩYBÏH*NWĤJYœĩZ^NYĀìYŤkWÄĊZ01w3SA000023ÃCÔ000z2íÔþÝ0í(RNqGù08wíNìp068Rě#í00ÔåĚðÕzðKāGěÔđE×åÔĉôÿÔăÔpmß:påIFK10Eìi>A004zĠNîw000zXEN(008N-AzI000îAEA(003OEEzO0",
+		"roseBushTop": "0g0gc000ĤJYœĩZĀìYáëWŤkWxiHFĩY^NYBÏH*NWM1Z000000000001g000000iN000000?x0000h0ÑS1g02NgÝ0RN01B0ðù5x00>0h0ÐS0071zgã000Ā0ÂÝ80000å4K7K00060ò0ã0000ÖÝ06Ý0xg6K0Ý02OAĐ0ä000iÀĀĘÝ00",
+		"torchflower": "0g0ge000ZïHŝŉHŅyHŐĮWÑğWķĨHĈúW?ÓHClZtÐYĊDZhjWÓmZ0000g0000001g000000xw000000Mx000000NN000000zQ00000À@@0000056Ý0IV000ëK9ý0VVëđĘāë00ÆāaġĂ000aĒĄŀĈ8V5Àađııï00VëıĄĔ0000ĳĔĔħ00000ĳĔ000",
+		"whiteTulip": "0g0g8000ŞņHľĖYĂŢZlŗH^NYÄĊZÂÏZ000000000000000000008S00009S0000qK00003200004n00007ă00006ăë00dðš000bĦţ0001GĘ0000,ë0000Bë00004000",
+		"witherRose": "0g0gb000SĹZEÞYkTWoTWwÎHcëYAęW.hY$ĸHgĈY00000000000000000000000000000000000000000001i000000jjw00000?BS000004U0000000K0000000äù00000ĀÿI00008óù8000080Ý0000000Ĉ0000009đ000",
 		"jackOLantern": "0g0gaĬĸHčìWĉKYŉTZŉüYZ6HZïHZšWĽċHèŗZ0102g0i2O(3(j(jN4SV43Ã3RzSÄU5V(Sz*ÓÐ5ÓÀ(z*Ôà5GKOz*ÔÝlGÕOz)G(kÔã>zO>43Q)Oz**3À5*OzVVâÅVÒOzÄÔGGGÓÐw*ÐÔ7Ó6ëw)Oîz-ûNJ90ywyJ9JFwyJFJF",
 		"lantern": "0g0gc000<lWP@Hò>Wì2WAěZĨíWřQYŢCHZŤHZşYTBZ1yg000003Q(002h0iyx00150@GÑ00150,Ià005l0-Ăî00000-đî00150[Iá005l0iyx00000hģh00000ryę002h0Ěy#00150Ěy#00000ryę00000hģh0000000000000",
 		"carvedPumpkin": "0g0g8ĬĸHĉKYčìWŉTZŉüY$0WQSWèŗZ0g1S4TÚùĿ%íŀirQyĚx&#Ĕ+ķK%ńě,×Æ%ńě,ÙÉ%ńĘ,Úă%ĴĀOÚċ%Ġīe[r%ĺ>ĈÃÉ&łâĢńÉ&ŔĞłÚěxń+rÎĘxĽŚ%ŕŀŋÝ9wĆ[ŋř9ŋť~",
 		"pumpkinSide": "0g0g6ĬęHĉÀYđìWŉxZŉüYèŗZ0g1S4TÚùĿ%íŀßlzNRx&zA&SK%íł%ĞÆ%íł%ĞÉ%Ěł%ĞÉ%Ěł%ĘÉ%Ěł%ĘÉ%ĚłĕĚr%íĿĕĚł%óĿĕĚłxóħĕóħxķ0Ĉa1ČÂ9Ĉq?ČĹPČŁ|",
 		"pumpkinTop": "0g0g8ĬęHđìWŉxZŉüYĉÀYŉĈWĞgWKķH0gëw211yJFyI9AjdĈg0)ÂEmò9l0ëXg9đGùyĀPĉĖŉgĀ8İŜĘ4ìxx=Ņ]Àdo7ŗ4J{ČwíyÀ8ASxQ85ĊJF2IxwĿPyú9mĸ9Ěhwgh10T",
 		"cobweb": "0g0g4Į<W000ZZZŎĖYlVýUÒÃęÇÊïþÒÅÄlļUĀGÒÁãËËËrÔÁ=őļü?ÿė-Á}?ÿÇãÇąÅÔ^ÁUĺlĬÇÚÃĝÒÃĬÇlÇVU",
+		"sandstone": "0g0g7ŖĔYŎăYŊØWł^WľpHĭğWĹŏY00TAJ^|İAÛ+ŋĞńĕģÉÚ,yPīąÞåĮePğăÔÑĝ|*_ÚŔÚĴĴØÚĂòĺyâĵŋłÇ)ĴĽĭĲĝĭŁÖRŅDAŅÚńÞÝőĖĶiŒöğÏÆčôÛ$ĳåFÞÈłăÜÙ÷įŐ+",
+		"sandstoneBottom": "0g0g6ĭğWľpHŊØWĹŏYł^WŎăY5DqJÅi!@0J(úß)ûc8bìđcãĽĬ÷oØ^]ŋýĜĀÁQ$J+0ßm4JÀĕÒēÆÝ*A|?EKp$2pyòrzĝčzJ6tðĘîÞł4N]a}ČœùďFöyt{0ŋúĞē×ĚÆ",
+		"sandstoneTop": "0g0g5ľpHŊØWņÈHŎăYł/W5yĹ^yU?AP(ī{CiôPSúÕüú?iĊAý1Aûi]JxïāiÀĊUEüĊìyòÀīUÀAÇúyČEyPÀJUCRĳEJòEĊK?ióMj4B@ÑCiÂAČ^PĀòQüòTo^]Ě^",
+		"cactusBottom": "0g0g700091WdìYĲ,Wĺ[Y÷īYĊŝH0000005AòFA]9ĞŋÚġ8a:ãŁĽķaÓŋúĢķ5Ľŋúģg9ĽŅĕĥ89Ŏ)þ<86Ö)Ă{į6Ötĵ{ķaÔAöĤķ9ĽŊÚĤķ9ĥãŁĿķ5ĞŋJP84ČóPA]000000",
+		"cactusFlower": "0g0g7000šoHťıYĸįYĉÅYÁřHÓÐW000000000000000000000000000000000000001S000+q]+00[p×-09prÓQù5DrMĚIcĊŊÞüÆ1ĚÐõþħ06ŃöĘ001s÷0000Bķ00",
+		"cactusSide": "0g0g9000.ÎYÈNYÓÐWPĩWÁřHTJWĢŠHĆþZ1zAÃNi*g6ÂÅÂNjNÝäÂÁVN>Ng1yxÂNí*K1z+Ã*lBg1OxÃ*lyÝÞOÁÅ*lNg1OxÃBiNg1zÄÂVj*K1ÃCÃVj*K6ÃEzBjBñ6ÂxzBjVgäÂxzNÐBg1ÃÁz*ÐBg1ÃxÂNßBg1zMVyl*g",
+		"cactusTop": "0g0g9000.ÎYTJWĆþZÁřHÈNYÓÐWĢŠHTúZ000000001yxyNixg2QRQQQQg2?NVÒBUw2?ÑÅÒ@Uw1AÄÒÒáQg2*ÒÄÓVUw2@Ñ@ÓÓÑw2@Ô@ÒÓUw2?ÓÓÔU)w1QÄÒÓUQg2?ÑVÓ?Uw2?U*VB)w1QRkQXQg1ixyyixg00000000",
+		"deadBush": "0g0g5000ÀřHýJYÒRZęŊH0000g00401ù0040Îë006ëQë000ķÑg000ŉw000JqÕ0]0mĩõ)S00Èï(000b]ë0001]0002ħ{ë000ÉÙ0000pÙ+0001Òù0001A00",
+		"chiseledRedSandstone": "0g0g7ŀŊWĸĹYİĚHĨĊWęìZĕÁWą(Y00TAJ^|İAÛ+ŋJłÚģÚĞ00ÎAJÄ9*ãļ[tmľăåłÄ.ŌěŀŎþÉËûGÚÓMğĞĝĞŅÿØÛJŒãAJãČüÄ&]Ćö]Ľ|Đŝĕıō|ĢńÚĭŅÂÅsJ]ōľÚĕğÚã",
+		"chiseledSandstone": "0g0g7ŖĔYŎăYŊØWł^WľpHĹŏYĭğW00SAíP|ğzÚĞŃþÉÚĞŒĞ009AJ}d,ěç,u%ğàG,C|Cþİ+ō%+ŝŀğCPĜĚÇďCþłÚĞŔĞAJPAüÄ%ōŝÚŔþ~_ÒĚčĎVUļ}ğÌ|CłúĠōĞłÚĢŔĞ",
+		"cutRedSandstone": "0g0g7ŀŊWĸĹYİĚHĨĊWęìZĕÁWą(Y00TAJ^|İAÛ+ŋJłÚģÚĞ00ÎAJÄ9)łò[t9ĭłÚğm%ĜłúĞĽ|įûÞ)ōMĞĺÚĞŅN+łÛ@ō&*r},CòĜăö+ĽFČłÚĞŅ|ĞłÛ]ļ^UĹÛÄýľÚĕłÚĞ",
+		"cutSandstone": "0g0g7ŖĔYŎăYŊØWł^WľpHĹŏYĭğW00TAJ^|İAÛ+ŋJłÚģÚĞ00ÎAJÄ9)łò[t9ĭłÚğm%ĜłúĞĽ|įûÞ)ōMĞĺÚĞŅN+łÛ@ō&*r},CòĜăö+ĽFČłÚĞŅ|ĞłÛ]ļ^UĹÛÄýľÚĕłÚĞ",
+		"redSand": "0g0g6ĸĹYĥJWİĚHęìZĕÁWŀŊW4Ċĸ?ĊĂÑĚŁõr8@+9AĚŀFNĺPĊİÓþóEþ^$üúÒNÇKğÇÛiĲ$þ_%ĚbÒiĄÖüÇ5JÉ(ĚÃ(ĊıBoıÙüÇPĞÇÒĎôlmı?laEĊÇEĒú?oò?kó$üÁ",
+		"redSandstone": "0g0g7ŀŊWĸĹYİĚHĨĊWęìZą(YĕÁW00TAJ^|İAÛ+ŋĞńĕģÉÚ,yPīąÞåĮePğăÔÑĝ|*_ÚŔÚĴĴØÚĂòĺyâĵŋłÇ)ĴĽĭĲĝĭŁÖRŅDAŅÚńÞÝőĖĶiŒöğÏÆčôÛ$ĳåFÞÈłăÜÙ÷įŐ+",
+		"redSandstoneBottom": "0g0g6ą(YęìZİĚHĕÁWĨĊWĸĹY5DqJÅi!@0J(úß)ûc8bìđcãĽĬ÷oØ^]ŋýĜĀÁQ$J+0ßm4JÀĕÒēÆÝ*A|?EKp$2pyòrzĝčzJ6tðĘîÞł4N]a}ČœùďFöyt{0ŋúĞē×ĚÆ",
+		"redSandstoneTop": "0g0g5čTWġJWęìZİĚHĕÎZ5yĹ^yU?AP(ī{CiôPSúÕüú?iĊAý1Aûi]JxïāiÀĊUEüĊìyòÀīUÀAÇúyČEyPÀJUCRĳEJòEĊK?ióMj4B@ÑCiÂAČ^PĀòQüòTo^]Ě^",
+
+		"blackGlazedTerracotta": "0g0gj$ěW$ěHĀíWõíWEċW00WAJYAJZIÞZQTW4gHgTWoÎYsßWU(Z(ĺY-śW<4H)ŊZ0Q(gÐEcÂüď0īA4ÕEaúx!gXëgðÆaClboðßoÐPı)ĘØ(÷Sìîq^úö$18ggœoĭč%íoICtÔ#mĸĈ|SĵM$îoXĻ.ĕFÄúöÏ3Xĸĝĕx0ÑòîÝķĽĝĕNıÂöîiqľĦhÈ@Ađđ_ÉF*ĕÆıĨEÏ>ÒCĥŘEĿÁE}ØKľıÂÏ@,$ÚØKŀRÂM^ĝd%ØÑĿ^i",
+		"blackTerracotta": "0g0g6AÁWAÎWAÀZwÁWwÀZEÎW0094Xù0ù00ü0c4ùwëR4Aë00i4úi0ù0wX0001A00S2Rw2Tw09AĈë0J]wA002PSw^0ù0000Aë]00ë)A04ùÂa490Ag00ú00]0Aë",
+		"blueGlazedTerracotta": "0g0g6$ĠZ?ńWwáWwÐYy$H<qY5wĹP(ëxwĹP(ùëCrÚĘiÝ/ÑùĽ0ÑpS2ĩiáķÖČb2Óî|+úK)ÃÒ)ŁFĎîÒ+Á]SĨ|üíÂPĿdüqiÚ!?wĜë0*K46Ĺ]6Ĵ+ër96đĎ>T16āÖĢ]",
+		"blueTerracotta": "0g0g9]ŌY]ŜZ{ŜZ]ŜY]ŌZ{ŌY{ŌZQŌY|5Z001y2w000yx03x00S000xhTOig050300iyg00y0gxk000hh2xk0603ygg0y2w01hig001yywg00000hy0S2why30000kyhiw0000y031hih00Ý0í1S004h02Thhxhg01",
+		"brownGlazedTerracotta": "0g0gfìÃWĵ[ZčĻZïÃWlĿYlşZýČHđŌWĖ5HmpHöÐH?*WKňZÖ2WĹÕH100zg?lQg6äziQhU00Gwx4úl60wwĉbPh7ycã1%ĜV7Ýĳß2głQyGDíaqĒc3(ÏDKińch!06Kxńħ2hiĈ0ĉ$ĳQ0xh!ĊrýU_ħĊhyŐVhüĤĔĹuŋĤÁp_ĔĴġÊī?hQ0ĳ?Ĥ?QTUĴcQīÉ",
+		"brownTerracotta": "0g0g7{ĩH{ĩW{ĹH]ĩWÀĹH{ĹWÀĩH4ùJFmŀ5]òFCPcJİPwĕPmį0w9ÁAŀCShò201AXP2@AAúQüóS0JPNP9AĈSJP4üĊwjx^xPAigÁAùAiPùěRPAòBJk8m91y^9AĊPiı",
+		"cyanGlazedTerracotta": "0g0gjlĿYmåZ?*WĺËHĶ|WqŒYhďYmĒYmĢZ-śW)ŊZqĒYĲ<WlŠWmóWlŏZlįW(ĺY<4H02xcîEXÐt6^íĞ(Ògõ6ąįÂílĘĊhë6ĠxàëgĔR(u0;g8UČX@^J0068UĐXxUU7ëĩ.ĻČāĨJüķoRKħľčÂbë38?ÐqĽĬ^ÝRÎ8ċKëý?^{íhlîgălF^ÂÊlĘÙhëčCPÂëgĕí(0čpŇÂõ0ïÏ00üìĈÂĆK4x0038{Ðín!%Õ0Î9XÎĩgčS",
+		"cyanTerracotta": "0g0gjVÒYVâZÇâZÁVHVãWVâYVÒZÁÒYÇâYÁVYÇÒYÇÒZÇãWÇïZËâZVÒHÇðWÁÒHVVH0004R0X1õ004xg01Qw00Mħ0s0gRj95gí3Ča00À008Xxc004w0wgQK0002x42gíK0b00ì8Sg0182g004Rgíù000Qx9ëg0000000ïĊ0c09Ķ8Xwk00000CgXx8S00000îë0k18RwĜ00y01Ċ0|xë01Xw02(RgIT8R001",
+		"grayGlazedTerracotta": "0g0gd?*W)ŊZĂÖYĆåZÇğW(ĺYÁÒZÒľYþÇHÎĮHP?H<4HTAZ1iMQÄ[0hhíP?Äÿ0hjC1hgāĈ0yK1Ę04Ă0xcčÊ5ÀQPh6ÎÁlVīákPû(ęlcĭQü>yìmĨhTg[xwqĉĠhh4EzVÁígTk[yÁrM4Ýl4üKĳðQQ5ÀPĔ6(S4QVRzîMc7SÁyĝħh0Q1j#s1g",
+		"grayTerracotta": "0g0g6-ĊH-ĊW-ĚH;ĚH;ĊH)ĊW4ùiFiP5-9xyPkJP00ò8i]009d1PBĘ1K2000382QA4ì4ùaS009iP1AĀ0JP4ùqwiŀ1ĈPAi0{0ùAiPÝJS0wòCJj0i902]00o0i]",
+		"greenGlazedTerracotta": "0g0ghÒŚWĺËHPÏH÷ýYßÏHãíHĲ<W|íHVĊY?ÂWËŘHæĊHÓxHÏ1HĶ|WÛÂWPÏW02h8xgĭRĀz0ĩÐĈxiU?ĘÎ8{OõCÀĂVđð9ðč-AÐUÅĝ>gùď4ÔÂI@ĝ>^6Ňõŉ/įĉ9E8Rhò^PkzĤČ8{>òR_QßkXiUĭĄRiJĚ<2o÷ļgóÀXRwŊqüĊ%[]ùRò>xmÂĐŉå]ÅčċxaŜs?x8ŚĨ>OkĽòŋy518ō8ĿĎ8XTĻļsÎo{MIXgĭMĀz",
+		"greenTerracotta": "0g0g9PRY|ÂZ|RY|ÂYPÂY|RZPRHÁÂY|RH001h1g002hh03h2w0000OO3OMN02w4ywMj(00hw(jg2yyOO1Mg0Bw3h(i0O3i2zhhg001hhii000w0Ohy01mOhzw2w2(hjMi0220n03zOMTw2KyhA80w0Owz3)ThTN0z",
+		"lightBlueGlazedTerracotta": "0g0geyrZ)ŐY/ĴY}ŔZÄŤZ$ĠZŢZZy$HxŢHEĠHłŖYNĥYĲĶYŎZY1iO>lRÔ,ähzNýzÕzG5kNÇOĐGGÝûĝÁNĎÓ7GăÁĭÙä2wGýÈÓĮDGN7ÁĭÙGNG)EtÓįGRDiNĭ×7ßONVyÓďGzOOÇiÙ7ß)OyâúħGANOyÓĔrNĭÓīyäæVě$ÓÙRyãÇiNĭÓīßãâýy$ÓÙ",
+		"lightBlueTerracotta": "0g0gaÞĠYÚĐYÞĐYâĠZÚĠYâĠYÞĠZÞĐHÚĐHâįY1hw(?0hg0O+00(g140hg000002hl00003(1ixO00(0w000030013x052K10gÀ000K1100VÃ(01h1000O01j,0O01g0g0Ã050w02g*1w000612ìwû07gx004w000(02x0",
+		"lightGrayGlazedTerracotta": "0g0gjĂÖYĶ|WVĎZÎĮHmåZmóWÁVYĪsYmĒY?*WãoHľÚY|VHJPWÇğWÇďWËĮHmPWmÖY0Qh4Ñx@30A8@hĄxSħ4ëxoĻĝE7ÆS6008ÄĘXŇ1ĩ6pFoĻĽĄ#-2g008RĘ1ďÆ@gë38Rl4ő8RĈXÒàĭč4xoRâ54ßaRĐŒ:RgsEp]RgÎÆÈjëzgĮ8J>9ħÝëň8R8QúÂĂ0ëa00gSXÁĩ5Ĕx8S0ĠXoÄčĐÏ0R0IčoÄ(õx020IÐoRwIw",
+		"lightGrayTerracotta": "0g0gdïĎWòĞHòĞWïčZïĎHïĞWìĎWòĎWìčZòĎHöĞHöĞWïýZ000i2wO(0hk05i006000wÀ2Ýy03700001iEO0h00gw0002w1yÀ0907ywg0y2w00yiÃ005yxgw00000Vh001ċ2h000000xyyw0000r0005ÂÁ00ë0x5c(00y0205Âl50O0",
+		"limeGlazedTerracotta": "0g0gcîhZZġZēĎHÌĉYÈìHřĨHZĳHŕĈZñNWôÏWHMYřĹH1zOOO)?KlSyyyy[hA>8IEwDÒ(O-ĀIwDÒN3OIò0?nN8O[Ý4ÁUN8XÁnQÁÀNëý×ĉÉlSNwôqĒhU2N0IÄĒVS2NyI?lQ02RëX?lQò0Qy?ÁU0y4ÅçÁÒSòy_mÓlU0I4ę1ÅĜ0yw?K",
+		"limeTerracotta": "0g0ghÒĺHÒĺWÖĺHÚŊYÚŊHÖŊHÎĪWÒĪWÚĺYÖĺYÎĺHÖĺWÚĺHÒĪHÖŊYÎĺWÖĪW0Rg8Ï9ajoň06)A18óÃë12ëjĀňg00k_hQjo$0000xhaxoŎÕ@M0TwX0IS04x84hQ0Xc8SyITg2h8Bw008RgXKs00IÂcKg0àX10S00Û8ëàõÔ0IM01-40I0x4xkSÕ00Xwr2Ýë20XÀ-D8ÌgIČ0130x04w4y0008í0XjĄ0",
+		"magentaGlazedTerracotta": "0g0gaĬ:ZńĕYİÙWİ{WŝŃYřăZĘıYĐİZĄġHļõZ1xM?Uy1111AÄÒR111xUÔã?111BÅëDÑR12?G22Ô?9BÅK3O6áÂVð0zO0ä?ÅIãÐ+äGXVQVÐ6UQQ1xBàDR11114Ý,P11114à8Px1114Ý6R1x114GÓÇ1x115QQÂ1111MMM.11",
+		"magentaTerracotta": "0g0giýÄZúÄYýÓZāGWāÓZāãZýÄYāÔWýÔWýÓYúÄZýãZú@YąGWąÓZýGWöÄYý@Y0Rg8Ñ9^KXC06OĈ@]ówë1iXKXCwXx$PhQKXAg0x8ĭh]T(C0@M0@EXz8RgXx85wXz44(Syù@gcigAwëx8Rh4g400IÂcÏgëgX1iS18Ð(XgöĎgóM81840ISxQxkí004Āwrõj8RgXÁ;ĨMĈj8čgïgëĨ0Xw4īgXx8ĊgXÐ42",
+		"orangeGlazedTerracotta": "0g0ggš1ZmåZšûHšĜHŢZZvsHqŒYmóWšċZmĒYŀÝWŘùWňëWZăZlĿYmĢZ0gzyk?VK0Ý8íĂģĤÓnßzDèĤıĭ0xnåĲ0bĬwxĳbħ1cVy,ēcĘ0cÁíD0{ĳ0ĭhIåĲĻcĳ5hhèĔĴSy6Á_Ĳ0ĳQëŕÒ{ħ0cöwŕŌÊħgcw5uŌÉĈ0ħ1lÁōÉĲĳmÍhVyVĤŘŕÒŘix5ÁuŕōVÂh",
+		"orangeTerracotta": "0g0gjĉRHąRHĉÂHčÏYčÂYąRWĉÂYāRHčÂHĉÏHčRHčRYđÏYčÏZđÂHĉÏYāRWčÏHĉNW0Rg8Ñ8į2üĈ08Now0ðwë11ĩ0XwSXwARh40ü!00w00h8ìkč8@(0SwX0ë004x84SX04b0SywT(0kwEw008RM4ÀXx0IígKg2gXx02h8Ñ00göïgðS8180gëSwīxwë8S00xØëgI2gXT;10wg2A0ìyë104w480Xx8ígX2ü2",
+		"pinkGlazedTerracotta": "0g0g7ĢŁZĞıYŝŃYř!YŀİYļĀZŝÉW4AĻĞĝ!xFÃPAčF_iÇĔĻ^Æþ|čJÂīě~AûãAăÇÓļPĔă_,ýòCĆPAýęÓĚĴĤąę+þÚŋJP;JPB#ÚBăåFÏÚČŅP_iPĜJ}Æùò+Č^īëę+ĕòČS",
+		"pinkTerracotta": "0g0ghĉ)Zą)Zĉ*Wč?WąAYĉQZąAZā)Zĉ?Wč)ZĉAYĉAZđ?Wč*WčQZđ?Hā)Y0Rg8Ð8ĭ2gë06MI01@O011ħ3oħoùww0Sħ3gF000000ĭ)góÆÆħ00o600000X03oķ04d0S1öħo0hõzo000ÐoķSo026MõKo0Ð41004xî00ÐMói6(01(00ëSoĭXcKÆ000wç0K00h^Nõ60wg0Ð1SĊ010gŇ430XÂõÕ205g2",
+		"purpleGlazedTerracotta": "0g0gaIĲYõłZĉÌW$ěWÑåZüŃY(ĺYKåYÆäZÊåW1zOy(4O(giN2(S>0x1BzSO04NgVz6+5[Ox2)6KÆGNhwCSVñGwyN2Ð.ágyO>xy,TTOS4N2,ïù06KNy-ìS4OKÐO(ëSS+0ÿüU4S)09[ISQ4O5[ëh4åÅ(Uá8Q[hU5Pá0lh[á",
+		"purpleTerracotta": "0g0gmâlHÞlHâlYåBYÞ5WâlZâBHÚlHÞlWåBHâlWålHâ5WéBYâBYålYåBZÞ5HéBZéBHÚlWå*Y0Rg8Ð8ĭ2gë06Mü01ð(ë11ħ4h0]c0oa(ħ2g#0000a0ĭûgõ0Èķ00o600000Ð03]Ń04f0S1öwo0kČFo000ÐoŃSw03ðM÷0o0X41003pċ00IĝĒ1ð(01I00ë0oĭÐcK0000wüħg001õOc80Eg2ċ1ëĩ010cùw900ÐcÛ3ë6g0",
+		"redGlazedTerracotta": "0g0gaõíWIÞZĀíWĘĚHĴAHĐĊHĸVWĠĚHİ3Yĵ[Z10g0z)?O0ggg0+[Ã(5O*wCÑà(3àà(6ÓQ(6QQëkÑ@0CQQS0iQ2XO,R1g4->VOãîÂ2)>Æî)Ô*wäQ)?)>OíOX@?)[OQ*-Q*á>,@ûÃOÃð>ÃÖāOà-Õ>@āPþQQ])Pû)āÑQñ)āO",
+		"redTerracotta": "0g0geõřZõŉZùŚWú3WIŉYý3WüŚWùŚHùřZIŉZõŚWý3HõŉYùŉY1hiO3MQh0*Ô18Og191ph!Ē3Izìāo0001ïNAhhVëìÆwoë0íE5zwhmh8Oìwhyj(08yz.hh2OOĘwhhh0hĒÃ81lÊĊÃë1gìoĈ*yz(h01hĞhg8Đî31hTo*0dSh0E1iaĈ2Â2ìha",
+		"terracotta": "0g0g5āáHýáWýÑWąáWāXH4J0{i]ePpNQ18üP47o0+XõJ]JiPBİzA0P82P0]QJ@aAiPPi0ßEłßTA42]wiK2Px@]0|íħúęy4Čò0J_i]ŀBgŋ1JPe@]Aýz0iS",
+		"whiteGlazedTerracotta": "0g0gdZÐZŢZZy$H/ĴYŞņWZâHZâZ?ńWĺËH^ŔZÂŔZŢĵHŚĵH01g01zAg5ÎhhhßTÎ6hKUhEmÎhhmVoAÑ1hÑhh[ì1ÎÎÄhoyT1k1KhyJhÎR1?o!,hoz1hRODhy.hoDDáiDàyyìhhDTàNìhhiáhíÞm0ÎyTkíhÑhoDhR/g0ÎR,äóă1hkz.ĊFħ",
+		"whiteTerracotta": "0g0gfĹıWĵĢWĹĢWĽŁHĹŁWĵıWĽŁWĵġZĹıHĹİZĽıWĹġZĹŁHĽőWĵİZ1hw)ÄSGÝ0O-04Ñg150GÝSS49Q2Gq00096Ñ[çxO00KSw004S6QS1ax0@RS1QkK00QQ[704ÓÐ(S7Þ100QO07j:4Ð01g0g0ÓQ@Sw02g+1w04Q{72ÞwĽ4bÝx0QeA04QÑ42ğ0",
+		"yellowGlazedTerracotta": "0g0geZÐZřĨHZġZZĲHŕĈZĕŜWčĻZřĹHāĜHřĘZZĳHZâZZĢYĚ5H1yOxw2?Óix[yiyQðyiyixh1ĀDy2x!OgāMwbĉīiMĘxyĢďĉhyryiĒæĩÞßÝixGĔiD>hxzyxÁy^Ä2inzliĒÕ2jÞiMÕÕÓyiDkzIÅÞP1yÞ>ÚhĽŀgi$ĒÑ?ÁÕh1nÄXńTÓìĘ1ÓÎÑt",
+		"yellowTerracotta": "0g0gfĢiWĢ2WĢiHĦyHĞ2WĦiHĢiYĢyHĩyHĢ2HĦyYĢ1ZĩyYĩiHĚ1Z1hiO3MQT0OÄ10OS1A1khÂyD0zxQlw0y1z*AThI0xNÂg2yyy3Ãyhýh2OÁÀhVjN2yVÃáhh2OOĊÂhhhwhyî0xoôyO01g1gyOÂzNh01hĴkgyyzz1hňgOy#Sh2B1lyyBNyxk2",
+		"blueIce": "0g0g5×HYÛøZãėZ÷ŖZēLZ4ČI9ĭò0ü]2)P0J^x)TwíăSĚ1A5qSĊaQmŊSgJSCŁK6ĹwĞĹA5qx+JBgŊBCÂBwÁ5kÂxgh0kÁ0i94íT0ČIAüI5AùAĎķ9AĂB+ù|Cĸ",
+		"ice": "0g0g6ðYŖJŖŖYÍŖċfŖ÷ĶŖĲHŖ0iāC@ŀ0þİNmKgJPùě0CiÑðp4Njc0P9ùûw2iÉgā8ùþİ2]PXĜĳii]úĎ]XJSeĚSAĚ0$J4%Ā1Ñû1Ùù4Aā9ĔħxAįPÓ09ÑįËw2ÃC]ĺ",
+		"packedIce": "0g0g6êćHðYYJŖZċfZYÍZĲHZ0ČŁQCĿ5Eİ]ĞSF@aÑù0Pùrwù9Pgh1yJ?A]9AŁBy^PCİ0JŁF+I4ĎùBĭSFAIaĚ0Ö)SÁ0T|Ċ2Õë^Úg9Q2JÙùPFiJÑJ^|kĄAüJÙČŒ",
+
+		"fern": "0g0g7000ÖĞYÇÒYĎóH÷EZéŞZþPH00100000jS0000kS000030000bÄQ0000_!ë08g&Ĉ00@(>4wëÀľCùĠIT3ēďjg0aōõķù00ÉĔ0001Ûá0000#Ĉ0000600000bw00",
+		"tallGrassBottom": "0g0g6000í8WþPHĖĒZÞľWÒĎH0XgÏ)S12gK(ë14oSwħ86oxSķ4mgx0ŇQklT0Ĉ]odKëĈõSdáùĈeĨ|ãgŏaĉBÄwŔĎĘÒÂĢŌNĢčCĢčÄĒ×ðĒVÄr!ĎûV)ĲFĚĪ|þÉ$ĚĲB",
+		"tallGrassTop": "0g0g6000í8WĖĒZþPHÞľWÒĎH4000000í01000ð010S1íħ1í00wħcð00wħc600(ë8400(X8400wX8)w0wëI#S0wĀÕC0cCĀ{E02CÀ{E00Cg{(00QgÏ(844gÏwS",
+		"lilyPad": "0g0g6000ËâZÖĎYéŞZþÇHĊóW00000002À1i00n80ĢS0pÈ9įS0ģx6P]0ŀÐ}Ç]0ŀ$Âİ80ł%ßĲ80łBþ_80ŀ$þP]0ģBJįį0rBþ]S0nÑãÄS02ÊÁJ0009Aë0000000"
 	}
 }
 
@@ -242,9 +319,9 @@ const texturesFunc = function (setPixel, getPixels) {
 const textures = Object.keys(texturesFunc())
 const textureMap = {}
 for (let i = 0; i < textures.length; i++) {
-	const s = 1/16 // numberOfTexturesPerRowOfTheAtlas
-	let texX = i & 15
-	let texY = i >> 4
+	const s = 1 / 32 // numberOfTexturesPerRowOfTheAtlas
+	let texX = i & 31
+	let texY = i >> 5
 	let offsetX = texX * s
 	let offsetY = texY * s
 
@@ -268,29 +345,34 @@ class BlockData {
 	shape = shapes.cube
 	uniqueShape = false
 	isCube = true
+	baseBlockID = 0 // For pickBlock; players can't pick upside-down or rotated blocks
+	static id = 0
 
-	constructor(data, id, hasIcon = true) {
+	constructor(data, nameAppend = "") {
 		if (data instanceof BlockData) {
 			const canvas = this.iconImg
 			Object.assign(this, data)
+			this.id = BlockData.id++
 
-			this.id = id
-			if (!hasIcon) {
+			if (!nameAppend) {
 				this.iconImg = null
 				this.icon = ""
 			}
 			else {
+				this.name += nameAppend
 				canvas.width = 64
 				canvas.height = 64
 				this.iconImg = canvas
+				blockIds[this.name.replaceAll(" ", "").replace(/./, c => c.toLowerCase())] = this.id
 			}
 			return
 		}
+		this.id = BlockData.id++
+		this.baseBlockID = this.id
 		if (data.shape) this.uniqueShape = true
 		this.iconImg.width = 64
 		this.iconImg.height = 64
-		this.id = id
-		blockIds[data.name] = id
+		blockIds[data.name] = this.id
 
 		if ( !("textures" in data) ) {
 			data.textures = new Array(6).fill(data.name)
@@ -324,8 +406,48 @@ class BlockData {
 		Object.assign(this, data)
 		if (this.shape !== shapes.cube) this.isCube = false
 	}
+
+	getPlacementID(ry, face, targetY) {
+		if (this.id === 0) return 0
+		let id = this.id
+
+		if (this.rotate) {
+			const rotCount = this.flip ? 2 : 1
+			let pi = Math.PI / 4
+			if (ry <= pi || ry >= 7 * pi) {
+				id += rotCount * 3
+			}
+			else if (ry < 3 * pi) {
+				id += rotCount
+			}
+			else if (ry < 5 * pi) {
+				id += rotCount * 2
+			}
+		}
+
+		// Use the flipped block variant if we're targeting the bottom face of a block, or the top half of a block side.
+		if (this.flip && face !== "top" && (face === "bottom" || targetY % 1 < 0.5)) {
+			id++
+		}
+		return id
+	}
 }
 
+const flower = name => ({
+	name,
+	textures: ["air", name],
+	solid: false,
+	transparent: true,
+	shadow: false,
+	shape: shapes.flower
+})
+const fence = (name, texture) => ({
+	name,
+	textures: texture,
+	transparent: true,
+	shadow: false,
+	shape: shapes.fence
+})
 const blockData = [
 	{ name: "air", textures: "tntSide", transparent: true, shadow: false, solid: false },
 	{ name: "grass", textures: ["dirt", "grassTop", "grassSide"] },
@@ -333,6 +455,13 @@ const blockData = [
 	{ name: "stone" },
 	{ name: "bedrock" },
 	{ name: "sand" },
+	{ name: "sandstone", textures: ["sandstoneBottom", "sandstoneTop", "sandstone"] },
+	{ name: "cutSandstone", textures: ["sandstoneTop", "cutSandstone"] },
+	{ name: "chiseledSandstone", textures: ["sandstoneTop", "chiseledSandstone"] },
+	{ name: "redSand" },
+	{ name: "redSandstone", textures: ["redSandstoneBottom", "redSandstoneTop", "redSandstone"] },
+	{ name: "cutRedSandstone", textures: ["redSandstoneTop", "cutRedSandstone"] },
+	{ name: "chiseledRedSandstone", textures: ["redSandstoneTop", "chiseledRedSandstone"] },
 	{ name: "gravel" },
 	{ name: "leaves", transparent: true },
 	{ name: "glass", transparent: true, shadow: false, hideInterior: true },
@@ -399,6 +528,39 @@ const blockData = [
 	{ name: "greenConcrete" },
 	{ name: "redConcrete" },
 	{ name: "blackConcrete" },
+	{ name: "terracotta" },
+	{ name: "blackGlazedTerracotta" },
+	{ name: "blackTerracotta" },
+	{ name: "blueGlazedTerracotta" },
+	{ name: "blueTerracotta" },
+	{ name: "brownGlazedTerracotta" },
+	{ name: "brownTerracotta" },
+	{ name: "cyanGlazedTerracotta" },
+	{ name: "cyanTerracotta" },
+	{ name: "grayGlazedTerracotta" },
+	{ name: "grayTerracotta" },
+	{ name: "greenGlazedTerracotta" },
+	{ name: "greenTerracotta" },
+	{ name: "lightBlueGlazedTerracotta" },
+	{ name: "lightBlueTerracotta" },
+	{ name: "lightGrayGlazedTerracotta" },
+	{ name: "lightGrayTerracotta" },
+	{ name: "limeGlazedTerracotta" },
+	{ name: "limeTerracotta" },
+	{ name: "magentaGlazedTerracotta" },
+	{ name: "magentaTerracotta" },
+	{ name: "orangeGlazedTerracotta" },
+	{ name: "orangeTerracotta" },
+	{ name: "pinkGlazedTerracotta" },
+	{ name: "pinkTerracotta" },
+	{ name: "purpleGlazedTerracotta" },
+	{ name: "purpleTerracotta" },
+	{ name: "redGlazedTerracotta" },
+	{ name: "redTerracotta" },
+	{ name: "whiteGlazedTerracotta" },
+	{ name: "whiteTerracotta" },
+	{ name: "yellowGlazedTerracotta" },
+	{ name: "yellowTerracotta" },
 	{ name: "bookshelf", textures: ["oakPlanks", "bookshelf"] },
 	{ name: "netherrack" },
 	{ name: "soulSand" },
@@ -420,6 +582,9 @@ const blockData = [
 	{ name: "polishedGranite" },
 	{ name: "light", lightLevel: 15, solid: false, transparent: true, shadow: false, semiTrans: true, hideInterior: true },
 	{ name: "water", textures: "waterStill", semiTrans: true, transparent: true, solid: false, shadow: true, hideInterior: true },
+	{ name: "ice", semiTrans: true, transparent: true, shadow: true, hideInterior: true },
+	{ name: "blueIce" },
+	{ name: "packedIce" },
 	{ name: "lava", textures: "lavaStill", solid: false, lightLevel: 15, transparent: true, shadow: false, hideInterior: true },
 	{ name: "obsidian" },
 	{ name: "cryingObsidian", lightLevel: 10 },
@@ -481,37 +646,35 @@ const blockData = [
 	{ name: "deepslateIronOre" },
 	{ name: "deepslateLapisOre" },
 	{ name: "deepslateRedstoneOre" },
-	{
-		name: "poppy",
-		textures: ["air", "poppy"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		shape: shapes.flower
-	},
-	{
-		name: "cornflower",
-		textures: ["air", "cornflower"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		shape: shapes.flower
-	},
-	{
-		name: "dandelion",
-		textures: ["air", "dandelion"],
-		solid: false,
-		transparent: true,
-		shadow: false,
-		shape: shapes.flower
-	},
-	{
-		name: "cobweb",
-		textures: ["air", "cobweb"],
-		solid: false,
-		transparent: true,
-		shape: shapes.flower
-	},
+	flower("poppy"),
+	flower("cornflower"),
+	flower("dandelion"),
+	flower("deadBush"),
+	flower("cactusFlower"),
+	flower("cobweb"),
+	flower("allium"),
+	flower("azureBluet"),
+	flower("blueOrchid"),
+	flower("lilacBottom"),
+	flower("lilacTop"),
+	flower("lilyOfTheValley"),
+	flower("orangeTulip"),
+	flower("oxeyeDaisy"),
+	flower("peonyBottom"),
+	flower("peonyTop"),
+	flower("pinkTulip"),
+	flower("redTulip"),
+	flower("roseBushBottom"),
+	flower("roseBushTop"),
+	flower("torchflower"),
+	flower("whiteTulip"),
+	flower("witherRose"),
+	flower("brownMushroom"),
+	flower("redMushroom"),
+	flower("fern"),
+	flower("tallGrassBottom"),
+	flower("tallGrassTop"),
+	{ name: "lilyPad", transparent: true },
 	{ name: "pumpkin", textures: ["pumpkinTop", "pumpkinSide"] },
 	{ name: "carvedPumpkin", textures: ["pumpkinTop", "pumpkinTop", "pumpkinSide", "pumpkinSide", "pumpkinSide", "carvedPumpkin"], rotate: true, shape: shapes.cube },
 	{
@@ -530,76 +693,16 @@ const blockData = [
 		lightLevel: 15,
 		shape: shapes.lantern
 	},
-	{
-		name: "oakFence",
-		textures: "oakPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "acaciaFence",
-		textures: "acaciaPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "birchFence",
-		textures: "birchPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "darkOakFence",
-		textures: "darkOakPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "jungleFence",
-		textures: "junglePlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "spruceFence",
-		textures: "sprucePlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "cherryFence",
-		textures: "cherryPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "netherBrickFence",
-		textures: "netherBricks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "crimsonFence",
-		textures: "crimsonPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
-	{
-		name: "warpedFence",
-		textures: "warpedPlanks",
-		transparent: true,
-		shadow: false,
-		shape: shapes.fence
-	},
+	fence("oakFence", "oakPlanks"),
+	fence("acaciaFence", "acaciaPlanks"),
+	fence("birchFence", "birchPlanks"),
+	fence("darkOakFence", "darkOakPlanks"),
+	fence("jungleFence", "junglePlanks"),
+	fence("spruceFence", "sprucePlanks"),
+	fence("cherryFence", "cherryPlanks"),
+	fence("netherBrickFence", "netherBricks"),
+	fence("crimsonFence", "crimsonPlanks"),
+	fence("warpedFence", "warpedPlanks"),
 	{
 		name: "player",
 		textures: "grassTop",
@@ -607,14 +710,84 @@ const blockData = [
 		shape: shapes.player,
 		rotate: true
 	},
-	// { name: "obsidianDoorTop", textures: "obsidian", solid: false, transparent: true, shape: shapes.door },
-	// { name: "obsidianDoorBottom", textures: "obsidian", solid: false, transparent: true, shape: shapes.door },
-	// Removed because everyone wants them to explode, but they don't explode.
-	/* {
- 	name: "tnt",
- 	textures: ["tntBottom", "tntTop", "tntSide"]
-	},*/
-].map((data, i) => new BlockData(data, i))
+	{
+		name: "cactus",
+		textures: ["cactusBottom", "cactusTop", "cactusSide"],
+		transparent: true,
+		shape: shapes.cactus
+	},
+].flatMap((data, i) => {
+	const baseBlock = new BlockData(data)
+	const types = [baseBlock]
+	if (i === 0) return types // Air
+
+	if (baseBlock.shape === shapes.door) baseBlock.rotate = true
+
+	if (!baseBlock.uniqueShape) {
+		const slabBlock = new BlockData(baseBlock, " Slab") // Bottom slab
+		slabBlock.transparent = true
+		slabBlock.shape = shapes.slab
+		slabBlock.flip = true
+		slabBlock.baseBlockID = slabBlock.id
+		types.push(slabBlock)
+		let v = slabBlock.shape.variants
+		for (let j = 1; j < v.length; j++) {
+			if (v[j]) {
+				let block = new BlockData(slabBlock, "") // Top slab
+				block.shape = v[j]
+				types.push(block)
+			}
+			else debugger
+		}
+
+		const stairBlock = new BlockData(baseBlock, " Stairs")
+		stairBlock.transparent = true
+		stairBlock.shape = shapes.stair
+		stairBlock.rotate = true
+		stairBlock.flip = true
+		stairBlock.baseBlockID = stairBlock.id
+		types.push(stairBlock)
+		v = stairBlock.shape.variants
+		for (let j = 1; j < v.length; j++) {
+			if (v[j]) {
+				const block = new BlockData(stairBlock, "")
+				block.shape = v[j]
+				types.push(block)
+			}
+			else debugger
+		}
+	}
+
+	// Cubes; blocks like pumpkins and furnaces.
+	const v = baseBlock.shape.variants
+	if (baseBlock.rotate) {
+		const [ny, py, pz, nz, px, nx] = baseBlock.textures
+		const orders = [
+			[ny, py, nz, pz, nx, px], // Opposite
+			[ny, py, nx, px, pz, nz],
+			[ny, py, px, nx, nz, pz],
+		]
+		for (let j = 2; j < v.length; j += 2) {
+			if (v[j]) {
+				const block = new BlockData(baseBlock, "")
+				block.shape = v[j]
+				block.textures = orders[j / 2 - 1]
+				types.push(block)
+			}
+		}
+	}
+	if (baseBlock.flip) {
+		for (let j = 1; j < v.length; j += 2) {
+			if (v[j]) {
+				const block = new BlockData(baseBlock, "")
+				block.shape = v[j]
+				block.textures = v[j-1].textures || block.textures
+				types.push(block)
+			}
+		}
+	}
+	return types
+})
 blockData[0].iconImg = null // Air doesn't need an icon.
 
 const BLOCK_COUNT = blockData.length

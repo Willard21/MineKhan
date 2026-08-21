@@ -1,12 +1,9 @@
-import skyFragmentShaderSrc from '../shaders/skyFrag.glsl'
-import skyVertexShaderSrc from '../shaders/skyVert.glsl'
-import { createProgramObject } from './glUtils'
 /**
  * Initialize the skybox shaders and return the render function
  * @param {WebGLRenderingContext} gl gl
  * @returns Rendering function
  */
-const getSkybox = (gl, glCache, program3D, program3DFogless) => {
+const getSkybox = (gl, glLocations, program3D, program3DFogless, skyboxProgram) => {
 	// I can't explain why, but the directions are all backwards from the world coordinates
 	const vertexData = new Float32Array([
 		// top
@@ -62,8 +59,6 @@ const getSkybox = (gl, glCache, program3D, program3DFogless) => {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 	gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW)
 
-	const skyboxProgram = createProgramObject(gl, skyVertexShaderSrc, skyFragmentShaderSrc)
-
 	const aVertex = gl.getAttribLocation(skyboxProgram, "aVertex")
 	const uTime = gl.getUniformLocation(skyboxProgram, "uTime")
 	const uView = gl.getUniformLocation(skyboxProgram, "uView")
@@ -97,19 +92,19 @@ const getSkybox = (gl, glCache, program3D, program3DFogless) => {
 
 		// Set uniform for program3DFogless
 		gl.useProgram(program3DFogless)
-		gl.uniform1f(glCache.uTimeFogless, skyBrightness)
+		gl.uniform1f(glLocations.uTimeFogless, skyBrightness)
 
 		// Set uniform for program3D
 		gl.useProgram(program3D)
-		gl.uniform3f(glCache.uSky, horizonColor[0], horizonColor[1], horizonColor[2])
-		gl.uniform3f(glCache.uSun, sun[0], sun[1], sun[2])
-		gl.uniform1f(glCache.uTime, skyBrightness)
+		gl.uniform3f(glLocations.uSky, horizonColor[0], horizonColor[1], horizonColor[2])
+		gl.uniform3f(glLocations.uSun, sun[0], sun[1], sun[2])
+		gl.uniform1f(glLocations.uTime, skyBrightness)
 
 		gl.useProgram(skyboxProgram)
-		gl.disableVertexAttribArray(glCache.aSkylight)
-		gl.disableVertexAttribArray(glCache.aBlocklight)
-		gl.disableVertexAttribArray(glCache.aShadow)
-		gl.disableVertexAttribArray(glCache.aTexture)
+		gl.disableVertexAttribArray(glLocations.aSkylight)
+		gl.disableVertexAttribArray(glLocations.aBlocklight)
+		gl.disableVertexAttribArray(glLocations.aShadow)
+		gl.disableVertexAttribArray(glLocations.aTexture)
 
 		gl.uniform1f(uTime, time)
 		gl.uniform3f(uSun, sun[0], sun[1], sun[2])

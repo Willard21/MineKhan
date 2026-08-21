@@ -53,7 +53,12 @@ class Marsaglia {
 		this.z = 36969 * (z & 65535) + (z >>> 16) & 0xFFFFFFFF
 		this.w = 18000 * (w & 65535) + (w >>> 16) & 0xFFFFFFFF
 
-		return ((this.z & 0xFFFF) << 16 | this.w & 0xFFFF) & 0xFFFFFFFF
+		return (this.z & 0xFFFF) << 16 | this.w & 0xFFFF
+	}
+
+	nextShort() {
+		this.z = 36969 * (this.z & 65535) + (this.z >>> 16) & 0xFFFFFFFF
+		return this.z & 0xFFFF
 	}
 
 	nextDouble() {
@@ -126,29 +131,15 @@ class PerlinNoise {
 	}
 
 	static grad2d(i, x, y) {
-		const v = (i & 1) === 0
-			? x
-			: y
-
-		return (i & 2) === 0
-			? -v
-			: v
-	}
-
-	static grad1d(i, x) {
-		return (i & 1) === 0
-			? -x
-			: x
+		const v = i & 1 ? y : x
+		return i & 2 ? v : -v
 	}
 
 	static lerp(t, a, b) {
 		return a + t * (b - a)
 	}
 
-	// end of statics
-
-	// prototype functions:
-	noise3d(x, y, z) {
+	noise3dGenerator(x, y, z) {
 		const X = floor(x) & 0xff
 		const Y = floor(y) & 0xff
 		const Z = floor(z) & 0xff
@@ -202,11 +193,26 @@ class PerlinNoise {
 			)
 		)
 	}
+	noise3d(x, y, z) {
+		const { _octaves, _fallout } = this
+		let effect = this._effect
+		let sum = 0
 
-	noise2d(x, y) {
+		for (let i = 0; i < _octaves; ++i) {
+			effect *= _fallout
+			const k = 1 << i
+			sum += effect * (1 + this.noise3dGenerator(k * x, k * y, k * z)) / 2
+		}
+
+		return sum
+	}
+
+	noise2dGenerator(x, y) {
+		// Take the lowest byte of the integer portions of the input
 		const X = floor(x) & 0xff
 		const Y = floor(y) & 0xff
 
+		// Take the decimal portions of the input
 		x -= floor(x)
 		y -= floor(y)
 
@@ -220,52 +226,58 @@ class PerlinNoise {
 
 		return lerp(
 			fy,
-			lerp(
-				fx,
-				grad2d(
-					perm[p0],
-					x,
-					y
-				),
-				grad2d(
-					perm[p1],
-					x - 1,
-					y
-				)
-			),
-			lerp(
-				fx,
-				grad2d(
-					perm[p0 + 1],
-					x,
-					y - 1
-				),
-				grad2d(
-					perm[p1 + 1],
-					x - 1,
-					y - 1
-				)
-			)
-		)
+			lerp(fx, grad2d(perm[p0], x, y), grad2d(perm[p1], x - 1, y)),
+			lerp(fx, grad2d(perm[p0 + 1], x, y - 1), grad2d(perm[p1 + 1], x - 1, y - 1))
+		) / 1.087019052838329 + 0.5 // Return value between 0 and 1
+	}
+	noise2d(x, z) {
+		// Integers always return 0, so make the input not-integers.
+		x += Math.PI
+		z += Math.E
+		const { _octaves, _fallout } = this
+		let sum = 0
+		let effect = this._effect
+
+		for (let i = 0, k = 1; i < _octaves; i++, k <<= 1) {
+			effect *= _fallout
+			sum += effect * this.noise2dGenerator(k * x, k * z)
+		}
+		return sum
 	}
 
-	constructor(seed) {
+	constructor(seed, octaves = 2, fallout = 0.5) {
 		if (seed === undefined) {
 			throw new TypeError("A value for `seed` parameter was not provided to `PerlinNoise`")
 		}
-		// console.log("New noise generator with seed", seed)
 
+		this.perm = new Uint8Array(0x200)
+		this.seed = seed
+		this.octaves = octaves
+		this.fallout = fallout
+	}
+	computeEffect() {
+		const f = this._fallout
+		const o = this._octaves
+		this._effect = f === 1 ? 1 / o : (1 - f) / (f * (1 - f**o))
+	}
+	set octaves(octaves) {
+		this._octaves = octaves
+		this.computeEffect()
+	}
+	set fallout(fallout) {
+		this._fallout = fallout
+		this.computeEffect()
+	}
+	set seed(seed) {
 		const rnd = new Marsaglia(seed)
-
-		// generate permutation
-		const perm = new Uint8Array(0x200)
-		this.perm = perm
+		const perm = this.perm
 
 		// fill 0x0..0x100
 		for (let i = 0; i < 0x100; ++i) {
 			perm[i] = i
 		}
 
+		// generate permutation
 		for (let i = 0; i < 0x100; ++i) {
 			const j = rnd.nextInt() & 0xFF
 			const t = perm[j]
@@ -276,47 +288,6 @@ class PerlinNoise {
 		// copy to avoid taking mod in perm[0]
 		// copies from first half of array, into the second half
 		perm.copyWithin(0x100, 0x0, 0x100)
-	}
-}
-
-const noiseProfile = {
-	generator: undefined,
-	octaves: 4,
-	fallout: 0.5,
-	seed: undefined,
-	noiseSeed(seed) {
-		this.seed = seed
-		this.generator = new PerlinNoise(noiseProfile.seed)
-	},
-	noise(x, y, z) {
-		const { generator, octaves, fallout } = this
-
-		let effect = 1,
-			sum = 0
-
-		for (let i = 0; i < octaves; ++i) {
-			effect *= fallout
-
-			const k = 1 << i
-
-			let temp
-			switch (arguments.length) {
-				case 1: {
-					temp = generator.noise1d(k * x)
-					break
-				} case 2: {
-					temp = generator.noise2d(k * x, k * y)
-					break
-				} case 3: {
-					temp = generator.noise3d(k * x, k * y, k * z)
-					break
-				}
-			}
-
-			sum += effect * (1 + temp) / 2
-		}
-
-		return sum
 	}
 }
 
@@ -487,4 +458,23 @@ const openSimplexNoise = (clientSeed) => {
 	}
 }
 
-export { seedHash, hash, random, randomSeed, openSimplexNoise, noiseProfile }
+// Combined to determine the ground height. Something like
+// div = flatness(x / 500, z / 500) * 400 + 50
+// ground = height(x / div, z / div) * hilliness(x / 500, z / 500)
+const height = new PerlinNoise(123, 3, 0.5) // The base noise value
+const flatness = new PerlinNoise(456, 1, 1) // The number we divide coordinates by
+const hilliness = new PerlinNoise(789, 1, 1) // The number we multiply the height by
+
+// Combined with ground height to determine biome type
+const humidity = new PerlinNoise(123456, 1, 1) // How wet an area is
+const temperature = new PerlinNoise(654321, 1, 1)
+
+const noiseSeed = seed => {
+	height.seed = seed
+	flatness.seed = seed * 23 | 0
+	hilliness.seed = seed * 73 | 0
+	humidity.seed = seed * 1337 | 0
+	temperature.seed = seed * 628992 | 0
+}
+
+export { seedHash, hash, random, randomSeed, openSimplexNoise, height, flatness, hilliness, humidity, temperature, noiseSeed, Marsaglia }

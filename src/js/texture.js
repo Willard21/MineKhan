@@ -4,18 +4,21 @@ import { texturesFunc } from "./blockData.js"
  * Texture name to index map.
  */
 const hitboxTextureCoords = new Float32Array(192)
-const textureSize = 256
-const scale = 1 / 16
-const texturePixels = new Uint8Array(textureSize * textureSize * 4)
-
+const texturesPerRow = 32
+const bitsPerTextureRow = Math.log2(texturesPerRow) | 0
+const atlasWidth = texturesPerRow * 16
+const texturePixels = new Uint8Array(atlasWidth * atlasWidth * 4)
+console.log(bitsPerTextureRow)
 /**
  * @param {WebGLRenderingContext} gl
  */
+const offsets = []
 const initTextures = (gl, glCache) => {
 	const setPixel = function(textureNum, x, y, r, g, b, a) {
-		let texX = textureNum & 15
-		let texY = textureNum >> 4
-		let offset = (texY * 16 + y) * 1024 + texX * 64 + x * 4
+		let texX = textureNum & texturesPerRow - 1
+		let texY = textureNum >> bitsPerTextureRow
+		let offset = ((texY * 16 + y) * atlasWidth + texX * 16 + x) * 4
+		offsets[offset / 4] = offsets[offset] + 1 || 1
 		texturePixels[offset] = r
 		texturePixels[offset + 1] = g
 		texturePixels[offset + 2] = b
@@ -131,10 +134,10 @@ const initTextures = (gl, glCache) => {
 
 			if (name === "hitbox") {
 				//Set the hitbox texture to 1 point
-				let texX = n & 15
-				let texY = n >> 4
-				let offsetX = texX * scale + 0.01
-				let offsetY = texY * scale + 0.01
+				let texX = n & texturesPerRow-1
+				let texY = n >> bitsPerTextureRow
+				let offsetX = texX / texturesPerRow + 0.01
+				let offsetY = texY / texturesPerRow + 0.01
 				for (let i = 0; i < 192; i += 2) {
 					hitboxTextureCoords[i] = offsetX
 					hitboxTextureCoords[i + 1] = offsetY
@@ -158,15 +161,17 @@ const initTextures = (gl, glCache) => {
 	}
 
 	// Big texture with everything in it
-	makeTexture(gl.TEXTURE0, textureSize, textureSize, texturePixels, gl.CLAMP_TO_EDGE)
+	makeTexture(gl.TEXTURE0, atlasWidth, atlasWidth, texturePixels, gl.CLAMP_TO_EDGE)
 	gl.uniform1i(glCache.uSampler, 0)
 
 	// Dirt texture for the background
 	let dirtPixels = new Uint8Array(getPixels(textures.dirt))
 	makeTexture(gl.TEXTURE1, 16, 16, dirtPixels, gl.REPEAT)
+
+	console.log(window.offsets = offsets)
 }
 
-const animateTextures = (gl) => {
+const animateTextures = gl => {
 	// const x = Math.random() * 16 | 0
 	// const y = Math.random() * 16 | 0
 

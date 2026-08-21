@@ -1,4 +1,5 @@
 import { blockData } from "./blockData.js"
+import { gl, glExtensions, glLocations, indexBuffer } from "./glUtils.js"
 import { roundBits } from "./utils.js"
 
 const { round, floor, ceil } = Math
@@ -26,20 +27,30 @@ class Contacts {
 }
 
 class Entity {
-	constructor(x, y, z, pitch, yaw, velx, vely, velz, width, height, depth, vertices, texture, faces, despawns, glExtensions, gl, glCache, indexBuffer, world, p) {
-		this.x = x
-		this.y = y
-		this.z = z
-		this.previousX = x
-		this.previousY = y
-		this.previousZ = z
+	/**
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {number} depth
+	 * @param {Float32Array} vertices Vertex data for the faces to be drawn
+	 * @param {Float32Array} texture Texture data for the faces to be drawn
+	 * @param {Number} faces Number of faces being drawn
+	 * @param {Number} despawns Time until it despawns
+	 * @param {import('./world.js').World} world
+	 */
+	constructor(width, height, depth, vertices, texture, faces, despawns, world) {
+		this.x = 0
+		this.y = 0
+		this.z = 0
+		this.previousX = 0
+		this.previousY = 0
+		this.previousZ = 0
 		this.canStepX = true
 		this.canStepY = true
-		this.pitch = pitch
-		this.yaw = yaw
-		this.velx = velx
-		this.vely = vely
-		this.velz = velz
+		this.pitch = 0
+		this.yaw = 0
+		this.velx = 0
+		this.vely = 0
+		this.velz = 0
 		this.width = width
 		this.height = height
 		this.depth = depth
@@ -58,21 +69,17 @@ class Entity {
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer)
 		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
-		gl.vertexAttribPointer(glCache.aVertexEntity, 3, gl.FLOAT, false, 0, 0)
+		gl.vertexAttribPointer(glLocations.aVertexEntity, 3, gl.FLOAT, false, 0, 0)
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer)
 		gl.bufferData(gl.ARRAY_BUFFER, texture, gl.STATIC_DRAW)
-		gl.vertexAttribPointer(glCache.aTextureEntity, 2, gl.FLOAT, false, 0, 0)
+		gl.vertexAttribPointer(glLocations.aTextureEntity, 2, gl.FLOAT, false, 0, 0)
 
-		gl.enableVertexAttribArray(glCache.aVertexEntity)
-		gl.enableVertexAttribArray(glCache.aTextureEntity)
+		gl.enableVertexAttribArray(glLocations.aVertexEntity)
+		gl.enableVertexAttribArray(glLocations.aTextureEntity)
 		glExtensions.vertex_array_object.bindVertexArrayOES(null)
-		this.glExtensions = glExtensions
-		this.gl = gl
-		this.glCache = glCache
-		this.indexBuffer = indexBuffer
+
 		this.world = world
-		this.p = p
 	}
 	updateVelocity(now) {
 		let dt = (now - this.lastUpdate) / 33
